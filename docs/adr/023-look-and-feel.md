@@ -1,6 +1,6 @@
 # ADR 023 — Look and feel: tokens semánticos, tema por empresa y contraste automático
 
-- **Estado:** Propuesto (pendiente de aprobación del responsable)
+- **Estado:** Aprobado (2026-11-04)
 - **Fecha:** 2026-11-04
 - **Decide:** Ing. Leonardo J. Reyes B.
 

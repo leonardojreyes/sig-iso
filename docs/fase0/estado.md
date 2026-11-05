@@ -2,8 +2,8 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** 0.5 Look and feel — implementado en la rama `feature/paso-0-5-look-and-feel`, **pendiente de "aprobado"** (falta `/review` y PR).
-- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (0.4 integrado en #1 y #3).
+- **Paso actual:** 0.5 Look and feel — aprobado por el responsable; PR #4 pendiente de merge.
+- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (aprobado, a la espera del merge de #4).
 - **Siguiente paso:** 0.6 Plataforma transversal.
 - **Actualizado:** 2026-11-04
 
@@ -56,9 +56,9 @@ ADR 001–022 redactados en `docs/adr/` (estado: Aprobado). Índice: `docs/adr/R
 
 ## Paso 0.5 — notas
 
-- Entregado: `packages/tokens`, `packages/ui` (base + 4 de dominio), `apps/storybook`, cinco pantallas plantilla en `/e/<empresa>/…` (empresas de prueba `a` verde y `b` azul), guía en `docs/design/guia-de-estilo.md`, ADR 023 (Propuesto).
+- Entregado: `packages/tokens`, `packages/ui` (base + 4 de dominio), `apps/storybook`, cinco pantallas plantilla en `/e/<empresa>/…` (empresas de prueba `a` verde y `b` azul), guía en `docs/design/guia-de-estilo.md`, ADR 023 (Aprobado).
 - Contraste WCAG AA verificado por prueba automática (claro, oscuro y dos empresas): 24 pruebas en verde. `lint`, `typecheck`, `test` y `build` en verde.
 - La pantalla de ingreso es solo plantilla: sin autenticación hasta 0.6.
 - `/review` hecho (arquitectura, multiempresa, seguridad, accesibilidad). Corregido: validación del id de empresa, CSS de marca solo de la empresa actual, datos demo por empresa con pruebas de aislamiento, `logoUrl` validado, cabeceras básicas, `<button>` dentro de `<a>` (nuevo `BotonEnlace`), foco y resumen de errores en el formulario, migas subrayadas, `prefers-reduced-motion`, textos a i18n.
 - Pendiente (registrado, no bloquea 0.5): CSP con nonce (necesita middleware; antes de producción); valores `rem` arbitrarios a tokens; regla de lint para la regla 7; `role="meter"` y contraste de la pista en barras; cabeceras `sr-only` en la matriz de riesgos; hex literales en pruebas; constante compartida para la clave `sig-tema`; autorización por empresa (OpenFGA) en 0.6.
-- Pendiente de aprobación humana: revisión de pantallas y Storybook, y ADR 023.
+- Aprobado por el responsable: pantallas, Storybook y ADR 023.
