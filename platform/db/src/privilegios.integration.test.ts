@@ -37,6 +37,7 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   libreria_entrada: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
   libreria_entrada_norma: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
   empresa_libreria: { app: ["SELECT", "INSERT"] },
+  bitacora: { app: ["SELECT"] }, // INSERT solo por columna (app y plataforma); ver la prueba de columnas de la bitácora
   kysely_migration: {},
   kysely_migration_lock: {},
 };
@@ -192,6 +193,25 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
       }
     });
 
+    it("la bitácora: la aplicación y la plataforma solo insertan columnas permitidas; nadie modifica ni borra", async () => {
+      const col = async (rol: string, columna: string, permiso: string) =>
+        (await sql<{ ok: boolean }>`select has_column_privilege(${rol}, 'public.bitacora', ${columna}, ${permiso}) as ok`.execute(owner())).rows[0]?.ok;
+      const permitidas = ["empresa_id", "actor_tipo", "usuario_id", "accion", "objeto", "objeto_version", "resultado", "motivo", "trace_id", "origen_id", "antes", "despues"];
+      const prohibidas = ["id", "creada_en", "secuencia", "hash_previo", "hash"];
+      for (const rol of ["sigiso_app", "sigiso_plataforma"]) {
+        for (const c of permitidas) expect({ rol, c, ok: await col(rol, c, "INSERT") }).toEqual({ rol, c, ok: true });
+        for (const c of prohibidas) expect({ rol, c, ok: await col(rol, c, "INSERT") }).toEqual({ rol, c, ok: false });
+      }
+      for (const rol of ["sigiso_app", "sigiso_plataforma", "sigiso_catalogo", "sigiso_owner"]) {
+        for (const permiso of rol === "sigiso_owner" ? ["UPDATE"] : ["UPDATE", "REFERENCES"]) {
+          const r = await sql<{ ok: boolean }>`select has_any_column_privilege(${rol}, 'public.bitacora', ${permiso}) as ok`.execute(owner());
+          expect({ rol, permiso, ok: r.rows[0]?.ok }).toEqual({ rol, permiso, ok: false });
+        }
+      }
+      const catalogo = await sql<{ ok: boolean }>`select has_any_column_privilege('sigiso_catalogo', 'public.bitacora', 'INSERT') as ok`.execute(owner());
+      expect(catalogo.rows[0]?.ok).toBe(false);
+    });
+
     it("la aplicación solo actualiza nombre y correo de usuario; ninguna otra columna ni tabla", async () => {
       const col = async (rol: string, tabla: string, columna: string) =>
         (
@@ -240,13 +260,13 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
   });
 
   describe("funciones", () => {
-    it("la única función del esquema público es app_tenant_id", async () => {
+    it("las únicas funciones del esquema público son app_tenant_id y bitacora_inmutable", async () => {
       const r = await sql<{
         n: string;
       }>`select p.proname as n from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public'`.execute(
         owner(),
       );
-      expect(r.rows.map((f) => f.n)).toEqual(["app_tenant_id"]);
+      expect(r.rows.map((f) => f.n).sort()).toEqual(["app_tenant_id", "bitacora_inmutable"]);
     });
 
     it("app_tenant_id la ejecutan los roles del proyecto y no PUBLIC", async () => {
