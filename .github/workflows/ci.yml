@@ -29,3 +29,50 @@ jobs:
       - run: pnpm test:cov
       - run: pnpm build
       - run: pnpm libraries:validate
+
+  # Pruebas de integración contra PostgreSQL 16 real: aislamiento entre empresas (regla 2), RLS, roles y migraciones.
+  # En macOS y Windows no hay PostgreSQL y esas pruebas se omiten; aquí NINGUNA puede omitirse.
+  integracion:
+    name: integracion
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # Servicio efímero del trabajo, sin contraseña ni acceso desde fuera del runner.
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Crea los roles y las bases del proyecto y escribe sus URLs en .env.local (las claves se generan en el runner).
+      - run: pnpm db:init
+      - run: pnpm db:migrate
+      - run: pnpm db:migrate:test
+      # Cobertura exigida (umbral 80 %) y control de que no se omitió ninguna prueba.
+      - name: Pruebas de platform/db (con cobertura)
+        run: pnpm --filter @sig/db exec vitest run --coverage --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/db.json"
+      - name: Pruebas de scripts
+        run: pnpm --filter @sig/scripts exec vitest run --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/scripts.json"
+      - name: Ninguna prueba de integración puede quedar omitida
+        run: |
+          for informe in db scripts; do
+            jq -e '.numPendingTests == 0 and .numTotalTests > 0' "$RUNNER_TEMP/$informe.json" > /dev/null \
+              || { echo "::error::El informe '$informe' tiene pruebas omitidas o vacías: la base de datos no estaba disponible"; exit 1; }
+          done
