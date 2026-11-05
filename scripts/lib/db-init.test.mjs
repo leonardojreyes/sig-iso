@@ -67,9 +67,9 @@ describe("urls", () => {
       puerto: 5432,
       base: "sigiso",
     });
-    expect(url).toBe(
-      "postgresql://sigiso_app:abc_DEF-123@127.0.0.1:5432/sigiso",
-    );
+    // Se comprueban las partes con el analizador estándar: así no hay una URL con credenciales escrita completa en el código.
+    const u = new URL(url);
+    expect([u.protocol, u.username, u.password, u.hostname, u.port, u.pathname]).toEqual(["postgresql:", "sigiso_app", "abc_DEF-123", "127.0.0.1", "5432", "/sigiso"]);
     expect(claveDeUrl(url)).toBe("abc_DEF-123");
   });
 
