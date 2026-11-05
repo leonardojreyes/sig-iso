@@ -1,5 +1,5 @@
 // Valida libraries/normas/**/*.yaml contra el esquema JSON (P14). Sale con código 1 si alguna falla.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { parse } from 'yaml';
@@ -14,7 +14,8 @@ const archivos = (dir) =>
     return statSync(p).isDirectory() ? archivos(p) : /\.ya?ml$/.test(n) ? [p] : [];
   });
 
-const lista = archivos(join(raiz, 'libraries/normas'));
+const dirLibrerias = join(raiz, 'libraries/normas');
+const lista = existsSync(dirLibrerias) ? archivos(dirLibrerias) : [];
 let fallos = 0;
 for (const f of lista) {
   if (!validar(parse(readFileSync(f, 'utf8')))) {
