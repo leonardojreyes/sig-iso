@@ -1,0 +1,51 @@
+{
+  "palette": {
+    "$description": "Paleta base. Los componentes nunca usan estos valores directo: usan los roles semánticos.",
+    "brand": {
+      "50": { "$type": "color", "$value": "#ECF8F3" },
+      "100": { "$type": "color", "$value": "#D3EFE3" },
+      "200": { "$type": "color", "$value": "#A8DEC7" },
+      "300": { "$type": "color", "$value": "#72C6A5" },
+      "400": { "$type": "color", "$value": "#3FA982" },
+      "500": { "$type": "color", "$value": "#1D8A66" },
+      "600": { "$type": "color", "$value": "#137A57" },
+      "700": { "$type": "color", "$value": "#0E5C42", "$description": "Verde esmeralda SynapTech (primario)" },
+      "800": { "$type": "color", "$value": "#0A4531" },
+      "900": { "$type": "color", "$value": "#07301F" }
+    },
+    "neutral": {
+      "0": { "$type": "color", "$value": "#FFFFFF" },
+      "50": { "$type": "color", "$value": "#F8FAFC" },
+      "100": { "$type": "color", "$value": "#F1F5F9" },
+      "200": { "$type": "color", "$value": "#E2E8F0" },
+      "300": { "$type": "color", "$value": "#CBD5E1" },
+      "400": { "$type": "color", "$value": "#94A3B8" },
+      "500": { "$type": "color", "$value": "#64748B" },
+      "600": { "$type": "color", "$value": "#475569" },
+      "700": { "$type": "color", "$value": "#334155" },
+      "800": { "$type": "color", "$value": "#1E293B" },
+      "850": { "$type": "color", "$value": "#162032" },
+      "900": { "$type": "color", "$value": "#0F172A" },
+      "950": { "$type": "color", "$value": "#0A1020" }
+    },
+    "green": { "50": { "$type": "color", "$value": "#E8F7EE" }, "300": { "$type": "color", "$value": "#6EDC9A" }, "700": { "$type": "color", "$value": "#15803D" }, "900": { "$type": "color", "$value": "#0F3D22" } },
+    "amber": { "50": { "$type": "color", "$value": "#FEF4DC" }, "300": { "$type": "color", "$value": "#F7C85A" }, "700": { "$type": "color", "$value": "#9A5206" }, "900": { "$type": "color", "$value": "#452A05" } },
+    "red": { "50": { "$type": "color", "$value": "#FDEBEB" }, "300": { "$type": "color", "$value": "#F28A8A" }, "700": { "$type": "color", "$value": "#B91C1C" }, "900": { "$type": "color", "$value": "#4A1010" } },
+    "blue": { "50": { "$type": "color", "$value": "#E8F0FE" }, "300": { "$type": "color", "$value": "#8DB4F9" }, "700": { "$type": "color", "$value": "#1D4ED8" }, "900": { "$type": "color", "$value": "#11275F" } }
+  },
+  "font": {
+    "sans": { "$type": "fontFamily", "$value": ["Inter Variable", "Inter", "system-ui", "Segoe UI", "sans-serif"] },
+    "mono": { "$type": "fontFamily", "$value": ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"] }
+  },
+  "radius": {
+    "sm": { "$type": "dimension", "$value": "4px" },
+    "md": { "$type": "dimension", "$value": "6px" },
+    "lg": { "$type": "dimension", "$value": "10px" }
+  },
+  "density": {
+    "$description": "Densidad media (decisión del paso 0.5)",
+    "control-height": { "$type": "dimension", "$value": "2.5rem" },
+    "control-height-sm": { "$type": "dimension", "$value": "2rem" },
+    "target-min": { "$type": "dimension", "$value": "2.75rem", "$description": "Objetivo táctil mínimo en tableta (WCAG 2.2 AA pide 24px; usamos más)" }
+  }
+}

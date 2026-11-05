@@ -1,8 +1,11 @@
 // Levanta api (3001) y web (3000) en paralelo. Ctrl+C detiene ambos.
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 
 const win = process.platform === 'win32';
 const bin = win ? 'pnpm.cmd' : 'pnpm';
+// Los tokens de diseño se compilan a CSS antes de arrancar (dist/ no se versiona).
+spawnSync(bin, ['--filter', '@sig/tokens', 'build:tokens'], { stdio: 'inherit', shell: win });
+
 const procs = [
   ['api', ['--filter', '@sig/api', 'dev']],
   ['web', ['--filter', '@sig/web', 'dev']],

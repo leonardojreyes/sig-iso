@@ -26,3 +26,4 @@ Formato MADR breve. Se crean con el comando `/adr`. Aprobados el 2026-11-04 (pas
 | [020](020-librerias-de-normas.md) | Librerías de normas | formato abierto propio (YAML con esquema JSON) | Aprobado |
 | [021](021-documentos-y-reportes.md) | Documentos y reportes | PDF/DOCX desde plantillas | Aprobado |
 | [022](022-sin-docker-en-desarrollo-local.md) | Desarrollo local | Sin Docker: PostgreSQL nativo | Aprobado |
+| [023](023-look-and-feel.md) | Look and feel | tokens semánticos; tema por empresa con contraste automático | Aprobado |

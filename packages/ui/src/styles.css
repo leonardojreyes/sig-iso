@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+@import '@sig/tokens/tokens.css';
+@source './';
+
+@theme inline {
+  --color-bg: var(--sig-color-background);
+  --color-surface: var(--sig-color-surface);
+  --color-surface-muted: var(--sig-color-surface-muted);
+  --color-line: var(--sig-color-border);
+  --color-line-strong: var(--sig-color-border-strong);
+  --color-fg: var(--sig-color-text);
+  --color-fg-muted: var(--sig-color-text-muted);
+  --color-primary: var(--sig-color-primary);
+  --color-primary-hover: var(--sig-color-primary-hover);
+  --color-on-primary: var(--sig-color-on-primary);
+  --color-primary-subtle: var(--sig-color-primary-subtle);
+  --color-on-primary-subtle: var(--sig-color-on-primary-subtle);
+  --color-ring: var(--sig-color-ring);
+  --color-success: var(--sig-color-success);
+  --color-success-subtle: var(--sig-color-success-subtle);
+  --color-warning: var(--sig-color-warning);
+  --color-warning-subtle: var(--sig-color-warning-subtle);
+  --color-danger: var(--sig-color-danger);
+  --color-danger-subtle: var(--sig-color-danger-subtle);
+  --color-info: var(--sig-color-info);
+  --color-info-subtle: var(--sig-color-info-subtle);
+  --color-neutral-status: var(--sig-color-neutral-status);
+  --color-neutral-status-subtle: var(--sig-color-neutral-status-subtle);
+  --font-sans: var(--sig-font-sans);
+  --font-mono: var(--sig-font-mono);
+  --radius-sm: var(--sig-radius-sm);
+  --radius-md: var(--sig-radius-md);
+  --radius-lg: var(--sig-radius-lg);
+}
+
+@layer base {
+  html { font-family: var(--sig-font-sans); }
+  body { background: var(--sig-color-background); color: var(--sig-color-text); }
+  :focus-visible { outline: 2px solid var(--sig-color-ring); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
+}

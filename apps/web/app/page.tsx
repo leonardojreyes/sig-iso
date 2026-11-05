@@ -1,33 +1,28 @@
-// Página de inicio provisional; el look and feel real llega en el paso 0.5.
-type Norma = { codigo: string; nombre: string; edicion: string };
+import { Card } from '@sig/ui';
+import { empresas } from '../src/empresas';
+import { es } from '../src/i18n/es-EC';
+import { LogoEmpresa } from '../src/pantallas/marco';
 
-async function cargarNormas(): Promise<Norma[] | null> {
-  try {
-    const res = await fetch(`http://localhost:${process.env.API_PORT ?? 3001}/normas`, { cache: 'no-store' });
-    return res.ok ? ((await res.json()) as Norma[]) : null;
-  } catch {
-    return null;
-  }
-}
-
-export default async function Home() {
-  const normas = await cargarNormas();
+export default function Inicio() {
   return (
-    <main style={{ maxWidth: 720, margin: '4rem auto', padding: '0 1rem' }}>
-      <h1 style={{ color: '#0E5C42' }}>sig-iso</h1>
-      <p>Sistema de Gestión Integrado ISO — SynapTech. Esqueleto de la Fase 0 (paso 0.2).</p>
-      <h2>Normas de la v1 (datos de ejemplo desde la API)</h2>
-      {normas ? (
-        <ul>
-          {normas.map((n) => (
-            <li key={n.codigo}>
-              <strong>{n.codigo}:{n.edicion}</strong> — {n.nombre}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No se pudo contactar la API en el puerto 3001. Ejecute <code>pnpm dev</code>.</p>
-      )}
+    <main className="mx-auto max-w-3xl p-8">
+      <h1 className="text-3xl font-semibold text-fg">{es.app.nombre}</h1>
+      <p className="mt-1 text-fg-muted">{es.app.lema}</p>
+      <h2 className="mb-2 mt-10 text-xl font-semibold text-fg">{es.inicio.titulo}</h2>
+      <p className="mb-6 text-fg-muted">{es.inicio.descripcion}</p>
+      <ul className="grid gap-4 sm:grid-cols-2">
+        {Object.values(empresas).map((e) => (
+          <li key={e.id} data-empresa={e.id}>
+            <Card>
+              <LogoEmpresa empresa={e} />
+              <p className="mb-3 mt-4 text-sm text-fg-muted">{es.inicio.entrar}</p>
+              <a className="font-medium text-primary underline-offset-2 hover:underline" href={`/e/${e.id}/ingreso`}>{es.ingreso.titulo}</a>
+              {' · '}
+              <a className="font-medium text-primary underline-offset-2 hover:underline" href={`/e/${e.id}/panel`}>{es.nav.panel}</a>
+            </Card>
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }
