@@ -38,6 +38,7 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   libreria_entrada_norma: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
   empresa_libreria: { app: ["SELECT", "INSERT"] },
   bitacora: { app: ["SELECT"] }, // INSERT solo por columna (app y plataforma); ver la prueba de columnas de la bitácora
+  bitacora_ancla: {}, // solo el dueño lee y añade; nadie modifica ni borra
   kysely_migration: {},
   kysely_migration_lock: {},
 };
@@ -260,13 +261,33 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
   });
 
   describe("funciones", () => {
-    it("las únicas funciones del esquema público son app_tenant_id y bitacora_inmutable", async () => {
+    it("las únicas funciones del esquema público son las declaradas", async () => {
       const r = await sql<{
         n: string;
       }>`select p.proname as n from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public'`.execute(
         owner(),
       );
-      expect(r.rows.map((f) => f.n).sort()).toEqual(["app_tenant_id", "bitacora_inmutable"]);
+      expect(r.rows.map((f) => f.n).sort()).toEqual(["app_tenant_id", "bitacora_anclar", "bitacora_campo", "bitacora_encadenar", "bitacora_huella", "bitacora_inmutable", "bitacora_verificar"]);
+    });
+
+    it("las funciones de la bitácora solo las ejecuta el dueño (las de disparador, nadie directamente)", async () => {
+      const funciones: [string, string[]][] = [
+        ["bitacora_campo(text)", ["sigiso_owner"]],
+        ["bitacora_huella(public.bitacora)", ["sigiso_owner"]],
+        ["bitacora_anclar()", ["sigiso_owner"]],
+        ["bitacora_verificar(text)", ["sigiso_owner"]],
+        ["bitacora_encadenar()", []],
+        ["bitacora_inmutable()", []],
+      ];
+      for (const [firma, permitidos] of funciones) {
+        for (const rol of ["sigiso_owner", "sigiso_app", "sigiso_catalogo", "sigiso_plataforma", "public"]) {
+          const r = await sql<{ ok: boolean }>`select has_function_privilege(${rol}, ${firma}, 'EXECUTE') as ok`.execute(owner());
+          const esperado = permitidos.includes(rol);
+          // El dueño es dueño de las funciones de disparador y puede ejecutarlas; solo se comprueba que ningún otro rol pueda.
+          if (rol === "sigiso_owner" && permitidos.length === 0) continue;
+          expect({ firma, rol, ok: r.rows[0]?.ok }).toEqual({ firma, rol, ok: esperado });
+        }
+      }
     });
 
     it("app_tenant_id la ejecutan los roles del proyecto y no PUBLIC", async () => {

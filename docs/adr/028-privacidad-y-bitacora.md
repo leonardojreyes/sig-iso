@@ -131,6 +131,7 @@ Preguntas que el asesor necesita poder responder, y qué se le entregará:
 ## Consecuencias
 
 - Las tareas de la bitácora (3.2 a 3.6) implementan la lista blanca de claves y valores, el motivo codificado y la ausencia de datos personales; el identificador es el único dato de persona que se escribe.
+- Implementado (migraciones 0003 y 0004): bitácora de solo añadir con encadenado por huellas por empresa, secuencia sin huecos y anclas en una tabla aparte. **Límite:** lo borrado o reescrito entre dos anclas no se detecta, y las anclas están en la misma base de datos; falta decidir un lugar externo para copiarlas (ver «Otros puntos abiertos»).
 - Falta construir la anonimización de `usuario`, la exportación de datos y un mecanismo de expiración; no entran en el corte 0.6 y quedan como pendientes registrados.
 - Con el diseño actual la bitácora no cumple ningún plazo de retención; hay que decidir el mecanismo antes de usar datos reales.
 - Antes de cualquier dato de personas reales hay que cerrar los puntos de «No resuelto» con un asesor legal.
