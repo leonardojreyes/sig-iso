@@ -10,3 +10,13 @@ export {
   type ReferenciaNorma,
   type ResultadoValidacion,
 } from './validar';
+export {
+  contarFrases,
+  LIMITES,
+  revisarContenido,
+  revisarTexto,
+  type CampoTexto,
+  type CodigoContenido,
+  type EntradaTextual,
+  type HallazgoContenido,
+} from './contenido';
