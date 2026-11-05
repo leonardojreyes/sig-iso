@@ -51,6 +51,7 @@ RLS protege contra la **omisión del contexto de empresa** (una consulta sin emp
 - En esta etapa las migraciones solo avanzan (sin deshacer); se revisa al acercarse a producción.
 - Amplía el ADR 022: de «una base y un rol `sigiso`» a cinco roles y tres bases.
 - Cada módulo con datos trae su prueba de aislamiento entre empresas.
+- Regla de Nx (tarea 2.3): un paquete `type:platform` puede depender de otro `type:platform` (por ejemplo, `@sig/db` usa `EmpresaId` de `@sig/tenancy`); sigue sin poder depender de un módulo ni de una app.
 
 ## Criterio de tecnología mayoritaria (P12)
 

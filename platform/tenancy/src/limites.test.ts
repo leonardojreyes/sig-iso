@@ -133,3 +133,21 @@ describe("uso de @sig/tenancy", () => {
     },
   );
 });
+
+describe("platform puede depender de otro platform", () => {
+  it("platform/db puede importar @sig/tenancy", async () => {
+    const v = await violaciones(
+      "import { crearEmpresaId } from '@sig/tenancy';\nexport const x = crearEmpresaId;\n",
+      "platform/db/src/prueba.ts",
+    );
+    expect(v).toEqual([]);
+  });
+
+  it("platform sigue sin poder importar un módulo", async () => {
+    const v = await violaciones(
+      "import { Norma } from '@sig/normas';\nexport const x = Norma;\n",
+      "platform/db/src/prueba.ts",
+    );
+    expect(v.length).toBeGreaterThan(0);
+  });
+});

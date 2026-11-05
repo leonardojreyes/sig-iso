@@ -19,7 +19,7 @@ export default tseslint.config(
           depConstraints: [
             { sourceTag: 'type:app', onlyDependOnLibsWithTags: ['type:module', 'type:platform', 'type:package'] },
             { sourceTag: 'type:module', onlyDependOnLibsWithTags: ['type:platform', 'type:package'] },
-            { sourceTag: 'type:platform', onlyDependOnLibsWithTags: ['type:package'] },
+            { sourceTag: 'type:platform', onlyDependOnLibsWithTags: ['type:platform', 'type:package'] },
             { sourceTag: 'type:package', onlyDependOnLibsWithTags: ['type:package'] },
           ],
         },
