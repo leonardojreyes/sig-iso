@@ -51,6 +51,8 @@ RLS protege contra la **omisión del contexto de empresa** (una consulta sin emp
 - En esta etapa las migraciones solo avanzan (sin deshacer); se revisa al acercarse a producción.
 - Amplía el ADR 022: de «una base y un rol `sigiso`» a cinco roles y tres bases.
 - Cada módulo con datos trae su prueba de aislamiento entre empresas.
+- Matiz de RLS (tarea 2.4): la política se evalúa fila por fila. Una consulta sin empresa sobre una tabla **vacía** devuelve vacío (no filtra datos) en lugar de fallar; en cuanto hay filas, falla. Por eso las pruebas de aislamiento siembran datos antes de comprobar el error.
+- El dueño de las tablas también está sujeto a RLS (`FORCE`): el mantenimiento y la siembra se hacen dentro de `conTenant`, nunca con un acceso global.
 - Regla de Nx (tarea 2.3): un paquete `type:platform` puede depender de otro `type:platform` (por ejemplo, `@sig/db` usa `EmpresaId` de `@sig/tenancy`); sigue sin poder depender de un módulo ni de una app.
 
 ## Criterio de tecnología mayoritaria (P12)

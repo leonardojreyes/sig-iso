@@ -2,3 +2,12 @@
 export { ConfiguracionBdError, leerUrls, ROLES_BD, type Entorno, type RolBd, type UrlsPorRol } from './configuracion';
 export { GestorPools, type EstadisticasPool, type OpcionesPool } from './pools';
 export { conTenant } from './con-tenant';
+export {
+  CARPETA_MIGRACIONES,
+  leerMigracionesSql,
+  MigracionFallidaError,
+  MigracionInvalidaError,
+  migrarAlUltimo,
+  type MigracionSql,
+  type OpcionesMigracion,
+} from './migraciones';

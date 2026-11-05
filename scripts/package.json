@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@sig/db": "workspace:*",
     "pg": "^8.23.1"
   }
 }

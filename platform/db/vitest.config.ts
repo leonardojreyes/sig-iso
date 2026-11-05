@@ -18,6 +18,7 @@ const cargarUrls = (): Record<string, string> => {
 export default defineConfig({
   test: {
     env: cargarUrls(),
+    globalSetup: ['./test/migrar-global.ts'],
     testTimeout: 30_000,
     coverage: {
       provider: 'v8',

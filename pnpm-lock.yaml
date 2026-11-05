@@ -190,6 +190,9 @@ importers:
       prettier:
         specifier: ^3.9.10
         version: 3.9.10
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -416,6 +419,9 @@ importers:
 
   scripts:
     dependencies:
+      '@sig/db':
+        specifier: workspace:*
+        version: link:../platform/db
       pg:
         specifier: ^8.23.1
         version: 8.23.1
