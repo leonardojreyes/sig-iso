@@ -1,0 +1,5 @@
+# Excepciones temporales de vulnerabilidades. Cada una lleva motivo y fecha de caducidad (revisar al vencer).
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2026-12-04
+reason = "minimatch 10.x transitivo de herramientas de desarrollo (Nx/ESLint); severidad media, no se ejecuta en producción. Corrección requiere minimatch 11 (mayor) en dependencias de terceros."

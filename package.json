@@ -1,0 +1,37 @@
+{
+  "name": "sig-iso",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/nx.mjs run-many -t build",
+    "test": "node scripts/nx.mjs run-many -t test",
+    "lint": "eslint .",
+    "typecheck": "node scripts/nx.mjs run-many -t typecheck",
+    "infra:up": "docker compose -f infra/compose/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/compose/docker-compose.yml down",
+    "test:cov": "node scripts/nx.mjs run-many -t test:cov",
+    "libraries:validate": "node scripts/validate-libraries.mjs",
+    "licenses:check": "node scripts/check-licenses.mjs",
+    "secrets:scan": "gitleaks detect --no-banner --redact"
+  },
+  "devDependencies": {
+    "@nx/devkit": "^24.0.4",
+    "@nx/eslint-plugin": "^24.0.4",
+    "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "^5.1.0",
+    "ajv": "^8.20.0",
+    "eslint": "^10.14.0",
+    "nx": "^24.0.4",
+    "prettier": "^3.9.10",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.1.0",
+    "yaml": "^2.9.1"
+  },
+  "packageManager": "pnpm@12.8.1"
+}

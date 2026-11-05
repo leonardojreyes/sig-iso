@@ -1,0 +1,6 @@
+title = "sig-iso"
+[extend]
+useDefault = true
+[allowlist]
+description = "Salidas de build y caches (no versionadas)"
+paths = ['''(^|/)\.next/''', '''(^|/)\.nx/''', '''(^|/)node_modules/''', '''(^|/)dist/''', '''(^|/)coverage/''']

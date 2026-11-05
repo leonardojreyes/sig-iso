@@ -1,0 +1,8 @@
+{
+  "name": "@sig/normas-schema",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "nx": { "tags": ["type:package"] },
+  "scripts": { "validate": "node ../../scripts/validate-libraries.mjs" }
+}

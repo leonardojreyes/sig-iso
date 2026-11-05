@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - modules/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+  nx: true
+  sharp: true
+  unrs-resolver: true
+  '@swc/core': true
+  '@scarf/scarf': false

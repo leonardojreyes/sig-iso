@@ -1,0 +1,109 @@
+# Seguridad: Semgrep CE, OSV-Scanner, gitleaks, Trivy, SBOM CycloneDX y licencias.
+# Las salidas se archivan como evidencia para ISO 27001/42001 (principio P13).
+name: seguridad
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 11 * * 1' # lunes, 06:00 hora de Ecuador
+permissions:
+  contents: read
+concurrency:
+  group: seguridad-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  FECHA_SHA: ${{ github.run_id }}-${{ github.sha }}
+jobs:
+  secretos:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Instalar gitleaks
+        run: |
+          V=8.28.0
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${V}/gitleaks_${V}_linux_x64.tar.gz" | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+      - run: mkdir -p evidencias && gitleaks detect --source . --config .gitleaks.toml --redact --report-format json --report-path evidencias/gitleaks.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-gitleaks-${{ env.FECHA_SHA }}
+          path: evidencias/
+          retention-days: 90
+
+  sast:
+    name: semgrep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install semgrep
+      - run: mkdir -p evidencias && semgrep scan --config p/typescript --config p/nodejs --config p/secrets --error --sarif --output evidencias/semgrep.sarif
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-semgrep-${{ env.FECHA_SHA }}
+          path: evidencias/
+          retention-days: 90
+
+  dependencias:
+    name: osv-scanner y licencias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Licencias permitidas (regla 5.9)
+        run: pnpm licenses:check
+      - name: Instalar osv-scanner
+        run: |
+          V=2.3.0
+          curl -sSfL -o osv-scanner "https://github.com/google/osv-scanner/releases/download/v${V}/osv-scanner_linux_amd64"
+          chmod +x osv-scanner && sudo mv osv-scanner /usr/local/bin/
+      - run: mkdir -p evidencias && osv-scanner scan source --lockfile pnpm-lock.yaml --config osv-scanner.toml --format json --output evidencias/osv.json
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-dependencias-${{ env.FECHA_SHA }}
+          path: evidencias/
+          retention-days: 90
+
+  trivy-sbom:
+    name: trivy y SBOM CycloneDX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy (vulnerabilidades, secretos y configuración)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          skip-dirs: node_modules
+          format: json
+          output: trivy.json
+      - name: SBOM CycloneDX
+        uses: aquasecurity/trivy-action@0.28.0
+        if: always()
+        with:
+          scan-type: fs
+          format: cyclonedx
+          output: sbom.cdx.json
+          skip-dirs: node_modules
+      - if: always()
+        run: mkdir -p evidencias && mv trivy.json sbom.cdx.json evidencias/ || true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-trivy-sbom-${{ env.FECHA_SHA }}
+          path: evidencias/
+          retention-days: 90
