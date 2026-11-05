@@ -4,7 +4,7 @@
 
 - **Paso actual:** 0.5 Look and feel — aprobado por el responsable; PR #4 pendiente de merge.
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (aprobado, a la espera del merge de #4).
-- **Siguiente paso:** 0.6 Plataforma transversal.
+- **Siguiente paso:** 0.6 Plataforma transversal — en curso en `feature/paso-0-6-plataforma`; spec, plan y `tasks.md` en `docs/specs/corte-vertical-0-6/` (tarea 1.1 hecha; sigue 1.2).
 - **Actualizado:** 2026-11-04
 
 ## Respuestas de arranque (`/fase0-inicio`)
