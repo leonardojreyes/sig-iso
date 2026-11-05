@@ -2,29 +2,29 @@
 
 Formato MADR breve. Se crean con el comando `/adr`. Aprobados el 2026-11-04 (paso 0.1).
 
-| ADR                                          | Tema                  | Decisión                                                      | Estado    |
-| -------------------------------------------- | --------------------- | ------------------------------------------------------------- | --------- |
-| [001](001-estilo-arquitectonico.md)          | Estilo                | monolito modular + hexagonal (DDD)                            | Aprobado  |
-| [002](002-backend.md)                        | Backend               | TypeScript + NestJS sobre Node.js LTS                         | Aprobado  |
-| [003](003-monorepo.md)                       | Monorepo              | Nx + pnpm                                                     | Aprobado  |
-| [004](004-web.md)                            | Web                   | React + Next.js                                               | Aprobado  |
-| [005](005-movil.md)                          | Móvil                 | diferido; v1 web responsiva/PWA                               | Aprobado  |
-| [006](006-base-de-datos.md)                  | Base de datos         | PostgreSQL con Row-Level Security + Kysely (ADR 024)          | Aprobado  |
-| [007](007-identidad.md)                      | Identidad             | Keycloak autogestionado                                       | Aprobado  |
-| [008](008-autorizacion.md)                   | Autorización          | RBAC + atributos con OpenFGA                                  | Aprobado  |
-| [009](009-eventos-y-tareas.md)               | Eventos y tareas      | outbox en PostgreSQL + cola sobre Valkey                      | Aprobado  |
-| [010](010-observabilidad.md)                 | Observabilidad        | OpenTelemetry + Prometheus, Grafana, Loki, Tempo              | Aprobado  |
-| [011](011-ejecucion.md)                      | Ejecución             | Docker Compose en desarrollo; Kubernetes + Helm en servidores | Aprobado  |
-| [012](012-iac.md)                            | IaC                   | OpenTofu + Helm + Argo CD                                     | Aprobado  |
-| [013](013-feature-flags.md)                  | Feature flags         | OpenFeature + flagd                                           | Aprobado  |
-| [014](014-ia.md)                             | IA                    | LiteLLM como gateway; Ollama local por defecto                | Aprobado  |
-| [015](015-codigo-y-cicd.md)                  | Código y CI/CD        | GitHub + GitHub Actions                                       | Aprobado  |
-| [016](016-secretos.md)                       | Secretos              | OpenBao; en desarrollo `.env` fuera de git                    | Aprobado  |
-| [017](017-archivos-evidencias.md)            | Archivos (evidencias) | almacenamiento compatible S3 con hash SHA-256                 | Aprobado  |
-| [018](018-entorno-desarrollo.md)             | Entorno de desarrollo | nativo + servicios en Docker; Dev Container opcional          | Aprobado  |
-| [019](019-sistema-de-diseno.md)              | Sistema de diseño     | tokens W3C + Style Dictionary; Tailwind + shadcn/ui           | Aprobado  |
-| [020](020-librerias-de-normas.md)            | Librerías de normas   | formato abierto propio (YAML con esquema JSON)                | Aprobado  |
-| [021](021-documentos-y-reportes.md)          | Documentos y reportes | PDF/DOCX desde plantillas                                     | Aprobado  |
-| [022](022-sin-docker-en-desarrollo-local.md) | Desarrollo local      | Sin Docker: PostgreSQL nativo                                 | Aprobado  |
-| [023](023-look-and-feel.md)                  | Look and feel         | tokens semánticos; tema por empresa con contraste automático  | Aprobado  |
-| [024](024-acceso-a-datos-kysely-y-roles.md)  | Acceso a datos        | Kysely + migraciones SQL; roles y alcance de RLS              | Propuesto |
+| ADR                                          | Tema                  | Decisión                                                      | Estado   |
+| -------------------------------------------- | --------------------- | ------------------------------------------------------------- | -------- |
+| [001](001-estilo-arquitectonico.md)          | Estilo                | monolito modular + hexagonal (DDD)                            | Aprobado |
+| [002](002-backend.md)                        | Backend               | TypeScript + NestJS sobre Node.js LTS                         | Aprobado |
+| [003](003-monorepo.md)                       | Monorepo              | Nx + pnpm                                                     | Aprobado |
+| [004](004-web.md)                            | Web                   | React + Next.js                                               | Aprobado |
+| [005](005-movil.md)                          | Móvil                 | diferido; v1 web responsiva/PWA                               | Aprobado |
+| [006](006-base-de-datos.md)                  | Base de datos         | PostgreSQL con Row-Level Security + Kysely (ADR 024)          | Aprobado |
+| [007](007-identidad.md)                      | Identidad             | Keycloak autogestionado                                       | Aprobado |
+| [008](008-autorizacion.md)                   | Autorización          | RBAC + atributos con OpenFGA                                  | Aprobado |
+| [009](009-eventos-y-tareas.md)               | Eventos y tareas      | outbox en PostgreSQL + cola sobre Valkey                      | Aprobado |
+| [010](010-observabilidad.md)                 | Observabilidad        | OpenTelemetry + Prometheus, Grafana, Loki, Tempo              | Aprobado |
+| [011](011-ejecucion.md)                      | Ejecución             | Docker Compose en desarrollo; Kubernetes + Helm en servidores | Aprobado |
+| [012](012-iac.md)                            | IaC                   | OpenTofu + Helm + Argo CD                                     | Aprobado |
+| [013](013-feature-flags.md)                  | Feature flags         | OpenFeature + flagd                                           | Aprobado |
+| [014](014-ia.md)                             | IA                    | LiteLLM como gateway; Ollama local por defecto                | Aprobado |
+| [015](015-codigo-y-cicd.md)                  | Código y CI/CD        | GitHub + GitHub Actions                                       | Aprobado |
+| [016](016-secretos.md)                       | Secretos              | OpenBao; en desarrollo `.env` fuera de git                    | Aprobado |
+| [017](017-archivos-evidencias.md)            | Archivos (evidencias) | almacenamiento compatible S3 con hash SHA-256                 | Aprobado |
+| [018](018-entorno-desarrollo.md)             | Entorno de desarrollo | nativo + servicios en Docker; Dev Container opcional          | Aprobado |
+| [019](019-sistema-de-diseno.md)              | Sistema de diseño     | tokens W3C + Style Dictionary; Tailwind + shadcn/ui           | Aprobado |
+| [020](020-librerias-de-normas.md)            | Librerías de normas   | formato abierto propio (YAML con esquema JSON)                | Aprobado |
+| [021](021-documentos-y-reportes.md)          | Documentos y reportes | PDF/DOCX desde plantillas                                     | Aprobado |
+| [022](022-sin-docker-en-desarrollo-local.md) | Desarrollo local      | Sin Docker: PostgreSQL nativo                                 | Aprobado |
+| [023](023-look-and-feel.md)                  | Look and feel         | tokens semánticos; tema por empresa con contraste automático  | Aprobado |
+| [024](024-acceso-a-datos-kysely-y-roles.md)  | Acceso a datos        | Kysely + migraciones SQL; roles y alcance de RLS              | Aprobado |

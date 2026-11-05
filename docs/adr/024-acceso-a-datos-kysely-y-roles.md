@@ -1,6 +1,6 @@
 # ADR 024 — Acceso a datos: Kysely con migraciones SQL; roles y alcance de RLS
 
-- **Estado:** Propuesto (pendiente de aprobación del responsable)
+- **Estado:** Aprobado (2026-11-05)
 - **Fecha:** 2026-11-05
 - **Decide:** Ing. Leonardo J. Reyes B.
 
