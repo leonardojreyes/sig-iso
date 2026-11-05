@@ -15,5 +15,9 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit",
     "test:cov": "vitest run --coverage"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./contexto": "./src/contexto.ts"
   }
 }

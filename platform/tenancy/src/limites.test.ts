@@ -70,6 +70,7 @@ const prohibidas = [
   "node:fs",
   "node:async_hooks",
   "node:path",
+  "@sig/tenancy/contexto",
 ];
 
 describe.each(["domain", "application"])(
@@ -105,6 +106,28 @@ describe("importaciones permitidas en infrastructure", () => {
         `import * as x from '${paquete}';\nexport const y = x;\n`,
         "modules/normas/src/infrastructure/prueba.ts",
         RESTRINGIDAS,
+      );
+      expect(v).toEqual([]);
+    },
+  );
+});
+
+describe("uso de @sig/tenancy", () => {
+  it("el dominio puede importar el tipo puro EmpresaId", async () => {
+    const v = await violaciones(
+      "import type { EmpresaId } from '@sig/tenancy';\nexport type X = EmpresaId;\n",
+      "modules/normas/src/domain/prueba.ts",
+      RESTRINGIDAS,
+    );
+    expect(v).toEqual([]);
+  });
+
+  it.each(["infrastructure", "interface"])(
+    "%s puede importar el contexto de empresa sin violar los límites de Nx",
+    async (capa) => {
+      const v = await violaciones(
+        "import { empresaActual } from '@sig/tenancy/contexto';\nexport const x = empresaActual;\n",
+        `modules/normas/src/${capa}/prueba.ts`,
       );
       expect(v).toEqual([]);
     },

@@ -2,7 +2,7 @@ import nx from '@nx/eslint-plugin';
 import tseslint from 'typescript-eslint';
 
 // Librerías que pertenecen a `infrastructure`: el dominio y la aplicación llegan a ellas solo por puertos.
-const infraestructura = ['kysely', 'kysely/*', 'jose', 'ajv', 'ajv/*', 'yaml'];
+const infraestructura = ['kysely', 'kysely/*', 'jose', 'ajv', 'ajv/*', 'yaml', '@sig/tenancy/contexto'];
 
 export default tseslint.config(
   { ignores: ['**/dist/**', '**/.next/**', '**/node_modules/**', '**/next-env.d.ts', '**/coverage/**', '.nx/**'] },
