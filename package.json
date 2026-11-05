@@ -17,7 +17,7 @@
     "test:cov": "node scripts/nx.mjs run-many -t test:cov",
     "libraries:validate": "node scripts/validate-libraries.mjs",
     "licenses:check": "node scripts/check-licenses.mjs",
-    "secrets:scan": "gitleaks detect --no-banner --redact"
+    "secrets:scan": "gitleaks detect --no-banner --redact --log-opts=HEAD"
   },
   "devDependencies": {
     "@nx/devkit": "^24.0.4",
