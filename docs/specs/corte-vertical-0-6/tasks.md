@@ -1,7 +1,7 @@
 # Tareas — Corte vertical 0.6
 
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md)
-- **Estado:** En curso (12 de 68 tareas hechas: fase 1 completa y 2.1 a 2.6; 2.7 parcial, ◐ = a la espera de una acción del responsable)
+- **Estado:** En curso (13 de 68 tareas hechas: fase 1 y fase 2 completas; PR #5 abierto con los 7 checks en verde; pendiente tuyo: agregar `integracion` como check obligatorio)
 
 ## Cómo leer este documento
 
@@ -32,7 +32,7 @@
 | 2.4 ✅ | `scripts/db-migrate.mjs` (Migrator de Kysely, rol dueño) + migración 0001a: `app_tenant_id()` que lanza error, tablas `empresa` y `usuario` con `ENABLE`+`FORCE` RLS. **Primero la prueba (rojo)** | 2.3      | **Aislamiento:** A no lee `empresa` ni `usuario` de B por id ni por lista; sin empresa → error; `tenant_id` inválido → error | Prueba en verde tras la migración                      |
 | 2.5 ✅ | Migración 0001b: `libreria`, `libreria_entrada`, `libreria_entrada_norma`, `empresa_libreria` con RLS (`EXISTS` de adopción); permisos por rol. **Primero la prueba**                              | 2.4      | **Aislamiento:** entradas de una librería adoptada solo por A → B no las ve; B ve solo metadatos                             | Prueba en verde                                        |
 | 2.6 ✅ | Prueba de privilegios: `sigiso_app` no es superusuario ni `BYPASSRLS`, no puede `ALTER`, `DISABLE ROW LEVEL SECURITY` ni escribir el catálogo                                                      | 2.5      | Integración con consultas a `pg_roles` y sentencias que deben fallar                                                         | Prueba en verde                                        |
-| 2.7 ◐ ⏸ | Trabajo de CI `integracion` (ubuntu, servicio PostgreSQL 16) que corre `db:init`, `db:migrate` y las pruebas de integración; documentar cómo agregar el check a la protección de rama              | 2.4      | El PR muestra el trabajo en verde                                                                                            | Trabajo en CI verde; **tú agregas el check requerido**. **Parcial:** trabajo escrito y reproducido en un clon limpio con un clúster nuevo (156 pruebas, ninguna omitida); falta su primera ejecución en GitHub y que agregues el check (`docs/security/ci-integracion.md`) |
+| 2.7 ✅ ⏸ | Trabajo de CI `integracion` (ubuntu, servicio PostgreSQL 16) que corre `db:init`, `db:migrate` y las pruebas de integración; documentar cómo agregar el check a la protección de rama              | 2.4      | El PR muestra el trabajo en verde                                                                                            | Trabajo en CI verde; **tú agregas el check requerido**. Trabajo en verde en el PR #5 (46 s). **Pendiente tuyo:** agregarlo como check obligatorio (`docs/security/ci-integracion.md`) |
 
 ## Fase 3 — Bitácora inmutable (P15)
 

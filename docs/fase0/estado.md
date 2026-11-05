@@ -2,10 +2,11 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** 0.5 Look and feel — aprobado por el responsable; PR #4 pendiente de merge.
-- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (aprobado, a la espera del merge de #4).
-- **Siguiente paso:** 0.6 Plataforma transversal — en curso en `feature/paso-0-6-plataforma`; spec, plan y `tasks.md` en `docs/specs/corte-vertical-0-6/` (tareas 1.1 a 1.6 hechas; fase 1 completa; ADR 024 propuesto; fase 2 en curso: 2.1 a 2.6 hechas; 2.7 (trabajo `integracion` de CI) escrita y verificada en local, pendiente de su primera ejecución en GitHub y de agregar el check obligatorio). Esquema migrado en `sigiso` y `sigiso_test` (`pnpm db:migrate`). Base local lista: `pnpm db:init` creó los roles `sigiso_*` y las bases `sigiso`, `sigiso_test` y `openfga`; las claves están en `.env.local` (ignorado).
-- **Actualizado:** 2026-11-04
+- **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso.
+- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
+- **Siguiente paso:** fase 3 del corte vertical 0.6 (bitácora inmutable, tarea 3.1: ADR 028 de privacidad). Spec, plan y tareas en `docs/specs/corte-vertical-0-6/` (13 de 68 hechas: fases 1 y 2). Rama `feature/paso-0-6-plataforma`, PR #5 abierto con los 7 checks en verde.
+- **Pendiente del responsable:** integrar el PR #5 y agregar `integracion` como check obligatorio (`docs/security/ci-integracion.md`). Base local lista: `pnpm db:init` y `pnpm db:migrate` dejaron los roles `sigiso_*` y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado; las claves están en `.env.local` (ignorado).
+- **Actualizado:** 2026-11-05
 
 ## Respuestas de arranque (`/fase0-inicio`)
 
