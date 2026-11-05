@@ -27,6 +27,9 @@ Una URL por rol; cada rol tiene un permiso distinto (plan, «Modelo de datos»).
 | `DATABASE_URL_CATALOGO`   | sí      | Carga del catálogo (`sigiso_catalogo`)           | 1.5, 4.5 |
 | `DATABASE_URL_PLATAFORMA` | sí      | Hechos sin empresa (`sigiso_plataforma`)         | 1.5, 3.5 |
 | `DATABASE_URL_TEST`       | sí      | Base `sigiso_test` para pruebas de integración   | 1.5, 2.3 |
+
+> `DATABASE_URL_TEST` usa `sigiso_owner` sobre `sigiso_test`. Los cuatro roles tienen la misma clave en `sigiso` y en `sigiso_test`, así que las pruebas derivan la URL de `sigiso_app` cambiando solo la base. `pnpm db:init` crea además `sigiso_openfga` (dueño de la base `openfga`, ver `OPENFGA_DATASTORE_URI`).
+
 | `PGHOST` / `PGPORT`       | no      | `127.0.0.1` / `5432`                             | 1.5      |
 
 ## Identidad (Keycloak)

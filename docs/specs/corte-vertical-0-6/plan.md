@@ -70,6 +70,7 @@ scripts/           db-init, db-migrate, libraries-load, keycloak-dev, openfga-de
 | `sigiso_app`        | API en ejecución                     | sin superusuario, sin BYPASSRLS, no dueño; ver tablas |
 | `sigiso_catalogo`   | script `libraries:load`              | INSERT solo en las 3 tablas de catálogo               |
 | `sigiso_plataforma` | worker y eventos sin empresa         | INSERT en `bitacora` solo con `empresa_id IS NULL`    |
+| `sigiso_openfga` | solo la base `openfga` | dueño de la base `openfga`; sin acceso a las demás (añadido en la tarea 1.5) |
 
 Bases: `sigiso`, `sigiso_test`, `openfga`. Keycloak en local usa su almacén de archivo; PostgreSQL en CI/despliegue.
 

@@ -1,0 +1,17 @@
+{
+  "name": "@sig/scripts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "nx": {
+    "tags": [
+      "type:app"
+    ]
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
+}

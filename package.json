@@ -12,6 +12,7 @@
     "test": "node scripts/nx.mjs run-many -t test",
     "lint": "eslint .",
     "typecheck": "node scripts/nx.mjs run-many -t typecheck",
+    "db:init": "node --env-file-if-exists=.env.local scripts/db-init.mjs",
     "infra:up": "docker compose -f infra/compose/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/compose/docker-compose.yml down",
     "test:cov": "node scripts/nx.mjs run-many -t test:cov",
