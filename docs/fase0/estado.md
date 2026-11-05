@@ -4,7 +4,7 @@
 
 - **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso.
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
-- **Siguiente paso:** fase 3 del corte vertical 0.6 (bitácora inmutable, tarea 3.1: ADR 028 de privacidad). Spec, plan y tareas en `docs/specs/corte-vertical-0-6/` (13 de 68 hechas: fases 1 y 2). Rama `feature/paso-0-6-plataforma`, PR #5 abierto con los 7 checks en verde.
+- **Siguiente paso:** fase 3 del corte vertical 0.6 (bitácora inmutable, tarea 3.2: migración de la bitácora; ADR 028 de privacidad redactado y propuesto, pendiente de tu aprobación y de un asesor legal). Spec, plan y tareas en `docs/specs/corte-vertical-0-6/` (14 de 68 hechas). Rama `feature/paso-0-6-plataforma`, PR #5 abierto con los 7 checks en verde.
 - **Pendiente del responsable:** integrar el PR #5 y agregar `integracion` como check obligatorio (`docs/security/ci-integracion.md`). Base local lista: `pnpm db:init` y `pnpm db:migrate` dejaron los roles `sigiso_*` y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado; las claves están en `.env.local` (ignorado).
 - **Actualizado:** 2026-11-05
 
