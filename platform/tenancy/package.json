@@ -1,0 +1,19 @@
+{
+  "name": "@sig/tenancy",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "nx": {
+    "tags": [
+      "type:platform"
+    ]
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "test:cov": "vitest run --coverage"
+  }
+}
