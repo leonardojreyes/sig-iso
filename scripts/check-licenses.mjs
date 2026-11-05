@@ -1,9 +1,9 @@
-// Verifica licencias de dependencias (regla 5.9). Falla con AGPL/SSPL/BSL/GPL salvo excepción con ADR.
+// Verifica licencias de dependencias de TODOS los paquetes del workspace (-r) (regla 5.9). Falla con AGPL/SSPL/BSL/GPL salvo excepción con ADR.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 
 const win = process.platform === 'win32';
-const r = spawnSync(win ? 'pnpm.cmd' : 'pnpm', ['licenses', 'list', '--json'], { encoding: 'utf8', shell: win, maxBuffer: 1 << 28 });
+const r = spawnSync(win ? 'pnpm.cmd' : 'pnpm', ['licenses', 'list', '-r', '--json'], { encoding: 'utf8', shell: win, maxBuffer: 1 << 28 });
 if (r.status !== 0) { console.error(r.stderr); process.exit(2); }
 
 const porLicencia = JSON.parse(r.stdout);
