@@ -4,7 +4,7 @@
 
 - **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso.
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
-- **Siguiente paso:** fase 3 del corte vertical 0.6 (bitácora inmutable, tarea 3.6: caso de uso `RegistrarIntentoFallido`; `platform/auditoria` ya tiene dominio, puerto, adaptador de PostgreSQL y servicio de mantenimiento; migraciones 0003 y 0004 (bitácora con encadenado por huellas y anclas) hechas; ADR 028 de privacidad redactado y propuesto, pendiente de tu aprobación y de un asesor legal). Spec, plan y tareas en `docs/specs/corte-vertical-0-6/` (18 de 68 hechas). Rama `feature/paso-0-6-plataforma`, PR #5 abierto con los 7 checks en verde.
+- **Siguiente paso:** fase 3 del corte vertical 0.6 (bitácora inmutable, fase 4, tarea 4.1: ADR 026 (librería global y adopción) y tarea 4.2 (esquema v2); fases 1, 2 y 3 completas (`platform/auditoria` tiene dominio, puerto, adaptador de PostgreSQL, mantenimiento e intentos fallidos); migraciones 0003 y 0004 (bitácora con encadenado por huellas y anclas) hechas; ADR 028 de privacidad redactado y propuesto, pendiente de tu aprobación y de un asesor legal). Spec, plan y tareas en `docs/specs/corte-vertical-0-6/` (19 de 68 hechas). Rama `feature/paso-0-6-plataforma`, PR #5 abierto con los 7 checks en verde.
 - **Pendiente del responsable:** integrar el PR #5 y agregar `integracion` como check obligatorio (`docs/security/ci-integracion.md`). Base local lista: `pnpm db:init` y `pnpm db:migrate` dejaron los roles `sigiso_*` y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado; las claves están en `.env.local` (ignorado).
 - **Actualizado:** 2026-11-05
 

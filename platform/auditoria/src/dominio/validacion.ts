@@ -10,6 +10,14 @@ const HUELLA = /^[0-9a-f]{64}$/;
 const ORIGEN = /^[A-Za-z0-9:_.-]{1,200}$/;
 const TRAZA = /^[A-Za-z0-9_-]{1,64}$/;
 const ENTERO_MAXIMO = 1_000_000_000;
+const FECHA_ISO = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.(\d{3})Z$/;
+
+/** Fecha ISO 8601 en UTC con milisegundos, real (no 31 de febrero) y entre los años 2020 y 2100. */
+const esFechaValida = (v: unknown): boolean => {
+  if (typeof v !== 'string' || !FECHA_ISO.test(v)) return false;
+  const f = new Date(v);
+  return !Number.isNaN(f.getTime()) && f.toISOString() === v && f.getUTCFullYear() >= 2020 && f.getUTCFullYear() <= 2100;
+};
 
 const CAMPOS_EVENTO = new Set(['empresaId', 'actor', 'accion', 'objeto', 'objetoVersion', 'resultado', 'motivo', 'traceId', 'origenId', 'antes', 'despues']);
 const CAMPOS_ACTOR = new Set(['tipo', 'usuarioId']);
@@ -29,6 +37,8 @@ const valorValido = (valor: unknown, tipo: TipoValor): boolean => {
       return typeof valor === 'string' && HUELLA.test(valor);
     case 'version':
       return typeof valor === 'string' && VERSION.test(valor);
+    case 'fecha':
+      return esFechaValida(valor);
   }
 };
 

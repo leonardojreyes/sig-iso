@@ -8,6 +8,7 @@ import type { EventoBitacora } from "../dominio/tipos";
 import type { AlertasPort } from "../puertos/integridad.port";
 import { Bitacora } from "../servicio/bitacora";
 import { MantenimientoBitacora } from "../servicio/mantenimiento";
+import { RegistrarIntentoFallido } from "../servicio/registrar-intento-fallido";
 import { BitacoraKysely } from "./bitacora-kysely.adapter";
 import { IntegridadKysely } from "./integridad-kysely.adapter";
 
@@ -244,6 +245,23 @@ describe.skipIf(!hayBase)("BitacoraKysely (PostgreSQL real)", () => {
       await expect(
         puerto().registrarUnaVez(validarEvento(evento())),
       ).rejects.toThrow(/origenId/);
+    });
+  });
+
+  describe("RegistrarIntentoFallido con la base real", () => {
+    it("registra el intento una sola vez y no guarda nada de lo que no debe", async () => {
+      const caso = new RegistrarIntentoFallido(bitacora());
+      const hora = Date.now();
+      const evento = { time: hora, type: "LOGIN_ERROR", clientId: "sigiso-web", error: "user_not_found", ipAddress: "203.0.113.77", details: { username: "ana.perez@example.test" } };
+      expect(await caso.ejecutar(evento)).toBe("registrado");
+      expect(await caso.ejecutar({ ...evento, ipAddress: "198.51.100.9" })).toBe("ya_existia");
+
+      const iso = new Date(hora).toISOString();
+      const filas = (await sql<Record<string, unknown>>`select * from bitacora where origen_id like 'kc:login_error:%' and despues->>'ocurrio_en' = ${iso}`.execute(owner())).rows;
+      expect(filas).toHaveLength(1);
+      expect(filas[0]).toMatchObject({ empresa_id: null, actor_tipo: "proceso", usuario_id: null, accion: "login.fallido", resultado: "rechazado", motivo: "cuenta_inexistente" });
+      const texto = JSON.stringify(filas[0]);
+      for (const secreto of ["203.0.113.77", "198.51.100.9", "ana.perez", "example.test", "sigiso-web"]) expect(texto, secreto).not.toContain(secreto);
     });
   });
 

@@ -47,6 +47,7 @@ export const MOTIVOS = [
   'secuencia_con_huecos',
   'huella_invalida',
   'enlace_roto',
+  'error_no_clasificado',
 ] as const;
 export type MotivoBitacora = (typeof MOTIVOS)[number];
 
@@ -61,8 +62,8 @@ export const esClaveProhibida = (clave: string): boolean => {
   return CLAVES_PROHIBIDAS.some((p) => palabras.includes(p) || clave.toLowerCase() === p);
 };
 
-/** Tipo de valor admitido: siempre cerrado (booleano, entero acotado, UUID, huella, versión o un estado de una lista). */
-export type TipoValor = 'booleano' | 'entero' | 'uuid' | 'huella' | 'version' | { readonly estado: readonly string[] };
+/** Tipo de valor admitido: siempre cerrado (booleano, entero acotado, UUID, huella, versión, fecha ISO en UTC o un estado de una lista). */
+export type TipoValor = 'booleano' | 'entero' | 'uuid' | 'huella' | 'version' | 'fecha' | { readonly estado: readonly string[] };
 
 type Presencia = 'obligatorio' | 'opcional' | 'prohibido';
 
@@ -82,7 +83,7 @@ const nada = { motivo: 'prohibido', motivos: [], objeto: 'prohibido', objetoVers
 
 export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   'login.ok': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'] },
-  'login.fallido': { ...nada, actores: ['proceso', 'sistema'], empresa: 'opcional', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['credenciales_invalidas', 'cuenta_inexistente', 'cuenta_bloqueada'] },
+  'login.fallido': { ...nada, actores: ['proceso', 'sistema'], empresa: 'opcional', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['credenciales_invalidas', 'cuenta_inexistente', 'cuenta_bloqueada', 'error_no_clasificado'], despues: { ocurrio_en: 'fecha' } },
   logout: { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'] },
   'sesion.expirada': { ...nada, actores: ['sistema', 'proceso'], empresa: 'obligatoria', resultados: ['ok'], motivo: 'obligatorio', motivos: ['sesion_inactiva'] },
   'libreria.adoptada': {

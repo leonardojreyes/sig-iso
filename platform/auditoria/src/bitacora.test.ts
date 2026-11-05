@@ -32,4 +32,19 @@ describe('Bitacora (servicio)', () => {
     void puerto.registrar({ accion: 'login.ok', actorTipo: 'usuario' });
     expect(true).toBe(true);
   });
+
+  it('registrarUnaVez valida y entrega al puerto, y devuelve su resultado', async () => {
+    const puerto = puertoFalso();
+    const ev = { ...ejemplos['login.fallido'], origenId: 'kc:evento:1' };
+    expect(await new Bitacora(puerto).registrarUnaVez(ev)).toBe('registrado');
+    expect(puerto.registrarUnaVez).toHaveBeenCalledTimes(1);
+    vi.mocked(puerto.registrarUnaVez).mockResolvedValueOnce('ya_existia');
+    expect(await new Bitacora(puerto).registrarUnaVez(ev)).toBe('ya_existia');
+  });
+
+  it('registrarUnaVez con un evento inválido no llega al puerto', async () => {
+    const puerto = puertoFalso();
+    await expect(new Bitacora(puerto).registrarUnaVez({ ...ejemplos['login.fallido'], motivo: 'texto libre' } as never)).rejects.toThrow(EventoBitacoraInvalidoError);
+    expect(puerto.registrarUnaVez).not.toHaveBeenCalled();
+  });
 });

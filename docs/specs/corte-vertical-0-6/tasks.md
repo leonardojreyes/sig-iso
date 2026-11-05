@@ -1,7 +1,7 @@
 # Tareas — Corte vertical 0.6
 
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md)
-- **Estado:** En curso (18 de 68 tareas hechas: fases 1 y 2 completas, 3.1 a 3.5; PR #5 abierto con los 7 checks en verde; pendiente tuyo: agregar `integracion` como check obligatorio)
+- **Estado:** En curso (19 de 68 tareas hechas: fases 1, 2 y 3 completas; PR #5 abierto con los 7 checks en verde; pendiente tuyo: agregar `integracion` como check obligatorio)
 
 ## Cómo leer este documento
 
@@ -43,7 +43,7 @@
 | 3.3 ✅   | Encadenado por hash por empresa (trigger con bloqueo consultivo), secuencia sin huecos, **ancla periódica del último valor fuera de la tabla** y función de verificación (H6.6). **El registro del evento y la alerta si la verificación falla (H6.13) los hace el servicio de la tarea 3.5** | 3.2      | Integración: alterar una fila como dueño, borrar el último registro y truncar la tabla → la verificación lo detecta; inserciones concurrentes mantienen la cadena                                 | Las tres alteraciones se detectan |
 | 3.4 ✅ ‖ | `platform/auditoria` dominio y puerto: `BitacoraPort`, tipos de evento, lista blanca de claves **y de valores** por acción (tipos cerrados, sin texto libre; `motivo` como código de una lista cerrada; `objeto`, versión/huella del objeto y `origen_id`)                                    | 2.1      | Unitarias: una clave o un valor fuera de la lista se rechaza al escribir; un motivo con texto libre se rechaza; datos personales no pasan (ADR 028)                                               | Cobertura ≥ 80 %                  |
 | 3.5 ✅   | Adaptador Kysely de `BitacoraPort` (misma transacción) y adaptador de plataforma, **y servicio de mantenimiento que ejecuta `bitacora_anclar()` y `bitacora_verificar()`, registra el evento de plataforma de verificación (H6.13) y avisa si hay problemas**                                 | 3.3, 3.4 | Integración: si falla el registro, la acción no se completa (H6.8); el registro comparte transacción                                                                                              | Ambas en verde                    |
-| 3.6 ‖    | Caso de uso `RegistrarIntentoFallido`: lista blanca (tipo, fecha, código, `userId`), clave idempotente                                                                                                                                                                                        | 3.4      | Unitarias: no copia `ipAddress`, `username` ni `details`; el mismo evento dos veces registra una vez                                                                                              | Cobertura ≥ 80 %                  |
+| 3.6 ✅ ‖ | Caso de uso `RegistrarIntentoFallido`: lista blanca (tipo, fecha, código, `userId`), clave idempotente                                                                                                                                                                                        | 3.4      | Unitarias: no copia `ipAddress`, `username` ni `details`; el mismo evento dos veces registra una vez                                                                                              | Cobertura ≥ 80 %                  |
 
 ## Fase 4 — Librería de ejemplo y esquema
 

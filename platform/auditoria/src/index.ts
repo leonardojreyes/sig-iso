@@ -7,6 +7,7 @@ export { BITACORA_PORT, type BitacoraPort, type ResultadoRegistro } from './puer
 export type { AlertaIntegridad, AlertasPort, IntegridadBitacoraPort, ProblemaIntegridad, TipoProblema } from './puertos/integridad.port';
 export { Bitacora } from './servicio/bitacora';
 export { MantenimientoBitacora, type ResultadoMantenimiento } from './servicio/mantenimiento';
+export { EventoIdentidadInvalidoError, RegistrarIntentoFallido, type ResolverEmpresa, type ResultadoIntento } from './servicio/registrar-intento-fallido';
 export { AlertasConsola } from './infraestructura/alertas-consola.adapter';
 export { BitacoraKysely, type DestinosBitacora } from './infraestructura/bitacora-kysely.adapter';
 export { IntegridadKysely } from './infraestructura/integridad-kysely.adapter';

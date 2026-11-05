@@ -219,3 +219,16 @@ describe('exceso de claves', () => {
     rechaza({ ...ejemplos['rol.cambiado'], despues: muchas });
   });
 });
+
+describe('fecha del hecho (despues.ocurrio_en)', () => {
+  const fallido = ejemplos['login.fallido'];
+  const con = (despues: unknown): unknown => ({ ...fallido, despues });
+
+  it('acepta una fecha ISO 8601 en UTC con milisegundos', () => {
+    expect(() => validarEvento(con({ ocurrio_en: '2026-11-05T21:00:00.123Z' }))).not.toThrow();
+  });
+
+  it.each(['2026-11-05', '2026-11-05T21:00:00Z', '2026-11-05 21:00:00.123', 'ayer', 'ana@example.test', '2026-13-45T25:61:61.000Z', '1999-01-01T00:00:00.000Z', '2101-01-01T00:00:00.000Z', 1730840400000])('rechaza una fecha mal formada o fuera de rango: %j', (v) => {
+    rechaza(con({ ocurrio_en: v }));
+  });
+});
