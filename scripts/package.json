@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@sig/db": "workspace:*",
-    "pg": "^8.23.1"
+    "@sig/normas-schema": "workspace:*",
+    "pg": "^8.23.1",
+    "yaml": "^2.9.1"
   }
 }

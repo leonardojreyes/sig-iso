@@ -1,27 +1,22 @@
-// Valida libraries/normas/**/*.yaml contra el esquema JSON (P14). Sale con código 1 si alguna falla.
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+// pnpm libraries:validate — valida libraries/normas/**/*.yaml con el esquema v2 y sus reglas (P14, ADR 026).
+// Sale con código 1 si alguna falla. No imprime el contenido de las librerías, solo códigos y rutas.
+// Uso: node --import tsx scripts/validate-libraries.mjs [--dir <carpeta>]
 import { join } from 'node:path';
-import Ajv2020 from 'ajv/dist/2020.js';
-import { parse } from 'yaml';
+import { validarDirectorio } from './lib/validar-librerias.mjs';
 
-const raiz = join(import.meta.dirname, '..');
-const esquema = JSON.parse(readFileSync(join(raiz, 'packages/normas-schema/libreria-norma.schema.json'), 'utf8'));
-const validar = new Ajv2020({ allErrors: true }).compile(esquema);
+const i = process.argv.indexOf('--dir');
+const dir = i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : join(import.meta.dirname, '..', 'libraries/normas');
 
-const archivos = (dir) =>
-  readdirSync(dir).flatMap((n) => {
-    const p = join(dir, n);
-    return statSync(p).isDirectory() ? archivos(p) : /\.ya?ml$/.test(n) ? [p] : [];
-  });
-
-const dirLibrerias = join(raiz, 'libraries/normas');
-const lista = existsSync(dirLibrerias) ? archivos(dirLibrerias) : [];
+const resultados = validarDirectorio(dir);
 let fallos = 0;
-for (const f of lista) {
-  if (!validar(parse(readFileSync(f, 'utf8')))) {
-    fallos++;
-    console.error(`✖ ${f}\n${JSON.stringify(validar.errors, null, 2)}`);
-  } else console.log(`✔ ${f}`);
+for (const r of resultados) {
+  if (r.ok) {
+    console.log(`✔ ${r.archivo}`);
+    continue;
+  }
+  fallos++;
+  console.error(`✖ ${r.archivo}`);
+  for (const e of r.errores) console.error(`    ${e.ruta === '' ? '(librería)' : e.ruta}  ${e.codigo}${e.entrada ? `  [entrada ${e.entrada}]` : ''}`);
 }
-console.log(`${lista.length} librería(s) revisada(s), ${fallos} con errores`);
+console.log(`${resultados.length} librería(s) revisada(s), ${fallos} con errores`);
 process.exit(fallos ? 1 : 0);

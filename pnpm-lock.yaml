@@ -345,7 +345,11 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
 
-  packages/normas-schema: {}
+  packages/normas-schema:
+    dependencies:
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
 
   packages/tokens:
     devDependencies:
@@ -434,9 +438,15 @@ importers:
       '@sig/db':
         specifier: workspace:*
         version: link:../platform/db
+      '@sig/normas-schema':
+        specifier: workspace:*
+        version: link:../packages/normas-schema
       pg:
         specifier: ^8.23.1
         version: 8.23.1
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
 
 packages:
 
