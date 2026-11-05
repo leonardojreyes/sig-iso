@@ -2,7 +2,7 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** 0.4 Pipeline y calidad — **en curso**: workflows y escáneres listos y verificados en local; falta el push inicial a `main` (lo hace el responsable), protección de rama y los 2 PR de prueba.
+- **Paso actual:** 0.4 Pipeline y calidad — implementado y probado, **pendiente de "aprobado"**.
 - **Pasos cerrados:** 0.1, 0.2, 0.3 (aprobados 2026-11-04).
 - **Siguiente paso:** 0.5 Look and feel.
 - **Actualizado:** 2026-11-04
@@ -25,7 +25,7 @@ ADR 001–022 redactados en `docs/adr/` (estado: Aprobado). Índice: `docs/adr/R
 
 - ORM/migraciones (ADR 006): se decide en 0.6, cuando se use la BD por primera vez (el esqueleto 0.2 no la usa).
 - Sin Docker (ADR 022): PostgreSQL 16 nativo (Homebrew, corriendo). Falta crear rol/base `sigiso` (script en 0.6) e instalar Valkey (`brew install valkey`) cuando se construya la cola.
-- Repo remoto privado: https://github.com/leonardojreyes/sig-iso . `GITHUB_TOKEN` del entorno es inválido: usar `env -u GITHUB_TOKEN gh ...` (la sesión del llavero sí sirve). Commit `d0c40a9` local, sin push aún.
+- Repo remoto **público** (decisión del responsable, para habilitar protección de ramas sin plan de pago): https://github.com/leonardojreyes/sig-iso . `GITHUB_TOKEN` del entorno es inválido: usar `env -u GITHUB_TOKEN gh ...` y `env -u GITHUB_TOKEN git push ...`.
 - TypeScript fijado en 5.9 (la v7 nativa rompe typescript-eslint).
 - Elegir librería de PDF/DOCX (ADR 021) cuando se construya el primer reporte.
 - Look and feel completo se pregunta en 0.5.
@@ -45,6 +45,11 @@ ADR 001–022 redactados en `docs/adr/` (estado: Aprobado). Índice: `docs/adr/R
 
 ## Paso 0.4 — notas
 
-- Pipeline: `.github/workflows/ci.yml` (lint, tipos, cobertura, build en macOS+Windows, validación de librerías) y `seguridad.yml` (gitleaks, Semgrep CE, OSV, Trivy, SBOM CycloneDX, licencias). Artefactos `evidencia-*` (90 días); ver `docs/security/evidencias/README.md`.
-- Verificado en local: licencias (381 paquetes, 0 prohibidas), validador de librerías (rechaza YAML inválido), gitleaks (sin hallazgos en lo versionado), OSV (2 medias en `minimatch` transitivo de Nx/ESLint, ignoradas hasta 2026-12-04 en `osv-scanner.toml`).
-- **No ejecutado aún:** workflows en GitHub (las acciones no están ancladas por SHA; hacerlo antes de producción), axe (sin pantallas hasta 0.5).
+- Pipeline: `.github/workflows/ci.yml` (lint, tipos, cobertura 80 % en dominio, build en macOS+Windows, validación de librerías) y `seguridad.yml` (gitleaks, Semgrep CE, OSV, Trivy, SBOM CycloneDX, licencias). Artefactos `evidencia-*` (90 días); ver `docs/security/evidencias/README.md`.
+- **Protección de la rama principal activa:** PR obligatorio, 6 checks requeridos (`verificar` macOS/Windows, `gitleaks`, `semgrep`, `osv-scanner y licencias`, `trivy y SBOM CycloneDX`), historial lineal, sin force-push, también para administradores. Revisores requeridos: 0 (el responsable es el único revisor).
+- **PR correcto (#1):** 6 de 6 checks en verde, incluido Windows. Integrado por el responsable.
+- **PR que viola reglas (#2, cerrado sin integrar):** `gitleaks` detectó 2 secretos falsos y `osv-scanner y licencias` rechazó `mupdf@1.28.1` (AGPL-3.0-or-later). Estado de merge: BLOCKED. Además, GitHub push protection bloqueó por sí solo una clave con formato AWS.
+- El primer run falló por dos defectos propios (tag inexistente de `trivy-action`, carpeta `libraries/normas` ausente en checkout limpio); corregidos en #1.
+- OSV: 2 vulnerabilidades medias en `minimatch` transitivo (Nx/ESLint), ignoradas hasta 2026-12-04 en `osv-scanner.toml`.
+- Pendientes: axe (llega con las pantallas, 0.5); anclar acciones por SHA antes de producción; Trivy no detectó los secretos falsos (solo gitleaks), aceptable porque gitleaks es el control principal; el merge a la rama principal lo hace el responsable (el clasificador de permisos me lo bloquea).
+- Efecto de hacer público el repo: el correo del autor de los commits es visible.
