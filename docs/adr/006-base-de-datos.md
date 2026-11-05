@@ -10,11 +10,11 @@ Multiempresa desde el día uno; el aislamiento debe garantizarlo la base de dato
 
 ## Decisión
 
-PostgreSQL con RLS por empresa (`SET LOCAL app.tenant_id` por transacción; sin empresa la consulta falla). Tabla de bitácora solo-inserción. ORM/migraciones: se decide entre Prisma, Drizzle y Kysely al iniciar el paso 0.2, con criterio de soporte de RLS y consumo de memoria.
+PostgreSQL con RLS por empresa (`SET LOCAL app.tenant_id` por transacción; sin empresa la consulta falla). Tabla de bitácora solo-inserción. ORM/migraciones: **Kysely con migraciones SQL** (ver [ADR 024](024-acceso-a-datos-kysely-y-roles.md)). El `SET LOCAL` se implementa como `set_config('app.tenant_id', …, true)`, de alcance de transacción.
 
 ## Alternativas consideradas
 
-Prisma, Drizzle o Kysely (pendiente de elección dentro de este ADR).
+Prisma y Drizzle (descartados en el [ADR 024](024-acceso-a-datos-kysely-y-roles.md)).
 
 ## Estándar y licencia
 
