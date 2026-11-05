@@ -4,7 +4,7 @@ import type { BitacoraPort } from './puertos/bitacora.port';
 import { EventoBitacoraInvalidoError } from './dominio/errores';
 import { ejemplos } from './prueba/ejemplos';
 
-const puertoFalso = (): BitacoraPort & { registrar: ReturnType<typeof vi.fn> } => ({ registrar: vi.fn(async () => {}) });
+const puertoFalso = (): BitacoraPort & { registrar: ReturnType<typeof vi.fn> } => ({ registrar: vi.fn(async () => {}), registrarUnaVez: vi.fn(async () => 'registrado' as const) });
 
 describe('Bitacora (servicio)', () => {
   it('valida y entrega al puerto el registro normalizado', async () => {

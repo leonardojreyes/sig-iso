@@ -68,11 +68,13 @@ jobs:
       # Cobertura exigida (umbral 80 %) y control de que no se omitió ninguna prueba.
       - name: Pruebas de platform/db (con cobertura)
         run: pnpm --filter @sig/db exec vitest run --coverage --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/db.json"
+      - name: Pruebas de platform/auditoria (con cobertura)
+        run: pnpm --filter @sig/auditoria exec vitest run --coverage --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/auditoria.json"
       - name: Pruebas de scripts
         run: pnpm --filter @sig/scripts exec vitest run --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/scripts.json"
       - name: Ninguna prueba de integración puede quedar omitida
         run: |
-          for informe in db scripts; do
+          for informe in db auditoria scripts; do
             jq -e '.numPendingTests == 0 and .numTotalTests > 0' "$RUNNER_TEMP/$informe.json" > /dev/null \
               || { echo "::error::El informe '$informe' tiene pruebas omitidas o vacías: la base de datos no estaba disponible"; exit 1; }
           done

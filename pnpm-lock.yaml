@@ -401,9 +401,15 @@ importers:
 
   platform/auditoria:
     dependencies:
+      '@sig/db':
+        specifier: workspace:*
+        version: link:../db
       '@sig/tenancy':
         specifier: workspace:*
         version: link:../tenancy
+      kysely:
+        specifier: ^0.29.8
+        version: 0.29.8
 
   platform/db:
     dependencies:

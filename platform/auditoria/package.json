@@ -11,7 +11,15 @@
   "nx": {
     "tags": [
       "type:platform"
-    ]
+    ],
+    "targets": {
+      "test": {
+        "cache": false
+      },
+      "test:cov": {
+        "cache": false
+      }
+    }
   },
   "scripts": {
     "test": "vitest run",
@@ -20,6 +28,8 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
-    "@sig/tenancy": "workspace:*"
+    "@sig/db": "workspace:*",
+    "@sig/tenancy": "workspace:*",
+    "kysely": "^0.29.8"
   }
 }
