@@ -38,9 +38,9 @@ describe('Libreria', () => {
   });
 
   it('los errores no repiten el valor recibido', () => {
-    const secreto = 'VALOR-SENSIBLE-123';
-    const error = (() => { try { Libreria.crear({ ...base, version: secreto }); } catch (e) { return e as Error; } })();
-    expect(error?.message).not.toContain(secreto);
+    const recibido = 'dato-que-no-debe-repetirse';
+    const error = (() => { try { Libreria.crear({ ...base, version: recibido }); } catch (e) { return e as Error; } })();
+    expect(error?.message).not.toContain(recibido);
   });
 
   it('está congelada', () => {
