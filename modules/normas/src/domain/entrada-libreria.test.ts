@@ -67,6 +67,7 @@ describe('EntradaLibreria — aplica_a', () => {
     [{ norma: 'ISO 9001', edicion: '2015', clausula: '4..1' }],
     [{ norma: 'ISO 9001', edicion: '2015', clausula: '' }],
     [{ norma: 'ISO 9001', edicion: '2015', clausula: '4.1 ' }],
+    [{ norma: 'ISO 9001', edicion: '2015', clausula: `4.${'1'.repeat(19)}` }],
   ])('rechaza la correspondencia inválida %j', (a) => {
     expect(falla({ aplicaA: [a] })?.campo).toBe('aplicaA');
   });

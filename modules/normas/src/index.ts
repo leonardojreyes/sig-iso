@@ -11,3 +11,8 @@ export { AUTORIZACION, type AutorizacionPort, type Permiso } from './application
 export { CATALOGO_REPOSITORY, type CatalogoRepositoryPort } from './application/catalogo-repository.port.js';
 export { ADOPCION_REPOSITORY, type AdopcionRepositoryPort } from './application/adopcion-repository.port.js';
 export type { ContextoAdopcion, RegistradorBitacora } from './application/contexto-adopcion.js';
+export { ListarLibreriasUseCase, TOPE_LIBRERIAS, type LibreriaResumenDto } from './application/listar-librerias.use-case.js';
+export { ListarRequisitosUseCase, ParametroInvalidoError, TOPE_REQUISITOS, type ListarRequisitosEntrada } from './application/listar-requisitos.use-case.js';
+export { ObtenerRequisitoUseCase, RequisitoNoEncontradoError, type ObtenerRequisitoEntrada } from './application/obtener-requisito.use-case.js';
+export type { EntradaDto } from './application/entrada-dto.js';
+export type { ContextoConsulta } from './application/contexto-adopcion.js';

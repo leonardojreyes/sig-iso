@@ -13,3 +13,6 @@ export interface ContextoAdopcion {
   readonly catalogo: CatalogoRepositoryPort;
   readonly bitacora: RegistradorBitacora;
 }
+
+/** Lo que necesitan las consultas: solo lectura, sin bitácora. `ContextoAdopcion` lo satisface. */
+export type ContextoConsulta = Pick<ContextoAdopcion, 'adopciones' | 'catalogo'>;

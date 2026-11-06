@@ -34,7 +34,7 @@ const correspondencia = (c: unknown): CorrespondenciaNorma => {
   const { norma, edicion, clausula } = c as Record<string, unknown>;
   if (typeof norma !== 'string' || norma.length < 1 || norma.length > 60) throw new ErrorNormas('aplicaA');
   if (typeof edicion !== 'string' || !EDICION.test(edicion)) throw new ErrorNormas('aplicaA');
-  if (typeof clausula !== 'string' || !CLAUSULA.test(clausula)) throw new ErrorNormas('aplicaA');
+  if (typeof clausula !== 'string' || clausula.length > 20 || !CLAUSULA.test(clausula)) throw new ErrorNormas('aplicaA');
   return Object.freeze({ norma, edicion, clausula });
 };
 

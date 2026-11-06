@@ -95,7 +95,7 @@ describe('AdoptarLibreria — ya adoptada (H4.7)', () => {
     const base = crearUnidadDeTrabajoFalsa(estado);
     const unidad = {
       ejecutar: (e: typeof A, fn: Parameters<typeof base.ejecutar>[1]) =>
-        base.ejecutar(e, (ctx) => fn({ ...ctx, adopciones: { obtener: async () => null, crear: async () => 'ya_existia' as const } })),
+        base.ejecutar(e, (ctx) => fn({ ...ctx, adopciones: { listarLibreriaIds: async () => [], obtener: async () => null, crear: async () => 'ya_existia' as const } })),
     } as typeof base;
     await expect(new AdoptarLibreriaUseCase(unidad, { puede: async () => true }, () => AHORA).ejecutar(entrada())).rejects.toThrow(/ya no se encuentra/);
   });

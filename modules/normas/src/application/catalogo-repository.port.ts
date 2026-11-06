@@ -1,3 +1,4 @@
+import type { EntradaLibreria } from '../domain/entrada-libreria.js';
 import type { Libreria } from '../domain/libreria.js';
 
 export const CATALOGO_REPOSITORY = Symbol('CATALOGO_REPOSITORY');
@@ -8,4 +9,10 @@ export interface CatalogoRepositoryPort {
   obtenerLibreria(libreriaId: string): Promise<Libreria | null>;
   /** Entradas de la librería VISIBLES para la empresa del contexto: 0 mientras no la haya adoptado. */
   contarEntradas(libreriaId: string): Promise<number>;
+  /** Todas las librerías del catálogo global (metadatos públicos). */
+  listarLibrerias(): Promise<Libreria[]>;
+  /** Entradas VISIBLES para la empresa del contexto (las de librerías que adoptó), sin orden garantizado. */
+  listarEntradas(): Promise<EntradaLibreria[]>;
+  /** Una entrada visible para la empresa del contexto, o `null` (no existe, es de otra empresa o su librería no está adoptada). */
+  obtenerEntrada(id: string): Promise<EntradaLibreria | null>;
 }

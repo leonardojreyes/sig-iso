@@ -3,6 +3,7 @@
 import { validarEvento, type EventoBitacora, type RegistroBitacora } from '@sig/auditoria';
 import type { EmpresaId } from '@sig/tenancy';
 import type { AdopcionLibreria } from '../../domain/adopcion-libreria.js';
+import type { EntradaLibreria } from '../../domain/entrada-libreria.js';
 import type { Libreria } from '../../domain/libreria.js';
 import type { AdopcionRepositoryPort } from '../adopcion-repository.port.js';
 import type { CatalogoRepositoryPort } from '../catalogo-repository.port.js';
@@ -20,10 +21,24 @@ export class EstadoFalso {
   /** Carrera entre dos adopciones: al `crear`, otra adopción simultánea ya se guardó (esta) y `crear` responde `ya_existia`. */
   ganadora: AdopcionLibreria | null = null;
 
+  /** Catálogo completo (para los listados). Por defecto, solo la librería recibida. */
+  librerias: Libreria[];
+  /** Todas las entradas del catálogo, de cualquier librería. */
+  entradasCatalogo: EntradaLibreria[] = [];
+  /** Simula un repositorio SIN aislamiento (devuelve entradas aunque la librería no esté adoptada): el caso de uso debe filtrar igual. */
+  sinAislamiento = false;
+
   constructor(
     readonly libreria: Libreria | null,
     readonly entradas: number,
-  ) {}
+  ) {
+    this.librerias = libreria ? [libreria] : [];
+  }
+
+  /** Entradas que vería la empresa: solo las de librerías que adoptó (como la RLS), salvo `sinAislamiento`. */
+  visibles(empresaId: EmpresaId): EntradaLibreria[] {
+    return this.entradasCatalogo.filter((e) => this.sinAislamiento || this.adopciones.has(clave(empresaId, e.libreriaId)));
+  }
 
   falla(operacion: string): void {
     const e = this.fallos.get(operacion);
@@ -39,6 +54,10 @@ export const crearUnidadDeTrabajoFalsa = (estado: EstadoFalso): UnidadDeTrabajoP
     const copiaAdopciones = new Map(estado.adopciones);
     const copiaBitacora = [...estado.bitacora];
     const adopciones: AdopcionRepositoryPort = {
+      listarLibreriaIds: async () => {
+        estado.falla('listarLibreriaIds');
+        return [...estado.adopciones.values()].filter((a) => a.empresaId === empresaId).map((a) => a.libreriaId);
+      },
       obtener: async (libreriaId) => {
         estado.falla('obtener');
         return estado.adopciones.get(clave(empresaId, libreriaId)) ?? null;
@@ -59,7 +78,19 @@ export const crearUnidadDeTrabajoFalsa = (estado: EstadoFalso): UnidadDeTrabajoP
     const catalogo: CatalogoRepositoryPort = {
       obtenerLibreria: async (id) => {
         estado.falla('obtenerLibreria');
-        return estado.libreria?.id === id ? estado.libreria : null;
+        return estado.librerias.find((l) => l.id === id) ?? null;
+      },
+      listarLibrerias: async () => {
+        estado.falla('listarLibrerias');
+        return [...estado.librerias];
+      },
+      listarEntradas: async () => {
+        estado.falla('listarEntradas');
+        return estado.visibles(empresaId);
+      },
+      obtenerEntrada: async (id) => {
+        estado.falla('obtenerEntrada');
+        return estado.visibles(empresaId).find((e) => e.id === id) ?? null;
       },
       // Como la RLS: las entradas solo se ven si la empresa adoptó la librería.
       contarEntradas: async (libreriaId) => {
