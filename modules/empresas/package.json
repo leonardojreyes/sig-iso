@@ -8,7 +8,15 @@
   "nx": {
     "tags": [
       "type:module"
-    ]
+    ],
+    "targets": {
+      "test": {
+        "cache": false
+      },
+      "test:cov": {
+        "cache": false
+      }
+    }
   },
   "scripts": {
     "test": "vitest run",
@@ -18,7 +26,9 @@
   },
   "dependencies": {
     "@sig/tokens": "workspace:*",
-    "@sig/tenancy": "workspace:*"
+    "@sig/tenancy": "workspace:*",
+    "@sig/db": "workspace:*",
+    "kysely": "^0.29.8"
   },
   "devDependencies": {
     "yaml": "^2.9.1"

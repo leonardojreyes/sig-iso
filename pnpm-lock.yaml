@@ -335,12 +335,18 @@ importers:
 
   modules/empresas:
     dependencies:
+      '@sig/db':
+        specifier: workspace:*
+        version: link:../../platform/db
       '@sig/tenancy':
         specifier: workspace:*
         version: link:../../platform/tenancy
       '@sig/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
+      kysely:
+        specifier: ^0.29.8
+        version: 0.29.8
     devDependencies:
       yaml:
         specifier: ^2.9.1
