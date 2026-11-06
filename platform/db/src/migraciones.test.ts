@@ -1,8 +1,8 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { leerMigracionesSql, MigracionInvalidaError } from './migraciones';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ejecutarConReintentos, leerMigracionesSql, MigracionFallidaError, MigracionInvalidaError, type ResultadoEjecucion } from './migraciones';
 
 describe('leerMigracionesSql', () => {
   let dir: string | undefined;
@@ -48,5 +48,60 @@ describe('leerMigracionesSql', () => {
     dir = base;
     expect(() => leerMigracionesSql(join(base, 'no-existe'))).toThrow(MigracionInvalidaError);
     mkdirSync(join(base, 'existe'));
+  });
+});
+
+describe('ejecutarConReintentos', () => {
+  const ok = (...nombres: string[]): ResultadoEjecucion => ({ results: nombres.map((migrationName) => ({ migrationName, status: 'Success' as const })) });
+  const secuencia = (...respuestas: ResultadoEjecucion[]) => {
+    const f = vi.fn(async () => respuestas[Math.min(f.mock.calls.length - 1, respuestas.length - 1)]!);
+    return f;
+  };
+  const sinPausa = { pausaMs: 0 };
+
+  it('si sale bien a la primera, no reintenta y devuelve lo aplicado', async () => {
+    const f = secuencia(ok('0001_a', '0002_b'));
+    expect(await ejecutarConReintentos(f, sinPausa)).toEqual({ aplicadas: ['0001_a', '0002_b'] });
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
+  it('solo cuenta como aplicadas las migraciones con éxito', async () => {
+    const f = secuencia({ results: [{ migrationName: '0001_a', status: 'Success' }, { migrationName: '0002_b', status: 'NotExecuted' }] });
+    expect(await ejecutarConReintentos(f, sinPausa)).toEqual({ aplicadas: ['0001_a'] });
+  });
+
+  it('reintenta cuando falla la preparación del registro (no se aplicó nada) y termina bien', async () => {
+    const f = secuencia({ error: new Error('relation "public.tabla_ajena" does not exist') }, ok('0001_a'));
+    expect(await ejecutarConReintentos(f, sinPausa)).toEqual({ aplicadas: ['0001_a'] });
+    expect(f).toHaveBeenCalledTimes(2);
+  });
+
+  it('si el error persiste, lo informa tras 6 intentos con la causa', async () => {
+    const f = secuencia({ error: new Error('causa persistente') });
+    const intento = ejecutarConReintentos(f, sinPausa);
+    await expect(intento).rejects.toThrow(MigracionFallidaError);
+    await expect(intento).rejects.toThrow(/registro de migraciones.*causa persistente/);
+    expect(f).toHaveBeenCalledTimes(6);
+  });
+
+  it('una migración que falla NO se reintenta: se informa con su nombre', async () => {
+    const f = secuencia({ error: new Error('división por cero'), results: [{ migrationName: '0004_mala', status: 'Error' }] });
+    await expect(ejecutarConReintentos(f, sinPausa)).rejects.toThrow(/0004_mala/);
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
+  it('espera entre intentos', async () => {
+    vi.useFakeTimers();
+    try {
+      const f = secuencia({ error: new Error('x') }, ok('0001_a'));
+      const promesa = ejecutarConReintentos(f, { pausaMs: 1000 });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(f).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1000);
+      await promesa;
+      expect(f).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

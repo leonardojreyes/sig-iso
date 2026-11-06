@@ -52,6 +52,34 @@ export interface OpcionesMigracion {
   readonly tablaBloqueo?: string;
 }
 
+export interface ResultadoEjecucion {
+  readonly error?: unknown;
+  readonly results?: readonly { readonly migrationName: string; readonly status: 'Success' | 'Error' | 'NotExecuted' }[];
+}
+
+const pausar = (ms: number): Promise<void> => (ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve());
+
+/**
+ * Ejecuta el migrador y devuelve lo aplicado.
+ *
+ * - Si una migración falla, se informa con su nombre y NO se reintenta: se revirtió y reintentar no la arregla.
+ * - Si falla la preparación del registro de migraciones (no hay ninguna migración fallida, así que no se aplicó nada), se
+ *   reintenta unas veces. Motivo: Kysely inspecciona TODAS las tablas del esquema con `pg_get_serial_sequence(tabla, columna)`
+ *   y esa llamada falla si otra sesión borra una tabla en ese instante (ocurre al correr pruebas en paralelo).
+ */
+export const ejecutarConReintentos = async (ejecutar: () => Promise<ResultadoEjecucion>, opciones: { intentos?: number; pausaMs?: number } = {}): Promise<{ aplicadas: string[] }> => {
+  const intentos = opciones.intentos ?? 6;
+  const pausaMs = opciones.pausaMs ?? 100;
+  for (let intento = 1; ; intento++) {
+    const { error, results } = await ejecutar();
+    const fallida = results?.find((r) => r.status === 'Error');
+    if (fallida) throw new MigracionFallidaError(fallida.migrationName, error);
+    if (!error) return { aplicadas: (results ?? []).filter((r) => r.status === 'Success').map((r) => r.migrationName) };
+    if (intento >= intentos) throw new MigracionFallidaError('(registro de migraciones)', error);
+    await pausar(pausaMs * intento);
+  }
+};
+
 /** Aplica las migraciones pendientes. Si una falla se revierte y se lanza `MigracionFallidaError` con su nombre. */
 export const migrarAlUltimo = async (db: Kysely<unknown>, opciones: OpcionesMigracion = {}): Promise<{ aplicadas: string[] }> => {
   const migraciones = leerMigracionesSql(opciones.carpeta ?? CARPETA_MIGRACIONES);
@@ -74,9 +102,5 @@ export const migrarAlUltimo = async (db: Kysely<unknown>, opciones: OpcionesMigr
     migrationTableName: opciones.tablaControl ?? 'kysely_migration',
     migrationLockTableName: opciones.tablaBloqueo ?? 'kysely_migration_lock',
   });
-  const { error, results } = await migrator.migrateToLatest();
-  const fallida = results?.find((r) => r.status === 'Error');
-  if (fallida) throw new MigracionFallidaError(fallida.migrationName, error);
-  if (error) throw new MigracionFallidaError('(registro de migraciones)', error);
-  return { aplicadas: (results ?? []).filter((r) => r.status === 'Success').map((r) => r.migrationName) };
+  return ejecutarConReintentos(() => migrator.migrateToLatest());
 };

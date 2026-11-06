@@ -4,10 +4,12 @@ export { GestorPools, type EstadisticasPool, type OpcionesPool } from './pools';
 export { conTenant } from './con-tenant';
 export {
   CARPETA_MIGRACIONES,
+  ejecutarConReintentos,
   leerMigracionesSql,
   MigracionFallidaError,
   MigracionInvalidaError,
   migrarAlUltimo,
   type MigracionSql,
   type OpcionesMigracion,
+  type ResultadoEjecucion,
 } from './migraciones';
