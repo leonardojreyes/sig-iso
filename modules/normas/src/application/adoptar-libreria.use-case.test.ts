@@ -23,6 +23,15 @@ const montar = (opciones: { puede?: boolean; libreria?: Libreria | null } = {}) 
   const caso = new AdoptarLibreriaUseCase(crearUnidadDeTrabajoFalsa(estado), autorizacion, () => AHORA);
   return { estado, puede, caso };
 };
+/** Ejecuta y devuelve el error lanzado (falla la prueba si no lanzó nada). */
+const errorDe = async (promesa: Promise<unknown>): Promise<Error> => {
+  try {
+    await promesa;
+  } catch (e) {
+    return e as Error;
+  }
+  throw new Error('Se esperaba un error y no hubo ninguno');
+};
 const entrada = (cambio: Record<string, unknown> = {}) => ({ empresaId: A, usuarioId: ADMIN, libreriaId: LIB_ID, traceId: 'traza-1', ...cambio }) as never;
 
 describe('AdoptarLibreria — primera adopción', () => {
@@ -104,8 +113,8 @@ describe('AdoptarLibreria — sin permiso (H4.6)', () => {
 
   it('el permiso se evalúa ANTES de mirar la librería: mismo error con un id existente y con uno inexistente', async () => {
     const { caso } = montar();
-    const e1 = await caso.ejecutar(entrada({ usuarioId: COLAB })).catch((e: unknown) => e as Error);
-    const e2 = await caso.ejecutar(entrada({ usuarioId: COLAB, libreriaId: INEXISTENTE })).catch((e: unknown) => e as Error);
+    const e1 = await errorDe(caso.ejecutar(entrada({ usuarioId: COLAB })));
+    const e2 = await errorDe(caso.ejecutar(entrada({ usuarioId: COLAB, libreriaId: INEXISTENTE })));
     expect(e1).toBeInstanceOf(SinPermisoError);
     expect(e2).toBeInstanceOf(SinPermisoError);
     expect(e1.message).toBe(e2.message);
@@ -122,7 +131,7 @@ describe('AdoptarLibreria — sin permiso (H4.6)', () => {
 describe('AdoptarLibreria — librería inexistente (H4.7)', () => {
   it('da LibreriaNoEncontradaError y no escribe nada', async () => {
     const { caso, estado } = montar();
-    const e = await caso.ejecutar(entrada({ libreriaId: INEXISTENTE })).catch((x: unknown) => x as Error);
+    const e = await errorDe(caso.ejecutar(entrada({ libreriaId: INEXISTENTE })));
     expect(e).toBeInstanceOf(LibreriaNoEncontradaError);
     expect(e.message).not.toContain(INEXISTENTE);
     expect(estado.adopciones.size).toBe(0);
