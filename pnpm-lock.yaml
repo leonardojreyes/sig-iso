@@ -335,6 +335,9 @@ importers:
 
   modules/empresas:
     dependencies:
+      '@sig/tenancy':
+        specifier: workspace:*
+        version: link:../../platform/tenancy
       '@sig/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens

@@ -17,7 +17,8 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
-    "@sig/tokens": "workspace:*"
+    "@sig/tokens": "workspace:*",
+    "@sig/tenancy": "workspace:*"
   },
   "devDependencies": {
     "yaml": "^2.9.1"
