@@ -52,6 +52,12 @@ Se usa `aplica_a` por norma (una sola entrada con el identificador que cada norm
 
 En el catálogo la unidad es la **entrada** (un apartado). El término «requisito» del glosario sigue designando la condición evaluable; una cláusula real puede descomponerse en varios requisitos en un módulo posterior.
 
+### Criterio de `alcance_comun` y contenido de las guías
+
+- `comun`: el tema y lo esencial son equivalentes en las normas. `parcial`: el tema existe en las normas pero su contenido de fondo o su detalle difiere de forma relevante. `especifico`: solo existe en una norma.
+- Una guía **no mezcla** requisitos de la norma con prácticas del proceso de certificación (por ejemplo, las etapas de la auditoría externa, que son reglas del organismo certificador). Esas reglas pertenecen a las reglas de negocio del ciclo de certificación, no al catálogo. Una prueba lo comprueba.
+- Una guía tampoco afirma de una norma lo que solo es cierto de otra.
+
 ### 4. Control de derechos de autor
 
 Capas, de la más débil a la más fuerte:

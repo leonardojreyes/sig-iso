@@ -350,6 +350,10 @@ importers:
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
+    devDependencies:
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
 
   packages/tokens:
     devDependencies:
