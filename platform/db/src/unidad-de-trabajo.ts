@@ -11,11 +11,11 @@ import { conTenant } from './con-tenant';
 export class UnidadDeTrabajoKysely<Ctx> {
   constructor(
     private readonly db: Kysely<unknown>,
-    private readonly crearContexto: (trx: Transaction<unknown>) => Ctx,
+    private readonly crearContexto: (trx: Transaction<unknown>, empresaId: EmpresaId) => Ctx,
   ) {}
 
   /** Si `fn` falla (o falla la confirmación), se revierte todo y el error se propaga sin cambios. */
   ejecutar<T>(empresaId: EmpresaId, fn: (contexto: Ctx) => Promise<T>): Promise<T> {
-    return conTenant(this.db, empresaId, (trx) => fn(this.crearContexto(trx)));
+    return conTenant(this.db, empresaId, (trx) => fn(this.crearContexto(trx, empresaId)));
   }
 }

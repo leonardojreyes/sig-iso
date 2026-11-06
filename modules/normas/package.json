@@ -8,7 +8,15 @@
   "nx": {
     "tags": [
       "type:module"
-    ]
+    ],
+    "targets": {
+      "test": {
+        "cache": false
+      },
+      "test:cov": {
+        "cache": false
+      }
+    }
   },
   "scripts": {
     "test": "vitest run",
@@ -22,11 +30,11 @@
     "reflect-metadata": "^0.2.2",
     "@sig/tenancy": "workspace:*",
     "@sig/normas-schema": "workspace:*",
-    "@sig/auditoria": "workspace:*"
-  },
-  "devDependencies": {
-    "yaml": "^2.9.1",
+    "@sig/auditoria": "workspace:*",
     "@sig/db": "workspace:*",
     "kysely": "^0.29.8"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.1"
   }
 }

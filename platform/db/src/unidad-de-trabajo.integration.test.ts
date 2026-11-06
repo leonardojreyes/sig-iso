@@ -112,6 +112,14 @@ describe.skipIf(!hayBase)('UnidadDeTrabajoKysely (PostgreSQL real)', () => {
     expect(resultados).toEqual([A, B, A, B, A, B]);
   });
 
+  it('entrega al constructor del contexto la transacción y la empresa fijada', async () => {
+    const vistas: string[] = [];
+    const u = new UnidadDeTrabajoKysely<Ctx>(app(), (trx, empresa) => { vistas.push(empresa); return { trx, veces: 0 }; });
+    await u.ejecutar(A, async () => 1);
+    await u.ejecutar(B, async () => 1);
+    expect(vistas).toEqual([A, B]);
+  });
+
   it('crea un contexto nuevo por ejecución, ligado a su transacción', async () => {
     const antes = creados;
     const a = await uow().ejecutar(A, async (c) => c.veces);

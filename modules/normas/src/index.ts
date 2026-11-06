@@ -16,3 +16,6 @@ export { ListarRequisitosUseCase, ParametroInvalidoError, TOPE_REQUISITOS, type 
 export { ObtenerRequisitoUseCase, RequisitoNoEncontradoError, type ObtenerRequisitoEntrada } from './application/obtener-requisito.use-case.js';
 export type { EntradaDto } from './application/entrada-dto.js';
 export type { ContextoConsulta } from './application/contexto-adopcion.js';
+export { CatalogoKysely } from './infrastructure/catalogo-kysely.adapter.js';
+export { AdopcionKysely } from './infrastructure/adopcion-kysely.adapter.js';
+export { crearUnidadDeTrabajoNormas } from './infrastructure/unidad-de-trabajo-normas.js';
