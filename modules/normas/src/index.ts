@@ -5,3 +5,4 @@ export { Libreria, type DatosLibreria } from './domain/libreria.js';
 export { EntradaLibreria, type AlcanceComun, type CorrespondenciaNorma, type DatosEntrada } from './domain/entrada-libreria.js';
 export { AdopcionLibreria, adoptar, type DatosAdopcion, type ResultadoAdopcion } from './domain/adopcion-libreria.js';
 export { ErrorNormas } from './domain/errores.js';
+export { UNIDAD_DE_TRABAJO, type UnidadDeTrabajoPort } from './application/unidad-de-trabajo.port.js';

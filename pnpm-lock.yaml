@@ -370,6 +370,12 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
     devDependencies:
+      '@sig/db':
+        specifier: workspace:*
+        version: link:../../platform/db
+      kysely:
+        specifier: ^0.29.8
+        version: 0.29.8
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
