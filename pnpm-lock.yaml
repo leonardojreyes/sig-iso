@@ -360,9 +360,19 @@ importers:
       '@nestjs/swagger':
         specifier: ^12.1.0
         version: 12.1.0(@nestjs/common@12.3.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@12.3.2)(reflect-metadata@0.2.2)(typescript@5.9.3)
+      '@sig/normas-schema':
+        specifier: workspace:*
+        version: link:../../packages/normas-schema
+      '@sig/tenancy':
+        specifier: workspace:*
+        version: link:../../platform/tenancy
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
+    devDependencies:
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
 
   packages/contracts:
     devDependencies:

@@ -19,6 +19,11 @@
   "dependencies": {
     "@nestjs/common": "^12.3.2",
     "@nestjs/swagger": "^12.1.0",
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "@sig/tenancy": "workspace:*",
+    "@sig/normas-schema": "workspace:*"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.1"
   }
 }
