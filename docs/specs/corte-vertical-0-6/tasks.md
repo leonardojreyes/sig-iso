@@ -1,7 +1,7 @@
 # Tareas — Corte vertical 0.6
 
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md)
-- **Estado:** En curso (23 de 68 tareas hechas: fases 1, 2 y 3 completas, 4.1 a 4.3 y 4.6; 4.4 parcial, ◐ = a la espera de una acción del responsable; PR #5 abierto con los 7 checks en verde; pendiente tuyo: agregar `integracion` como check obligatorio)
+- **Estado:** En curso (24 de 69 tareas hechas: fases 1, 2 y 3 completas, 4.1 a 4.3, 4.6 y 5.1; 4.4 parcial, ◐ = a la espera de una acción del responsable; PR #5 abierto con los 7 checks en verde; pendiente tuyo: agregar `integracion` como check obligatorio)
 
 ## Cómo leer este documento
 
@@ -58,31 +58,32 @@
 
 ## Fase 5 — Contrato y módulos
 
-| ID    | Tarea                                                                                                                   | Depende       | Pruebas                                                                                           | Terminado cuando           |
-| ----- | ----------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------- | -------------------------- |
-| 5.1   | Contrato OpenAPI 3.1 en `packages/contracts` (endpoints del plan, 404 indistinguible)                                   | 4.1           | Validación del documento con una herramienta de contrato                                          | Contrato válido y revisado |
-| 5.2   | Generación de tipos desde el contrato                                                                                   | 5.1           | Prueba de que los tipos compilan; el CI falla si el contrato cambia sin regenerar                 | Tipos usados por la API    |
-| 5.3 ‖ | `modules/empresas` dominio: `MarcaEmpresa` (contraste con `@sig/tokens`, aviso, logo permitido o monograma)             | 1.3           | Unitarias H3.2 y H3.3                                                                             | Cobertura ≥ 80 %           |
-| 5.4   | `modules/empresas`: puerto y caso de uso `ObtenerMarca` con fake                                                        | 5.3           | Unitaria + **aislamiento a nivel de caso de uso** (el fake rechaza otra empresa)                  | Verde                      |
-| 5.5   | `modules/empresas`: adaptador Kysely                                                                                    | 5.4, 2.4      | **Aislamiento (integración):** A no obtiene la marca de B                                         | Verde                      |
-| 5.6 ‖ | `modules/normas` dominio: `Libreria`, `EntradaLibreria`, `AdopcionLibreria`                                             | 4.3           | Unitarias: capítulo 4–10, `aplica_a` no vacío, capítulo 10 por tema                               | Cobertura ≥ 80 %           |
-| 5.7   | `UnidadDeTrabajoPort` en `application` y adaptador Kysely en `platform/db`                                              | 2.3           | Integración: revierte todo si falla algo                                                          | Verde                      |
-| 5.8   | Caso de uso `AdoptarLibreria` (permiso, ya adoptada → 200, inexistente → error, bitácora, rollback) con fakes           | 5.6, 5.7, 3.4 | Unitarias de cada rama y de la bitácora invocada                                                  | Cobertura ≥ 80 %           |
-| 5.9   | Casos de uso `ListarLibrerias`, `ListarRequisitos` (q, capítulo, norma), `ObtenerRequisito`                             | 5.6           | Unitarias: filtros, 404 indistinguible, entrada de librería no adoptada                           | Verde                      |
-| 5.10  | Adaptadores Kysely de catálogo, adopción y requisitos                                                                   | 5.8, 5.9, 2.5 | **Aislamiento (integración):** A adopta, B no; B pide el id de una entrada de A → «no encontrado» | Verde                      |
-| 5.11  | Retirar el repositorio en memoria y el `GET /normas` anterior de la plantilla; actualizar `modules/normas/src/index.ts` | 5.10          | Las pruebas existentes se adaptan o se reemplazan                                                 | Sin código huérfano        |
+| ID     | Tarea                                                                                                                   | Depende       | Pruebas                                                                                           | Terminado cuando           |
+| ------ | ----------------------------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------- | -------------------------- |
+| 5.1 ✅ | Contrato OpenAPI 3.1 en `packages/contracts` (endpoints del plan, 404 indistinguible)                                   | 4.1           | Validación del documento con una herramienta de contrato                                          | Contrato válido y revisado |
+| 5.2    | Generación de tipos desde el contrato                                                                                   | 5.1           | Prueba de que los tipos compilan; el CI falla si el contrato cambia sin regenerar                 | Tipos usados por la API    |
+| 5.3 ‖  | `modules/empresas` dominio: `MarcaEmpresa` (contraste con `@sig/tokens`, aviso, logo permitido o monograma)             | 1.3           | Unitarias H3.2 y H3.3                                                                             | Cobertura ≥ 80 %           |
+| 5.4    | `modules/empresas`: puerto y caso de uso `ObtenerMarca` con fake                                                        | 5.3           | Unitaria + **aislamiento a nivel de caso de uso** (el fake rechaza otra empresa)                  | Verde                      |
+| 5.5    | `modules/empresas`: adaptador Kysely                                                                                    | 5.4, 2.4      | **Aislamiento (integración):** A no obtiene la marca de B                                         | Verde                      |
+| 5.6 ‖  | `modules/normas` dominio: `Libreria`, `EntradaLibreria`, `AdopcionLibreria`                                             | 4.3           | Unitarias: capítulo 4–10, `aplica_a` no vacío, capítulo 10 por tema                               | Cobertura ≥ 80 %           |
+| 5.7    | `UnidadDeTrabajoPort` en `application` y adaptador Kysely en `platform/db`                                              | 2.3           | Integración: revierte todo si falla algo                                                          | Verde                      |
+| 5.8    | Caso de uso `AdoptarLibreria` (permiso, ya adoptada → 200, inexistente → error, bitácora, rollback) con fakes           | 5.6, 5.7, 3.4 | Unitarias de cada rama y de la bitácora invocada                                                  | Cobertura ≥ 80 %           |
+| 5.9    | Casos de uso `ListarLibrerias`, `ListarRequisitos` (q, capítulo, norma), `ObtenerRequisito`                             | 5.6           | Unitarias: filtros, 404 indistinguible, entrada de librería no adoptada                           | Verde                      |
+| 5.10   | Adaptadores Kysely de catálogo, adopción y requisitos                                                                   | 5.8, 5.9, 2.5 | **Aislamiento (integración):** A adopta, B no; B pide el id de una entrada de A → «no encontrado» | Verde                      |
+| 5.11   | Retirar el repositorio en memoria y el `GET /normas` anterior de la plantilla; actualizar `modules/normas/src/index.ts` | 5.10          | Las pruebas existentes se adaptan o se reemplazan                                                 | Sin código huérfano        |
 
 ## Fase 6 — Autenticación, autorización y API
 
-| ID    | Tarea                                                                                                                             | Depende       | Pruebas                                                                                 | Terminado cuando |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------- | ------------- | --------------------------------------------------------------------------------------- | ---------------- |
-| 6.1   | `platform/autenticacion`: `TokenVerifierPort` y adaptador `jose` con JWKS; claims (`empresa_id`, `sub`)                           | 2.1           | Unitarias con claves generadas en la prueba: firma inválida, expirado, sin `empresa_id` | Cobertura ≥ 80 % |
-| 6.2   | Guard de Nest que fija el contexto de empresa; 401 y evento `token.invalido`                                                      | 6.1, 3.5      | API: 401 sin token; la empresa del token manda aunque se envíe otra                     | Verde            |
-| 6.3 ‖ | `platform/autorizacion`: `AutorizacionPort` y fake con los roles                                                                  | 2.1           | Unitarias de `administrador_sig` y `colaborador`                                        | Verde            |
-| 6.4   | Filtro de excepciones: 403 → `acceso.denegado`, 404 cruzado → `acceso.cruzado`, en transacción propia; si falla el registro → 500 | 6.2, 6.3, 3.5 | API: ambos eventos quedan en bitácora; fallo del registro devuelve 500                  | Verde            |
-| 6.5   | Controladores `empresas` (`/me`, `/empresa/marca`) y `sesion` (inicio y cierre derivados del token)                               | 5.5, 6.4      | API: H1.1, H3.1, `login.ok` y `logout` registrados antes de responder                   | Verde            |
-| 6.6   | Controladores `normas` (`/librerias`, adopción, `/requisitos`, `/requisitos/{id}`)                                                | 5.10, 6.4     | API: 403 colaborador, 404 cruzado, H4.x y H5.x                                          | Verde            |
-| 6.7   | Prueba de conformidad: el OpenAPI generado en `/docs` coincide con el contrato                                                    | 5.1, 6.6      | Comparación automática                                                                  | Verde            |
+| ID    | Tarea                                                                                                                                               | Depende       | Pruebas                                                                                                                                                  | Terminado cuando                                             |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| 6.1   | `platform/autenticacion`: `TokenVerifierPort` y adaptador `jose` con JWKS; claims (`empresa_id`, `sub`)                                             | 2.1           | Unitarias con claves generadas en la prueba: firma inválida, expirado, sin `empresa_id`                                                                  | Cobertura ≥ 80 %                                             |
+| 6.2   | Guard de Nest que fija el contexto de empresa; 401 y evento `token.invalido`                                                                        | 6.1, 3.5      | API: 401 sin token; la empresa del token manda aunque se envíe otra                                                                                      | Verde                                                        |
+| 6.3 ‖ | `platform/autorizacion`: `AutorizacionPort` y fake con los roles                                                                                    | 2.1           | Unitarias de `administrador_sig` y `colaborador`                                                                                                         | Verde                                                        |
+| 6.4   | Filtro de excepciones: 403 → `acceso.denegado`, 404 cruzado → `acceso.cruzado`, en transacción propia; si falla el registro → 500                   | 6.2, 6.3, 3.5 | API: ambos eventos quedan en bitácora; fallo del registro devuelve 500                                                                                   | Verde                                                        |
+| 6.5   | Controladores `empresas` (`/me`, `/empresa/marca`) y `sesion` (inicio y cierre derivados del token)                                                 | 5.5, 6.4      | API: H1.1, H3.1, `login.ok` y `logout` registrados antes de responder                                                                                    | Verde                                                        |
+| 6.6   | Controladores `normas` (`/librerias`, adopción, `/requisitos`, `/requisitos/{id}`)                                                                  | 5.10, 6.4     | API: 403 colaborador, 404 cruzado, H4.x y H5.x                                                                                                           | Verde                                                        |
+| 6.7   | Prueba de conformidad: el OpenAPI generado en `/docs` coincide con el contrato                                                                      | 5.1, 6.6      | Comparación automática                                                                                                                                   | Verde                                                        |
+| 6.8   | Límite de frecuencia en la API (por persona y por empresa) con respuesta 429 y `Retry-After`; las dos operaciones de sesión idempotentes por sesión | 6.2           | API: la solicitud que excede el límite recibe 429 con `Retry-After`; repetir inicio o cierre con la misma sesión no escribe otro registro en la bitácora | Cumple el contrato (429 y sesión idempotente) y está probado |
 
 ## Fase 7 — Datos de prueba y medición
 
@@ -141,6 +142,26 @@
 
 ## Resumen
 
-- **68 tareas** en 12 fases.
+- **69 tareas** en 12 fases.
 - **Pausas tuyas (⏸):** 2.7 (check de protección de rama), 4.4 (verificar numeraciones), 8.1 y 8.2 (tamaños y descarga de Keycloak/JDK), 9.1 (OpenFGA).
 - **Primera tarea de `/implement`:** 1.1, o 1.2 a 1.4 en paralelo si prefieres empezar por infraestructura.
+
+## Notas de la revisión del contrato (tarea 5.1)
+
+Revisaron `arquitecto`, `revisor-multiempresa` y `revisor-seguridad`. Lo que pidieron para las tareas siguientes:
+
+- **ADR 027** (sesión web y empresa solo desde el token): hay que redactarlo antes de la 6.1, no en la 10.1; el contrato y las pruebas ya se apoyan en esa decisión.
+- **5.2:** usar un generador de tipos que admita OpenAPI 3.1 (por ejemplo `openapi-typescript`, MIT) y comprobar que compila con este documento; `logoUrl` es `[string, null]` y `adopcion` tiene dos códigos de éxito.
+- **5.3:** la regla del logo del dominio debe ser la misma que el patrón del contrato (solo `https` sin credenciales, o ruta propia que no empiece por `//`).
+- **5.10:** prueba del mapeo entre la base de datos y el contrato (`aplicaA`, `alcanceComun`, `esEjemplo`, `idEstable`); el listado de entradas sale en el orden de la librería.
+- **6.2:** cabeceras de seguridad en la API (`X-Content-Type-Options` y similares) y CORS con lista blanca de orígenes.
+- **6.4:** el 404 de `acceso.cruzado` debe ser idéntico, byte a byte (cuerpo y cabeceras), al 404 normal.
+- **6.5:** el 204 de `/sesion/*` lleva `Cache-Control: no-store`; `/me` y `/empresa/marca` devuelven solo datos de la empresa del token y, sin token, con empresa inexistente o alterado, responden 401; las cabeceras o parámetros `X-Empresa`, `?empresa=` y `?tenant=` se ignoran.
+- **6.6 (pruebas con dos empresas A y B, bloqueantes):**
+  - Orden de evaluación: un colaborador recibe el mismo 403 con un id existente y con uno inexistente; un administrador recibe 400 (UUID mal formado, incluidas variantes con llaves o sin guiones) o 404.
+  - Adoptar dos veces responde 201 y luego 200 con `yaAdoptada: true`, sin cambios, y con la bitácora caída no se escribe la adopción.
+  - La adopción de B no cambia lo que ve A: `adoptada` refleja solo la empresa del token.
+  - Los filtros con comodines o inyección no amplían el alcance; ningún error repite el valor recibido.
+  - Cada respuesta real se valida contra los esquemas de `openapi.yaml`.
+- **6.7:** definir qué se compara con el OpenAPI de NestJS: operaciones, códigos de respuesta, tipos de parámetros y esquemas de respuesta normalizados (una comparación literal fallará).
+- **Decisión tomada:** el listado de librerías no incluye `referencias` (la base de datos no las guarda en `libreria` y la RLS oculta las normas de las no adoptadas). Si se quisiera, haría falta una columna `referencias` y una migración nueva.

@@ -104,6 +104,7 @@ describe('entradas', () => {
     ['aplica_a vacío', (e: Obj) => (e.aplica_a = []), 'entradas[0].aplica_a', 'lista_vacia'],
     ['aplica_a con edición mal formada', (e: Obj) => ((e.aplica_a as Obj[])[0]!.edicion = 'abcd'), 'entradas[0].aplica_a[0].edicion', 'formato_invalido'],
     ['aplica_a con cláusula mal formada', (e: Obj) => ((e.aplica_a as Obj[])[0]!.clausula = '4..1'), 'entradas[0].aplica_a[0].clausula', 'formato_invalido'],
+    ['aplica_a con cláusula de más de 20 caracteres', (e: Obj) => ((e.aplica_a as Obj[])[0]!.clausula = '1'.repeat(21)), 'entradas[0].aplica_a[0].clausula', 'demasiado_largo'],
     ['aplica_a sin cláusula', (e: Obj) => delete (e.aplica_a as Obj[])[0]!.clausula, 'entradas[0].aplica_a[0].clausula', 'campo_obligatorio'],
     ['campo desconocido en la entrada', (e: Obj) => (e.mapeos = []), 'entradas[0]', 'campo_desconocido'],
     ['campo desconocido en aplica_a', (e: Obj) => ((e.aplica_a as Obj[])[0]!.texto = 'x'), 'entradas[0].aplica_a[0]', 'campo_desconocido'],

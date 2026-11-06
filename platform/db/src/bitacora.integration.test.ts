@@ -221,6 +221,10 @@ describe.skipIf(!hayBase)("bitácora inmutable (PostgreSQL real)", () => {
             await sql
               .raw(`grant ${permiso} on bitacora to sigiso_owner`)
               .execute(trx);
+            // Bloqueo máximo antes de alterar la tabla: escalarlo en `alter table` provoca interbloqueos con otros archivos de prueba.
+            await sql
+              .raw("lock table bitacora in access exclusive mode")
+              .execute(trx);
           // Con RLS forzada y sin política de modificación el dueño no vería filas; se desactiva para probar el disparador.
           await sql.raw('alter table bitacora disable row level security').execute(trx);
             await sql.raw(sentencia).execute(trx);

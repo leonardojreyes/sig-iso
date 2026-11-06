@@ -26,6 +26,11 @@ export default tseslint.config(
       ],
     },
   },
+  // Las pruebas del contrato recorren un documento YAML sin tipo: ahí `any` es la forma honesta de navegarlo.
+  {
+    files: ['packages/contracts/src/**/*.test.ts'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' },
+  },
   // P2: arquitectura hexagonal dentro de cada módulo
   {
     files: ['modules/*/src/domain/**/*.ts'],

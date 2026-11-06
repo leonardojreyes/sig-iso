@@ -12,6 +12,9 @@ export default defineConfig({
     env,
     globalSetup: ['./test/migrar-global.ts'],
     testTimeout: 30_000,
+    // Las pruebas de integración alteran tablas compartidas (alter table, grant) dentro de transacciones: en paralelo se
+    // interbloquean entre archivos (deadlock detected). Se ejecutan los archivos uno tras otro.
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       include: ['src/**'],
