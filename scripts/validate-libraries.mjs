@@ -1,4 +1,5 @@
-// pnpm libraries:validate — valida libraries/normas/**/*.yaml con el esquema v2 y sus reglas (P14, ADR 026).
+// pnpm libraries:validate — valida libraries/normas/**/*.yaml con el esquema v2, sus reglas entre campos y las reglas de contenido
+// contra el texto copiado de una norma (P14, ADR 026). Corre en el CI (trabajo `verificar`).
 // Sale con código 1 si alguna falla. No imprime el contenido de las librerías, solo códigos y rutas.
 // Uso: node --import tsx scripts/validate-libraries.mjs [--dir <carpeta>]
 import { join } from 'node:path';

@@ -79,6 +79,50 @@ describe('validarDirectorio', () => {
     expect(r.every((x) => !x.ok)).toBe(true);
   });
 
+  describe('reglas de contenido (control de texto copiado, ADR 026)', () => {
+    const con = (cambio) => {
+      const l = valida();
+      cambio(l.entradas[0]);
+      return validarDirectorio(crear({ 'contenido.yaml': stringify(l) }))[0];
+    };
+
+    it.each([
+      ['más de 2 frases', (e) => (e.guia = 'Primera frase de prueba. Segunda frase de prueba. Tercera frase de prueba.'), 'entradas[0].guia', 'guia_demasiadas_frases'],
+      ['tono normativo', (e) => (e.guia = 'La organización debe revisar esto con regularidad.'), 'entradas[0].guia', 'tono_normativo'],
+      ['formato de lista', (e) => (e.guia = 'Incluye: a) esto, b) aquello, c) lo otro.'), 'entradas[0].guia', 'formato_de_lista'],
+      ['un correo en la guía', (e) => (e.guia = 'Escribe a alguien@example.test para más información.'), 'entradas[0].guia', 'enlace_o_correo'],
+      ['un salto de línea en el título', (e) => (e.titulo = 'Dos\nlíneas'), 'entradas[0].titulo', 'formato_de_lista'],
+    ])('rechaza una librería válida en estructura pero con %s', (_n, cambio, ruta, codigo) => {
+      const r = con(cambio);
+      expect(r.ok).toBe(false);
+      expect(r.errores).toContainEqual({ entrada: 'ha-4.1', indice: 0, ruta, codigo });
+    });
+
+    it('no repite el contenido revisado', () => {
+      const r = con((e) => (e.guia = 'La organización debe escribir a ana.perez@example.test siempre.'));
+      expect(r.ok).toBe(false);
+      expect(JSON.stringify(r.errores)).not.toContain('ana.perez');
+    });
+
+    it('si la estructura ya falla, no se evalúa el contenido (no se mezclan errores)', () => {
+      const r = con((e) => {
+        e.guia = 'x'.repeat(300);
+        e.titulo = 'Dos\nlíneas';
+      });
+      expect(r.errores.map((x) => x.codigo)).toEqual(['demasiado_largo']);
+    });
+
+    it('una librería correcta sigue aceptándose', () => {
+      expect(con(() => {}).ok).toBe(true);
+    });
+  });
+
+  it('las librerías REALES del repositorio cumplen el esquema y las reglas de contenido', () => {
+    const reales = validarDirectorio(join(import.meta.dirname, '../../libraries/normas'));
+    expect(reales.length).toBeGreaterThan(0);
+    for (const r of reales) expect({ archivo: r.archivo, errores: r.errores }).toEqual({ archivo: r.archivo, errores: [] });
+  });
+
   it('revisa cada archivo por separado', () => {
     const mala = valida();
     delete mala.fuente;
@@ -102,6 +146,16 @@ describe('pnpm libraries:validate (CLI)', () => {
     const r = ejecutar(crear({ 'mala.yaml': stringify(l) }));
     expect(r.status).toBe(1);
     expect(r.stdout + r.stderr).toContain('demasiado_largo');
+    expect(r.stdout + r.stderr).not.toContain('ana.perez');
+  });
+
+  it('sale con 1 si una guía incumple las reglas de contenido, aunque cumpla el esquema', () => {
+    const l = valida();
+    l.entradas[0].guia = 'La organización debe escribir a ana.perez@example.test siempre.';
+    const r = ejecutar(crear({ 'normativa.yaml': stringify(l) }));
+    expect(r.status).toBe(1);
+    expect(r.stdout + r.stderr).toContain('tono_normativo');
+    expect(r.stdout + r.stderr).toContain('enlace_o_correo');
     expect(r.stdout + r.stderr).not.toContain('ana.perez');
   });
 

@@ -1,8 +1,9 @@
-// Valida las librerías de normas (YAML) con el validador del esquema v2 (@sig/normas-schema, ADR 026).
+// Valida las librerías de normas (YAML) con el validador del esquema v2 y las reglas de contenido (@sig/normas-schema, ADR 026).
 // Los errores salen como código y ruta: nunca repiten el contenido del archivo (podría ser texto de una norma).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { validarLibreria } from '@sig/normas-schema';
+import { revisarContenido } from '@sig/normas-schema/contenido';
 import { parse } from 'yaml';
 
 /** Archivos .yaml/.yml de una carpeta y sus subcarpetas, ordenados. Una carpeta que no existe no tiene archivos. */
@@ -27,5 +28,8 @@ export const validarDirectorio = (dir) =>
       return { archivo, ok: false, errores: [{ entrada: null, indice: null, ruta: '', codigo: 'yaml_invalido' }] };
     }
     const r = validarLibreria(datos);
-    return { archivo, ok: r.ok, errores: r.ok ? [] : r.errores };
+    if (!r.ok) return { archivo, ok: false, errores: r.errores };
+    // Control de texto copiado (ADR 026): solo se evalúa con la estructura ya válida. Los hallazgos son códigos, sin contenido.
+    const errores = revisarContenido(r.libreria).map((h) => ({ entrada: h.entrada, indice: h.indice, ruta: `entradas[${h.indice}].${h.campo}`, codigo: h.codigo }));
+    return { archivo, ok: errores.length === 0, errores };
   });
