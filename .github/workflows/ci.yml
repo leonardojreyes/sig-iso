@@ -29,6 +29,7 @@ jobs:
       - run: pnpm test:cov
       - run: pnpm build
       - run: pnpm libraries:validate
+      - run: pnpm --filter @sig/contracts generar:check
 
   # Pruebas de integración contra PostgreSQL 16 real: aislamiento entre empresas (regla 2), RLS, roles y migraciones.
   # En macOS y Windows no hay PostgreSQL y esas pruebas se omiten; aquí NINGUNA puede omitirse.
