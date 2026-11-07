@@ -111,6 +111,14 @@ describe('AdoptarLibreria — sin permiso (H4.6)', () => {
     expect(estado.bitacora).toHaveLength(0);
   });
 
+  it('SinPermisoError lleva el permiso que faltó, para registrar el acceso denegado', async () => {
+    const { caso } = montar();
+    const e = await errorDe(caso.ejecutar(entrada({ usuarioId: COLAB })));
+    expect(e).toBeInstanceOf(SinPermisoError);
+    expect((e as SinPermisoError).permiso).toBe('librerias.adoptar');
+    expect(e.message).not.toContain(COLAB);
+  });
+
   it('el permiso se evalúa ANTES de mirar la librería: mismo error con un id existente y con uno inexistente', async () => {
     const { caso } = montar();
     const e1 = await errorDe(caso.ejecutar(entrada({ usuarioId: COLAB })));

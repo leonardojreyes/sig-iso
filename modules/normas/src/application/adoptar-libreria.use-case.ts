@@ -1,13 +1,13 @@
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
 import { adoptar } from '../domain/adopcion-libreria.js';
 import { exigirUuid } from '../domain/errores.js';
-import type { AutorizacionPort } from './autorizacion.port.js';
+import type { AutorizacionPort, Permiso } from './autorizacion.port.js';
 import type { ContextoAdopcion } from './contexto-adopcion.js';
 import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
 
 /** Quien intenta adoptar no tiene permiso. El registro de «acceso denegado» lo hace el filtro de la API, en su propia transacción. */
 export class SinPermisoError extends Error {
-  constructor() {
+  constructor(readonly permiso: Permiso) {
     super('Sin permiso para adoptar librerías');
     this.name = 'SinPermisoError';
   }
@@ -53,7 +53,7 @@ export class AdoptarLibreriaUseCase {
     const usuarioId = exigirUuid('usuarioId', entrada.usuarioId);
     const libreriaId = exigirUuid('libreriaId', entrada.libreriaId);
 
-    if (!(await this.autorizacion.puede(usuarioId, 'librerias.adoptar', empresaId))) throw new SinPermisoError();
+    if (!(await this.autorizacion.puede(usuarioId, 'librerias.adoptar', empresaId))) throw new SinPermisoError('librerias.adoptar');
 
     return this.unidad.ejecutar(empresaId, async ({ adopciones, catalogo, bitacora }) => {
       const libreria = await catalogo.obtenerLibreria(libreriaId);

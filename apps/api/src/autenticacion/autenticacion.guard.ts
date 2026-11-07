@@ -5,9 +5,7 @@ import type { MotivoTokenInvalido } from '@sig/autenticacion';
 import type { SolicitudHttp } from './identidad.js';
 import { PUBLICO } from './publico.decorator.js';
 import { RegistradorTokenInvalido } from './registrador-token-invalido.js';
-
-export const VERIFICADOR = Symbol('VERIFICADOR');
-export const REGISTRADOR_TOKEN_INVALIDO = Symbol('REGISTRADOR_TOKEN_INVALIDO');
+import { REGISTRADOR_TOKEN_INVALIDO, VERIFICADOR } from './tokens.js';
 
 /**
  * Guardia global: toda ruta exige un token verificado salvo las marcadas con `@Publico()` (cerrado por omisión, ADR 027).

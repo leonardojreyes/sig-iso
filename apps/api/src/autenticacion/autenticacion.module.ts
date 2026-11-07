@@ -1,11 +1,12 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import type { TokenVerifierPort } from '@sig/autenticacion';
-import { AutenticacionGuard, REGISTRADOR_TOKEN_INVALIDO, VERIFICADOR } from './autenticacion.guard.js';
+import { AutenticacionGuard } from './autenticacion.guard.js';
 import { ContextoEmpresaInterceptor } from './contexto-empresa.interceptor.js';
 import { FiltroProblemas } from './filtro-problemas.js';
 import { LimitadorPorVentana } from './limitador-por-ventana.js';
 import { RegistradorTokenInvalido, type RegistradorHechos } from './registrador-token-invalido.js';
+import { HECHOS, REGISTRADOR_TOKEN_INVALIDO, VERIFICADOR } from './tokens.js';
 
 export interface OpcionesAutenticacion {
   readonly verificador: TokenVerifierPort;
@@ -25,6 +26,7 @@ export class AutenticacionModule {
       module: AutenticacionModule,
       providers: [
         { provide: VERIFICADOR, useValue: opciones.verificador },
+        { provide: HECHOS, useValue: opciones.hechos },
         { provide: REGISTRADOR_TOKEN_INVALIDO, useValue: new RegistradorTokenInvalido(opciones.hechos, limitador) },
         { provide: APP_GUARD, useClass: AutenticacionGuard },
         { provide: APP_INTERCEPTOR, useClass: ContextoEmpresaInterceptor },

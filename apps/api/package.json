@@ -23,7 +23,10 @@
     "@sig/auditoria": "workspace:*",
     "@sig/autenticacion": "workspace:*",
     "@sig/db": "workspace:*",
+    "@sig/empresas": "workspace:*",
+    "@sig/normas": "workspace:*",
     "@sig/tenancy": "workspace:*",
+    "kysely": "^0.29.8",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
