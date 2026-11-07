@@ -34,5 +34,9 @@
   "devDependencies": {
     "yaml": "^2.9.1",
     "@sig/autorizacion": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./prueba": "./src/application/prueba/index.ts"
   }
 }

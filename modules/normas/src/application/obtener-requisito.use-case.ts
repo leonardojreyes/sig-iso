@@ -1,6 +1,6 @@
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
-import { exigirUuid } from '../domain/errores.js';
 import type { ContextoConsulta } from './contexto-adopcion.js';
+import { parsearIdRuta } from './parametro-invalido.error.js';
 import { aDto, type EntradaDto } from './entrada-dto.js';
 import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
 
@@ -26,7 +26,7 @@ export class ObtenerRequisitoUseCase {
 
   async ejecutar(entrada: ObtenerRequisitoEntrada): Promise<EntradaDto> {
     const empresaId = crearEmpresaId(entrada.empresaId);
-    const id = exigirUuid('id', typeof entrada.id === 'string' ? entrada.id.toLowerCase() : entrada.id);
+    const id = parsearIdRuta(entrada.id);
 
     return this.unidad.ejecutar(empresaId, async ({ catalogo, adopciones }) => {
       const [encontrada, adoptadas] = await Promise.all([catalogo.obtenerEntrada(id), adopciones.listarLibreriaIds()]);

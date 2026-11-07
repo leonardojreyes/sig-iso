@@ -3,6 +3,7 @@ import { adoptar } from '../domain/adopcion-libreria.js';
 import { exigirUuid } from '../domain/errores.js';
 import type { AutorizacionPort, Permiso } from './autorizacion.port.js';
 import type { ContextoAdopcion } from './contexto-adopcion.js';
+import { parsearIdRuta } from './parametro-invalido.error.js';
 import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
 
 /** Quien intenta adoptar no tiene permiso. El registro de «acceso denegado» lo hace el filtro de la API, en su propia transacción. */
@@ -38,8 +39,9 @@ export interface AdopcionDto {
 }
 
 /**
- * Adopta una librería del catálogo para la empresa (H4.6–H4.10). Orden: entradas válidas → permiso → (unidad atómica)
- * librería → adopción → conteo → bitácora. El permiso va antes de mirar la librería para no revelar si existe.
+ * Adopta una librería del catálogo para la empresa (H4.6–H4.10). Orden: identidad del token → permiso → identificador de la
+ * librería (400) → (unidad atómica) librería (404) → adopción → conteo → bitácora. El permiso va antes de mirar la librería
+ * para no revelar si existe.
  */
 export class AdoptarLibreriaUseCase {
   constructor(
@@ -51,9 +53,11 @@ export class AdoptarLibreriaUseCase {
   async ejecutar(entrada: AdoptarLibreriaEntrada): Promise<AdopcionDto> {
     const empresaId = crearEmpresaId(entrada.empresaId);
     const usuarioId = exigirUuid('usuarioId', entrada.usuarioId);
-    const libreriaId = exigirUuid('libreriaId', entrada.libreriaId);
 
+    // Orden del contrato: el permiso se decide ANTES de mirar el identificador de la librería (un colaborador recibe siempre el
+    // mismo rechazo, sea cual sea el id); después, 400 si está mal formado y 404 si no existe.
     if (!(await this.autorizacion.puede(usuarioId, 'librerias.adoptar', empresaId))) throw new SinPermisoError('librerias.adoptar');
+    const libreriaId = parsearIdRuta(entrada.libreriaId);
 
     return this.unidad.ejecutar(empresaId, async ({ adopciones, catalogo, bitacora }) => {
       const libreria = await catalogo.obtenerLibreria(libreriaId);

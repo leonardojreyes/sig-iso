@@ -1,15 +1,8 @@
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
 import type { ContextoConsulta } from './contexto-adopcion.js';
 import { aDto, type EntradaDto } from './entrada-dto.js';
+import { ParametroInvalidoError } from './parametro-invalido.error.js';
 import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
-
-/** Un filtro no cumple el contrato. Lleva solo el nombre del parámetro: nunca repite el valor recibido. */
-export class ParametroInvalidoError extends Error {
-  constructor(readonly parametro: string) {
-    super(`Parámetro no válido: ${parametro}`);
-    this.name = 'ParametroInvalidoError';
-  }
-}
 
 export interface ListarRequisitosEntrada {
   /** Siempre la del token verificado. */

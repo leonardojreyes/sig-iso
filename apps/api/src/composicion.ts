@@ -4,10 +4,12 @@ import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { GestorPools, leerUrls } from '@sig/db';
 import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
+import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
 import { leerConfiguracionAuth, type Entorno } from './autenticacion/configuracion.js';
 import type { RegistradorHechos } from './autenticacion/registrador-token-invalido.js';
 import type { OpcionesEmpresaSesion } from './empresas/empresa-sesion.module.js';
+import type { OpcionesNormasApi } from './normas/normas-api.module.js';
 
 /** Hasta que exista el adaptador de OpenFGA (tarea 9.3) la autorización falla cerrada: ni «sí» ni roles inventados. */
 class AutorizacionNoConfigurada implements AutorizacionPort {
@@ -22,6 +24,7 @@ class AutorizacionNoConfigurada implements AutorizacionPort {
 export interface Composicion {
   readonly autenticacion: OpcionesAutenticacion;
   readonly negocio: OpcionesEmpresaSesion;
+  readonly normas: OpcionesNormasApi;
   readonly hechos: RegistradorHechos;
   readonly autorizacion: AutorizacionPort;
 }
@@ -47,6 +50,8 @@ export const componerDesdeEntorno = (env: Entorno): Composicion => {
     obtenerPersona: async (empresaId, usuarioId) => new EmpresaKysely(obtenerPools().db('app')).obtenerPersona(empresaId, usuarioId),
   };
   const autorizacion = new AutorizacionNoConfigurada();
+  // Una unidad de trabajo por ejecución sobre el pool del rol de la aplicación (con la RLS aplicada).
+  const unidad: UnidadDeTrabajoPort<ContextoAdopcion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoNormas(obtenerPools().db('app')).ejecutar(empresaId, fn) };
 
   return {
     hechos,
@@ -56,5 +61,11 @@ export const componerDesdeEntorno = (env: Entorno): Composicion => {
       hechos,
     },
     negocio: { identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos },
+    normas: {
+      adoptar: new AdoptarLibreriaUseCase(unidad, autorizacion),
+      librerias: new ListarLibreriasUseCase(unidad),
+      requisitos: new ListarRequisitosUseCase(unidad),
+      requisito: new ObtenerRequisitoUseCase(unidad),
+    },
   };
 };

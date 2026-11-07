@@ -2,7 +2,8 @@ import { EmpresaIdInvalidoError } from '@sig/tenancy';
 import { describe, expect, it } from 'vitest';
 import { AdopcionLibreria } from '../domain/adopcion-libreria.js';
 import { ErrorNormas } from '../domain/errores.js';
-import { ListarRequisitosUseCase, ParametroInvalidoError } from './listar-requisitos.use-case.js';
+import { ListarRequisitosUseCase } from './listar-requisitos.use-case.js';
+import { ParametroInvalidoError } from './parametro-invalido.error.js';
 import { A, B, E, entrada, LIB1, LIB2, libreria1, libreria2, USUARIO } from './prueba/datos.js';
 import { crearUnidadDeTrabajoFalsa, EstadoFalso } from './prueba/fakes.js';
 

@@ -5,6 +5,7 @@ import { ErrorNormas } from '../domain/errores.js';
 import { Libreria } from '../domain/libreria.js';
 import type { AutorizacionPort } from './autorizacion.port.js';
 import { AdoptarLibreriaUseCase, LibreriaNoEncontradaError, SinPermisoError } from './adoptar-libreria.use-case.js';
+import { ParametroInvalidoError } from './parametro-invalido.error.js';
 import { crearUnidadDeTrabajoFalsa, EstadoFalso } from './prueba/fakes.js';
 
 const A = crearEmpresaId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
@@ -196,14 +197,46 @@ describe('AdoptarLibreria — entradas inválidas', () => {
     ['empresaId', 'no-uuid', EmpresaIdInvalidoError],
     ['empresaId', undefined, EmpresaIdInvalidoError],
     ['usuarioId', 'x', ErrorNormas],
-    ['libreriaId', '{11111111-1111-4111-8111-111111111111}', ErrorNormas],
-    ['libreriaId', '11111111111141118111111111111111', ErrorNormas],
-    ['libreriaId', "' or 1=1 --", ErrorNormas],
-  ])('rechaza %s=%j antes de pedir permisos o abrir una unidad', async (campo, valor, tipo) => {
+  ])('rechaza %s=%j (vienen del token) antes de pedir permisos o abrir una unidad', async (campo, valor, tipo) => {
     const { caso, estado, puede } = montar();
     await expect(caso.ejecutar(entrada({ [campo]: valor }))).rejects.toBeInstanceOf(tipo);
     expect(puede).not.toHaveBeenCalled();
     expect(estado.unidades).toEqual([]);
+  });
+
+  describe('identificador de la librería mal formado: el permiso se evalúa ANTES (contrato: 401, 403, 400, 404)', () => {
+    const malos = ['{11111111-1111-4111-8111-111111111111}', '11111111111141118111111111111111', "' or 1=1 --", 'no-uuid', '', undefined, 7];
+
+    it.each(malos)('un administrador con %j recibe ParametroInvalidoError, sin abrir una unidad', async (id) => {
+      const { caso, estado, puede } = montar();
+      const e = await errorDe(caso.ejecutar(entrada({ libreriaId: id })));
+      expect(e).toBeInstanceOf(ParametroInvalidoError);
+      expect((e as ParametroInvalidoError).parametro).toBe('id');
+      expect(puede).toHaveBeenCalledOnce();
+      expect(estado.unidades).toEqual([]);
+    });
+
+    it.each(malos)('un colaborador con %j recibe el MISMO SinPermisoError que con un id válido', async (id) => {
+      const { caso, estado } = montar();
+      expect(await errorDe(caso.ejecutar(entrada({ usuarioId: COLAB, libreriaId: id })))).toBeInstanceOf(SinPermisoError);
+      expect(estado.unidades).toEqual([]);
+    });
+
+    it('el UUID nulo está bien formado: se busca y no existe (404, no 400)', async () => {
+      const { caso } = montar();
+      await expect(caso.ejecutar(entrada({ libreriaId: '00000000-0000-0000-0000-000000000000' }))).rejects.toBeInstanceOf(LibreriaNoEncontradaError);
+    });
+
+    it('un UUID en mayúsculas se acepta normalizándolo', async () => {
+      const { caso } = montar();
+      expect((await caso.ejecutar(entrada({ libreriaId: LIB_ID.toUpperCase() }))).libreriaId).toBe(LIB_ID);
+    });
+
+    it('el error no repite el valor recibido', async () => {
+      const { caso } = montar();
+      const e = await errorDe(caso.ejecutar(entrada({ libreriaId: 'dato-que-no-debe-repetirse' })));
+      expect(e.message).not.toContain('dato-que-no-debe-repetirse');
+    });
   });
 
   it('un traceId que no cumple el formato de la bitácora hace fallar la adopción completa y la revierte', async () => {

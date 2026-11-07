@@ -25,10 +25,22 @@ describe('componerDesdeEntorno (producción)', () => {
     await expect(negocio.identidades.ejecutar({ empresaId: A as never, usuarioId: U })).rejects.toThrow();
   });
 
+  it('sin la base de datos, listar, adoptar y consultar requisitos fallan (no devuelven datos por omisión)', async () => {
+    const { normas } = componerDesdeEntorno({});
+    await expect(normas.librerias.ejecutar(A as never)).rejects.toThrow();
+    await expect(normas.requisitos.ejecutar({ empresaId: A as never })).rejects.toThrow();
+    await expect(normas.requisito.ejecutar({ empresaId: A as never, id: '11111111-1111-4111-8111-111111111111' })).rejects.toThrow();
+  });
+
   it('mientras no exista el adaptador de OpenFGA (tarea 9.3), la autorización NO responde «sí» ni inventa roles', async () => {
     const { autorizacion } = componerDesdeEntorno({});
     await expect(autorizacion.puede(U, 'librerias.adoptar', A as never)).rejects.toThrow(/autorizaci/i);
     await expect(autorizacion.rolesDe(U, A as never)).rejects.toThrow(/autorizaci/i);
+  });
+
+  it('adoptar una librería sin autorización configurada falla cerrado: no adopta y no revela si la librería existe', async () => {
+    const { normas } = componerDesdeEntorno({});
+    await expect(normas.adoptar.ejecutar({ empresaId: A as never, usuarioId: U, libreriaId: '11111111-1111-4111-8111-111111111111' })).rejects.toThrow(/autorizaci/i);
   });
 
   it('una configuración inválida de autenticación impide arrancar, nombrando la variable', () => {

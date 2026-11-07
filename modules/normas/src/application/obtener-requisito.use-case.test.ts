@@ -1,7 +1,7 @@
 import { EmpresaIdInvalidoError } from '@sig/tenancy';
 import { describe, expect, it } from 'vitest';
 import { AdopcionLibreria } from '../domain/adopcion-libreria.js';
-import { ErrorNormas } from '../domain/errores.js';
+import { ParametroInvalidoError } from './parametro-invalido.error.js';
 import { ObtenerRequisitoUseCase, RequisitoNoEncontradoError } from './obtener-requisito.use-case.js';
 import { A, B, E, LIB1, LIB2, libreria1, libreria2, USUARIO } from './prueba/datos.js';
 import { crearUnidadDeTrabajoFalsa, EstadoFalso } from './prueba/fakes.js';
@@ -63,12 +63,17 @@ describe('ObtenerRequisito', () => {
   describe('identificador mal formado (400)', () => {
     it.each([
       'no-es-uuid', '', '{e0000000-0000-4000-8000-000000000001}', 'e0000000000040008000000000000001',
-      '00000000-0000-0000-0000-000000000000', "' or 1=1 --", undefined, 7,
-    ])('rechaza %j con ErrorNormas sin consultar', async (id) => {
+      "' or 1=1 --", undefined, 7,
+    ])('rechaza %j con ParametroInvalidoError sin consultar', async (id) => {
       const { caso, estado } = montar();
       adoptar(estado, A, LIB1);
-      await expect(caso.ejecutar({ empresaId: A, id: id as never })).rejects.toBeInstanceOf(ErrorNormas);
+      await expect(caso.ejecutar({ empresaId: A, id: id as never })).rejects.toBeInstanceOf(ParametroInvalidoError);
       expect(estado.unidades).toEqual([]);
+    });
+
+    it('el UUID nulo está bien formado: se busca y no existe (404, no 400)', async () => {
+      const { caso } = montar();
+      await expect(caso.ejecutar({ empresaId: A, id: '00000000-0000-0000-0000-000000000000' })).rejects.toBeInstanceOf(RequisitoNoEncontradoError);
     });
 
     it('acepta un UUID en mayúsculas normalizándolo', async () => {
