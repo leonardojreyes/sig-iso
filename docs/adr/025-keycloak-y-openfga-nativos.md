@@ -1,6 +1,6 @@
 # ADR 025 — Keycloak y OpenFGA nativos en el entorno local, con descargas verificadas
 
-- **Estado:** Propuesto (pendiente de tu «ok» a las versiones, a los tamaños y a la ruta del JRE)
+- **Estado:** Aprobado (2026-11-07): versiones fijadas, JRE Temurin descargado por el script y excepciones declaradas
 - **Fecha:** 2026-11-07
 - **Decide:** Ing. Leonardo J. Reyes B.
 
