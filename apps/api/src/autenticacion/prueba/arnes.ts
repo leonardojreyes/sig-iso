@@ -1,5 +1,5 @@
 // Arnés de pruebas de la API: aplicación Nest REAL en un puerto local, tokens firmados con claves generadas al vuelo.
-import { Controller, Get, ForbiddenException, Module, NotFoundException, type INestApplication, type Type } from '@nestjs/common';
+import { Controller, Get, ForbiddenException, Module, NotFoundException, type DynamicModule, type INestApplication, type Type } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { validarEvento, type EventoBitacora } from '@sig/auditoria';
 import { TokenVerifierJose } from '@sig/autenticacion';
@@ -17,20 +17,20 @@ export interface Arnes {
   readonly app: INestApplication;
   readonly base: string;
   firmar(empresaId: string, usuarioId: string, extra?: Record<string, unknown>): Promise<string>;
-  pedir(ruta: string, token?: string): Promise<Response>;
+  pedir(ruta: string, token?: string, metodo?: string): Promise<Response>;
   cerrar(): Promise<void>;
 }
 
-export const crearArnes = async (opciones: { controladores: Type[]; hechos: RegistradorHechos; entorno?: Record<string, string> }): Promise<Arnes> => {
+export const crearArnes = async (opciones: { controladores?: Type[]; modulos?: DynamicModule[]; hechos: RegistradorHechos; entorno?: Record<string, string> }): Promise<Arnes> => {
   const par = await generateKeyPair('RS256');
   const claves = createLocalJWKSet({ keys: [{ ...(await exportJWK(par.publicKey)), kid: 'k1', alg: 'RS256', use: 'sig' }] });
   const verificador = new TokenVerifierJose({ emisor: EMISOR, audiencia: AUDIENCIA, clienteAutorizado: CLIENTE, claves });
 
-  @Module({ controllers: opciones.controladores })
+  @Module({ controllers: opciones.controladores ?? [] })
   class PruebaModule {}
 
   const modulo = await Test.createTestingModule({
-    imports: [AutenticacionModule.register({ verificador, hechos: opciones.hechos }), PruebaModule],
+    imports: [AutenticacionModule.register({ verificador, hechos: opciones.hechos }), PruebaModule, ...(opciones.modulos ?? [])],
   }).compile();
   const app = modulo.createNestApplication();
   aplicarSeguridadHttp(app, opciones.entorno ?? {});
@@ -45,19 +45,28 @@ export const crearArnes = async (opciones: { controladores: Type[]; hechos: Regi
       const payload: JWTPayload = { iss: EMISOR, aud: AUDIENCIA, azp: CLIENTE, typ: 'Bearer', sub: usuarioId, empresa_id: empresaId, iat: seg(ahora) - 5, exp: seg(ahora) + 290, ...extra };
       return new SignJWT(payload).setProtectedHeader({ alg: 'RS256', kid: 'k1' }).sign(par.privateKey);
     },
-    pedir: (ruta, token) => fetch(`${base}${ruta}`, { headers: token ? { authorization: `Bearer ${token}` } : {} }),
+    pedir: (ruta, token, metodo = 'GET') => fetch(`${base}${ruta}`, { method: metodo, headers: token ? { authorization: `Bearer ${token}` } : {} }),
     cerrar: () => app.close(),
   };
 };
 
 /** Hechos en memoria que se pueden hacer fallar. Validan contra el catálogo cerrado de la bitácora, como la implementación real. */
 export const hechosEnMemoria = () => {
-  const estado = { eventos: [] as EventoBitacora[], falla: false };
+  const estado = { eventos: [] as EventoBitacora[], falla: false, origenes: new Set<string>() };
   const hechos: RegistradorHechos = {
     registrar: async (e) => {
       if (estado.falla) throw new Error('bitácora caída');
       validarEvento(e);
       estado.eventos.push(e);
+    },
+    registrarUnaVez: async (e) => {
+      if (estado.falla) throw new Error('bitácora caída');
+      const registro = validarEvento(e);
+      if (registro.origenId === null) throw new Error('registrarUnaVez exige origenId');
+      if (estado.origenes.has(registro.origenId)) return 'ya_existia';
+      estado.origenes.add(registro.origenId);
+      estado.eventos.push(e);
+      return 'registrado';
     },
   };
   return { estado, hechos };

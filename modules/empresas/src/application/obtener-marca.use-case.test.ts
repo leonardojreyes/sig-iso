@@ -9,8 +9,8 @@ const B = crearEmpresaId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
 const C = crearEmpresaId('cccccccc-cccc-4ccc-8ccc-cccccccccccc');
 
 const datos: Record<string, DatosEmpresa> = {
-  [A]: { id: A, nombre: 'Alfa', colorPrimario: '#0b5fff', logoUrl: 'https://cdn.alfa.ec/logo.png' },
-  [B]: { id: B, nombre: 'Beta', colorPrimario: '#ffe066', logoUrl: '/logos/beta.png' },
+  [A]: { id: A, slug: 'alfa', nombre: 'Alfa', colorPrimario: '#0b5fff', logoUrl: 'https://cdn.alfa.ec/logo.png' },
+  [B]: { id: B, slug: 'beta', nombre: 'Beta', colorPrimario: '#ffe066', logoUrl: '/logos/beta.png' },
 };
 
 /** Fake que imita la RLS: solo ve la fila de la empresa del contexto, aunque guarde las de todas. */
@@ -21,6 +21,7 @@ const fakeConAislamiento = () => {
       llamadas.push(empresaId);
       return datos[empresaId] ?? null;
     },
+    obtenerPersona: async () => null,
   };
   return { repo, llamadas };
 };
@@ -34,7 +35,8 @@ describe('ObtenerMarcaUseCase', () => {
 
   it('aplica las reglas de dominio: ajusta el color y descarta el logo no permitido', async () => {
     const repo: EmpresaRepositoryPort = {
-      obtenerPropia: async (id) => ({ id, nombre: 'Gama Sur', colorPrimario: '#ffe066', logoUrl: 'http://inseguro.ec/l.png' }),
+      obtenerPropia: async (id) => ({ id, slug: 'gama-sur', nombre: 'Gama Sur', colorPrimario: '#ffe066', logoUrl: 'http://inseguro.ec/l.png' }),
+      obtenerPersona: async () => null,
     };
     const m = await new ObtenerMarcaUseCase(repo).ejecutar(A);
     expect(m.ajustadoPorContraste).toBe(true);
@@ -69,7 +71,7 @@ describe('ObtenerMarcaUseCase', () => {
     });
 
     it('si el repositorio devolviera la fila de otra empresa, el caso de uso lo rechaza (defensa en profundidad)', async () => {
-      const cruzado: EmpresaRepositoryPort = { obtenerPropia: async () => datos[B]! };
+      const cruzado: EmpresaRepositoryPort = { obtenerPropia: async () => datos[B]!, obtenerPersona: async () => null };
       await expect(new ObtenerMarcaUseCase(cruzado).ejecutar(A)).rejects.toBeInstanceOf(EmpresaNoEncontradaError);
     });
   });
@@ -77,17 +79,17 @@ describe('ObtenerMarcaUseCase', () => {
   describe('entradas inválidas', () => {
     it.each(['', 'no-es-uuid', '00000000-0000-0000-0000-000000000000', undefined, null, 42])('rechaza el identificador %j sin consultar', async (id) => {
       const obtenerPropia = vi.fn();
-      await expect(new ObtenerMarcaUseCase({ obtenerPropia }).ejecutar(id as never)).rejects.toBeInstanceOf(EmpresaIdInvalidoError);
+      await expect(new ObtenerMarcaUseCase({ obtenerPropia, obtenerPersona: vi.fn() }).ejecutar(id as never)).rejects.toBeInstanceOf(EmpresaIdInvalidoError);
       expect(obtenerPropia).not.toHaveBeenCalled();
     });
 
     it('un dato corrupto en la base (color inválido) falla con ErrorMarca, no se devuelve algo a medias', async () => {
-      const repo: EmpresaRepositoryPort = { obtenerPropia: async (id) => ({ id, nombre: 'X', colorPrimario: 'rojo', logoUrl: null }) };
+      const repo: EmpresaRepositoryPort = { obtenerPropia: async (id) => ({ id, slug: 'x', nombre: 'X', colorPrimario: 'rojo', logoUrl: null }), obtenerPersona: async () => null };
       await expect(new ObtenerMarcaUseCase(repo).ejecutar(A)).rejects.toBeInstanceOf(ErrorMarca);
     });
 
     it('los errores del repositorio se propagan (no se tragan)', async () => {
-      const repo: EmpresaRepositoryPort = { obtenerPropia: async () => { throw new Error('base caída'); } };
+      const repo: EmpresaRepositoryPort = { obtenerPropia: async () => { throw new Error('base caída'); }, obtenerPersona: async () => null };
       await expect(new ObtenerMarcaUseCase(repo).ejecutar(A)).rejects.toThrow('base caída');
     });
   });

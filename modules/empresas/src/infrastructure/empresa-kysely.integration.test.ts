@@ -18,6 +18,8 @@ describe.skipIf(!hayBase)('EmpresaKysely (PostgreSQL real)', () => {
   const B = crearEmpresaId(randomUUID());
   const SIN_FILA = crearEmpresaId(randomUUID());
   const sufijo = randomBytes(4).toString('hex');
+  const UA = randomUUID();
+  const UB = randomUUID();
 
   const sembrar = (id: typeof A, nombre: string, color: string, logo: string | null) =>
     conTenant(owner(), id, async (trx) => {
@@ -27,16 +29,24 @@ describe.skipIf(!hayBase)('EmpresaKysely (PostgreSQL real)', () => {
   beforeAll(async () => {
     await sembrar(A, 'Alfa Aislamiento', '#0b5fff', 'https://cdn.alfa.ec/logo.png');
     await sembrar(B, 'Beta Aislamiento', '#ffe066', null);
+    for (const [e, u, n] of [[A, UA, 'Persona de A'], [B, UB, 'Persona de B']] as const) {
+      await conTenant(owner(), e, (trx) => sql`insert into usuario (id, empresa_id, nombre, correo) values (${u}, ${e}, ${n}, ${`${u}@example.test`})`.execute(trx));
+    }
   });
 
   afterAll(async () => {
-    for (const id of [A, B]) await conTenant(owner(), id, (trx) => sql`delete from empresa where id = ${id}`.execute(trx));
+    for (const [e, u] of [[A, UA], [B, UB]] as const) {
+      await conTenant(owner(), e, async (trx) => {
+        await sql`delete from usuario where id = ${u}`.execute(trx);
+        await sql`delete from empresa where id = ${e}`.execute(trx);
+      });
+    }
     await pools.cerrar();
   });
 
   it('devuelve la fila de la propia empresa con los nombres del dominio', async () => {
-    expect(await repo().obtenerPropia(A)).toEqual({ id: A, nombre: 'Alfa Aislamiento', colorPrimario: '#0b5fff', logoUrl: 'https://cdn.alfa.ec/logo.png' });
-    expect(await repo().obtenerPropia(B)).toEqual({ id: B, nombre: 'Beta Aislamiento', colorPrimario: '#ffe066', logoUrl: null });
+    expect(await repo().obtenerPropia(A)).toEqual({ id: A, slug: `t-${sufijo}-${A.slice(0, 4)}`, nombre: 'Alfa Aislamiento', colorPrimario: '#0b5fff', logoUrl: 'https://cdn.alfa.ec/logo.png' });
+    expect(await repo().obtenerPropia(B)).toEqual({ id: B, slug: `t-${sufijo}-${B.slice(0, 4)}`, nombre: 'Beta Aislamiento', colorPrimario: '#ffe066', logoUrl: null });
   });
 
   it('A no obtiene la marca de B: en contexto de A la fila de B no existe para la aplicación', async () => {
@@ -59,6 +69,14 @@ describe.skipIf(!hayBase)('EmpresaKysely (PostgreSQL real)', () => {
     expect(deB).toMatchObject({ nombre: 'Beta Aislamiento', ajustadoPorContraste: true, colorOriginal: '#ffe066', logoUrl: null });
     expect(JSON.stringify(deA)).not.toMatch(/Beta|ffe066/i);
     expect(JSON.stringify(deB)).not.toMatch(/Alfa|alfa\.ec|0b5fff/i);
+  });
+
+  it('obtenerPersona: cada empresa ve a sus personas; la persona de A no existe para B', async () => {
+    expect(await repo().obtenerPersona(A, UA)).toEqual({ id: UA, nombre: 'Persona de A' });
+    expect(await repo().obtenerPersona(B, UB)).toEqual({ id: UB, nombre: 'Persona de B' });
+    expect(await repo().obtenerPersona(B, UA)).toBeNull();
+    expect(await repo().obtenerPersona(A, UB)).toBeNull();
+    expect(await repo().obtenerPersona(A, randomUUID())).toBeNull();
   });
 
   it('un identificador inválido falla antes de tocar la base', async () => {

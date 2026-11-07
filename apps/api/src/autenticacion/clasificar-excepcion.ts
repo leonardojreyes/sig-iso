@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { EmpresaNoEncontradaError } from '@sig/empresas';
+import { EmpresaNoEncontradaError, PersonaNoEncontradaError } from '@sig/empresas';
 import { LibreriaNoEncontradaError, ParametroInvalidoError, RequisitoNoEncontradoError, SinPermisoError } from '@sig/normas';
 import { AccesoCruzadoException, AccesoDenegadoException } from './excepciones-acceso.js';
 
@@ -21,7 +21,7 @@ export const clasificarExcepcion = (e: unknown): Clasificacion => {
   if (e instanceof AccesoCruzadoException) return { tipo: 'cruzado', objeto: e.objeto ?? null };
   if (e instanceof HttpException) return e.getStatus() === 403 ? { tipo: 'denegado', objeto: null } : { tipo: 'http', estado: e.getStatus() };
   if (e instanceof RequisitoNoEncontradoError || e instanceof LibreriaNoEncontradaError) return { tipo: 'http', estado: 404 };
-  if (e instanceof EmpresaNoEncontradaError) return { tipo: 'http', estado: 401 };
+  if (e instanceof EmpresaNoEncontradaError || e instanceof PersonaNoEncontradaError) return { tipo: 'http', estado: 401 };
   if (e instanceof ParametroInvalidoError) return { tipo: 'http', estado: 400 };
   return { tipo: 'http', estado: 500 };
 };

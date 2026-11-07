@@ -78,7 +78,10 @@ describe('autenticación en la API (ADR 027)', () => {
       imports: [
         AutenticacionModule.register({
           verificador,
-          hechos: { registrar: async (e) => { if (hechosFallan) throw new Error('bitácora caída'); eventos.push(e); } },
+          hechos: {
+            registrar: async (e) => { if (hechosFallan) throw new Error('bitácora caída'); eventos.push(e); },
+            registrarUnaVez: async (e) => { if (hechosFallan) throw new Error('bitácora caída'); eventos.push(e); return 'registrado'; },
+          },
           ahora: () => ahora.getTime(),
           ventanaTokenInvalidoMs: 60_000,
         }),

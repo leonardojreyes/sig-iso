@@ -25,9 +25,10 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
-    "@sig/tokens": "workspace:*",
-    "@sig/tenancy": "workspace:*",
+    "@sig/autorizacion": "workspace:*",
     "@sig/db": "workspace:*",
+    "@sig/tenancy": "workspace:*",
+    "@sig/tokens": "workspace:*",
     "kysely": "^0.29.8"
   },
   "devDependencies": {

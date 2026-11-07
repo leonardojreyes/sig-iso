@@ -226,6 +226,9 @@ importers:
       '@sig/autenticacion':
         specifier: workspace:*
         version: link:../../platform/autenticacion
+      '@sig/autorizacion':
+        specifier: workspace:*
+        version: link:../../platform/autorizacion
       '@sig/db':
         specifier: workspace:*
         version: link:../../platform/db
@@ -251,6 +254,9 @@ importers:
       '@nestjs/testing':
         specifier: 12.3.2
         version: 12.3.2(@nestjs/common@12.3.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@12.3.2)(@nestjs/platform-express@12.3.2)
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
       jose:
         specifier: ^6.2.15
         version: 6.2.15
@@ -260,6 +266,9 @@ importers:
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
 
   apps/storybook:
     devDependencies:
@@ -359,6 +368,9 @@ importers:
 
   modules/empresas:
     dependencies:
+      '@sig/autorizacion':
+        specifier: workspace:*
+        version: link:../../platform/autorizacion
       '@sig/db':
         specifier: workspace:*
         version: link:../../platform/db

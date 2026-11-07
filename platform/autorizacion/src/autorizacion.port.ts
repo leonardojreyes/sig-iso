@@ -1,5 +1,5 @@
 import type { EmpresaId } from '@sig/tenancy';
-import type { Permiso } from './roles.js';
+import type { Permiso, Rol } from './roles.js';
 
 export const AUTORIZACION = Symbol('AUTORIZACION');
 
@@ -9,4 +9,6 @@ export const AUTORIZACION = Symbol('AUTORIZACION');
  */
 export interface AutorizacionPort {
   puede(usuarioId: string, permiso: Permiso, empresaId: EmpresaId): Promise<boolean>;
+  /** Roles de la persona en ESA empresa, en el orden del catálogo y sin repetir. Lista vacía si no tiene ninguno. Falla si no puede decidir. */
+  rolesDe(usuarioId: string, empresaId: EmpresaId): Promise<readonly Rol[]>;
 }

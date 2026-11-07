@@ -1,7 +1,7 @@
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
 import type { AutorizacionPort } from './autorizacion.port.js';
 import { ErrorAutorizacion } from './errores.js';
-import { esPermiso, esRol, permisosDe, type Permiso, type Rol } from './roles.js';
+import { esPermiso, esRol, permisosDe, ROLES, type Permiso, type Rol } from './roles.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const UUID_NULO = '00000000-0000-0000-0000-000000000000';
@@ -46,5 +46,12 @@ export class AutorizacionFake implements AutorizacionPort {
     const propios = this.roles.get(AutorizacionFake.clave(e, u));
     if (!propios) return false;
     return [...propios].some((r) => permisosDe(r).includes(permiso));
+  }
+
+  async rolesDe(usuarioId: string, empresa: EmpresaId): Promise<readonly Rol[]> {
+    const u = usuario(usuarioId);
+    const e = crearEmpresaId(empresa);
+    const propios = this.roles.get(AutorizacionFake.clave(e, u));
+    return Object.freeze(ROLES.filter((r) => propios?.has(r) ?? false));
   }
 }

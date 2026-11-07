@@ -22,6 +22,7 @@
     "@nestjs/swagger": "^12.1.0",
     "@sig/auditoria": "workspace:*",
     "@sig/autenticacion": "workspace:*",
+    "@sig/autorizacion": "workspace:*",
     "@sig/db": "workspace:*",
     "@sig/empresas": "workspace:*",
     "@sig/normas": "workspace:*",
@@ -32,8 +33,10 @@
   },
   "devDependencies": {
     "@nestjs/testing": "12.3.2",
+    "ajv": "^8.20.0",
     "jose": "^6.2.15",
     "tsup": "^9.0.0",
-    "tsx": "^4.23.15"
+    "tsx": "^4.23.15",
+    "yaml": "^2.9.1"
   }
 }

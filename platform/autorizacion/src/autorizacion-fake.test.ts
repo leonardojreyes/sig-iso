@@ -135,3 +135,38 @@ describe('AutorizacionFake.asignar y revocar', () => {
     expect(await f.puede(ADMIN, 'requisitos.ver', A)).toBe(false);
   });
 });
+
+describe('AutorizacionFake.rolesDe', () => {
+  it('devuelve los roles de la persona en ESA empresa, en el orden del catálogo y sin repetir', async () => {
+    const f = new AutorizacionFake();
+    f.asignar(A, ADMIN, 'colaborador');
+    f.asignar(A, ADMIN, 'administrador_sig');
+    f.asignar(A, ADMIN, 'colaborador');
+    expect(await f.rolesDe(ADMIN, A)).toEqual(['administrador_sig', 'colaborador']);
+  });
+
+  it('sin roles en la empresa devuelve una lista vacía (nunca los de otra empresa)', async () => {
+    const f = montar();
+    expect(await f.rolesDe(ADMIN, B)).toEqual([]);
+    expect(await f.rolesDe(OTRO, A)).toEqual([]);
+  });
+
+  it('no deja alterar el estado interno desde la lista devuelta', async () => {
+    const f = montar();
+    const lista = (await f.rolesDe(ADMIN, A)) as Rol[];
+    expect(() => lista.push('colaborador')).toThrow();
+    expect(await f.rolesDe(ADMIN, A)).toEqual(['administrador_sig']);
+  });
+
+  it('el identificador se compara sin distinguir mayúsculas', async () => {
+    expect(await montar().rolesDe(ADMIN.toUpperCase(), A)).toEqual(['administrador_sig']);
+  });
+
+  it.each(['', 'no-uuid', undefined, null, 7])('un usuario inválido (%j) falla en vez de devolver una lista vacía', async (id) => {
+    await expect(montar().rolesDe(id as never, A)).rejects.toBeInstanceOf(ErrorAutorizacion);
+  });
+
+  it.each(['x', undefined, '00000000-0000-0000-0000-000000000000'])('una empresa inválida (%j) falla', async (e) => {
+    await expect(montar().rolesDe(ADMIN, e as never)).rejects.toBeInstanceOf(EmpresaIdInvalidoError);
+  });
+});

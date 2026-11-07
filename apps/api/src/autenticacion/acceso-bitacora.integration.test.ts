@@ -35,7 +35,7 @@ describe.skipIf(!hayBase)('acceso denegado y cruzado en la bitácora (API + Post
 
   beforeAll(async () => {
     const bitacora = new Bitacora(new BitacoraKysely({ app: pools.db('app'), plataforma: pools.db('plataforma') }));
-    arnes = await crearArnes({ controladores: [Rutas], hechos: { registrar: (e) => bitacora.registrar(e) } });
+    arnes = await crearArnes({ controladores: [Rutas], hechos: { registrar: (e) => bitacora.registrar(e), registrarUnaVez: (e) => bitacora.registrarUnaVez(e) } });
     token = await arnes.firmar(A, USUARIO);
   });
 

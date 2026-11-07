@@ -1,32 +1,60 @@
-// Composición de producción: arma el verificador de tokens y el registro de hechos a partir del entorno.
+// Composición de producción: arma el verificador de tokens, el registro de hechos y los casos de uso a partir del entorno.
 import { Bitacora, BitacoraKysely } from '@sig/auditoria';
+import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { GestorPools, leerUrls } from '@sig/db';
-import { leerConfiguracionAuth, type Entorno } from './autenticacion/configuracion.js';
+import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
+import { leerConfiguracionAuth, type Entorno } from './autenticacion/configuracion.js';
+import type { RegistradorHechos } from './autenticacion/registrador-token-invalido.js';
+import type { OpcionesEmpresaSesion } from './empresas/empresa-sesion.module.js';
+
+/** Hasta que exista el adaptador de OpenFGA (tarea 9.3) la autorización falla cerrada: ni «sí» ni roles inventados. */
+class AutorizacionNoConfigurada implements AutorizacionPort {
+  puede(): Promise<boolean> {
+    return Promise.reject(new Error('La autorización no está configurada: falta el adaptador de OpenFGA (tarea 9.3)'));
+  }
+  rolesDe(): Promise<never> {
+    return Promise.reject(new Error('La autorización no está configurada: falta el adaptador de OpenFGA (tarea 9.3)'));
+  }
+}
+
+export interface Composicion {
+  readonly autenticacion: OpcionesAutenticacion;
+  readonly negocio: OpcionesEmpresaSesion;
+  readonly hechos: RegistradorHechos;
+  readonly autorizacion: AutorizacionPort;
+}
 
 /**
- * El registro de hechos abre sus conexiones la primera vez que se usa: si faltan las URLs de la base, la API arranca (por
- * ejemplo para `/health`) y cualquier rechazo que deba registrarse falla con 500, nunca pasa en silencio.
+ * Las conexiones a la base de datos se abren la primera vez que se usan: si faltan las URLs, la API arranca (por ejemplo
+ * para `/health`) y cualquier operación que las necesite falla con 500, nunca pasa en silencio.
  */
-export const opcionesAutenticacionDesdeEntorno = (env: Entorno): OpcionesAutenticacion => {
+export const componerDesdeEntorno = (env: Entorno): Composicion => {
   const config = leerConfiguracionAuth(env);
+
+  let pools: GestorPools | undefined;
+  const obtenerPools = (): GestorPools => (pools ??= new GestorPools(leerUrls(env, ['app', 'plataforma']), { max: 4 }));
   let bitacora: Bitacora | undefined;
+  const obtenerBitacora = (): Bitacora => (bitacora ??= new Bitacora(new BitacoraKysely({ app: obtenerPools().db('app'), plataforma: obtenerPools().db('plataforma') })));
+
+  const hechos: RegistradorHechos = {
+    registrar: async (evento) => obtenerBitacora().registrar(evento),
+    registrarUnaVez: async (evento) => obtenerBitacora().registrarUnaVez(evento),
+  };
+  const repo: EmpresaRepositoryPort = {
+    obtenerPropia: async (empresaId) => new EmpresaKysely(obtenerPools().db('app')).obtenerPropia(empresaId),
+    obtenerPersona: async (empresaId, usuarioId) => new EmpresaKysely(obtenerPools().db('app')).obtenerPersona(empresaId, usuarioId),
+  };
+  const autorizacion = new AutorizacionNoConfigurada();
+
   return {
-    verificador: new TokenVerifierJose({
-      emisor: config.emisor,
-      audiencia: config.audiencia,
-      clienteAutorizado: config.clienteAutorizado,
-      claves: crearJwksRemoto(config.jwksUrl),
-    }),
-    hechos: {
-      registrar: async (evento) => {
-        if (!bitacora) {
-          const pools = new GestorPools(leerUrls(env, ['app', 'plataforma']), { max: 2 });
-          bitacora = new Bitacora(new BitacoraKysely({ app: pools.db('app'), plataforma: pools.db('plataforma') }));
-        }
-        await bitacora.registrar(evento);
-      },
+    hechos,
+    autorizacion,
+    autenticacion: {
+      verificador: new TokenVerifierJose({ emisor: config.emisor, audiencia: config.audiencia, clienteAutorizado: config.clienteAutorizado, claves: crearJwksRemoto(config.jwksUrl) }),
+      hechos,
     },
+    negocio: { identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos },
   };
 };

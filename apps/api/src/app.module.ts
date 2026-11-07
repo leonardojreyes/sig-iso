@@ -1,8 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
-import { opcionesAutenticacionDesdeEntorno } from './composicion.js';
+import { componerDesdeEntorno } from './composicion.js';
+import { EmpresaSesionModule } from './empresas/empresa-sesion.module.js';
 import { HealthController } from './health.controller.js';
 
-// Los controladores de negocio se enlazan en las tareas 6.5 y 6.6 (sobre el contrato OpenAPI).
-@Module({ imports: [AutenticacionModule.register(opcionesAutenticacionDesdeEntorno(process.env))], controllers: [HealthController] })
+// Los controladores de normas se enlazan en la tarea 6.6 (sobre el contrato OpenAPI).
+const composicion = componerDesdeEntorno(process.env);
+
+@Module({
+  imports: [AutenticacionModule.register(composicion.autenticacion), EmpresaSesionModule.register(composicion.negocio)],
+  controllers: [HealthController],
+})
 export class AppModule {}

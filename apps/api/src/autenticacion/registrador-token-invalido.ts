@@ -5,6 +5,8 @@ import type { LimitadorPorVentana } from './limitador-por-ventana.js';
 /** Escribe un hecho en la bitácora. Si no puede, FALLA (el rechazo no se da por bueno sin rastro). */
 export interface RegistradorHechos {
   registrar(evento: EventoBitacora): Promise<void>;
+  /** Igual, pero sin repetir un hecho con el mismo `origenId` (idempotencia: inicio y cierre de sesión). Exige `origenId`. */
+  registrarUnaVez(evento: EventoBitacora): Promise<'registrado' | 'ya_existia'>;
 }
 
 /**
