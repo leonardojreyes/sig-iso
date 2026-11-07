@@ -16,7 +16,7 @@ export class SesionController {
   @HttpCode(204)
   @ApiOperation({ operationId: 'registrarInicioSesion' })
   @ApiNoContentResponse({ description: 'Inicio de sesión registrado.' })
-  @RespuestasProblema(401, 500)
+  @RespuestasProblema(401, 429, 500)
   async inicio(@Identidad() identidad: IdentidadVerificada): Promise<void> {
     await this.sesion.registrarInicio(identidad);
   }
@@ -25,7 +25,7 @@ export class SesionController {
   @HttpCode(204)
   @ApiOperation({ operationId: 'registrarCierreSesion' })
   @ApiNoContentResponse({ description: 'Cierre de sesión registrado.' })
-  @RespuestasProblema(401, 500)
+  @RespuestasProblema(401, 429, 500)
   async cierre(@Identidad() identidad: IdentidadVerificada): Promise<void> {
     await this.sesion.registrarCierre(identidad);
   }

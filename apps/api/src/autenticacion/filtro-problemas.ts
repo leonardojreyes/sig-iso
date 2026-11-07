@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, Inject, Logger, type ExceptionFilter } from '@nestjs/common';
 import type { EventoBitacora } from '@sig/auditoria';
 import { clasificarExcepcion, type Clasificacion } from './clasificar-excepcion.js';
+import { LimiteExcedidoException } from './limite-excedido.exception.js';
 import type { SolicitudHttp } from './identidad.js';
 import { problemaDeEstado, type Problema } from './problema.js';
 import type { RegistradorHechos } from './registrador-token-invalido.js';
@@ -44,7 +45,9 @@ export class FiltroProblemas implements ExceptionFilter {
       problema = problemaDeEstado(500);
     }
     if (res.headersSent) return;
-    res.status(problema.status).setHeader('Content-Type', 'application/problem+json; charset=utf-8').setHeader('Cache-Control', 'no-store').send(JSON.stringify(problema));
+    res.status(problema.status).setHeader('Content-Type', 'application/problem+json; charset=utf-8').setHeader('Cache-Control', 'no-store');
+    if (excepcion instanceof LimiteExcedidoException) res.setHeader('Retry-After', String(Math.max(1, Math.ceil(excepcion.reintentarEnSegundos))));
+    res.send(JSON.stringify(problema));
   }
 
   private async registrar(c: Exclude<Clasificacion, { tipo: 'http' }>, solicitud: SolicitudHttp): Promise<void> {

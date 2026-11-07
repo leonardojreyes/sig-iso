@@ -6,7 +6,7 @@ import { GestorPools, leerUrls } from '@sig/db';
 import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
-import { leerConfiguracionAuth, type Entorno } from './autenticacion/configuracion.js';
+import { leerConfiguracionAuth, leerConfiguracionLimites, type Entorno } from './autenticacion/configuracion.js';
 import type { RegistradorHechos } from './autenticacion/registrador-token-invalido.js';
 import type { OpcionesEmpresaSesion } from './empresas/empresa-sesion.module.js';
 import type { OpcionesNormasApi } from './normas/normas-api.module.js';
@@ -35,6 +35,7 @@ export interface Composicion {
  */
 export const componerDesdeEntorno = (env: Entorno): Composicion => {
   const config = leerConfiguracionAuth(env);
+  const limites = leerConfiguracionLimites(env);
 
   let pools: GestorPools | undefined;
   const obtenerPools = (): GestorPools => (pools ??= new GestorPools(leerUrls(env, ['app', 'plataforma']), { max: 4 }));
@@ -59,6 +60,7 @@ export const componerDesdeEntorno = (env: Entorno): Composicion => {
     autenticacion: {
       verificador: new TokenVerifierJose({ emisor: config.emisor, audiencia: config.audiencia, clienteAutorizado: config.clienteAutorizado, claves: crearJwksRemoto(config.jwksUrl) }),
       hechos,
+      limites,
     },
     negocio: { identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos },
     normas: {

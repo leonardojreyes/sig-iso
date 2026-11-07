@@ -21,7 +21,16 @@ export interface Arnes {
   cerrar(): Promise<void>;
 }
 
-export const crearArnes = async (opciones: { controladores?: Type[]; modulos?: DynamicModule[]; hechos: RegistradorHechos; entorno?: Record<string, string> }): Promise<Arnes> => {
+export const crearArnes = async (opciones: {
+  controladores?: Type[];
+  modulos?: DynamicModule[];
+  hechos: RegistradorHechos;
+  entorno?: Record<string, string>;
+  /** Límites de frecuencia; por omisión altísimos para que no estorben a las demás pruebas. */
+  limites?: { persona: number; empresa: number };
+  /** Reloj en milisegundos del limitador y de `token.invalido`. */
+  ahora?: () => number;
+}): Promise<Arnes> => {
   const par = await generateKeyPair('RS256');
   const claves = createLocalJWKSet({ keys: [{ ...(await exportJWK(par.publicKey)), kid: 'k1', alg: 'RS256', use: 'sig' }] });
   const verificador = new TokenVerifierJose({ emisor: EMISOR, audiencia: AUDIENCIA, clienteAutorizado: CLIENTE, claves });
@@ -30,7 +39,11 @@ export const crearArnes = async (opciones: { controladores?: Type[]; modulos?: D
   class PruebaModule {}
 
   const modulo = await Test.createTestingModule({
-    imports: [AutenticacionModule.register({ verificador, hechos: opciones.hechos }), PruebaModule, ...(opciones.modulos ?? [])],
+    imports: [
+      AutenticacionModule.register({ verificador, hechos: opciones.hechos, limites: opciones.limites ?? { persona: 100_000, empresa: 100_000 }, ...(opciones.ahora ? { ahora: opciones.ahora } : {}) }),
+      PruebaModule,
+      ...(opciones.modulos ?? []),
+    ],
   }).compile();
   const app = modulo.createNestApplication();
   aplicarSeguridadHttp(app, opciones.entorno ?? {});

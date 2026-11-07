@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { leerConfiguracionAuth, leerOrigenesCors } from './configuracion.js';
+import { leerConfiguracionAuth, leerConfiguracionLimites, leerOrigenesCors } from './configuracion.js';
 
 describe('leerConfiguracionAuth', () => {
   it('con el entorno vacío usa los valores por defecto documentados', () => {
@@ -57,5 +57,26 @@ describe('leerOrigenesCors', () => {
 
   it.each(['*', 'null', 'http://localhost:3000/ruta', 'ftp://x', 'localhost:3000', 'https://u:p@x.example', 'http://x.example,*'])('rechaza el origen %j', (o) => {
     expect(() => leerOrigenesCors({ CORS_ORIGINS: o })).toThrow(/CORS_ORIGINS/);
+  });
+});
+
+describe('leerConfiguracionLimites', () => {
+  it('por defecto: 120 solicitudes por minuto por persona y 600 por empresa', () => {
+    expect(leerConfiguracionLimites({})).toEqual({ persona: 120, empresa: 600 });
+  });
+
+  it('toma los valores del entorno', () => {
+    expect(leerConfiguracionLimites({ RATE_LIMIT_PERSONA: '30', RATE_LIMIT_EMPRESA: '200' })).toEqual({ persona: 30, empresa: 200 });
+  });
+
+  it.each([
+    ['RATE_LIMIT_PERSONA', '0'], ['RATE_LIMIT_PERSONA', '-3'], ['RATE_LIMIT_PERSONA', '1.5'], ['RATE_LIMIT_PERSONA', 'mucho'], ['RATE_LIMIT_PERSONA', ''],
+    ['RATE_LIMIT_EMPRESA', '0'], ['RATE_LIMIT_EMPRESA', '1e3'], ['RATE_LIMIT_EMPRESA', ' 10'], ['RATE_LIMIT_EMPRESA', '100001'],
+  ])('rechaza %s=%j nombrando la variable', (variable, valor) => {
+    expect(() => leerConfiguracionLimites({ [variable]: valor })).toThrow(new RegExp(variable));
+  });
+
+  it('exige que el límite de la empresa no sea menor que el de una persona', () => {
+    expect(() => leerConfiguracionLimites({ RATE_LIMIT_PERSONA: '500', RATE_LIMIT_EMPRESA: '100' })).toThrow(/RATE_LIMIT_EMPRESA/);
   });
 });

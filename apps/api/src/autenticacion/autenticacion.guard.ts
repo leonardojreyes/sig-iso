@@ -5,12 +5,15 @@ import type { MotivoTokenInvalido } from '@sig/autenticacion';
 import type { SolicitudHttp } from './identidad.js';
 import { PUBLICO } from './publico.decorator.js';
 import { RegistradorTokenInvalido } from './registrador-token-invalido.js';
-import { REGISTRADOR_TOKEN_INVALIDO, VERIFICADOR } from './tokens.js';
+import { LimiteExcedidoException } from './limite-excedido.exception.js';
+import type { LimiteFrecuencia } from './limite-frecuencia.js';
+import { LIMITE, REGISTRADOR_TOKEN_INVALIDO, VERIFICADOR } from './tokens.js';
 
 /**
  * Guardia global: toda ruta exige un token verificado salvo las marcadas con `@Publico()` (cerrado por omisión, ADR 027).
  * - Sin cabecera `Authorization` → 401 sin registrar nada (cualquiera puede curiosear).
  * - Cabecera inválida o token que no verifica → 401 + hecho `token.invalido` (agregado y con límite de frecuencia).
+ * - Token válido pero por encima del límite de frecuencia (persona o empresa) → 429 con `Retry-After`.
  * - Servicio de claves caído → el error se propaga (500): no se acepta nada y no se registra como token inválido.
  * - Si no se puede registrar el rechazo → el error se propaga (500).
  */
@@ -20,6 +23,7 @@ export class AutenticacionGuard implements CanActivate {
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(VERIFICADOR) private readonly verificador: TokenVerifierPort,
     @Inject(REGISTRADOR_TOKEN_INVALIDO) private readonly registrador: RegistradorTokenInvalido,
+    @Inject(LIMITE) private readonly limite: LimiteFrecuencia,
   ) {}
 
   async canActivate(contexto: ExecutionContext): Promise<boolean> {
@@ -40,6 +44,9 @@ export class AutenticacionGuard implements CanActivate {
       throw error;
     }
     solicitud.identidad = identidad;
+    // Solo las solicitudes AUTENTICADAS gastan fichas (por persona y por empresa): un 401 no resta nada a nadie.
+    const espera = this.limite.intentar(identidad.usuarioId, identidad.empresaId);
+    if (espera > 0) throw new LimiteExcedidoException(espera);
     return true;
   }
 

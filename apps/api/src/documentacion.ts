@@ -15,6 +15,7 @@ const DESCRIPCIONES: Record<number, string> = {
   401: 'Falta el token, está vencido, alterado o no trae empresa.',
   403: 'Sin permiso. No distingue si lo pedido existe.',
   404: 'No encontrado. Es la única respuesta para «no existe», «es de otra empresa» y «no adoptada».',
+  429: 'Demasiadas solicitudes en poco tiempo. Se puede reintentar después de `Retry-After` segundos.',
   500: 'Error interno. Sin detalles de la solicitud.',
 };
 
@@ -23,7 +24,12 @@ export const RespuestasProblema = (...estados: number[]): MethodDecorator & Clas
   applyDecorators(
     ApiExtraModels(ProblemaResponse),
     ...estados.map((status) =>
-      ApiResponse({ status, description: DESCRIPCIONES[status] ?? 'Error', content: { 'application/problem+json': { schema: { $ref: getSchemaPath(ProblemaResponse) } } } }),
+      ApiResponse({
+        status,
+        description: DESCRIPCIONES[status] ?? 'Error',
+        content: { 'application/problem+json': { schema: { $ref: getSchemaPath(ProblemaResponse) } } },
+        ...(status === 429 ? { headers: { 'Retry-After': { description: 'Segundos que hay que esperar antes de volver a intentarlo.', schema: { type: 'integer', minimum: 1 } } } } : {}),
+      }),
     ),
   ) as MethodDecorator & ClassDecorator;
 

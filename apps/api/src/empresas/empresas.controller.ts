@@ -20,7 +20,7 @@ export class EmpresasController {
   @ApiTags('sesion')
   @ApiOperation({ operationId: 'obtenerIdentidad' })
   @ApiOkResponse({ type: IdentidadResponse })
-  @RespuestasProblema(401, 500)
+  @RespuestasProblema(401, 429, 500)
   async yo(@Identidad() identidad: IdentidadVerificada): Promise<IdentidadResponse> {
     const r = await this.identidades.ejecutar({ empresaId: identidad.empresaId, usuarioId: identidad.usuarioId });
     return { usuarioId: r.usuarioId, nombre: r.nombre, roles: [...r.roles], empresa: { slug: r.empresa.slug, nombre: r.empresa.nombre } };
@@ -30,7 +30,7 @@ export class EmpresasController {
   @ApiTags('empresa')
   @ApiOperation({ operationId: 'obtenerMarcaEmpresa' })
   @ApiOkResponse({ type: MarcaResponse })
-  @RespuestasProblema(401, 500)
+  @RespuestasProblema(401, 429, 500)
   async marca(@Identidad() identidad: IdentidadVerificada): Promise<MarcaResponse> {
     const m = await this.marcas.ejecutar(identidad.empresaId);
     // El monograma lo deriva la interfaz del nombre: el contrato no lo incluye.

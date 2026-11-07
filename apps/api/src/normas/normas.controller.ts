@@ -26,7 +26,7 @@ export class NormasController {
   @ApiTags('librerias')
   @ApiOperation({ operationId: 'listarLibrerias' })
   @RespuestaLista(LibreriaResumenResponse, 200)
-  @RespuestasProblema(401, 500)
+  @RespuestasProblema(401, 429, 500)
   async listarLibrerias(@Identidad() identidad: IdentidadVerificada): Promise<LibreriaResumenResponse[]> {
     return this.librerias.ejecutar(identidad.empresaId);
   }
@@ -36,7 +36,7 @@ export class NormasController {
   @ApiTags('librerias')
   @ApiOperation({ operationId: 'adoptarLibreria' })
   @ParametroIdRuta()
-  @RespuestasProblema(400, 401, 403, 404, 500)
+  @RespuestasProblema(400, 401, 403, 404, 429, 500)
   @ApiCreatedResponse({ type: AdopcionResponse })
   @ApiOkResponse({ type: AdopcionResponse, description: 'La librería ya estaba adoptada; no hubo cambios.' })
   async adoptar(
@@ -54,7 +54,7 @@ export class NormasController {
   @ApiOperation({ operationId: 'listarRequisitos' })
   @ConsultaRequisitos()
   @RespuestaLista(EntradaLibreriaResponse, 500)
-  @RespuestasProblema(400, 401, 500)
+  @RespuestasProblema(400, 401, 429, 500)
   async listarRequisitos(@Identidad() identidad: IdentidadVerificada, @Query() consulta: Record<string, unknown>): Promise<EntradaLibreriaResponse[]> {
     const entradas = await this.requisitos.ejecutar({ empresaId: identidad.empresaId, ...leerFiltrosRequisitos(consulta) });
     return entradas.map((e) => ({ ...e, aplicaA: [...e.aplicaA] }));
@@ -65,7 +65,7 @@ export class NormasController {
   @ApiOperation({ operationId: 'obtenerRequisito' })
   @ParametroIdRuta()
   @ApiOkResponse({ type: EntradaLibreriaResponse })
-  @RespuestasProblema(400, 401, 404, 500)
+  @RespuestasProblema(400, 401, 404, 429, 500)
   async obtenerRequisito(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada): Promise<EntradaLibreriaResponse> {
     const e = await this.requisito.ejecutar({ empresaId: identidad.empresaId, id });
     return { ...e, aplicaA: [...e.aplicaA] };

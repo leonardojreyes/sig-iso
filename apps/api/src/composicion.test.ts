@@ -43,6 +43,13 @@ describe('componerDesdeEntorno (producción)', () => {
     await expect(normas.adoptar.ejecutar({ empresaId: A as never, usuarioId: U, libreriaId: '11111111-1111-4111-8111-111111111111' })).rejects.toThrow(/autorizaci/i);
   });
 
+  it('los límites de frecuencia se leen del entorno y uno inválido impide arrancar, nombrando la variable', () => {
+    expect(() => componerDesdeEntorno({ RATE_LIMIT_PERSONA: '30', RATE_LIMIT_EMPRESA: '200' })).not.toThrow();
+    expect(componerDesdeEntorno({ RATE_LIMIT_PERSONA: '30', RATE_LIMIT_EMPRESA: '200' }).autenticacion.limites).toEqual({ persona: 30, empresa: 200 });
+    expect(componerDesdeEntorno({}).autenticacion.limites).toEqual({ persona: 120, empresa: 600 });
+    expect(() => componerDesdeEntorno({ RATE_LIMIT_PERSONA: '0' })).toThrow(/RATE_LIMIT_PERSONA/);
+  });
+
   it('una configuración inválida de autenticación impide arrancar, nombrando la variable', () => {
     expect(() => componerDesdeEntorno({ OIDC_ISSUER_URL: 'no-es-url' })).toThrow(/OIDC_ISSUER_URL/);
   });

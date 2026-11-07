@@ -17,7 +17,7 @@ const contrato = parse(readFileSync(join(import.meta.dirname, '../../../packages
 const METODOS = ['get', 'post', 'put', 'patch', 'delete'];
 
 /** Respuestas del contrato que la API todavía no implementa. Se quitan al cerrar la tarea indicada. */
-const PENDIENTES: Record<string, string> = { '429': 'tarea 6.8 (límite de frecuencia)' };
+const PENDIENTES: Record<string, string> = {};
 
 const resolver = (doc: Json, nodo: Json | undefined, vistos: string[] = []): Json | undefined => {
   if (!nodo || typeof nodo.$ref !== 'string') return nodo;
@@ -129,6 +129,19 @@ describe('conformidad del OpenAPI generado con el contrato (tarea 6.7)', () => {
         expect({ codigo, ...g().respuestas[codigo] }).toEqual({ codigo, ...c().respuestas[codigo] });
       }
     });
+  });
+
+  it('los 429 declaran la cabecera Retry-After (entero, mínimo 1) en cada operación protegida, como el contrato', () => {
+    const conLimite = Object.entries<Json>(contrato.paths).flatMap(([ruta, item]) =>
+      METODOS.filter((m) => item[m]?.responses?.['429']).map((m) => ({ ruta, m })),
+    );
+    expect(conLimite.length).toBe(8); // todas menos /health
+    for (const { ruta, m } of conLimite) {
+      const r = generado.paths[ruta][m].responses['429'] as Json;
+      expect(Object.keys(r.headers ?? {}), `${m} ${ruta}`).toEqual(['Retry-After']);
+      expect(normalizar(generado, r.headers['Retry-After'].schema), `${m} ${ruta}`).toEqual({ type: ['integer'], minimum: 1 });
+    }
+    expect(generado.paths['/health'].get.responses['429']).toBeUndefined();
   });
 
   it('no deja pendientes sin motivo: cada uno nombra su tarea', () => {

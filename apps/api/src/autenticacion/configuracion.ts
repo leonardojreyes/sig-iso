@@ -71,3 +71,27 @@ export const leerOrigenesCors = (env: Entorno): string[] => {
   }
   return [...origenes];
 };
+
+export interface ConfiguracionLimites {
+  /** Solicitudes por minuto de cada persona. */
+  readonly persona: number;
+  /** Solicitudes por minuto de cada empresa, sumadas todas sus personas. */
+  readonly empresa: number;
+}
+
+const entero = (env: Entorno, variable: string, porDefecto: number): number => {
+  const crudo = env[variable];
+  if (crudo === undefined) return porDefecto;
+  if (!/^[0-9]{1,6}$/.test(crudo) || Number(crudo) < 1 || Number(crudo) > 100_000) {
+    throw new ConfiguracionInvalidaError(variable, 'debe ser un entero entre 1 y 100000');
+  }
+  return Number(crudo);
+};
+
+/** Límite de frecuencia (`RATE_LIMIT_PERSONA` y `RATE_LIMIT_EMPRESA`, por minuto). La empresa nunca puede tener menos que una persona. */
+export const leerConfiguracionLimites = (env: Entorno): ConfiguracionLimites => {
+  const persona = entero(env, 'RATE_LIMIT_PERSONA', 120);
+  const empresa = entero(env, 'RATE_LIMIT_EMPRESA', 600);
+  if (empresa < persona) throw new ConfiguracionInvalidaError('RATE_LIMIT_EMPRESA', 'no puede ser menor que RATE_LIMIT_PERSONA');
+  return { persona, empresa };
+};
