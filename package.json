@@ -13,6 +13,8 @@
     "lint": "eslint .",
     "typecheck": "node scripts/nx.mjs run-many -t typecheck",
     "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/db-migrate.ts",
+    "db:seed": "node --env-file-if-exists=.env.local --import tsx scripts/db-seed.ts",
+    "db:seed:test": "node --env-file-if-exists=.env.local --import tsx scripts/db-seed.ts --prueba",
     "db:migrate:test": "node --env-file-if-exists=.env.local --import tsx scripts/db-migrate.ts --prueba",
     "db:init": "node --env-file-if-exists=.env.local scripts/db-init.mjs",
     "infra:up": "docker compose -f infra/compose/docker-compose.yml up -d",

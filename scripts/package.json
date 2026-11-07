@@ -12,8 +12,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@sig/auditoria": "workspace:*",
+    "@sig/autorizacion": "workspace:*",
     "@sig/db": "workspace:*",
     "@sig/normas-schema": "workspace:*",
+    "@sig/tenancy": "workspace:*",
+    "kysely": "^0.29.8",
     "pg": "^8.23.1",
     "yaml": "^2.9.1"
   }

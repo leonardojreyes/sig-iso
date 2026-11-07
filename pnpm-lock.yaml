@@ -489,12 +489,24 @@ importers:
 
   scripts:
     dependencies:
+      '@sig/auditoria':
+        specifier: workspace:*
+        version: link:../platform/auditoria
+      '@sig/autorizacion':
+        specifier: workspace:*
+        version: link:../platform/autorizacion
       '@sig/db':
         specifier: workspace:*
         version: link:../platform/db
       '@sig/normas-schema':
         specifier: workspace:*
         version: link:../packages/normas-schema
+      '@sig/tenancy':
+        specifier: workspace:*
+        version: link:../platform/tenancy
+      kysely:
+        specifier: ^0.29.8
+        version: 0.29.8
       pg:
         specifier: ^8.23.1
         version: 8.23.1
