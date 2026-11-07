@@ -29,7 +29,7 @@ const violaciones = async (
 describe("límites de platform/ (type:platform)", () => {
   it("platform no puede importar un módulo", async () => {
     const v = await violaciones(
-      "import { Norma } from '@sig/normas';\nexport const x = Norma;\n",
+      "import { Libreria } from '@sig/normas';\nexport const x = Libreria;\n",
       "platform/tenancy/src/prueba.ts",
     );
     expect(v.length).toBeGreaterThan(0);
@@ -145,7 +145,7 @@ describe("platform puede depender de otro platform", () => {
 
   it("platform sigue sin poder importar un módulo", async () => {
     const v = await violaciones(
-      "import { Norma } from '@sig/normas';\nexport const x = Norma;\n",
+      "import { Libreria } from '@sig/normas';\nexport const x = Libreria;\n",
       "platform/db/src/prueba.ts",
     );
     expect(v.length).toBeGreaterThan(0);

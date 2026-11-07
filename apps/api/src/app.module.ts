@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { NormasModule } from '@sig/normas';
 import { HealthController } from './health.controller.js';
 
-@Module({ imports: [NormasModule], controllers: [HealthController] })
+// Los módulos de negocio se enlazan en la fase 6 (autenticación, autorización y controladores sobre el contrato OpenAPI).
+@Module({ controllers: [HealthController] })
 export class AppModule {}
