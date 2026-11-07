@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { Publico } from './autenticacion/publico.decorator.js';
 
 export class HealthResponse {
   @ApiProperty({ type: String, example: 'ok' }) status!: string;
@@ -7,6 +8,7 @@ export class HealthResponse {
 }
 
 @ApiTags('salud')
+@Publico()
 @Controller('health')
 export class HealthController {
   @Get()

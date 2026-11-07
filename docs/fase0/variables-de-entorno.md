@@ -36,8 +36,11 @@ Una URL por rol; cada rol tiene un permiso distinto (plan, «Modelo de datos»).
 
 | Variable                                                      | Secreto | Por defecto                           | Uso                                                 | Tarea     |
 | ------------------------------------------------------------- | ------- | ------------------------------------- | --------------------------------------------------- | --------- |
-| `OIDC_ISSUER_URL`                                             | no      | `http://127.0.0.1:8080/realms/sigiso` | Emisor de los tokens                                | 6.1, 10.2 |
+| `OIDC_ISSUER_URL`                                             | no      | `http://127.0.0.1:8080/realms/sigiso` | Emisor de los tokens                                | 6.1, 6.2, 10.2 |
 | `OIDC_CLIENT_ID`                                              | no      | `sigiso-web`                          | Cliente confidencial de la web                      | 10.2      |
+| `OIDC_AUDIENCE`                                               | no      | `sigiso-api`                          | Audiencia propia de la API (mapper en Keycloak)     | 6.2, 8.4  |
+| `OIDC_JWKS_URL`                                               | no      | `<emisor>/protocol/openid-connect/certs` | Claves públicas para verificar la firma           | 6.2       |
+| `CORS_ORIGINS`                                                | no      | vacío (ningún origen)                 | Orígenes exactos que pueden llamar a la API desde un navegador, separados por comas; la web llama desde su servidor (ADR 027) | 6.2       |
 | `OIDC_CLIENT_SECRET`                                          | sí      | —                                     | Secreto del cliente (lo genera `keycloak-dev`)      | 8.3       |
 | `OIDC_REDIRECT_URI`                                           | no      | `http://localhost:3000/auth/callback` | Retorno del flujo de código                         | 10.2      |
 | `SESSION_SEALING_KEY`                                         | sí      | —                                     | Clave que sella la cookie de sesión                 | 10.3      |
