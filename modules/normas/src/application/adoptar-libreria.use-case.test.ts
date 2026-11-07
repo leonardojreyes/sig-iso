@@ -4,7 +4,8 @@ import { AdopcionLibreria } from '../domain/adopcion-libreria.js';
 import { ErrorNormas } from '../domain/errores.js';
 import { Libreria } from '../domain/libreria.js';
 import type { AutorizacionPort } from './autorizacion.port.js';
-import { AdoptarLibreriaUseCase, LibreriaNoEncontradaError, SinPermisoError } from './adoptar-libreria.use-case.js';
+import { AdoptarLibreriaUseCase, FuncionDeshabilitadaError, LibreriaNoEncontradaError, SinPermisoError } from './adoptar-libreria.use-case.js';
+import type { FlagsPort } from './flags.port.js';
 import { ParametroInvalidoError } from './parametro-invalido.error.js';
 import { crearUnidadDeTrabajoFalsa, EstadoFalso } from './prueba/fakes.js';
 
@@ -243,5 +244,73 @@ describe('AdoptarLibreria — entradas inválidas', () => {
     const { caso, estado } = montar();
     await expect(caso.ejecutar(entrada({ traceId: 'con espacios y símbolos <>' }))).rejects.toThrow();
     expect(estado.adopciones.size).toBe(0);
+  });
+});
+
+describe('AdoptarLibreria — flag «adopcion-habilitada» (OpenFeature)', () => {
+  const conFlags = (habilitado: FlagsPort['habilitado'], puede = true) => {
+    const estado = new EstadoFalso(libreria, 21);
+    const llamadas: [string, string][] = [];
+    const flags: FlagsPort = { habilitado: async (flag, empresa) => { llamadas.push([flag, empresa]); return habilitado(flag, empresa); } };
+    const caso = new AdoptarLibreriaUseCase(crearUnidadDeTrabajoFalsa(estado), { puede: async () => puede }, () => AHORA, flags);
+    return { estado, caso, llamadas };
+  };
+
+  it('con el flag encendido se adopta normalmente, y se consulta el flag de la empresa del token', async () => {
+    const { caso, llamadas } = conFlags(async () => true);
+    expect((await caso.ejecutar(entrada())).yaAdoptada).toBe(false);
+    expect(llamadas).toEqual([['adopcion-habilitada', A]]);
+  });
+
+  it('con el flag apagado: FuncionDeshabilitadaError, sin abrir una unidad ni escribir nada', async () => {
+    const { caso, estado } = conFlags(async () => false);
+    await expect(caso.ejecutar(entrada())).rejects.toBeInstanceOf(FuncionDeshabilitadaError);
+    expect(estado.unidades).toEqual([]);
+    expect(estado.adopciones.size).toBe(0);
+    expect(estado.bitacora).toHaveLength(0);
+  });
+
+  it('el permiso se decide ANTES: un colaborador recibe SinPermisoError aunque el flag esté apagado, y el flag ni se consulta', async () => {
+    const { caso, llamadas } = conFlags(async () => false, false);
+    await expect(caso.ejecutar(entrada({ usuarioId: COLAB }))).rejects.toBeInstanceOf(SinPermisoError);
+    expect(llamadas).toEqual([]);
+  });
+
+  it('el flag va ANTES de validar el identificador: apagado, cualquier id da lo mismo (no se revela nada)', async () => {
+    const { caso } = conFlags(async () => false);
+    for (const id of [LIB_ID, INEXISTENTE, 'no-uuid', '']) {
+      await expect(caso.ejecutar(entrada({ libreriaId: id }))).rejects.toBeInstanceOf(FuncionDeshabilitadaError);
+    }
+  });
+
+  it('encendido, un id mal formado sigue dando ParametroInvalidoError', async () => {
+    const { caso } = conFlags(async () => true);
+    await expect(caso.ejecutar(entrada({ libreriaId: 'no-uuid' }))).rejects.toBeInstanceOf(ParametroInvalidoError);
+  });
+
+  it('el flag puede ser distinto por empresa: apagado para A, B adopta', async () => {
+    const { caso, estado } = conFlags(async (_f, empresa) => empresa !== A);
+    await expect(caso.ejecutar(entrada())).rejects.toBeInstanceOf(FuncionDeshabilitadaError);
+    expect((await caso.ejecutar(entrada({ empresaId: B }))).yaAdoptada).toBe(false);
+    expect([...estado.adopciones.keys()]).toEqual([`${B}|${LIB_ID}`]);
+  });
+
+  it('si el servicio de flags falla, la adopción NO se hace y el error se propaga (no se asume «encendido»)', async () => {
+    const { caso, estado } = conFlags(async () => { throw new Error('flags caído'); });
+    await expect(caso.ejecutar(entrada())).rejects.toThrow('flags caído');
+    expect(estado.adopciones.size).toBe(0);
+  });
+
+  it('el error de flag deshabilitado no repite identificadores', async () => {
+    const { caso } = conFlags(async () => false);
+    const e = await errorDe(caso.ejecutar(entrada()));
+    expect(e.message).not.toContain(LIB_ID);
+    expect(e.message).not.toContain(A);
+  });
+
+  it('sin indicar flags (valor por omisión) la adopción funciona como antes', async () => {
+    const estado = new EstadoFalso(libreria, 21);
+    const caso = new AdoptarLibreriaUseCase(crearUnidadDeTrabajoFalsa(estado), { puede: async () => true }, () => AHORA);
+    expect((await caso.ejecutar(entrada())).entradas).toBe(21);
   });
 });

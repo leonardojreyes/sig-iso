@@ -3,7 +3,7 @@ export { EntradaLibreria, type AlcanceComun, type CorrespondenciaNorma, type Dat
 export { AdopcionLibreria, adoptar, type DatosAdopcion, type ResultadoAdopcion } from './domain/adopcion-libreria.js';
 export { ErrorNormas } from './domain/errores.js';
 export { UNIDAD_DE_TRABAJO, type UnidadDeTrabajoPort } from './application/unidad-de-trabajo.port.js';
-export { AdoptarLibreriaUseCase, LibreriaNoEncontradaError, SinPermisoError, type AdopcionDto, type AdoptarLibreriaEntrada } from './application/adoptar-libreria.use-case.js';
+export { AdoptarLibreriaUseCase, FuncionDeshabilitadaError, LibreriaNoEncontradaError, SinPermisoError, type AdopcionDto, type AdoptarLibreriaEntrada } from './application/adoptar-libreria.use-case.js';
 export { AUTORIZACION, type AutorizacionPort, type Permiso } from './application/autorizacion.port.js';
 export { CATALOGO_REPOSITORY, type CatalogoRepositoryPort } from './application/catalogo-repository.port.js';
 export { ADOPCION_REPOSITORY, type AdopcionRepositoryPort } from './application/adopcion-repository.port.js';
@@ -17,3 +17,4 @@ export type { ContextoConsulta } from './application/contexto-adopcion.js';
 export { CatalogoKysely } from './infrastructure/catalogo-kysely.adapter.js';
 export { AdopcionKysely } from './infrastructure/adopcion-kysely.adapter.js';
 export { crearUnidadDeTrabajoNormas } from './infrastructure/unidad-de-trabajo-normas.js';
+export { FLAGS, TODO_HABILITADO, type FlagsPort, type NombreFlag } from './application/flags.port.js';

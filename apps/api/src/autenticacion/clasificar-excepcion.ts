@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { EmpresaNoEncontradaError, PersonaNoEncontradaError } from '@sig/empresas';
-import { LibreriaNoEncontradaError, ParametroInvalidoError, RequisitoNoEncontradoError, SinPermisoError } from '@sig/normas';
+import { FuncionDeshabilitadaError, LibreriaNoEncontradaError, ParametroInvalidoError, RequisitoNoEncontradoError, SinPermisoError } from '@sig/normas';
 import { AccesoCruzadoException, AccesoDenegadoException } from './excepciones-acceso.js';
 
 export type Clasificacion =
@@ -20,7 +20,8 @@ export const clasificarExcepcion = (e: unknown): Clasificacion => {
   if (e instanceof SinPermisoError) return { tipo: 'denegado', objeto: `accion:${e.permiso}` };
   if (e instanceof AccesoCruzadoException) return { tipo: 'cruzado', objeto: e.objeto ?? null };
   if (e instanceof HttpException) return e.getStatus() === 403 ? { tipo: 'denegado', objeto: null } : { tipo: 'http', estado: e.getStatus() };
-  if (e instanceof RequisitoNoEncontradoError || e instanceof LibreriaNoEncontradaError) return { tipo: 'http', estado: 404 };
+  // Una función apagada por flag se presenta como inexistente: no revela que existe.
+  if (e instanceof RequisitoNoEncontradoError || e instanceof LibreriaNoEncontradaError || e instanceof FuncionDeshabilitadaError) return { tipo: 'http', estado: 404 };
   if (e instanceof EmpresaNoEncontradaError || e instanceof PersonaNoEncontradaError) return { tipo: 'http', estado: 401 };
   if (e instanceof ParametroInvalidoError) return { tipo: 'http', estado: 400 };
   return { tipo: 'http', estado: 500 };

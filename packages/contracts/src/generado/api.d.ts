@@ -140,8 +140,9 @@ export interface paths {
          *     rechazos por permiso también se registran en la bitácora.
          *
          *     Orden de evaluación: 401, 403 (solo por rol, sin mirar el identificador: un colaborador recibe siempre el mismo 403, exista
-         *     o no la librería), 400 (UUID mal formado) y 404 (no existe). Adoptar una librería ya adoptada no es un error: responde
-         *     200 sin cambios.
+         *     o no la librería), 404 (la función está apagada para la empresa por el flag `adopcion-habilitada`: se presenta como una
+         *     operación inexistente, sin importar el identificador), 400 (UUID mal formado) y 404 (no existe). Adoptar una librería ya
+         *     adoptada no es un error: responde 200 sin cambios.
          */
         post: operations["adoptarLibreria"];
         delete?: never;

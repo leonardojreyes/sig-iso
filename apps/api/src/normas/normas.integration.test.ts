@@ -19,6 +19,8 @@ const NULO = '00000000-0000-0000-0000-000000000000';
 
 describe('controladores de normas (tarea 6.6; H4.x, H5.x, H6.5)', () => {
   let arnes: Arnes;
+  /** Flag «adopcion-habilitada» controlable por prueba: por empresa (las que estén en el conjunto lo tienen apagado). */
+  const apagadoPara = new Set<string>();
   let estado: EstadoFalso;
   const bitacora = hechosEnMemoria();
   let sesion = 0;
@@ -38,7 +40,7 @@ describe('controladores de normas (tarea 6.6; H4.x, H5.x, H6.5)', () => {
       hechos: bitacora.hechos,
       modulos: [
         NormasApiModule.register({
-          adoptar: new AdoptarLibreriaUseCase(unidad, autorizacion),
+          adoptar: new AdoptarLibreriaUseCase(unidad, autorizacion, () => new Date(), { habilitado: async (_flag, empresa) => !apagadoPara.has(empresa) }),
           librerias: new ListarLibreriasUseCase(unidad),
           requisitos: new ListarRequisitosUseCase(unidad),
           requisito: new ObtenerRequisitoUseCase(unidad),
@@ -55,6 +57,7 @@ describe('controladores de normas (tarea 6.6; H4.x, H5.x, H6.5)', () => {
     estado.fallos.clear();
     estado.ganadora = null;
     estado.sinAislamiento = false;
+    apagadoPara.clear();
     bitacora.estado.eventos = [];
     bitacora.estado.falla = false;
   });
@@ -188,6 +191,53 @@ describe('controladores de normas (tarea 6.6; H4.x, H5.x, H6.5)', () => {
       const r = await adoptar(LIB1, await tA());
       expect(r.status).toBe(201);
       expect(((await cuerpo(r)) as { yaAdoptada: boolean }).yaAdoptada).toBe(false);
+    });
+
+    describe('flag «adopcion-habilitada» apagado (OpenFeature)', () => {
+      it('un administrador recibe el MISMO 404 que ante un recurso inexistente, byte a byte, sin hechos ni adopción', async () => {
+        apagadoPara.add(A);
+        const apagado = await huella(await adoptar(LIB1, await tA()));
+        const inexistente = await huella(await arnes.pedir('/no-existe', await tA()));
+        expect(apagado).toBe(inexistente);
+        await problema(await adoptar(LIB1, await tA()), 404, 'no_encontrado');
+        expect(estado.adopciones.size).toBe(0);
+        expect(bitacora.estado.eventos).toEqual([]);
+        expect(estado.bitacora).toHaveLength(0);
+      });
+
+      it('no revela nada del identificador: con flag apagado un id inexistente o mal formado da la misma respuesta', async () => {
+        apagadoPara.add(A);
+        const huellas = new Set<string>();
+        for (const id of [LIB1, INEXISTENTE, 'no-es-un-uuid', NULO]) huellas.add(await huella(await adoptar(id, await tA())));
+        expect(huellas.size).toBe(1);
+      });
+
+      it('el permiso se decide antes: un colaborador sigue recibiendo su 403 (con su hecho acceso.denegado)', async () => {
+        apagadoPara.add(A);
+        await problema(await adoptar(LIB1, await tColab()), 403, 'sin_permiso');
+        expect(bitacora.estado.eventos.map((e) => e.accion)).toEqual(['acceso.denegado']);
+      });
+
+      it('es por empresa: apagado para A, B puede adoptar', async () => {
+        apagadoPara.add(A);
+        expect((await adoptar(LIB1, await tA())).status).toBe(404);
+        expect((await adoptar(LIB1, await tB())).status).toBe(201);
+        expect([...estado.adopciones.keys()]).toEqual([`${B}|${LIB1}`]);
+      });
+
+      it('no afecta a lo ya adoptado ni a las consultas: se sigue viendo lo adoptado', async () => {
+        expect((await adoptar(LIB1, await tA())).status).toBe(201);
+        apagadoPara.add(A);
+        expect((await arnes.pedir('/librerias', await tA())).status).toBe(200);
+        expect(((await cuerpo(await arnes.pedir('/requisitos', await tA()))) as unknown[]).length).toBe(4);
+      });
+
+      it('al volver a encenderlo, la adopción funciona', async () => {
+        apagadoPara.add(A);
+        expect((await adoptar(LIB1, await tA())).status).toBe(404);
+        apagadoPara.delete(A);
+        expect((await adoptar(LIB1, await tA())).status).toBe(201);
+      });
     });
 
     it('sin token → 401 y no se registra nada', async () => {

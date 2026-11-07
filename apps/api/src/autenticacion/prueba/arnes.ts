@@ -3,10 +3,12 @@ import { Controller, Get, ForbiddenException, Module, NotFoundException, type Dy
 import { Test } from '@nestjs/testing';
 import { validarEvento, type EventoBitacora } from '@sig/auditoria';
 import { TokenVerifierJose } from '@sig/autenticacion';
+import type { Tracer } from '@opentelemetry/api';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWTPayload } from 'jose';
 import { AutenticacionModule } from '../autenticacion.module.js';
 import type { RegistradorHechos } from '../registrador-token-invalido.js';
 import { aplicarSeguridadHttp } from '../seguridad-http.js';
+import { crearMiddlewareTrazas } from '../../telemetria/middleware-trazas.js';
 
 export const EMISOR = 'http://127.0.0.1:8080/realms/sigiso';
 export const AUDIENCIA = 'sigiso-api';
@@ -30,6 +32,8 @@ export const crearArnes = async (opciones: {
   limites?: { persona: number; empresa: number };
   /** Reloj en milisegundos del limitador y de `token.invalido`. */
   ahora?: () => number;
+  /** Si se indica, las solicitudes se trazan con este trazador (como en `main.ts`). */
+  trazador?: Tracer;
 }): Promise<Arnes> => {
   const par = await generateKeyPair('RS256');
   const claves = createLocalJWKSet({ keys: [{ ...(await exportJWK(par.publicKey)), kid: 'k1', alg: 'RS256', use: 'sig' }] });
@@ -46,6 +50,7 @@ export const crearArnes = async (opciones: {
     ],
   }).compile();
   const app = modulo.createNestApplication();
+  if (opciones.trazador) app.use(crearMiddlewareTrazas(opciones.trazador));
   aplicarSeguridadHttp(app, opciones.entorno ?? {});
   await app.listen(0, '127.0.0.1');
   const base = (await app.getUrl()).replace('[::1]', '127.0.0.1');

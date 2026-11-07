@@ -3,6 +3,7 @@ import { adoptar } from '../domain/adopcion-libreria.js';
 import { exigirUuid } from '../domain/errores.js';
 import type { AutorizacionPort, Permiso } from './autorizacion.port.js';
 import type { ContextoAdopcion } from './contexto-adopcion.js';
+import { TODO_HABILITADO, type FlagsPort } from './flags.port.js';
 import { parsearIdRuta } from './parametro-invalido.error.js';
 import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
 
@@ -19,6 +20,14 @@ export class LibreriaNoEncontradaError extends Error {
   constructor() {
     super('Librería no encontrada');
     this.name = 'LibreriaNoEncontradaError';
+  }
+}
+
+/** La función está apagada (flag `adopcion-habilitada`). La API la responde como «no encontrado»: no revela que existe. */
+export class FuncionDeshabilitadaError extends Error {
+  constructor() {
+    super('Función no disponible');
+    this.name = 'FuncionDeshabilitadaError';
   }
 }
 
@@ -39,8 +48,8 @@ export interface AdopcionDto {
 }
 
 /**
- * Adopta una librería del catálogo para la empresa (H4.6–H4.10). Orden: identidad del token → permiso → identificador de la
- * librería (400) → (unidad atómica) librería (404) → adopción → conteo → bitácora. El permiso va antes de mirar la librería
+ * Adopta una librería del catálogo para la empresa (H4.6–H4.10). Orden: identidad del token → permiso → flag de la función →
+ * identificador de la librería (400) → (unidad atómica) librería (404) → adopción → conteo → bitácora. El permiso va antes de mirar la librería
  * para no revelar si existe.
  */
 export class AdoptarLibreriaUseCase {
@@ -48,6 +57,7 @@ export class AdoptarLibreriaUseCase {
     private readonly unidad: UnidadDeTrabajoPort<ContextoAdopcion>,
     private readonly autorizacion: AutorizacionPort,
     private readonly reloj: () => Date = () => new Date(),
+    private readonly flags: FlagsPort = TODO_HABILITADO,
   ) {}
 
   async ejecutar(entrada: AdoptarLibreriaEntrada): Promise<AdopcionDto> {
@@ -57,6 +67,8 @@ export class AdoptarLibreriaUseCase {
     // Orden del contrato: el permiso se decide ANTES de mirar el identificador de la librería (un colaborador recibe siempre el
     // mismo rechazo, sea cual sea el id); después, 400 si está mal formado y 404 si no existe.
     if (!(await this.autorizacion.puede(usuarioId, 'librerias.adoptar', empresaId))) throw new SinPermisoError('librerias.adoptar');
+    // Interruptor de la función (OpenFeature): tras el permiso y antes de mirar el identificador, para no revelar nada.
+    if (!(await this.flags.habilitado('adopcion-habilitada', empresaId))) throw new FuncionDeshabilitadaError();
     const libreriaId = parsearIdRuta(entrada.libreriaId);
 
     return this.unidad.ejecutar(empresaId, async ({ adopciones, catalogo, bitacora }) => {

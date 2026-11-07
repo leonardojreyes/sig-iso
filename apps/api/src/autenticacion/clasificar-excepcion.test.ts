@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, HttpException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { EmpresaNoEncontradaError, PersonaNoEncontradaError } from '@sig/empresas';
-import { ErrorNormas, LibreriaNoEncontradaError, ParametroInvalidoError, RequisitoNoEncontradoError, SinPermisoError } from '@sig/normas';
+import { ErrorNormas, FuncionDeshabilitadaError, LibreriaNoEncontradaError, ParametroInvalidoError, RequisitoNoEncontradoError, SinPermisoError } from '@sig/normas';
 import { describe, expect, it } from 'vitest';
 import { clasificarExcepcion } from './clasificar-excepcion.js';
 import { AccesoCruzadoException, AccesoDenegadoException } from './excepciones-acceso.js';
@@ -28,6 +28,7 @@ describe('clasificarExcepcion', () => {
   it.each([
     ['«requisito no encontrado» del dominio', new RequisitoNoEncontradoError(), 404],
     ['«librería no encontrada» del dominio', new LibreriaNoEncontradaError(), 404],
+    ['función apagada por flag (se presenta como inexistente)', new FuncionDeshabilitadaError(), 404],
     ['404 de Nest', new NotFoundException(), 404],
     ['empresa del token inexistente', new EmpresaNoEncontradaError(), 401],
     ['persona del token que ya no vale en la empresa', new PersonaNoEncontradaError(), 401],

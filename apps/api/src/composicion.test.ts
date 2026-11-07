@@ -1,3 +1,5 @@
+import { AutorizacionFake } from '@sig/autorizacion';
+import { FuncionDeshabilitadaError } from '@sig/normas';
 import { describe, expect, it } from 'vitest';
 import { componerDesdeEntorno } from './composicion.js';
 
@@ -48,6 +50,33 @@ describe('componerDesdeEntorno (producción)', () => {
     expect(componerDesdeEntorno({ RATE_LIMIT_PERSONA: '30', RATE_LIMIT_EMPRESA: '200' }).autenticacion.limites).toEqual({ persona: 30, empresa: 200 });
     expect(componerDesdeEntorno({}).autenticacion.limites).toEqual({ persona: 120, empresa: 600 });
     expect(() => componerDesdeEntorno({ RATE_LIMIT_PERSONA: '0' })).toThrow(/RATE_LIMIT_PERSONA/);
+  });
+
+  it('el flag de adopción se lee del entorno: habilitado por defecto, apagable, y un valor inválido impide arrancar', async () => {
+    expect(await componerDesdeEntorno({}).flags.habilitado('adopcion-habilitada', A as never)).toBe(true);
+    expect(await componerDesdeEntorno({ FEATURE_ADOPCION_HABILITADA: 'false' }).flags.habilitado('adopcion-habilitada', A as never)).toBe(false);
+    expect(() => componerDesdeEntorno({ FEATURE_ADOPCION_HABILITADA: 'quizá' })).toThrow(/FEATURE_ADOPCION_HABILITADA/);
+  });
+
+  describe('el flag de adopción está conectado a la composición real', () => {
+    const LIB = '11111111-1111-4111-8111-111111111111';
+    const conAdmin = () => {
+      const autorizacion = new AutorizacionFake();
+      autorizacion.asignar(A as never, U, 'administrador_sig');
+      return autorizacion;
+    };
+
+    it('con el flag apagado, un administrador recibe FuncionDeshabilitadaError sin tocar la base de datos', async () => {
+      const { normas } = componerDesdeEntorno({ FEATURE_ADOPCION_HABILITADA: 'false' }, { autorizacion: conAdmin() });
+      await expect(normas.adoptar.ejecutar({ empresaId: A as never, usuarioId: U, libreriaId: LIB })).rejects.toBeInstanceOf(FuncionDeshabilitadaError);
+    });
+
+    it('con el flag encendido sigue adelante (y como no hay base de datos aquí, falla por eso y no por el flag)', async () => {
+      const { normas } = componerDesdeEntorno({}, { autorizacion: conAdmin() });
+      const error = await normas.adoptar.ejecutar({ empresaId: A as never, usuarioId: U, libreriaId: LIB }).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(Error);
+      expect(error).not.toBeInstanceOf(FuncionDeshabilitadaError);
+    });
   });
 
   it('una configuración inválida de autenticación impide arrancar, nombrando la variable', () => {
