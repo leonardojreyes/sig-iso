@@ -1,6 +1,6 @@
 # ADR 027 — Sesión web (BFF) con OIDC y empresa solo desde el token
 
-- **Estado:** Propuesto (pendiente de aprobación del responsable)
+- **Estado:** Aprobado (2026-11-07), con las hipótesis de 30 min de inactividad, 8 h de sesión máxima, 5 min de access token y `SameSite=Lax`
 - **Fecha:** 2026-11-06
 - **Decide:** Ing. Leonardo J. Reyes B.
 
@@ -55,8 +55,8 @@ Faltan también las reglas de la sesión del navegador: dónde viven los tokens,
 
 ### 3. Expiración
 
-- Inactividad máxima de **30 minutos** (hipótesis de la pregunta Q4 del spec, a confirmar), impuesta por Keycloak (SSO Session Idle), no por la web.
-- Límite absoluto de sesión (`SSO Session Max`) de **8 horas** (hipótesis a confirmar) y access token de **5 minutos** como máximo.
+- Inactividad máxima de **30 minutos** (pregunta Q4 del spec, confirmada), impuesta por Keycloak (SSO Session Idle), no por la web.
+- Límite absoluto de sesión (`SSO Session Max`) de **8 horas** (confirmado) y access token de **5 minutos** como máximo.
 - Si se desactiva o se mueve de empresa a una cuenta, el refresh debe fallar; el access token vigente sigue valiendo hasta que expire (como máximo 5 minutos): queda documentado como límite aceptado.
 - Cuando el refresh falla por sesión inactiva o vencida, la persona vuelve a ingresar y se registra `sesion.expirada`.
 
@@ -86,7 +86,7 @@ Faltan también las reglas de la sesión del navegador: dónde viven los tokens,
 - El servidor web guarda el access token en memoria: si se reinicia, la persona sigue con sesión porque se recupera con el refresh token de la cookie.
 - Riesgo abierto: la serialización de la renovación por `sid` funciona dentro de una instancia; con varias instancias del servidor web, dos renovaciones simultáneas podrían invalidar la sesión. Se acota con una prueba y, si no basta, se pasa al almacén de sesión (alternativa 2).
 - La clave que sella la cookie es un secreto: se genera en local, queda en `.env.local` (fuera de git) y se rota sin cambiar el código (regla 9).
-- Hipótesis pendientes de tu confirmación: 30 minutos de inactividad (Q4), 8 horas de sesión máxima, 5 minutos de access token, y `Lax` frente a `Strict`.
+- Valores confirmados por el responsable el 2026-11-07: 30 minutos de inactividad (Q4), 8 horas de sesión máxima, 5 minutos de access token y `SameSite=Lax`.
 - Revisión de `revisor-seguridad` (2026-11-07): sin bloqueantes; sus 9 hallazgos importantes y 5 menores están incorporados arriba.
 - Las tareas 6.1, 6.2 (verificador y guardia) y la fase 10 (web) se construyen sobre este ADR.
 
