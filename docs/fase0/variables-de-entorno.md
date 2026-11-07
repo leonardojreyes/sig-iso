@@ -45,7 +45,7 @@ Una URL por rol; cada rol tiene un permiso distinto (plan, «Modelo de datos»).
 | `RATE_LIMIT_EMPRESA`                                          | no      | `600`                                 | Solicitudes por minuto de cada empresa, sumadas todas sus personas; no puede ser menor que el de una persona | 6.8       |
 | `OTEL_TRACES_EXPORTER`                                        | no      | `console`                             | Exportador de trazas de la API: `console` o `none` (nombre estándar de OpenTelemetry) | 12.1      |
 | `FEATURE_ADOPCION_HABILITADA`                                 | no      | `true`                                | Interruptor (flag de OpenFeature) de la adopción de librerías: `true` o `false`; apagado, la adopción responde 404 | 12.2      |
-| `OIDC_CLIENT_SECRET`                                          | sí      | —                                     | Secreto del cliente (lo genera `keycloak-dev`)      | 8.3       |
+| `OIDC_CLIENT_SECRET`                                          | sí      | —                                     | Secreto del cliente (lo genera `keycloak-dev`)      | 8.3 |
 | `OIDC_REDIRECT_URI`                                           | no      | `http://localhost:3000/auth/callback` | Retorno del flujo de código                         | 10.2      |
 | `SESSION_SEALING_KEY`                                         | sí      | —                                     | Clave que sella la cookie de sesión                 | 10.3      |
 | `SESSION_IDLE_MINUTES`                                        | no      | `30`                                  | Inactividad máxima (Q4, provisional)                | 10.4      |
