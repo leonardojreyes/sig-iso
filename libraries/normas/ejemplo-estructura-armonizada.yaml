@@ -1,0 +1,364 @@
+# BORRADOR — NUMERACIONES SIN VERIFICAR (pregunta Q7 del spec del corte 0.6).
+#
+# Librería de ejemplo de la Estructura Armonizada. Es una librería SINTÉTICA de elaboración propia: no es la norma ni su texto
+# (regla 3 del proyecto). Las guías están redactadas con palabras de SynapTech. Los títulos son breves, y VARIOS COINCIDEN con
+# los nombres usuales de las cláusulas: su uso está pendiente de decisión del responsable (ver verificacion-numeraciones.md).
+#
+# Las numeraciones de cada norma salen de memoria de `experto-iso` y DEBEN comprobarse contra los ejemplares vigentes antes de
+# publicar la librería. Lista de comprobación: docs/specs/corte-vertical-0-6/verificacion-numeraciones.md
+#
+# alcance_comun: `comun` = el tema y lo esencial son equivalentes en las tres normas; `parcial` = el tema existe en las tres pero
+# su contenido de fondo o su detalle difiere de forma relevante; `especifico` = solo existe en una norma.
+#
+# Al verificar: subir `version` a 1.0.0 y QUITAR este bloque de comentarios (una prueba exige que «borrador» y «sin verificar»
+# vayan juntos). Esta librería NO se carga en ningún catálogo mientras sea borrador.
+esquema: 2
+codigo: ejemplo-estructura-armonizada
+nombre: Ejemplo de Estructura Armonizada (borrador)
+version: 0.1.0
+es_ejemplo: true
+fuente: elaboración propia SynapTech
+referencias:
+  - norma: ISO 9001
+    edicion: "2015"
+  - norma: ISO/IEC 27001
+    edicion: "2022"
+  - norma: ISO/IEC 42001
+    edicion: "2023"
+entradas:
+  - id: ha-4.1
+    capitulo: 4
+    nivel: 1
+    titulo: "Contexto de la organización"
+    guia: "Anota qué factores dentro y fuera de la empresa pueden ayudar o estorbar a lograr los resultados que busca el sistema. Actualiza y fecha ese análisis."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "4.1"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "4.1"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "4.1"
+  - id: ha-4.2
+    capitulo: 4
+    nivel: 1
+    titulo: "Partes interesadas"
+    guia: "Lista quién tiene expectativas sobre el sistema y cuáles de ellas se vuelven obligatorias para ti. Revísala cuando cambie el contexto."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "4.2"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "4.2"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "4.2"
+  - id: ha-4.3
+    capitulo: 4
+    nivel: 1
+    titulo: "Alcance del sistema"
+    guia: "Define qué áreas, sitios y actividades cubre el sistema y qué queda fuera. Debe estar documentado y coincidir con el alcance que se certificará."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "4.3"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "4.3"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "4.3"
+  - id: ha-4.4
+    capitulo: 4
+    nivel: 1
+    titulo: "El sistema y sus procesos"
+    guia: "Describe los procesos del sistema y cómo se relacionan entre sí. Sirve para planificar qué auditar."
+    alcance_comun: parcial
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "4.4"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "4.4"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "4.4"
+  - id: ha-5.1
+    capitulo: 5
+    nivel: 1
+    titulo: "Liderazgo y compromiso"
+    guia: "Guarda pruebas concretas de que la dirección decide y actúa a favor del sistema: reuniones, recursos aprobados, mensajes al personal."
+    alcance_comun: parcial
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "5.1"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "5.1"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "5.1"
+  - id: ha-5.2
+    capitulo: 5
+    nivel: 1
+    titulo: "Política"
+    guia: "Escribe el compromiso de la dirección con el rumbo de la empresa y asegúrate de que el personal y los interesados puedan consultarlo."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "5.2"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "5.2"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "5.2"
+  - id: ha-5.3
+    capitulo: 5
+    nivel: 1
+    titulo: "Roles y responsabilidades"
+    guia: "Deja por escrito quién responde de qué en el sistema y comunícalo a cada persona."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "5.3"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "5.3"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "5.3"
+  - id: ha-6.1
+    capitulo: 6
+    nivel: 1
+    titulo: "Riesgos y oportunidades"
+    guia: "Determina qué riesgos y oportunidades pueden afectar los resultados y planifica acciones. En seguridad de la información y en IA incluye evaluar y tratar los riesgos de forma formal."
+    alcance_comun: parcial
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "6.1"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "6.1"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "6.1"
+  - id: ha-6.2
+    capitulo: 6
+    nivel: 1
+    titulo: "Objetivos y su planificación"
+    guia: "Define metas que se puedan medir cuando sea factible, alineadas con la política, con responsable, plazo y forma de seguimiento."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "6.2"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "6.2"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "6.2"
+  - id: ha-6.3
+    capitulo: 6
+    nivel: 1
+    titulo: "Planificación de cambios"
+    guia: "Cuando cambies algo del sistema de gestión, planifícalo, evalúa su efecto y anota quién lo ejecuta."
+    alcance_comun: parcial
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "6.3"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "6.3"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "6.3"
+  - id: ha-7.1
+    capitulo: 7
+    nivel: 1
+    titulo: "Recursos"
+    guia: "Determina y asegura los recursos que el sistema necesita, y revisa cada cierto tiempo si siguen siendo suficientes."
+    alcance_comun: parcial
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "7.1"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "7.1"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "7.1"
+  - id: ha-7.2
+    capitulo: 7
+    nivel: 1
+    titulo: "Competencia"
+    guia: "Describe qué debe saber hacer cada rol y guarda constancia de cómo se comprueba que la persona puede hacerlo."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "7.2"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "7.2"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "7.2"
+  - id: ha-7.3
+    capitulo: 7
+    nivel: 1
+    titulo: "Toma de conciencia"
+    guia: "Procura que cada persona entienda su aporte al sistema y las consecuencias de no seguirlo."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "7.3"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "7.3"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "7.3"
+  - id: ha-7.4
+    capitulo: 7
+    nivel: 1
+    titulo: "Comunicación"
+    guia: "Define qué se comunica, a quién, cuándo y por qué medio, dentro y fuera de la organización."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "7.4"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "7.4"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "7.4"
+  - id: ha-7.5
+    capitulo: 7
+    nivel: 1
+    titulo: "Información documentada"
+    guia: "Controla la creación, aprobación, versiones y acceso de los documentos y registros del sistema."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "7.5"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "7.5"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "7.5"
+  - id: ha-8.1
+    capitulo: 8
+    nivel: 1
+    titulo: "Planificación y control operativo"
+    guia: "Organiza cómo se ejecuta el trabajo del día a día y guarda lo que pruebe que se hizo como se planeó."
+    alcance_comun: parcial
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "8.1"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "8.1"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "8.1"
+  - id: ha-9.1
+    capitulo: 9
+    nivel: 1
+    titulo: "Seguimiento y medición"
+    guia: "Define qué se mide, con qué método y cuándo se analiza. Los resultados alimentan la revisión por la dirección."
+    alcance_comun: parcial
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "9.1"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "9.1"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "9.1"
+  - id: ha-9.2
+    capitulo: 9
+    nivel: 1
+    titulo: "Auditoría interna"
+    guia: "Programa y ejecuta auditorías internas con auditores imparciales y reporta los resultados."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "9.2"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "9.2"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "9.2"
+  - id: ha-9.3
+    capitulo: 9
+    nivel: 1
+    titulo: "Revisión por la dirección"
+    guia: "La alta dirección revisa el desempeño del sistema a intervalos planificados y deja decisiones registradas."
+    alcance_comun: parcial
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "9.3"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "9.3"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "9.3"
+  - id: ha-mejora
+    capitulo: 10
+    nivel: 1
+    titulo: "Mejora"
+    guia: "Revisa de forma periódica qué se puede hacer mejor, a partir de los resultados del seguimiento y de la revisión por la dirección, y deja evidencia de los avances."
+    alcance_comun: parcial
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "10.3"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "10.1"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "10.1"
+  - id: ha-no-conformidad
+    capitulo: 10
+    nivel: 1
+    titulo: "No conformidad y acción correctiva"
+    guia: "Si algo no se cumple, contén el efecto, averigua por qué pasó y evalúa si hace falta eliminar la causa; después comprueba que la acción funcionó."
+    alcance_comun: comun
+    aplica_a:
+      - norma: ISO 9001
+        edicion: "2015"
+        clausula: "10.2"
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "10.2"
+      - norma: ISO/IEC 42001
+        edicion: "2023"
+        clausula: "10.2"

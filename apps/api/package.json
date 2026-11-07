@@ -20,11 +20,19 @@
     "@nestjs/core": "^12.3.2",
     "@nestjs/platform-express": "^12.3.2",
     "@nestjs/swagger": "^12.1.0",
+    "@sig/auditoria": "workspace:*",
+    "@sig/autenticacion": "workspace:*",
+    "@sig/db": "workspace:*",
+    "@sig/empresas": "workspace:*",
     "@sig/normas": "workspace:*",
+    "@sig/tenancy": "workspace:*",
+    "kysely": "^0.29.8",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@nestjs/testing": "12.3.2",
+    "jose": "^6.2.15",
     "tsup": "^9.0.0",
     "tsx": "^4.23.15"
   }

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
-import { NormasModule } from '@sig/normas';
+import { AutenticacionModule } from './autenticacion/autenticacion.module.js';
+import { opcionesAutenticacionDesdeEntorno } from './composicion.js';
 import { HealthController } from './health.controller.js';
 
-@Module({ imports: [NormasModule], controllers: [HealthController] })
+// Los controladores de negocio se enlazan en las tareas 6.5 y 6.6 (sobre el contrato OpenAPI).
+@Module({ imports: [AutenticacionModule.register(opcionesAutenticacionDesdeEntorno(process.env))], controllers: [HealthController] })
 export class AppModule {}

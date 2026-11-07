@@ -1,6 +1,9 @@
 import nx from '@nx/eslint-plugin';
 import tseslint from 'typescript-eslint';
 
+// Librerías que pertenecen a `infrastructure`: el dominio y la aplicación llegan a ellas solo por puertos.
+const infraestructura = ['kysely', 'kysely/*', 'jose', 'ajv', 'ajv/*', 'yaml', '@sig/tenancy/contexto'];
+
 export default tseslint.config(
   { ignores: ['**/dist/**', '**/.next/**', '**/node_modules/**', '**/next-env.d.ts', '**/coverage/**', '.nx/**'] },
   ...tseslint.configs.recommended,
@@ -16,12 +19,17 @@ export default tseslint.config(
           depConstraints: [
             { sourceTag: 'type:app', onlyDependOnLibsWithTags: ['type:module', 'type:platform', 'type:package'] },
             { sourceTag: 'type:module', onlyDependOnLibsWithTags: ['type:platform', 'type:package'] },
-            { sourceTag: 'type:platform', onlyDependOnLibsWithTags: ['type:package'] },
+            { sourceTag: 'type:platform', onlyDependOnLibsWithTags: ['type:platform', 'type:package'] },
             { sourceTag: 'type:package', onlyDependOnLibsWithTags: ['type:package'] },
           ],
         },
       ],
     },
+  },
+  // Las pruebas del contrato recorren un documento YAML sin tipo: ahí `any` es la forma honesta de navegarlo.
+  {
+    files: ['packages/contracts/src/**/*.test.ts'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' },
   },
   // P2: arquitectura hexagonal dentro de cada módulo
   {
@@ -33,6 +41,8 @@ export default tseslint.config(
           patterns: [
             { group: ['**/application/**', '**/infrastructure/**', '**/interface/**'], message: 'El dominio no depende de otras capas.' },
             { group: ['@nestjs/*', 'next', 'next/*', 'react', 'pg', 'openai', 'ollama'], message: 'El dominio no conoce frameworks, BD ni proveedores de IA.' },
+            { group: infraestructura, message: 'El dominio no importa librerías de infraestructura (BD, tokens, validadores, archivos YAML).' },
+            { group: ['node:*'], message: 'El dominio no usa módulos de Node (archivos, red, contexto asíncrono).' },
           ],
         },
       ],
@@ -47,6 +57,8 @@ export default tseslint.config(
           patterns: [
             { group: ['**/infrastructure/**', '**/interface/**'], message: 'La aplicación depende solo del dominio y de puertos.' },
             { group: ['@nestjs/*', 'next', 'next/*', 'react'], message: 'La aplicación no conoce frameworks.' },
+            { group: infraestructura, message: 'La aplicación no importa librerías de infraestructura: usa un puerto y su adaptador.' },
+            { group: ['node:*'], message: 'La aplicación no usa módulos de Node: usa un puerto y su adaptador.' },
           ],
         },
       ],

@@ -1,11 +1,12 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { aplicarSeguridadHttp } from './autenticacion/seguridad-http.js';
 import { AppModule } from './app.module.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors({ origin: ['http://localhost:3000'] });
+  aplicarSeguridadHttp(app, process.env);
   const config = new DocumentBuilder()
     .setTitle('sig-iso API')
     .setDescription('Sistema de Gestión Integrado ISO — SynapTech')
