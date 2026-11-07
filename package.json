@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "typecheck": "node scripts/nx.mjs run-many -t typecheck",
     "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/db-migrate.ts",
+    "keycloak:install": "node scripts/keycloak-dev.mjs install",
     "ram:report": "node scripts/ram-report.mjs",
     "db:seed": "node --env-file-if-exists=.env.local --import tsx scripts/db-seed.ts",
     "db:seed:test": "node --env-file-if-exists=.env.local --import tsx scripts/db-seed.ts --prueba",
