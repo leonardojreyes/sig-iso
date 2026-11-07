@@ -367,6 +367,9 @@ importers:
         specifier: ^0.29.8
         version: 0.29.8
     devDependencies:
+      '@sig/autorizacion':
+        specifier: workspace:*
+        version: link:../../platform/autorizacion
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -459,6 +462,12 @@ importers:
       kysely:
         specifier: ^0.29.8
         version: 0.29.8
+
+  platform/autorizacion:
+    dependencies:
+      '@sig/tenancy':
+        specifier: workspace:*
+        version: link:../tenancy
 
   platform/db:
     dependencies:
