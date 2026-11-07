@@ -12,6 +12,8 @@ Se necesita SSO empresarial y federación por cliente, on-premise.
 
 Keycloak autogestionado con OIDC, OAuth2, SAML y SCIM. La empresa se resuelve desde el token, subdominio o encabezado, en un solo lugar.
 
+> **Matiz (ADR 027, propuesto):** en el corte 0.6 la empresa se resuelve **solo desde el token verificado**; el subdominio y el encabezado no se usan para decidir la empresa.
+
 ## Alternativas consideradas
 
 Ninguna: decisión previa.
