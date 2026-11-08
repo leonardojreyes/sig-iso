@@ -148,6 +148,43 @@ try {
       /no-store/.test(propia.headers.get('cache-control') ?? ''),
     `respuesta ${propia.status}, cache-control: ${propia.headers.get('cache-control')}`,
   );
+  // Marca REAL de la empresa de la sesión (GET /empresa/marca), sin nada de otra.
+  const panel = await pagina('/e/empresa-a/panel', cookieSesion);
+  const htmlPanel = await panel.text();
+  comprobar(
+    'marca real: con sesión de A, /e/empresa-a/panel responde 200 con el nombre de A y su CSS acotado a [data-empresa="empresa-a"]',
+    panel.status === 200 &&
+      htmlPanel.includes('Empresa A (prueba)') &&
+      htmlPanel.includes('[data-empresa="empresa-a"]'),
+    `respuesta ${panel.status}`,
+  );
+  comprobar(
+    'marca real: la respuesta de A no trae nada de B (ni nombre, ni color, ni identificador)',
+    !/Empresa B|b45309|empresa-b/i.test(htmlPanel),
+  );
+  comprobar(
+    'marca real: la pantalla de A no deja datos de demostración (sin los nombres de la empresa de ejemplo)',
+    !/SynapTech Ecuador|Andes Log/i.test(htmlPanel),
+  );
+  const listado = await pagina('/e/empresa-a/requisitos', cookieSesion);
+  comprobar(
+    'marca real: el listado de A responde 200 con su marca',
+    listado.status === 200 && (await listado.text()).includes('Empresa A (prueba)'),
+    `respuesta ${listado.status}`,
+  );
+  const detalle = await pagina('/e/empresa-a/requisitos/no-existe', cookieSesion);
+  comprobar('marca real: un requisito que no existe da 404', detalle.status === 404, `respuesta ${detalle.status}`);
+  const ingresoGenerico = await pagina('/e/cualquier-empresa/ingreso', new Map());
+  const textoIngreso = await ingresoGenerico.text();
+  comprobar(
+    'el ingreso sin sesión es genérico: 200 para cualquier identificador bien formado y sin nombres de empresas',
+    ingresoGenerico.status === 200 && !/Empresa A|Empresa B|SynapTech Ecuador|Andes Log/i.test(textoIngreso),
+    `respuesta ${ingresoGenerico.status}`,
+  );
+  comprobar(
+    'un identificador mal formado en el ingreso da 404',
+    (await pagina('/e/EMPRESA/ingreso', new Map())).status === 404,
+  );
   const deB = await pagina('/e/empresa-b/contexto', cookieSesion);
   const textoDeB = await deB.text();
   const inexistente = await pagina('/e/empresa-c/contexto', cookieSesion);
