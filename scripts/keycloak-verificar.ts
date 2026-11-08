@@ -145,6 +145,35 @@ try {
     `respuesta ${directo.status}`,
   );
 
+  // Clientes integrados de Keycloak (autoservicio y administración del realm): deshabilitados, sin formulario ni contraseña directa.
+  for (const id of ['account', 'account-console', 'admin-cli', 'security-admin-console']) {
+    const pagina = await fetch(
+      `${emisor}/protocol/openid-connect/auth?${new URLSearchParams({ client_id: id, response_type: 'code', redirect_uri: `${redirectUri}`, scope: 'openid' })}`,
+      { redirect: 'manual' },
+    );
+    const html = pagina.status === 200 ? await pagina.text() : '';
+    comprobar(
+      `cliente integrado ${id}: no ofrece formulario de ingreso`,
+      !html.includes('kc-form-login'),
+      `respuesta ${pagina.status}`,
+    );
+  }
+  const adminCli = await fetch(`${emisor}/protocol/openid-connect/token`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'password',
+      client_id: 'admin-cli',
+      username: 'admin-a',
+      password: claves['admin-a'] ?? '',
+    }),
+  });
+  comprobar(
+    'admin-cli no acepta contraseña directa en el realm sigiso',
+    adminCli.status === 400 || adminCli.status === 401,
+    `respuesta ${adminCli.status}`,
+  );
+
   // Eventos: la cuenta de servicio de solo lectura de eventos (la del worker, 11.1) los ve y quedaron registrados.
   const secretoEventos = process.env.KEYCLOAK_EVENTS_CLIENT_SECRET;
   const idEventos = process.env.KEYCLOAK_EVENTS_CLIENT_ID ?? 'sigiso-events';

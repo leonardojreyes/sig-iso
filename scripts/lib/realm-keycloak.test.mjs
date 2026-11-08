@@ -248,6 +248,29 @@ describe('realm resuelto (ADR 025 y 027)', () => {
     });
   });
 
+  it('clientes integrados de autoservicio y de administración del realm: deshabilitados y sin flujos', () => {
+    for (const id of ['account', 'account-console', 'admin-cli', 'security-admin-console']) {
+      const c = cliente(realm, id);
+      expect(c, id).toBeDefined();
+      expect(c, id).toMatchObject({
+        enabled: false,
+        standardFlowEnabled: false,
+        implicitFlowEnabled: false,
+        directAccessGrantsEnabled: false,
+        serviceAccountsEnabled: false,
+        redirectUris: [],
+        webOrigins: [],
+      });
+    }
+    // Los únicos clientes habilitados son los nuestros.
+    expect(
+      realm.clients
+        .filter((c) => c.enabled)
+        .map((c) => c.clientId)
+        .sort(),
+    ).toEqual(['sigiso-events', 'sigiso-web']);
+  });
+
   it('cuenta de servicio de eventos: solo view-events, sin flujos de personas', () => {
     const eventos = cliente(realm, 'sigiso-events');
     expect(eventos).toMatchObject({
