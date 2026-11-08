@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { actualizarEnv } from './lib/db-init.mjs';
+import { actualizarEnv, generarClave, parsearEnv } from './lib/db-init.mjs';
 import { DATOS_SIEMBRA } from './lib/datos-siembra.ts';
 import { generarSecretos, resolverRealm } from './lib/realm-keycloak.mjs';
 
@@ -46,6 +46,8 @@ try {
       KEYCLOAK_ADMIN_PASSWORD: secretos.adminPassword,
       KEYCLOAK_EVENTS_CLIENT_ID: 'sigiso-events',
       KEYCLOAK_EVENTS_CLIENT_SECRET: secretos.marcadores.KEYCLOAK_EVENTS_CLIENT_SECRET,
+      // Clave que sella las cookies de la web (10.2/10.3): se genera una vez y no se cambia al volver a ejecutar.
+      SESSION_SEALING_KEY: parsearEnv(textoEnv).get('SESSION_SEALING_KEY') || generarClave(),
     }),
   );
 
