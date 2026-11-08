@@ -2,7 +2,7 @@
 import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
-import { GestorPools, leerUrls } from '@sig/db';
+import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
 import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
@@ -12,16 +12,6 @@ import type { OpcionesEmpresaSesion } from './empresas/empresa-sesion.module.js'
 import { leerConfiguracionFlags } from './flags/configuracion.js';
 import { FlagsOpenFeature } from './flags/flags-openfeature.js';
 import type { OpcionesNormasApi } from './normas/normas-api.module.js';
-
-/** Hasta que exista el adaptador de OpenFGA (tarea 9.3) la autorización falla cerrada: ni «sí» ni roles inventados. */
-class AutorizacionNoConfigurada implements AutorizacionPort {
-  puede(): Promise<boolean> {
-    return Promise.reject(new Error('La autorización no está configurada: falta el adaptador de OpenFGA (tarea 9.3)'));
-  }
-  rolesDe(): Promise<never> {
-    return Promise.reject(new Error('La autorización no está configurada: falta el adaptador de OpenFGA (tarea 9.3)'));
-  }
-}
 
 export interface Composicion {
   readonly autenticacion: OpcionesAutenticacion;
@@ -54,8 +44,12 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
     obtenerPropia: async (empresaId) => new EmpresaKysely(obtenerPools().db('app')).obtenerPropia(empresaId),
     obtenerPersona: async (empresaId, usuarioId) => new EmpresaKysely(obtenerPools().db('app')).obtenerPersona(empresaId, usuarioId),
   };
-  // Hasta la tarea 9.3 no hay adaptador de OpenFGA: la composición real recibe el suyo aquí; sin él, falla cerrado.
-  const autorizacion = dependencias.autorizacion ?? new AutorizacionNoConfigurada();
+  // ADR 029: el rol de cada persona vive en la base (usuario.rol) y los permisos salen de la matriz del código. Se consulta con
+  // el rol de la aplicación dentro de la empresa, así que la RLS impide usar el rol de una empresa en otra. Falla cerrada.
+  const autorizacion: AutorizacionPort = dependencias.autorizacion ?? {
+    puede: async (usuarioId, permiso, empresaId) => new AutorizacionPostgres(obtenerPools().db('app')).puede(usuarioId, permiso, empresaId),
+    rolesDe: async (usuarioId, empresaId) => new AutorizacionPostgres(obtenerPools().db('app')).rolesDe(usuarioId, empresaId),
+  };
   // Una unidad de trabajo por ejecución sobre el pool del rol de la aplicación (con la RLS aplicada).
   const unidad: UnidadDeTrabajoPort<ContextoAdopcion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoNormas(obtenerPools().db('app')).ejecutar(empresaId, fn) };
 

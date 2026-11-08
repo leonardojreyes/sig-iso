@@ -32,7 +32,7 @@ const PRIVILEGIOS = [
 // Matriz esperada de privilegios de TABLA (el dueño, `sigiso_owner`, es dueño de todo y no se lista).
 const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   empresa: { app: ["SELECT"] },
-  usuario: { app: ["SELECT", "INSERT"] }, // UPDATE solo en columnas (nombre, correo)
+  usuario: { app: ["SELECT"] }, // INSERT y UPDATE solo por columnas, sin `rol` (migración 0005)
   libreria: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
   libreria_entrada: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
   libreria_entrada_norma: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },

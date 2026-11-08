@@ -534,6 +534,9 @@ importers:
 
   platform/db:
     dependencies:
+      '@sig/autorizacion':
+        specifier: workspace:*
+        version: link:../autorizacion
       '@sig/tenancy':
         specifier: workspace:*
         version: link:../tenancy

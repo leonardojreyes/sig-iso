@@ -55,6 +55,36 @@ describe.skipIf(!hayBase)('sembrar (PostgreSQL real)', () => {
     expect(await eventos()).toEqual([{ accion: 'datos_iniciales.cargados', empresa_id: null, actor_tipo: 'plataforma', motivo: 'carga_inicial', despues: { empresas: 2, usuarios: 4 }, resultado: 'ok' }]);
   });
 
+  const rolesDe = (empresa: string) =>
+    conTenant(pools.db('owner'), empresa as never, async (trx) => (await sql<{ correo: string; rol: string | null }>`select correo, rol from usuario order by correo`.execute(trx)).rows);
+
+  it('guarda el rol de cada cuenta (ADR 029): administrador SIG y colaborador en cada empresa', async () => {
+    expect(await rolesDe(A)).toEqual([
+      { correo: 'admin-a@example.test', rol: 'administrador_sig' },
+      { correo: 'colab-a@example.test', rol: 'colaborador' },
+    ]);
+    expect(await rolesDe(B)).toEqual([
+      { correo: 'admin-b@example.test', rol: 'administrador_sig' },
+      { correo: 'colab-b@example.test', rol: 'colaborador' },
+    ]);
+  });
+
+  it('asigna el rol a cuentas que ya existían sin rol, y NO pisa un rol cambiado a mano', async () => {
+    const admin = datos.usuarios[0]!;
+    const colab = datos.usuarios[1]!;
+    await conTenant(pools.db('owner'), A as never, async (trx) => {
+      await sql`update usuario set rol = null where id = ${admin.id}`.execute(trx);
+      await sql`update usuario set rol = 'auditor_interno' where id = ${colab.id}`.execute(trx);
+    });
+    const r = await sembrar(destinos(), datos, origenId);
+    expect(r).toMatchObject({ usuariosNuevos: 0 });
+    expect(await rolesDe(A)).toEqual([
+      { correo: 'admin-a@example.test', rol: 'administrador_sig' },
+      { correo: 'colab-a@example.test', rol: 'auditor_interno' },
+    ]);
+    await conTenant(pools.db('owner'), A as never, (trx) => sql`update usuario set rol = 'colaborador' where id = ${colab.id}`.execute(trx));
+  });
+
   it('una segunda corrida deja el MISMO estado: nada nuevo y ningún hecho más', async () => {
     const antes = { a: await personasDe(A), b: await personasDe(B), ea: await empresaDe(A), eb: await empresaDe(B) };
     const r = await sembrar(destinos(), datos, origenId);

@@ -34,15 +34,15 @@ describe('componerDesdeEntorno (producción)', () => {
     await expect(normas.requisito.ejecutar({ empresaId: A as never, id: '11111111-1111-4111-8111-111111111111' })).rejects.toThrow();
   });
 
-  it('mientras no exista el adaptador de OpenFGA (tarea 9.3), la autorización NO responde «sí» ni inventa roles', async () => {
+  it('la autorización real consulta la base (ADR 029): sin sus URLs FALLA, nunca responde «sí» ni inventa roles', async () => {
     const { autorizacion } = componerDesdeEntorno({});
-    await expect(autorizacion.puede(U, 'librerias.adoptar', A as never)).rejects.toThrow(/autorizaci/i);
-    await expect(autorizacion.rolesDe(U, A as never)).rejects.toThrow(/autorizaci/i);
+    await expect(autorizacion.puede(U, 'librerias.adoptar', A as never)).rejects.toThrow(/DATABASE_URL_APP/);
+    await expect(autorizacion.rolesDe(U, A as never)).rejects.toThrow(/DATABASE_URL_APP/);
   });
 
-  it('adoptar una librería sin autorización configurada falla cerrado: no adopta y no revela si la librería existe', async () => {
+  it('adoptar una librería sin poder consultar la autorización falla cerrado: no adopta y no revela si la librería existe', async () => {
     const { normas } = componerDesdeEntorno({});
-    await expect(normas.adoptar.ejecutar({ empresaId: A as never, usuarioId: U, libreriaId: '11111111-1111-4111-8111-111111111111' })).rejects.toThrow(/autorizaci/i);
+    await expect(normas.adoptar.ejecutar({ empresaId: A as never, usuarioId: U, libreriaId: '11111111-1111-4111-8111-111111111111' })).rejects.toThrow(/DATABASE_URL_APP/);
   });
 
   it('los límites de frecuencia se leen del entorno y uno inválido impide arrancar, nombrando la variable', () => {

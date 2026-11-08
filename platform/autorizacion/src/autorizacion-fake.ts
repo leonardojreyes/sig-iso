@@ -18,7 +18,7 @@ const rol = (valor: unknown): Rol => {
 
 /**
  * Implementación en memoria para pruebas y desarrollo: los roles se asignan POR EMPRESA (el rol de A no vale en B).
- * El adaptador de OpenFGA (tarea 9.x) cumple el mismo puerto y las mismas pruebas.
+ * El adaptador de producción (`AutorizacionPostgres`, ADR 029) cumple el mismo puerto.
  */
 export class AutorizacionFake implements AutorizacionPort {
   private readonly roles = new Map<string, Set<Rol>>();

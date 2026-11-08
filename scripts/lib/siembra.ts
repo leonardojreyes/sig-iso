@@ -36,10 +36,12 @@ export const sembrar = async (destinos: DestinosSiembra, datos: DatosSiembra, or
         on conflict (id) do nothing returning 1`.execute(trx);
       empresasNuevas += e.rows.length;
       for (const u of datos.usuarios.filter((x) => x.empresaId === empresa.id)) {
-        const r = await sql`insert into usuario (id, empresa_id, nombre, correo)
-          values (${u.id}, ${u.empresaId}, ${u.nombre}, ${u.correo})
+        const r = await sql`insert into usuario (id, empresa_id, nombre, correo, rol)
+          values (${u.id}, ${u.empresaId}, ${u.nombre}, ${u.correo}, ${u.rol})
           on conflict (id) do nothing returning 1`.execute(trx);
         usuariosNuevos += r.rows.length;
+        // Cuentas que ya existían sin rol (anteriores a la migración 0005): se completa, sin pisar un rol cambiado a mano.
+        await sql`update usuario set rol = ${u.rol} where id = ${u.id} and rol is null`.execute(trx);
       }
     });
   }

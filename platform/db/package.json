@@ -30,6 +30,7 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
+    "@sig/autorizacion": "workspace:*",
     "@sig/tenancy": "workspace:*",
     "kysely": "^0.29.8",
     "pg": "^8.23.1"
