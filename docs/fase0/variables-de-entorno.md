@@ -49,6 +49,7 @@ Una URL por rol; cada rol tiene un permiso distinto (plan, «Modelo de datos»).
 | `OIDC_REDIRECT_URI`                                           | no      | `http://localhost:3000/auth/callback` | Retorno del flujo de código                         | 10.2      |
 | `SESSION_SEALING_KEY`                                         | sí      | —                                     | Clave que sella la cookie de sesión                 | 10.3      |
 | `SESSION_IDLE_MINUTES`                                        | no      | `30`                                  | Inactividad máxima (Q4, provisional)                | 10.4      |
+| `KEYCLOAK_PORT`                                              | no      | `8080`                                | Puerto local de Keycloak (siempre en 127.0.0.1)     | 8.4       |
 | `KEYCLOAK_HOME`                                               | no      | `.local/keycloak`                     | Carpeta ignorada con la instalación                 | 8.2       |
 | `KEYCLOAK_ADMIN_USER` / `KEYCLOAK_ADMIN_PASSWORD`             | sí      | —                                     | Administrador inicial (generado)                    | 8.4       |
 | `KEYCLOAK_EVENTS_CLIENT_ID` / `KEYCLOAK_EVENTS_CLIENT_SECRET` | sí      | —                                     | Cuenta de servicio con `view-events` para el worker | 11.1      |

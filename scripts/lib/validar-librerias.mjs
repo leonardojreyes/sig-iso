@@ -30,6 +30,11 @@ export const validarDirectorio = (dir) =>
     const r = validarLibreria(datos);
     if (!r.ok) return { archivo, ok: false, errores: r.errores };
     // Control de texto copiado (ADR 026): solo se evalúa con la estructura ya válida. Los hallazgos son códigos, sin contenido.
-    const errores = revisarContenido(r.libreria).map((h) => ({ entrada: h.entrada, indice: h.indice, ruta: `entradas[${h.indice}].${h.campo}`, codigo: h.codigo }));
+    const errores = revisarContenido(r.libreria).map((h) => ({
+      entrada: h.entrada,
+      indice: h.indice,
+      ruta: `entradas[${h.indice}].${h.campo}`,
+      codigo: h.codigo,
+    }));
     return { archivo, ok: errores.length === 0, errores };
   });

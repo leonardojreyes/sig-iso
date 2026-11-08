@@ -53,8 +53,10 @@ describe('la plantilla no contiene secretos', () => {
   });
 
   it('no trae ninguna cadena larga parecida a una clave (≥ 32 caracteres sin espacios)', () => {
-    // Los nombres de evento (MAYÚSCULAS_Y_GUION_BAJO) no son claves.
-    const largas = (plantillaTexto.match(/"[A-Za-z0-9+/_=-]{32,}"/g) ?? []).filter((c) => !/^"[A-Z_]+"$/.test(c));
+    // Nombres de evento (MAYÚSCULAS_Y_GUION_BAJO) e identificadores de proveedor (minúsculas-y-guiones) no son claves.
+    const largas = (plantillaTexto.match(/"[A-Za-z0-9+/_=-]{32,}"/g) ?? []).filter(
+      (c) => !/^"([A-Z_]+|[a-z-]+)"$/.test(c),
+    );
     expect(largas).toEqual([]);
   });
 
@@ -203,6 +205,19 @@ describe('realm resuelto (ADR 025 y 027)', () => {
       'included.custom.audience': 'sigiso-api',
       'access.token.claim': 'true',
     });
+  });
+
+  it('alcances explícitos y mínimos: el cliente web recibe «basic», que aporta sub (lo exige la API), y nada de perfil ni correo', () => {
+    expect(realm.clientScopes.map((s) => s.name)).toEqual(['basic']);
+    expect(cliente(realm, 'sigiso-web').defaultClientScopes).toEqual(['basic']);
+    const sub = realm.clientScopes[0].protocolMappers.find((m) => m.protocolMapper === 'oidc-sub-mapper');
+    expect(sub.config).toMatchObject({
+      'access.token.claim': 'true',
+      'id.token.claim': 'true',
+    });
+    expect(realm.defaultDefaultClientScopes).toEqual(['basic']);
+    expect(realm.defaultOptionalClientScopes).toEqual([]);
+    expect(cliente(realm, 'sigiso-events').defaultClientScopes).toEqual(['basic']);
   });
 
   it('cuenta de servicio de eventos: solo view-events, sin flujos de personas', () => {

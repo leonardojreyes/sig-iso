@@ -15,7 +15,17 @@ const valida = () => ({
   es_ejemplo: true,
   fuente: 'elaboración propia SynapTech',
   referencias: [{ norma: 'Norma A', edicion: '2015' }],
-  entradas: [{ id: 'ha-4.1', capitulo: 4, nivel: 1, titulo: 'Primer tema de prueba', guia: 'Texto sintético de prueba, sin relación con ninguna norma.', alcance_comun: 'comun', aplica_a: [{ norma: 'Norma A', edicion: '2015', clausula: '4.1' }] }],
+  entradas: [
+    {
+      id: 'ha-4.1',
+      capitulo: 4,
+      nivel: 1,
+      titulo: 'Primer tema de prueba',
+      guia: 'Texto sintético de prueba, sin relación con ninguna norma.',
+      alcance_comun: 'comun',
+      aplica_a: [{ norma: 'Norma A', edicion: '2015', clausula: '4.1' }],
+    },
+  ],
 });
 
 let dir;
@@ -57,7 +67,9 @@ describe('validarDirectorio', () => {
     l.entradas[0].guia = 'ana.perez@example.test '.repeat(20);
     const r = validarDirectorio(crear({ 'mala.yaml': stringify(l) }));
     expect(r[0].ok).toBe(false);
-    expect(r[0].errores).toEqual([{ entrada: 'ha-4.1', indice: 0, ruta: 'entradas[0].guia', codigo: 'demasiado_largo' }]);
+    expect(r[0].errores).toEqual([
+      { entrada: 'ha-4.1', indice: 0, ruta: 'entradas[0].guia', codigo: 'demasiado_largo' },
+    ]);
     expect(JSON.stringify(r)).not.toContain('ana.perez');
   });
 
@@ -70,7 +82,10 @@ describe('validarDirectorio', () => {
 
   it('un YAML mal formado se informa con un código, sin el texto del error (podría contener el contenido)', () => {
     const r = validarDirectorio(crear({ 'roto.yaml': 'esquema: 2\ncodigo: [sin cerrar ana.perez@example.test\n' }));
-    expect(r[0]).toMatchObject({ ok: false, errores: [{ entrada: null, indice: null, ruta: '', codigo: 'yaml_invalido' }] });
+    expect(r[0]).toMatchObject({
+      ok: false,
+      errores: [{ entrada: null, indice: null, ruta: '', codigo: 'yaml_invalido' }],
+    });
     expect(JSON.stringify(r)).not.toContain('ana.perez');
   });
 
@@ -87,10 +102,30 @@ describe('validarDirectorio', () => {
     };
 
     it.each([
-      ['más de 2 frases', (e) => (e.guia = 'Primera frase de prueba. Segunda frase de prueba. Tercera frase de prueba.'), 'entradas[0].guia', 'guia_demasiadas_frases'],
-      ['tono normativo', (e) => (e.guia = 'La organización debe revisar esto con regularidad.'), 'entradas[0].guia', 'tono_normativo'],
-      ['formato de lista', (e) => (e.guia = 'Incluye: a) esto, b) aquello, c) lo otro.'), 'entradas[0].guia', 'formato_de_lista'],
-      ['un correo en la guía', (e) => (e.guia = 'Escribe a alguien@example.test para más información.'), 'entradas[0].guia', 'enlace_o_correo'],
+      [
+        'más de 2 frases',
+        (e) => (e.guia = 'Primera frase de prueba. Segunda frase de prueba. Tercera frase de prueba.'),
+        'entradas[0].guia',
+        'guia_demasiadas_frases',
+      ],
+      [
+        'tono normativo',
+        (e) => (e.guia = 'La organización debe revisar esto con regularidad.'),
+        'entradas[0].guia',
+        'tono_normativo',
+      ],
+      [
+        'formato de lista',
+        (e) => (e.guia = 'Incluye: a) esto, b) aquello, c) lo otro.'),
+        'entradas[0].guia',
+        'formato_de_lista',
+      ],
+      [
+        'un correo en la guía',
+        (e) => (e.guia = 'Escribe a alguien@example.test para más información.'),
+        'entradas[0].guia',
+        'enlace_o_correo',
+      ],
       ['un salto de línea en el título', (e) => (e.titulo = 'Dos\nlíneas'), 'entradas[0].titulo', 'formato_de_lista'],
     ])('rechaza una librería válida en estructura pero con %s', (_n, cambio, ruta, codigo) => {
       const r = con(cambio);
@@ -120,7 +155,8 @@ describe('validarDirectorio', () => {
   it('las librerías REALES del repositorio cumplen el esquema y las reglas de contenido', () => {
     const reales = validarDirectorio(join(import.meta.dirname, '../../libraries/normas'));
     expect(reales.length).toBeGreaterThan(0);
-    for (const r of reales) expect({ archivo: r.archivo, errores: r.errores }).toEqual({ archivo: r.archivo, errores: [] });
+    for (const r of reales)
+      expect({ archivo: r.archivo, errores: r.errores }).toEqual({ archivo: r.archivo, errores: [] });
   });
 
   it('revisa cada archivo por separado', () => {
@@ -132,7 +168,11 @@ describe('validarDirectorio', () => {
 });
 
 describe('pnpm libraries:validate (CLI)', () => {
-  const ejecutar = (d) => spawnSync(process.execPath, ['--import', 'tsx', 'scripts/validate-libraries.mjs', '--dir', d], { cwd: join(import.meta.dirname, '../..'), encoding: 'utf8' });
+  const ejecutar = (d) =>
+    spawnSync(process.execPath, ['--import', 'tsx', 'scripts/validate-libraries.mjs', '--dir', d], {
+      cwd: join(import.meta.dirname, '../..'),
+      encoding: 'utf8',
+    });
 
   it('sale con 0 si todas las librerías son válidas', () => {
     const r = ejecutar(crear({ 'ok.yaml': stringify(valida()) }));

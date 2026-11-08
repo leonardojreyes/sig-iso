@@ -24,20 +24,33 @@ describe('parsearPs (macOS y Linux: ps -axo pid=,ppid=,rss=,command=)', () => {
     ].join('\n');
     expect(parsearPs(salida)).toEqual([
       { pid: 1, ppid: 0, rssKb: 1234, comando: '/sbin/launchd' },
-      { pid: 501, ppid: 1, rssKb: 20480, comando: '/opt/homebrew/opt/postgresql@16/bin/postgres -D /opt/homebrew/var/postgresql@16' },
+      {
+        pid: 501,
+        ppid: 1,
+        rssKb: 20480,
+        comando: '/opt/homebrew/opt/postgresql@16/bin/postgres -D /opt/homebrew/var/postgresql@16',
+      },
       { pid: 502, ppid: 501, rssKb: 3000, comando: 'postgres: checkpointer' },
     ]);
   });
 
   it('ignora líneas vacías o mal formadas', () => {
-    expect(parsearPs('\n\nbasura\n  12 x 34 cmd\n  7  1  5 ok\n')).toEqual([{ pid: 7, ppid: 1, rssKb: 5, comando: 'ok' }]);
+    expect(parsearPs('\n\nbasura\n  12 x 34 cmd\n  7  1  5 ok\n')).toEqual([
+      { pid: 7, ppid: 1, rssKb: 5, comando: 'ok' },
+    ]);
   });
 });
 
 describe('parsearWindows (Get-CimInstance Win32_Process … | ConvertTo-Json)', () => {
   it('convierte bytes de memoria de trabajo a KB y une nombre y línea de comando', () => {
     const json = JSON.stringify([
-      { ProcessId: 10, ParentProcessId: 4, Name: 'postgres.exe', WorkingSetSize: 10485760, CommandLine: '"C:\\pg\\bin\\postgres.exe" -D data' },
+      {
+        ProcessId: 10,
+        ParentProcessId: 4,
+        Name: 'postgres.exe',
+        WorkingSetSize: 10485760,
+        CommandLine: '"C:\\pg\\bin\\postgres.exe" -D data',
+      },
       { ProcessId: 11, ParentProcessId: 10, Name: 'java.exe', WorkingSetSize: 2097152, CommandLine: null },
     ]);
     expect(parsearWindows(json)).toEqual([
@@ -47,9 +60,17 @@ describe('parsearWindows (Get-CimInstance Win32_Process … | ConvertTo-Json)', 
   });
 
   it('acepta un solo objeto (PowerShell no lo envuelve en lista) y valores nulos', () => {
-    expect(parsearWindows(JSON.stringify({ ProcessId: 5, ParentProcessId: 1, Name: 'a.exe', WorkingSetSize: null, CommandLine: 'a.exe x' }))).toEqual([
-      { pid: 5, ppid: 1, rssKb: 0, comando: 'a.exe x' },
-    ]);
+    expect(
+      parsearWindows(
+        JSON.stringify({
+          ProcessId: 5,
+          ParentProcessId: 1,
+          Name: 'a.exe',
+          WorkingSetSize: null,
+          CommandLine: 'a.exe x',
+        }),
+      ),
+    ).toEqual([{ pid: 5, ppid: 1, rssKb: 0, comando: 'a.exe x' }]);
   });
 
   it.each(['', 'no es json', '{', 'null', '42'])('una salida inválida (%j) da lista vacía', (s) => {
@@ -60,12 +81,33 @@ describe('parsearWindows (Get-CimInstance Win32_Process … | ConvertTo-Json)', 
 describe('puertos en escucha', () => {
   it('parsearLsof lee `lsof -Fpn`: pid y puertos por proceso', () => {
     const salida = 'p100\nf5\nn127.0.0.1:5432\nn[::1]:5432\np200\nn*:3001\np300\nn*:3000\n';
-    expect(parsearLsof(salida)).toEqual(new Map([[100, [5432]], [200, [3001]], [300, [3000]]]));
+    expect(parsearLsof(salida)).toEqual(
+      new Map([
+        [100, [5432]],
+        [200, [3001]],
+        [300, [3000]],
+      ]),
+    );
   });
 
   it('parsearPuertosWindows lee Get-NetTCPConnection (lista u objeto)', () => {
-    expect(parsearPuertosWindows(JSON.stringify([{ OwningProcess: 7, LocalPort: 3000 }, { OwningProcess: 7, LocalPort: 3001 }, { OwningProcess: 8, LocalPort: 5432 }]))).toEqual(new Map([[7, [3000, 3001]], [8, [5432]]]));
-    expect(parsearPuertosWindows(JSON.stringify({ OwningProcess: 9, LocalPort: 8080 }))).toEqual(new Map([[9, [8080]]]));
+    expect(
+      parsearPuertosWindows(
+        JSON.stringify([
+          { OwningProcess: 7, LocalPort: 3000 },
+          { OwningProcess: 7, LocalPort: 3001 },
+          { OwningProcess: 8, LocalPort: 5432 },
+        ]),
+      ),
+    ).toEqual(
+      new Map([
+        [7, [3000, 3001]],
+        [8, [5432]],
+      ]),
+    );
+    expect(parsearPuertosWindows(JSON.stringify({ OwningProcess: 9, LocalPort: 8080 }))).toEqual(
+      new Map([[9, [8080]]]),
+    );
     expect(parsearPuertosWindows('basura')).toEqual(new Map());
   });
 });
@@ -144,12 +186,27 @@ describe('agregar: cada proceso suma a su componente o al del antecesor clasific
   });
 
   it('tolera ciclos de pid (datos corruptos) sin colgarse', () => {
-    const r = agregar([{ pid: 1, ppid: 2, rssKb: 1, comando: 'x' }, { pid: 2, ppid: 1, rssKb: 1, comando: 'y' }], new Map());
+    const r = agregar(
+      [
+        { pid: 1, ppid: 2, rssKb: 1, comando: 'x' },
+        { pid: 2, ppid: 1, rssKb: 1, comando: 'y' },
+      ],
+      new Map(),
+    );
     expect(Object.values(r).every((x) => x.procesos === 0)).toBe(true);
   });
 
   it('usa los puertos para atribuir a la API y a la web', () => {
-    const r = agregar([{ pid: 5, ppid: 1, rssKb: 7 * KB, comando: 'node servidor.js' }, { pid: 6, ppid: 1, rssKb: 9 * KB, comando: 'node otro.js' }], new Map([[5, [3001]], [6, [3000]]]));
+    const r = agregar(
+      [
+        { pid: 5, ppid: 1, rssKb: 7 * KB, comando: 'node servidor.js' },
+        { pid: 6, ppid: 1, rssKb: 9 * KB, comando: 'node otro.js' },
+      ],
+      new Map([
+        [5, [3001]],
+        [6, [3000]],
+      ]),
+    );
     expect(r.api).toEqual({ procesos: 1, rssKb: 7 * KB });
     expect(r.web).toEqual({ procesos: 1, rssKb: 9 * KB });
   });
@@ -169,7 +226,13 @@ describe('resumir y formatear', () => {
     expect(r.totalMb).toBeCloseTo(1860, 5);
     expect(r.porcentajePresupuesto).toBeCloseTo((1860 / 4096) * 100, 5);
     expect(r.estado).toBe('dentro');
-    expect(r.componentes.map((x) => [x.id, x.enEjecucion])).toEqual([['postgresql', true], ['keycloak', true], ['openfga', false], ['api', true], ['web', true]]);
+    expect(r.componentes.map((x) => [x.id, x.enEjecucion])).toEqual([
+      ['postgresql', true],
+      ['keycloak', true],
+      ['openfga', false],
+      ['api', true],
+      ['web', true],
+    ]);
   });
 
   it.each([
@@ -178,7 +241,12 @@ describe('resumir y formatear', () => {
     [4096, 'cerca'],
     [4200, 'excedido'],
   ])('con %i MB el estado es %s', (mb, estado) => {
-    expect(resumir({ ...agregado, web: { procesos: 1, rssKb: mb * KB - 1860 * KB + 600 * KB } }, { presupuestoMb: 4096, totalEquipoMb: 8192 }).estado).toBe(estado);
+    expect(
+      resumir(
+        { ...agregado, web: { procesos: 1, rssKb: mb * KB - 1860 * KB + 600 * KB } },
+        { presupuestoMb: 4096, totalEquipoMb: 8192 },
+      ).estado,
+    ).toBe(estado);
   });
 
   it('formatear da un informe legible: componentes, MB, procesos, total y estado', () => {
@@ -193,9 +261,13 @@ describe('resumir y formatear', () => {
   });
 
   it('el informe avisa cuando se acerca o excede el presupuesto', () => {
-    const cerca = formatear(resumir({ ...agregado, web: { procesos: 1, rssKb: 2800 * KB } }, { presupuestoMb: 4096, totalEquipoMb: 8192 }));
+    const cerca = formatear(
+      resumir({ ...agregado, web: { procesos: 1, rssKb: 2800 * KB } }, { presupuestoMb: 4096, totalEquipoMb: 8192 }),
+    );
     expect(cerca).toContain('cerca del presupuesto');
-    const mucho = formatear(resumir({ ...agregado, web: { procesos: 1, rssKb: 4000 * KB } }, { presupuestoMb: 4096, totalEquipoMb: 8192 }));
+    const mucho = formatear(
+      resumir({ ...agregado, web: { procesos: 1, rssKb: 4000 * KB } }, { presupuestoMb: 4096, totalEquipoMb: 8192 }),
+    );
     expect(mucho).toContain('EXCEDE el presupuesto');
   });
 
@@ -204,11 +276,20 @@ describe('resumir y formatear', () => {
   });
 
   it('NUNCA imprime líneas de comando (pueden llevar contraseñas)', () => {
-    const procs = [{ pid: 9, ppid: 1, rssKb: 5 * KB, comando: '/opt/homebrew/bin/openfga run --datastore-uri postgres://usuario:CLAVE-SECRETA@127.0.0.1/openfga' }];
+    const procs = [
+      {
+        pid: 9,
+        ppid: 1,
+        rssKb: 5 * KB,
+        comando: '/opt/homebrew/bin/openfga run --datastore-uri postgres://usuario:CLAVE-SECRETA@127.0.0.1/openfga',
+      },
+    ];
     const texto = formatear(resumir(agregar(procs, new Map()), { presupuestoMb: 4096, totalEquipoMb: 8192 }));
     expect(texto).not.toContain('CLAVE-SECRETA');
     expect(texto).not.toContain('postgres://');
-    expect(JSON.stringify(resumir(agregar(procs, new Map()), { presupuestoMb: 4096, totalEquipoMb: 8192 }))).not.toContain('CLAVE-SECRETA');
+    expect(
+      JSON.stringify(resumir(agregar(procs, new Map()), { presupuestoMb: 4096, totalEquipoMb: 8192 })),
+    ).not.toContain('CLAVE-SECRETA');
   });
 });
 
@@ -220,7 +301,15 @@ describe('leerArgumentos', () => {
     expect(leerArgumentos(['--json', '--presupuesto-gb', '6'])).toEqual({ json: true, presupuestoMb: 6144 });
     expect(leerArgumentos(['--presupuesto-gb=2.5'])).toEqual({ json: false, presupuestoMb: 2560 });
   });
-  it.each([['--nada'], ['--presupuesto-gb'], ['--presupuesto-gb', 'x'], ['--presupuesto-gb', '0'], ['--presupuesto-gb', '-1'], ['--presupuesto-gb', '1000'], ['suelto']])('rechaza %j', (...args) => {
+  it.each([
+    ['--nada'],
+    ['--presupuesto-gb'],
+    ['--presupuesto-gb', 'x'],
+    ['--presupuesto-gb', '0'],
+    ['--presupuesto-gb', '-1'],
+    ['--presupuesto-gb', '1000'],
+    ['suelto'],
+  ])('rechaza %j', (...args) => {
     expect(() => leerArgumentos(args)).toThrow();
   });
 });
