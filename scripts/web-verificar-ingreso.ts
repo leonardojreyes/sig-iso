@@ -1,5 +1,5 @@
 // pnpm web:verify-login — recorre el ingreso REAL: web (3000) → Keycloak → web, sin navegador. Requiere Keycloak (pnpm keycloak:start)
-// y la web (pnpm dev web) en marcha. Hasta la tarea 10.3 el callback termina en 501 («validado, sin sesión»). No imprime tokens ni claves.
+// y la web (pnpm dev web) en marcha. Requiere también la API (pnpm dev api) y PostgreSQL. No imprime tokens ni claves.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -75,21 +75,94 @@ try {
       url.searchParams.get('iss') === emisor,
   );
 
-  // 1) Ingreso válido: la web valida todo y (hasta la 10.3) responde 501 sin sesión y borrando la cookie.
+  // 1) Ingreso válido: la web valida todo, la API registra el inicio y se emite la sesión.
   const valido = await pedir(regreso, new Map(jarWeb));
   const cuerpo = await valido.text();
   comprobar(
-    'callback válido: la web valida iss, state, código e id_token (hoy responde 501: sesión pendiente, 10.3)',
-    valido.status === 501,
-    `respuesta ${valido.status}`,
+    'callback válido: 303 a la ruta pedida (la API registró el inicio y se emitió la sesión)',
+    valido.status === 303 && valido.headers.get('location') === `${web}/e/empresa-a/panel`,
+    `respuesta ${valido.status} ${valido.headers.get('location') ?? ''}`,
   );
+  const nombreSesion = web.startsWith('https:') ? '__Host-sig-sesion' : 'sig-sesion';
+  const setSesion = valido.headers.getSetCookie().find((c) => c.startsWith(`${nombreSesion}=`)) ?? '';
+  comprobar(
+    'la cookie de sesión es httpOnly, SameSite=Lax, Path=/ y SIN Max-Age ni Expires (cookie de sesión del navegador)',
+    /HttpOnly/i.test(setSesion) &&
+      /SameSite=Lax/i.test(setSesion) &&
+      /Path=\//.test(setSesion) &&
+      !/Max-Age|Expires/i.test(setSesion),
+  );
+  console.log(
+    `  (tamaño de la cookie de sesión: ${setSesion.length} bytes; límite de prueba 3072, del navegador 4096)`,
+  );
+  comprobar('la cookie de sesión cabe con margen (< 3 KB)', setSesion.length > 0 && setSesion.length < 3072);
   comprobar(
     'callback válido: borra la cookie de la transacción',
-    /Max-Age=0/.test(valido.headers.getSetCookie()[0] ?? ''),
+    valido.headers.getSetCookie().some((c) => /^sig-oidc=;.*Max-Age=0|^__Host-sig-oidc=;.*Max-Age=0/.test(c)),
   );
   comprobar(
     'callback válido: ningún token en la respuesta',
-    !/eyJ[A-Za-z0-9_-]{10,}\./.test(cuerpo + JSON.stringify([...valido.headers])),
+    !/eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\./.test(cuerpo + JSON.stringify([...valido.headers])),
+  );
+  const cookieSesion = new Map([[nombreSesion, setSesion.split(';')[0]!.slice(nombreSesion.length + 1)]]);
+  comprobar(
+    'la cookie de sesión es un JWE de 5 partes sin clave en el sello (dir): nada legible dentro',
+    (cookieSesion.get(nombreSesion) ?? '').split('.').length === 5 &&
+      (cookieSesion.get(nombreSesion) ?? '').split('.')[1] === '',
+  );
+
+  const estadoSesion = async (jar: Map<string, string>) => {
+    const r = await pedir(`${web}/auth/sesion`, new Map(jar));
+    return { estado: r.status, cuerpo: await r.text() };
+  };
+  const dentro = await estadoSesion(cookieSesion);
+  comprobar(
+    'GET /auth/sesion con la cookie: 200 autenticado',
+    dentro.estado === 200 && dentro.cuerpo === '{"autenticado":true}',
+    `respuesta ${dentro.estado}`,
+  );
+  comprobar('GET /auth/sesion sin cookie: 401', (await estadoSesion(new Map())).estado === 401);
+
+  // Cierre: solo POST con Origin propio.
+  const logout = (origen: string | null, metodo = 'POST') =>
+    pedir(`${web}/auth/logout`, new Map(cookieSesion), {
+      method: metodo,
+      headers: origen === null ? {} : { origin: origen },
+    });
+  const sinOrigen = await logout(null);
+  const ajeno = await logout('https://evil.example');
+  const porGet = await logout(web, 'GET');
+  comprobar(
+    'cerrar sin Origin o con Origin ajeno: 403; por GET: 405 (y la sesión sigue viva)',
+    sinOrigen.status === 403 &&
+      ajeno.status === 403 &&
+      porGet.status === 405 &&
+      (await estadoSesion(cookieSesion)).estado === 200,
+  );
+
+  const cierre = await logout(web);
+  const aKeycloakLogout = new URL(cierre.headers.get('location') ?? 'http://invalida');
+  comprobar(
+    'cerrar con Origin propio: 303 al cierre de Keycloak con id_token_hint y retorno al inicio; borra la cookie',
+    cierre.status === 303 &&
+      `${aKeycloakLogout.origin}${aKeycloakLogout.pathname}` === `${emisor}/protocol/openid-connect/logout` &&
+      !!aKeycloakLogout.searchParams.get('id_token_hint') &&
+      aKeycloakLogout.searchParams.get('post_logout_redirect_uri') === `${web}/` &&
+      cierre.headers.getSetCookie().some((c) => c.startsWith(`${nombreSesion}=;`) && /Max-Age=0/.test(c)),
+    `respuesta ${cierre.status}`,
+  );
+  const finKeycloak = await pedir(aKeycloakLogout.toString(), new Map());
+  comprobar(
+    'Keycloak cierra su sesión y devuelve al inicio sin pedir confirmación',
+    finKeycloak.status === 302 && (finKeycloak.headers.get('location') ?? '').startsWith(web),
+    `respuesta ${finKeycloak.status}`,
+  );
+
+  const robada = await estadoSesion(cookieSesion);
+  comprobar(
+    'REPRODUCIR la cookie robada después del cierre: 401 (el refresh token está revocado)',
+    robada.estado === 401,
+    `respuesta ${robada.estado}`,
   );
 
   // 2) Repetir el mismo regreso sin la cookie (ya borrada): rechazado.

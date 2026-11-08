@@ -11,6 +11,7 @@ export const SERVICIOS = Object.freeze({
     'OIDC_REDIRECT_URI',
     'SESSION_SEALING_KEY',
     'SESSION_SEALING_KEY_PREVIOUS',
+    'API_URL',
   ]),
   api: Object.freeze([
     'DATABASE_URL_APP',

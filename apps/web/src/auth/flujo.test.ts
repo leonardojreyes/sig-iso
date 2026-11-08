@@ -166,7 +166,12 @@ describe('completarCallback — camino feliz', () => {
     if (!resultado.ok) return;
     expect(resultado.retorno).toBe('/e/empresa-a/panel');
     expect(resultado.identidad).toEqual({ sub: SUB, sid: 'sesion-1' });
-    expect(resultado.tokens).toEqual({ acceso: 'acceso.jwt', refresco: 'refresco.jwt', id: expect.any(String) });
+    expect(resultado.tokens).toEqual({
+      acceso: 'acceso.jwt',
+      refresco: 'refresco.jwt',
+      id: expect.any(String),
+      accesoExpiraEnSegundos: 300,
+    });
     expect(fetchFn).toHaveBeenCalledTimes(1);
     const [url, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe(`${EMISOR}/protocol/openid-connect/token`);
@@ -192,6 +197,33 @@ describe('completarCallback — camino feliz', () => {
     expect(resultado.limpiarCookie).toMatch(/Max-Age=0/i);
     expect(resultado.limpiarCookie).toMatch(/HttpOnly/i);
     expect(resultado.limpiarCookie).toMatch(/Path=\//i);
+  });
+});
+
+describe('completarCallback — vida del access token', () => {
+  const con = async (expiresIn: unknown) => {
+    const t = await iniciar();
+    const id = await firmar({ nonce: t.transaccion.n });
+    const cuerpo = {
+      token_type: 'Bearer',
+      access_token: 'a',
+      refresh_token: 'r',
+      id_token: id,
+      ...(expiresIn === undefined ? {} : { expires_in: expiresIn }),
+    };
+    return completarCallback(
+      callback(t.cookie, { code: 'c', state: t.transaccion.s, iss: EMISOR }),
+      dependencias(vi.fn(async () => new Response(JSON.stringify(cuerpo), { status: 200 })) as never),
+    );
+  };
+  it('usa el expires_in del proveedor cuando es razonable', async () => {
+    expect(await con(120)).toMatchObject({ ok: true, tokens: { accesoExpiraEnSegundos: 120 } });
+    expect(await con(3600)).toMatchObject({ ok: true, tokens: { accesoExpiraEnSegundos: 3600 } });
+  });
+  it('si falta o es absurdo (0, negativo, enorme, texto) asume 300 s', async () => {
+    for (const valor of [undefined, 0, -5, 3601, 'mucho', null, 1e9]) {
+      expect(await con(valor), String(valor)).toMatchObject({ ok: true, tokens: { accesoExpiraEnSegundos: 300 } });
+    }
   });
 });
 

@@ -12,6 +12,9 @@ export interface ConfiguracionIngreso {
   /** Con HTTPS la cookie es Secure y lleva el prefijo __Host-. En desarrollo local (http) no puede serlo en todos los navegadores. */
   readonly seguro: boolean;
   readonly nombreCookie: string;
+  readonly nombreCookieSesion: string;
+  /** Dirección de la API (servidor a servidor). */
+  readonly apiUrl: string;
   readonly clavesSellado: readonly ClaveSellado[];
 }
 
@@ -41,6 +44,8 @@ export const leerConfiguracion = (env: EntornoWeb): ConfiguracionIngreso => {
     permiteRuta: true,
   });
 
+  const api = direccion('API_URL', env.API_URL ?? 'http://127.0.0.1:3001', { permiteRuta: false });
+
   const clienteSecreto = env.OIDC_CLIENT_SECRET;
   if (!clienteSecreto) throw new Error('Falta OIDC_CLIENT_SECRET (pnpm keycloak:realm lo genera)');
 
@@ -62,6 +67,8 @@ export const leerConfiguracion = (env: EntornoWeb): ConfiguracionIngreso => {
     origen: redirect.origin,
     seguro,
     nombreCookie: seguro ? '__Host-sig-oidc' : 'sig-oidc',
+    nombreCookieSesion: seguro ? '__Host-sig-sesion' : 'sig-sesion',
+    apiUrl: api.origin,
     clavesSellado: claves,
   };
 };

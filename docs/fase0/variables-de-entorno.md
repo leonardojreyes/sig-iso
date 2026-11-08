@@ -49,6 +49,7 @@ Una URL por rol; cada rol tiene un permiso distinto (plan, «Modelo de datos»).
 | `OIDC_REDIRECT_URI`                                           | no      | `http://localhost:3000/auth/callback` | Retorno del flujo de código                         | 10.2      |
 | `SESSION_SEALING_KEY`                                         | sí      | —                                     | Clave (32 bytes en base64url) que sella las cookies de la web; la genera `pnpm keycloak:realm` una vez | 10.2, 10.3 |
 | `SESSION_SEALING_KEY_PREVIOUS`                                | no      | —                                     | Clave anterior, solo para abrir sellos viejos al rotar | 10.2      |
+| `API_URL`                                                    | no      | `http://127.0.0.1:3001`               | Dirección de la API que usa el servidor de la web (registro de inicio y cierre de sesión) | 10.3      |
 | `SESSION_IDLE_MINUTES`                                        | no      | `30`                                  | Inactividad máxima (Q4, provisional)                | 10.4      |
 | `KEYCLOAK_PORT`                                              | no      | `8080`                                | Puerto local de Keycloak (siempre en 127.0.0.1)     | 8.4       |
 | `KEYCLOAK_HOME`                                               | no      | `.local/keycloak`                     | Carpeta ignorada con la instalación                 | 8.2       |

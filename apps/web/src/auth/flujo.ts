@@ -29,7 +29,13 @@ export type MotivoFallo =
 export type ResultadoCallback =
   | {
       readonly ok: true;
-      readonly tokens: { readonly acceso: string; readonly refresco: string; readonly id: string };
+      readonly tokens: {
+        readonly acceso: string;
+        readonly refresco: string;
+        readonly id: string;
+        /** Vida del access token en segundos, según el proveedor (300 si no la informa). */
+        readonly accesoExpiraEnSegundos?: number;
+      };
       readonly identidad: { readonly sub: string; readonly sid: string | null };
       readonly retorno: string;
       readonly limpiarCookie: string;
@@ -49,7 +55,7 @@ const huella = (texto: string): Buffer => createHash('sha256').update(texto).dig
 const cookie = (c: ConfiguracionIngreso, valor: string, maxAge: number): string =>
   `${c.nombreCookie}=${valor}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${c.seguro ? '; Secure' : ''}`;
 
-const leerCookie = (peticion: Request, nombre: string): string | null | 'repetida' => {
+export const leerCookie = (peticion: Request, nombre: string): string | null | 'repetida' => {
   const encontradas = (peticion.headers.get('cookie') ?? '')
     .split(';')
     .map((p) => p.trim())
@@ -174,6 +180,12 @@ export const completarCallback = async (peticion: Request, deps: DependenciasFlu
     return falla('intercambio_fallido');
   }
 
+  const expiraEn = cuerpo?.expires_in;
+  const vidaDelAcceso =
+    typeof expiraEn === 'number' && Number.isFinite(expiraEn) && expiraEn > 0 && expiraEn <= 3600
+      ? Math.floor(expiraEn)
+      : 300;
+
   // 6. id_token: firma, emisor, audiencia (este cliente), vigencia y el nonce de ESTE ingreso.
   try {
     const { payload } = await jwtVerify(id, deps.claves, {
@@ -192,7 +204,7 @@ export const completarCallback = async (peticion: Request, deps: DependenciasFlu
     if (sid !== undefined && !(typeof sid === 'string' && SESION.test(sid))) return falla('id_token_invalido');
     return {
       ok: true,
-      tokens: { acceso, refresco, id },
+      tokens: { acceso, refresco, id, accesoExpiraEnSegundos: vidaDelAcceso },
       identidad: { sub, sid: typeof sid === 'string' ? sid : null },
       retorno: rutaDeRetornoSegura(transaccion.r, config.origen),
       limpiarCookie,

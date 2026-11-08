@@ -50,6 +50,19 @@ describe('leerConfiguracion de ingreso (web)', () => {
     }
   });
 
+  it('dirección de la API y nombre de la cookie de sesión', () => {
+    const c = leerConfiguracion(base());
+    expect(c.apiUrl).toBe('http://127.0.0.1:3001');
+    expect(c.nombreCookieSesion).toBe('sig-sesion');
+    expect(leerConfiguracion({ ...base(), API_URL: 'https://api.ejemplo.ec/' }).apiUrl).toBe('https://api.ejemplo.ec');
+    expect(
+      leerConfiguracion({ ...base(), OIDC_REDIRECT_URI: 'https://sig.ejemplo.ec/auth/callback' }).nombreCookieSesion,
+    ).toBe('__Host-sig-sesion');
+    for (const malo of ['ftp://x', 'http://u:p@x', 'http://x/api', 'http://x/?a=1', 'no es una url']) {
+      expect(() => leerConfiguracion({ ...base(), API_URL: malo }), malo).toThrow(/API_URL/);
+    }
+  });
+
   it('rechaza direcciones que no sean http(s), con credenciales, consulta o fragmento', () => {
     for (const [variable, valor] of [
       ['OIDC_ISSUER_URL', 'ftp://id.ejemplo.ec/realms/x'],

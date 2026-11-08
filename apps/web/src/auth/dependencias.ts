@@ -1,7 +1,9 @@
-// Dependencias reales del flujo: configuración del entorno, reloj, fetch y claves públicas del emisor (JWKS en caché).
+// Dependencias reales del flujo: configuración del entorno, reloj, fetch, claves públicas del emisor (JWKS en caché) y la memoria
+// de access tokens del servidor.
 import { createRemoteJWKSet, type JWTVerifyGetKey } from 'jose';
+import { almacenCompartido } from './almacen-acceso';
 import { leerConfiguracion, type EntornoWeb } from './configuracion';
-import type { DependenciasFlujo } from './flujo';
+import type { DependenciasWeb } from './manejadores';
 
 const jwksPorEmisor = new Map<string, JWTVerifyGetKey>();
 const clavesDe = (emisor: string): JWTVerifyGetKey => {
@@ -17,9 +19,15 @@ const clavesDe = (emisor: string): JWTVerifyGetKey => {
   return claves;
 };
 
-export const crearDependencias = (env: EntornoWeb): DependenciasFlujo => {
+export const crearDependencias = (env: EntornoWeb): DependenciasWeb => {
   const config = leerConfiguracion(env);
-  return { config, ahora: () => new Date(), fetchFn: fetch, claves: clavesDe(config.emisor) };
+  return {
+    config,
+    ahora: () => new Date(),
+    fetchFn: fetch,
+    claves: clavesDe(config.emisor),
+    almacen: almacenCompartido(),
+  };
 };
 
 export const registrarEnServidor = (mensaje: string): void => {

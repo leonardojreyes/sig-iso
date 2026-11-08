@@ -1,8 +1,12 @@
-// Manejadores de las rutas /auth/login y /auth/callback. Reciben la fábrica de dependencias para poder probarse sin Next ni red.
-// Un error de configuración responde 500 SIN detalles (el detalle, que solo nombra variables, va al registro del servidor).
+// Manejadores de las rutas /auth/login, /auth/callback, /auth/logout y /auth/sesion. Reciben la fábrica de dependencias para poder
+// probarse sin Next ni red. Un error de configuración responde 500 SIN detalles (el detalle, que solo nombra variables, va al
+// registro del servidor).
+import type { AlmacenAcceso } from './almacen-acceso';
 import { completarCallback, iniciarLogin, respuestaDeFallo, type DependenciasFlujo } from './flujo';
+import { crearServicioSesion } from './sesion';
 
-export type FabricaDependencias = () => DependenciasFlujo;
+export type DependenciasWeb = DependenciasFlujo & { readonly almacen: AlmacenAcceso };
+export type FabricaDependencias = () => DependenciasWeb;
 export type Registrar = (mensaje: string) => void;
 
 const SIN_CACHE = { 'Cache-Control': 'no-store' };
@@ -12,38 +16,57 @@ const noDisponible = (): Response =>
     headers: { ...SIN_CACHE, 'Content-Type': 'text/plain; charset=utf-8' },
   });
 
-export const crearManejadorLogin =
-  (fabrica: FabricaDependencias, registrar: Registrar) =>
+const conDependencias =
+  (
+    nombre: string,
+    fabrica: FabricaDependencias,
+    registrar: Registrar,
+    usar: (deps: DependenciasWeb, peticion: Request) => Promise<Response>,
+  ) =>
   async (peticion: Request): Promise<Response> => {
-    try {
-      return await iniciarLogin(peticion, fabrica());
-    } catch (e) {
-      registrar(`auth/login: ${e instanceof Error ? e.message : 'error desconocido'}`);
-      return noDisponible();
-    }
-  };
-
-export const crearManejadorCallback =
-  (fabrica: FabricaDependencias, registrar: Registrar) =>
-  async (peticion: Request): Promise<Response> => {
-    let deps: DependenciasFlujo;
+    let deps: DependenciasWeb;
     try {
       deps = fabrica();
     } catch (e) {
-      registrar(`auth/callback: ${e instanceof Error ? e.message : 'error desconocido'}`);
+      registrar(`${nombre}: ${e instanceof Error ? e.message : 'error desconocido'}`);
       return noDisponible();
     }
+    return usar(deps, peticion);
+  };
+
+export const crearManejadorLogin = (fabrica: FabricaDependencias, registrar: Registrar) =>
+  conDependencias('auth/login', fabrica, registrar, (deps, peticion) => iniciarLogin(peticion, deps));
+
+export const crearManejadorCallback = (fabrica: FabricaDependencias, registrar: Registrar) =>
+  conDependencias('auth/callback', fabrica, registrar, async (deps, peticion) => {
     const resultado = await completarCallback(peticion, deps);
     if (!resultado.ok) {
       registrar(`auth/callback: ingreso rechazado (${resultado.motivo})`);
       return respuestaDeFallo(resultado, deps.config);
     }
-    // Tarea 10.3: aquí se registra el inicio de sesión en la API y se emite la cookie de sesión. Hasta entonces el ingreso
-    // queda VALIDADO pero sin sesión: los tokens se descartan (no se guardan, no se registran, no salen en la respuesta).
-    const cabeceras = new Headers({ ...SIN_CACHE, 'Content-Type': 'text/plain; charset=utf-8' });
-    cabeceras.append('Set-Cookie', resultado.limpiarCookie);
-    return new Response('Ingreso validado. La sesión se implementa en la tarea 10.3.', {
-      status: 501,
-      headers: cabeceras,
-    });
-  };
+    // La sesión solo se emite si la API registró el inicio (ADR 027); si no, vuelve al inicio con un error genérico.
+    return crearServicioSesion(deps).iniciar(resultado);
+  });
+
+export const crearManejadorLogout = (fabrica: FabricaDependencias, registrar: Registrar) =>
+  conDependencias('auth/logout', fabrica, registrar, (deps, peticion) => crearServicioSesion(deps).cerrar(peticion));
+
+/** ¿Hay sesión vigente? Renueva el access token si hace falta (y reemite la cookie si el refresh rotó). No devuelve datos de la persona. */
+export const crearManejadorSesion = (fabrica: FabricaDependencias, registrar: Registrar) =>
+  conDependencias('auth/sesion', fabrica, registrar, async (deps, peticion) => {
+    const servicio = crearServicioSesion(deps);
+    const json = (estado: number, cuerpo: unknown, cookies: string[] = []): Response => {
+      const cabeceras = new Headers({ ...SIN_CACHE, 'Content-Type': 'application/json' });
+      for (const c of cookies) cabeceras.append('Set-Cookie', c);
+      return new Response(JSON.stringify(cuerpo), { status: estado, headers: cabeceras });
+    };
+    const sesion = await servicio.leer(peticion);
+    if (!sesion) return json(401, { autenticado: false });
+    const acceso = await servicio.obtenerAcceso(sesion);
+    if (acceso.ok) return json(200, { autenticado: true }, acceso.nuevaCookie ? [acceso.nuevaCookie] : []);
+    if (acceso.motivo === 'expirada') {
+      registrar('auth/sesion: sesión expirada o revocada');
+      return json(401, { autenticado: false }, acceso.limpiarCookie ? [acceso.limpiarCookie] : []);
+    }
+    return json(503, { autenticado: false });
+  });
