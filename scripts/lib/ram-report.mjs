@@ -111,13 +111,7 @@ const POWERSHELL = (orden) => ['-NoProfile', '-NonInteractive', '-Command', orde
 /** Procesos reales del sistema: `{ pid, ppid, rssKb, comando }`. */
 export const listarProcesos = async () => {
   if (process.platform === 'win32') {
-    const { stdout } = await ejecutar(
-      'powershell.exe',
-      POWERSHELL(
-        'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,WorkingSetSize,CommandLine | ConvertTo-Json -Compress',
-      ),
-      OPCIONES,
-    );
+    const { stdout } = await ejecutar('powershell.exe', POWERSHELL('Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,WorkingSetSize,CommandLine | ConvertTo-Json -Compress'), OPCIONES);
     return parsearWindows(stdout);
   }
   const { stdout } = await ejecutar('ps', ['-axo', 'pid=,ppid=,rss=,command='], OPCIONES);
@@ -128,13 +122,7 @@ export const listarProcesos = async () => {
 export const puertosEnEscucha = async () => {
   try {
     if (process.platform === 'win32') {
-      const { stdout } = await ejecutar(
-        'powershell.exe',
-        POWERSHELL(
-          'Get-NetTCPConnection -State Listen | Select-Object OwningProcess,LocalPort | ConvertTo-Json -Compress',
-        ),
-        OPCIONES,
-      );
+      const { stdout } = await ejecutar('powershell.exe', POWERSHELL('Get-NetTCPConnection -State Listen | Select-Object OwningProcess,LocalPort | ConvertTo-Json -Compress'), OPCIONES);
       return parsearPuertosWindows(stdout);
     }
     const { stdout } = await ejecutar('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN', '-Fpn'], OPCIONES);
@@ -191,9 +179,7 @@ const MENSAJE = {
 export const formatear = (r) => {
   const ancho = Math.max(...r.componentes.map((c) => c.nombre.length));
   const filas = r.componentes.map((c) =>
-    c.enEjecucion
-      ? `${c.nombre.padEnd(ancho)}  ${String(c.procesos).padStart(8)}  ${c.mb.toFixed(1).padStart(9)}`
-      : `${c.nombre.padEnd(ancho)}  no está en ejecución`,
+    c.enEjecucion ? `${c.nombre.padEnd(ancho)}  ${String(c.procesos).padStart(8)}  ${c.mb.toFixed(1).padStart(9)}` : `${c.nombre.padEnd(ancho)}  no está en ejecución`,
   );
   return [
     'Memoria de la pila de desarrollo (RSS)',
@@ -215,8 +201,7 @@ export const leerArgumentos = (argv) => {
     else if (a === '--presupuesto-gb' || a.startsWith('--presupuesto-gb=')) {
       const valor = a.includes('=') ? a.slice(a.indexOf('=') + 1) : argv[++i];
       const n = Number(valor);
-      if (valor === undefined || valor === '' || !Number.isFinite(n) || n <= 0 || n > 512)
-        throw new Error('--presupuesto-gb debe ser un número entre 0 y 512');
+      if (valor === undefined || valor === '' || !Number.isFinite(n) || n <= 0 || n > 512) throw new Error('--presupuesto-gb debe ser un número entre 0 y 512');
       gb = n;
     } else throw new Error(`Argumento no reconocido: ${a}`);
   }

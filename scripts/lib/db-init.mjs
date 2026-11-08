@@ -5,8 +5,7 @@ import { randomBytes } from 'node:crypto';
 const PATRON_PREFIJO = /^[a-z][a-z0-9_]{0,30}$/;
 
 export const configuracion = (prefijo = 'sigiso') => {
-  if (!PATRON_PREFIJO.test(prefijo))
-    throw new Error(`Prefijo no válido: "${prefijo}" (minúsculas, dígitos y guion bajo; empieza con letra)`);
+  if (!PATRON_PREFIJO.test(prefijo)) throw new Error(`Prefijo no válido: "${prefijo}" (minúsculas, dígitos y guion bajo; empieza con letra)`);
   return {
     prefijo,
     roles: {
@@ -65,14 +64,7 @@ const ATRIBUTOS = 'LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLI
  * Crea (o repara) roles y bases. `admin` es un cliente `pg` conectado como superusuario.
  * No imprime ni devuelve nada fuera del texto del archivo de entorno que contiene las claves.
  */
-export const inicializar = async ({
-  admin,
-  config,
-  textoEnv,
-  host = '127.0.0.1',
-  puerto = 5432,
-  generar = generarClave,
-}) => {
+export const inicializar = async ({ admin, config, textoEnv, host = '127.0.0.1', puerto = 5432, generar = generarClave }) => {
   const id = (nombre) => admin.escapeIdentifier(nombre);
   const lit = (valor) => admin.escapeLiteral(valor);
   const env = parsearEnv(textoEnv);
@@ -90,9 +82,7 @@ export const inicializar = async ({
 
   const creados = { roles: [], bases: [] };
 
-  const { rows: rolesExistentes } = await admin.query('select rolname from pg_roles where rolname = any($1)', [
-    Object.values(roles),
-  ]);
+  const { rows: rolesExistentes } = await admin.query('select rolname from pg_roles where rolname = any($1)', [Object.values(roles)]);
   const hayRol = new Set(rolesExistentes.map((f) => f.rolname));
   for (const rol of Object.values(roles)) {
     if (hayRol.has(rol)) {
@@ -104,9 +94,7 @@ export const inicializar = async ({
   }
 
   const duenos = { [bases.principal]: roles.owner, [bases.prueba]: roles.owner, [bases.openfga]: roles.openfga };
-  const { rows: basesExistentes } = await admin.query('select datname from pg_database where datname = any($1)', [
-    Object.values(bases),
-  ]);
+  const { rows: basesExistentes } = await admin.query('select datname from pg_database where datname = any($1)', [Object.values(bases)]);
   const hayBase = new Set(basesExistentes.map((f) => f.datname));
   for (const [base, dueno] of Object.entries(duenos)) {
     if (hayBase.has(base)) {
