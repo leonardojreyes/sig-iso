@@ -259,6 +259,15 @@ Haz solo estas preguntas, en un único mensaje, antes del paso 0.1:
 | experto-iso | Correcta interpretación del ciclo de certificación, la Estructura Armonizada y los mapeos entre 9001, 27001 y 42001; señala cuando una regla de negocio no refleja la práctica de auditoría | Solo lectura | /spec, /plan de módulos de dominio |
 | documentador | ADRs, OpenAPI, README, notas de versión | Escritura solo en `docs/` | /adr, cierre de funcionalidad |
 
+**Skills** (`.claude/skills/<nombre>/SKILL.md`, cada uno con descripción de cuándo usarlo, pasos y ejemplo):
+
+| Skill | Para qué |
+| --- | --- |
+| modulo-hexagonal | Crear un módulo nuevo con las cuatro capas, su `CLAUDE.md`, la prueba de aislamiento entre empresas y la instrumentación OpenTelemetry |
+| migracion-rls | Escribir una migración de PostgreSQL con su política RLS por empresa y la prueba que la verifica |
+| libreria-normas | Crear o actualizar una librería de norma en YAML válida contra el esquema, sin texto de la norma (2.5) |
+| endpoint-contrato | Agregar un endpoint partiendo del contrato OpenAPI y regenerar el cliente web |
+
 **Comandos** (`.claude/commands/`, cada uno con rol, contexto a leer, pasos, formato de salida y criterio de "terminado"): `/fase0-inicio`, `/estado` (resume `estado.md` y el siguiente paso), `/spec`, `/plan`, `/tasks`, `/implement`, `/review`, `/adr`.
 
 ### 5.9 Regla de licencias
@@ -284,9 +293,9 @@ Preferir MIT, Apache 2.0, BSD o MPL. AGPL solo para componentes usados sin modif
 
 ### 0.3 Context engineering
 - **Objetivo:** que Claude Code trabaje con las reglas de SynapTech sin repetírselas.
-- **Actividades:** `CLAUDE.md` raíz y por carpeta; `.claude/settings.json` con permisos (sección 3, regla 2) y hooks; los 8 subagentes; los 8 comandos.
-- **Entregable visible:** demostración: `/spec` + `/implement` de un módulo trivial de prueba (por ejemplo "catálogo de procesos") generado sin correcciones manuales y luego descartado.
-- **Criterio de salida:** el módulo de prueba pasa `/review` sin hallazgos bloqueantes; los hooks bloquean un intento de editar `.env`.
+- **Actividades:** `CLAUDE.md` raíz y por carpeta; `.claude/settings.json` con permisos (sección 3, regla 2) y la sección `hooks` que llama a scripts Node en `.claude/hooks/`; los 8 subagentes en `.claude/agents/`; los 4 skills en `.claude/skills/`; los 8 comandos en `.claude/commands/`. Todo se versiona en git (solo `settings.local.json` va en `.gitignore`).
+- **Entregable visible:** (1) inventario en el reporte con la ruta de cada subagente, skill, comando y hook; (2) salida de `/agents` y `/hooks` mostrando lo creado; (3) demostración: `/spec` + `/implement` de un módulo trivial de prueba (por ejemplo "catálogo de procesos") generado con el skill `modulo-hexagonal` sin correcciones manuales y luego descartado.
+- **Criterio de salida:** los 8 subagentes, 4 skills, 8 comandos y 4 hooks existen y están en git; el módulo de prueba pasa `/review` sin hallazgos bloqueantes; un hook bloquea un intento de editar `.env`.
 
 ### 0.4 Pipeline y calidad
 - **Actividades:** GitHub Actions con lint, tipos, pruebas con cobertura mínima (80 % en dominio), Semgrep CE, OSV-Scanner, gitleaks, Trivy, SBOM CycloneDX, verificación de licencias, validación del esquema de librerías de normas, axe; protección de rama `main`; artefactos del pipeline archivados como evidencia (P13).
