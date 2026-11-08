@@ -3,8 +3,11 @@ import { randomBytes } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { leerConfiguracion } from './configuracion';
 
+// Generado en cada ejecución: ningún secreto (ni de mentira) queda escrito en el código.
+const SECRETO = randomBytes(18).toString('base64url');
+
 const clave = () => randomBytes(32).toString('base64url');
-const base = () => ({ OIDC_CLIENT_SECRET: 'secreto-de-prueba-123', SESSION_SEALING_KEY: clave() });
+const base = () => ({ OIDC_CLIENT_SECRET: SECRETO, SESSION_SEALING_KEY: clave() });
 
 describe('leerConfiguracion de ingreso (web)', () => {
   it('valores por omisión de desarrollo: Keycloak local, cliente sigiso-web y retorno en localhost:3000', () => {

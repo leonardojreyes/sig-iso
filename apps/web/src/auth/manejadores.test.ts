@@ -6,10 +6,13 @@ import { leerConfiguracion } from './configuracion';
 import { crearManejadorCallback, crearManejadorLogin } from './manejadores';
 import type { DependenciasFlujo } from './flujo';
 
+// Generado en cada ejecución: ningún secreto (ni de mentira) queda escrito en el código.
+const SECRETO = randomBytes(18).toString('base64url');
+
 const EMISOR = 'http://127.0.0.1:8080/realms/sigiso';
 const SUB = '5eed0001-0000-4000-8000-0000000000a1';
 const config = leerConfiguracion({
-  OIDC_CLIENT_SECRET: 'secreto-de-prueba-123',
+  OIDC_CLIENT_SECRET: SECRETO,
   SESSION_SEALING_KEY: randomBytes(32).toString('base64url'),
 });
 

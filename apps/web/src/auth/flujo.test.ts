@@ -6,11 +6,14 @@ import { leerConfiguracion } from './configuracion';
 import { completarCallback, iniciarLogin, respuestaDeFallo } from './flujo';
 import { abrirSello } from './sellado';
 
+// Generado en cada ejecución: ningún secreto (ni de mentira) queda escrito en el código.
+const SECRETO = randomBytes(18).toString('base64url');
+
 const AHORA = new Date('2026-11-08T10:00:00Z');
 const EMISOR = 'http://127.0.0.1:8080/realms/sigiso';
 const SUB = '5eed0001-0000-4000-8000-0000000000a1';
 const entorno = {
-  OIDC_CLIENT_SECRET: 'secreto-de-prueba-123',
+  OIDC_CLIENT_SECRET: SECRETO,
   SESSION_SEALING_KEY: randomBytes(32).toString('base64url'),
 };
 const config = leerConfiguracion(entorno);
@@ -102,7 +105,7 @@ describe('iniciarLogin', () => {
     expect(p.get('state')).toBe(transaccion.s);
     expect(p.get('nonce')).toBe(transaccion.n);
     expect(p.get('code_challenge')).toBe(createHash('sha256').update(transaccion.v).digest('base64url'));
-    expect(destino.toString()).not.toContain('secreto-de-prueba-123');
+    expect(destino.toString()).not.toContain(SECRETO);
     expect(destino.toString()).not.toContain(transaccion.v);
     expect(transaccion.r).toBe('/e/empresa-a/panel');
   });
@@ -174,7 +177,7 @@ describe('completarCallback — camino feliz', () => {
       code: 'codigo-1',
       redirect_uri: 'http://localhost:3000/auth/callback',
       client_id: 'sigiso-web',
-      client_secret: 'secreto-de-prueba-123',
+      client_secret: SECRETO,
       code_verifier: transaccion.v,
     });
   });
