@@ -1,3 +1,10 @@
 # Falso positivo confirmado: constante de prueba («VALOR-SENSIBLE-123») que verifica que los errores no repiten el valor recibido.
 # No es un secreto. La prueba ya se reescribió; esta línea solo cubre el commit anterior del historial.
 692032985a1983ed60843baa101bd7ae56e11da5:modules/normas/src/domain/libreria.test.ts:generic-api-key:41
+# Falsos positivos confirmados: valor de mentira («secreto-de-prueba-123») que usaban las pruebas del ingreso web en el commit e75a6f7
+# para comprobar que el secreto del cliente nunca sale en URLs ni respuestas. No es un secreto. Las pruebas ya lo generan en
+# tiempo de ejecución; estas líneas solo cubren ese commit del historial.
+e75a6f7418d492c492cfc6c44d55ee24b1bd34cd:apps/web/src/auth/configuracion.test.ts:generic-api-key:7
+e75a6f7418d492c492cfc6c44d55ee24b1bd34cd:apps/web/src/auth/flujo.test.ts:generic-api-key:13
+e75a6f7418d492c492cfc6c44d55ee24b1bd34cd:apps/web/src/auth/flujo.test.ts:generic-api-key:177
+e75a6f7418d492c492cfc6c44d55ee24b1bd34cd:apps/web/src/auth/manejadores.test.ts:generic-api-key:12
