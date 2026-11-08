@@ -31,5 +31,5 @@ Formato MADR breve. Se crean con el comando `/adr`. Aprobados el 2026-11-04 (pas
 | [025](025-keycloak-y-openfga-nativos.md) | Keycloak y OpenFGA nativos | versiones fijadas, JRE descargado con huella verificada, solo en 127.0.0.1 | Aprobado |
 | [026](026-libreria-global-y-adopcion.md)     | Librería global y adopción | catálogo global inmutable; adopción por empresa; esquema v2 con `aplica_a` | Propuesto |
 | [027](027-sesion-web-y-empresa-desde-el-token.md) | Sesión web y empresa | BFF con OIDC (código + PKCE); la empresa sale solo del token verificado | Aprobado  |
-| [028](028-privacidad-y-bitacora.md)          | Privacidad y bitácora      | identificador opaco; pseudonimización; retención y derechos provisionales  | Propuesto |
+| [028](028-privacidad-y-bitacora.md)          | Privacidad y bitácora      | identificador opaco; pseudonimización; retención y derechos provisionales  | Aprobado (provisional; falta asesor legal) |
 | [029](029-autorizacion-por-rol-en-la-base.md) | Autorización por rol en la base | rol en `usuario` y matriz en código; OpenFGA pospuesto con disparadores | Aprobado |

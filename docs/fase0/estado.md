@@ -11,7 +11,7 @@
 ## Corte 0.6 — qué está terminado
 
 - **Base de datos y aislamiento:** PostgreSQL 16 con RLS, roles `sigiso_*`, migraciones 0001–0005, prueba de aislamiento entre empresas (fases 1 y 2).
-- **Bitácora inmutable** encadenada por huellas, con intentos fallidos y mantenimiento (fase 3). ADR 028 de privacidad redactado.
+- **Bitácora inmutable** encadenada por huellas, con intentos fallidos y mantenimiento (fase 3). ADR 028 de privacidad **aprobado como provisional** (2026-11-08), pendiente del asesor legal.
 - **Librerías de normas:** esquema v2, validador con control de texto en el CI, borrador `0.1.0` de la librería de ejemplo (4.1 a 4.3 y 4.6).
 - **Dominio y casos de uso** de empresas y normas: marca, catálogo, adopción, listado y consulta con 404 indistinguible (fase 5).
 - **API completa** (fase 6): contrato OpenAPI, verificación de tokens, guardia, filtro de 403/404 cruzado, controladores, límite de frecuencia, conformidad del contrato.
@@ -29,7 +29,8 @@
 
 ## Pendiente del responsable
 
-- Verificar numeraciones y títulos de la librería de ejemplo (4.4) y aprobar los ADR 026 (librería global y adopción) y 028 (privacidad y bitácora, también con asesor legal).
+- Verificar numeraciones y títulos de la librería de ejemplo (4.4) y aprobar el ADR 026 (librería global y adopción).
+- **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
 - Integrar el PR #5 y agregar `integracion` como check obligatorio (`docs/security/ci-integracion.md`).
 - Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (usar `env -u GITHUB_TOKEN` mientras tanto).
 - Cerrar el proceso `node` viejo que ocupa el puerto 3001 (una API de una sesión anterior).

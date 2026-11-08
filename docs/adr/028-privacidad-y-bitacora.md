@@ -1,6 +1,6 @@
 # ADR 028 — Privacidad y bitácora: identificador opaco, retención y derechos de las personas
 
-- **Estado:** Propuesto (pendiente de aprobación del responsable y de validación por un asesor legal)
+- **Estado:** Aprobado como **provisional** (2026-11-08) por el responsable; **pendiente de validación por un asesor legal**. Lo que afirma sobre bases de tratamiento, plazos y derechos sigue siendo una hipótesis de trabajo; los puntos de «No resuelto» bloquean el uso con datos de personas reales (incluido el personal de SynapTech) y, en todo caso, al primer cliente externo.
 - **Fecha:** 2026-11-05
 - **Decide:** Ing. Leonardo J. Reyes B.
 
