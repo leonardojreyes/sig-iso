@@ -1,0 +1,25 @@
+{
+  "name": "@sig/scripts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "nx": {
+    "tags": [
+      "type:app"
+    ]
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sig/auditoria": "workspace:*",
+    "@sig/autenticacion": "workspace:*",
+    "@sig/autorizacion": "workspace:*",
+    "@sig/db": "workspace:*",
+    "@sig/normas-schema": "workspace:*",
+    "@sig/tenancy": "workspace:*",
+    "kysely": "^0.29.8",
+    "pg": "^8.23.1",
+    "yaml": "^2.9.1"
+  }
+}

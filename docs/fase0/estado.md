@@ -2,10 +2,41 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** 0.5 Look and feel — aprobado por el responsable; PR #4 pendiente de merge.
-- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (aprobado, a la espera del merge de #4).
-- **Siguiente paso:** 0.6 Plataforma transversal.
-- **Actualizado:** 2026-11-04
+- **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso (ingreso por empresa, aislamiento multiempresa, librería de ejemplo y bitácora inmutable).
+- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
+- **En pausa por instrucción del responsable (2026-11-08):** el trabajo del corte 0.6 queda detenido en la tarea 10.6 mientras se completan los skills de `.claude/` (ver «Paso 0.3 — notas»). Con tu «aprobado» se retoma donde quedó: tarea **10.6** (listado real). Los pasos 0.4 y 0.5 ya estaban cerrados.
+- **Rama y PR:** `feature/paso-0-6-plataforma`, PR #5 abierto (los controles del CI de cada envío se revisan en la rama).
+- **Corte 0.6: 58 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
+
+## Corte 0.6 — qué está terminado
+
+- **Base de datos y aislamiento:** PostgreSQL 16 con RLS, roles `sigiso_*`, migraciones 0001–0005, prueba de aislamiento entre empresas (fases 1 y 2).
+- **Bitácora inmutable** encadenada por huellas, con intentos fallidos y mantenimiento (fase 3). ADR 028 de privacidad **aprobado como provisional** (2026-11-08), pendiente del asesor legal.
+- **Librerías de normas:** esquema v2, validador con control de texto en el CI, borrador `0.1.0` de la librería de ejemplo (4.1 a 4.3 y 4.6).
+- **Dominio y casos de uso** de empresas y normas: marca, catálogo, adopción, listado y consulta con 404 indistinguible (fase 5).
+- **API completa** (fase 6): contrato OpenAPI, verificación de tokens, guardia, filtro de 403/404 cruzado, controladores, límite de frecuencia, conformidad del contrato.
+- **Autorización por rol desde la base** (ADR 029, tarea 9.4): `usuario.rol` y matriz en código. OpenFGA 1.22.1 instalado pero **pospuesto**.
+- **Keycloak 26.8.2 local** (fase 8): realm sin secretos, arranque en 127.0.0.1, ingreso real verificado, mensaje genérico de credenciales inválidas, clientes integrados deshabilitados.
+- **Web, hasta la 10.5:** ingreso OIDC con PKCE, sesión (cookie sellada, renovación, cierre), proxy que protege `/e/<empresa>/…` (404 idéntico a otra empresa, sin caché) y **marca real de la empresa**. Verificado de extremo a extremo con `pnpm web:verify-login` (36 comprobaciones).
+- **Siembra** de dos empresas y cuatro cuentas de prueba, `pnpm ram:report`, trazas mínimas y un flag de OpenFeature.
+
+## Corte 0.6 — qué falta (10 tareas)
+
+- **4.4 y 4.5 (librería de ejemplo):** te toca verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`); después `pnpm libraries:load`. **Sin esto el catálogo está vacío y la pantalla de librerías no tendrá nada que mostrar.**
+- **10.6 a 10.8 (web):** listado real de librerías y requisitos con filtros; botón de adoptar solo para el administrador SIG; pantalla de ingreso real (hoy es una maqueta y la portada `/` sigue siendo la de demostración).
+- **11.1 a 11.3 (worker):** registro de los intentos fallidos de ingreso leyendo los eventos de Keycloak. No hace falta para ver el sistema.
+- **12.3 y 12.4:** guía de ejecución con la medición final de memoria, y la prueba de aislamiento de extremo a extremo con revisión completa (`/review`).
+
+## Pendiente del responsable
+
+- Verificar numeraciones y títulos de la librería de ejemplo (4.4) (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). El ADR 026 quedó **aprobado** el 2026-11-08.
+- **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
+- Integrar el PR #5 y agregar `integracion` como check obligatorio (`docs/security/ci-integracion.md`).
+- Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (usar `env -u GITHUB_TOKEN` mientras tanto).
+- Cerrar el proceso `node` viejo que ocupa el puerto 3001 (una API de una sesión anterior).
+- Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global.
+- Base local lista: `pnpm db:init` y `pnpm db:migrate` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga`; las claves están en `.env.local` (ignorado).
+- **Actualizado:** 2026-11-08
 
 ## Respuestas de arranque (`/fase0-inicio`)
 
@@ -41,6 +72,8 @@ ADR 001–022 redactados en `docs/adr/` (estado: Aprobado). Índice: `docs/adr/R
 - Creados: `CLAUDE.md` raíz (56 líneas) y por carpeta (`apps/`, `modules/`, `docs/`, `libraries/`), `.claude/settings.json`, hooks Node en `.claude/hooks/`, 8 subagentes y 8 comandos.
 - Los subagentes y comandos nuevos se cargan al **reiniciar la sesión de Claude Code**; la demostración se revisó manualmente con sus listas de control.
 - Hooks probados: bloquean `.env*` (también rutas Windows), borrado recursivo forzado, `push` a `main`; permiten `.env.example`, `pnpm test`, push a `feature/*`.
+- **Skills creados (2026-11-08):** `.claude/skills/{modulo-hexagonal,migracion-rls,libreria-normas,endpoint-contrato}/SKILL.md`, cada uno con cuándo usarlo, pasos, ejemplo y criterio de terminado, basados en la estructura real del repositorio (`modules/empresas` y `modules/normas`, `platform/db/migrations`, `packages/normas-schema`, `packages/contracts`, `apps/api`) y en los ADR 001, 010, 024, 025, 026, 027 y 029. Con esto existen los 8 subagentes, 4 skills, 8 comandos y 4 hooks, todos en git (solo `settings.local.json` está ignorado).
+- **Defecto encontrado y corregido en los hooks (2026-11-08):** `settings.json` los invocaba con ruta relativa (`node .claude/hooks/pre-edit.mjs`) y las reglas de denegación del entorno eran relativas al directorio actual (`./.env`); si el directorio de trabajo de Claude Code no era la raíz del repositorio, Node fallaba con código 1 (no bloqueante) y **una escritura de `.env` prosperó** (archivo de prueba, ya borrado). Ahora los cuatro hooks usan `node "$CLAUDE_PROJECT_DIR/.claude/hooks/<nombre>.mjs"` y se agregaron denegaciones `**/.env` para leer, editar y escribir. Verificado ejecutando cada comando desde una subcarpeta: `pre-edit` sale con 2 ante `.env` y con 0 ante un archivo normal. **Los cambios de hooks se aplican al reiniciar la sesión de Claude Code (o revisándolos en `/hooks`).** Para Windows se asume el intérprete de Git Bash, que expande `$CLAUDE_PROJECT_DIR`.
 - Limitaciones: hooks no probados en Windows real; el escaneo de secretos del hook Stop es básico (gitleaks completo en 0.4); el hook de Bash evalúa el texto completo del comando, así que puede dar falsos positivos si el texto menciona un comando prohibido.
 
 ## Paso 0.4 — notas

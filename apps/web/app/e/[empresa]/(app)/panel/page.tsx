@@ -1,9 +1,6 @@
-import { notFound } from 'next/navigation';
-import { obtenerEmpresa } from '../../../../../src/empresas';
-import { PantallaPanel } from '../../../../../src/pantallas/panel';
+import { empresaActual } from '../../../../../src/marca/servidor';
+import { PantallaPanelPendiente } from '../../../../../src/pantallas/panel-pendiente';
 
 export default async function Page({ params }: { params: Promise<{ empresa: string }> }) {
-  const empresa = obtenerEmpresa((await params).empresa);
-  if (!empresa) notFound();
-  return <PantallaPanel empresa={empresa} />;
+  return <PantallaPanelPendiente empresa={await empresaActual((await params).empresa)} />;
 }

@@ -19,6 +19,8 @@ export const es = {
     nota: 'Pantalla de plantilla: el inicio de sesión real con Keycloak llega en el paso 0.6.',
   },
   panel: {
+    pendienteTitulo: 'El panel llega en una próxima etapa',
+    pendienteDescripcion: 'Aquí verá el resumen de cumplimiento de su empresa cuando el módulo de evaluación esté disponible.',
     titulo: 'Panel de cumplimiento',
     resumen: 'Resumen por norma y estado del ciclo de certificación.',
     madurez: 'Madurez por cláusula',
