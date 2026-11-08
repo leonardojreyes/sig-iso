@@ -196,7 +196,8 @@ export const crearServicioSesion = (deps: DependenciasSesion) => {
     if (!origenValido(peticion, config.origen))
       return new Response('Origen no permitido', { status: 403, headers: { 'Cache-Control': SIN_CACHE } });
 
-    const cabeceras = new Headers({ 'Cache-Control': SIN_CACHE });
+    // `Clear-Site-Data: "cache"` pide al navegador olvidar lo guardado: «atrás» no debe mostrar pantallas de la sesión cerrada (H1.4).
+    const cabeceras = new Headers({ 'Cache-Control': SIN_CACHE, 'Clear-Site-Data': '"cache"' });
     cabeceras.append('Set-Cookie', borrarCookie());
     const sesion = await leer(peticion);
     if (!sesion) {
@@ -240,5 +241,5 @@ export const crearServicioSesion = (deps: DependenciasSesion) => {
     return new Response(null, { status: 303, headers: cabeceras });
   };
 
-  return { iniciar, leer, obtenerAcceso, cerrar };
+  return { iniciar, leer, obtenerAcceso, cerrar, borrarCookie };
 };

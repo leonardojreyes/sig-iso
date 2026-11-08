@@ -19,6 +19,8 @@ export class AlmacenAcceso {
   private readonly datos = new Map<string, EntradaAcceso>();
   /** Renovaciones en curso por `sid`: las solicitudes simultáneas esperan la misma. */
   readonly renovando = new Map<string, Promise<ResultadoRenovacion>>();
+  /** Empresa (slug) de cada sesión, confirmada por la API con el token. La empresa de una sesión no cambia mientras dura. */
+  private readonly empresas = new Map<string, { slug: string; hasta: number }>();
 
   constructor(private readonly maximo = 5000) {}
 
@@ -43,6 +45,27 @@ export class AlmacenAcceso {
 
   borrar(sid: string): void {
     this.datos.delete(sid);
+    this.empresas.delete(sid);
+  }
+
+  empresaDe(sid: string, ahoraMs: number): string | undefined {
+    const e = this.empresas.get(sid);
+    if (!e) return undefined;
+    if (e.hasta <= ahoraMs) {
+      this.empresas.delete(sid);
+      return undefined;
+    }
+    return e.slug;
+  }
+
+  guardarEmpresa(sid: string, slug: string, hasta: number): void {
+    this.empresas.delete(sid);
+    this.empresas.set(sid, { slug, hasta });
+    while (this.empresas.size > this.maximo) {
+      const masAntigua = this.empresas.keys().next().value;
+      if (masAntigua === undefined) break;
+      this.empresas.delete(masAntigua);
+    }
   }
 }
 

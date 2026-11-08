@@ -424,6 +424,12 @@ describe('cerrar: registra, revoca, borra y cierra la sesión de Keycloak', () =
     expect(cierre.status).toBe(303);
   });
 
+  it('pide al navegador olvidar su caché (Clear-Site-Data) para que «atrás» no muestre la sesión cerrada (H1.4)', async () => {
+    const { svc, valor } = await iniciada();
+    const r = await svc.cerrar(POST(valor));
+    expect(r.headers.get('clear-site-data')).toBe('"cache"');
+  });
+
   it('borra la cookie de sesión y el access token de la memoria', async () => {
     const { svc, almacen, valor } = await iniciada();
     const r = await svc.cerrar(POST(valor));
@@ -512,6 +518,40 @@ describe('origenValido', () => {
     ]) {
       expect(origenValido(peticion(o), 'http://localhost:3000'), String(o)).toBe(false);
     }
+  });
+});
+
+describe('AlmacenAcceso: empresa de la sesión', () => {
+  it('guarda la empresa por sesión y vence a la hora indicada', () => {
+    const a = new AlmacenAcceso();
+    a.guardarEmpresa('s1', 'empresa-a', 1000);
+    expect(a.empresaDe('s1', 999)).toBe('empresa-a');
+    expect(a.empresaDe('s1', 1000)).toBeUndefined();
+    expect(a.empresaDe('s1', 500)).toBeUndefined(); // al vencer se descartó
+    expect(a.empresaDe('otra', 0)).toBeUndefined();
+  });
+  it('borrar la sesión también olvida su empresa', () => {
+    const a = new AlmacenAcceso();
+    a.guardarEmpresa('s1', 'empresa-a', 10_000);
+    a.borrar('s1');
+    expect(a.empresaDe('s1', 0)).toBeUndefined();
+  });
+  it('tiene tope y expulsa la más antigua', () => {
+    const a = new AlmacenAcceso(2);
+    a.guardarEmpresa('s1', 'a', 10_000);
+    a.guardarEmpresa('s2', 'b', 10_000);
+    a.guardarEmpresa('s3', 'c', 10_000);
+    expect(a.empresaDe('s1', 0)).toBeUndefined();
+    expect(a.empresaDe('s3', 0)).toBe('c');
+  });
+  it('actualizar la empresa de una sesión la marca como la más reciente', () => {
+    const a = new AlmacenAcceso(2);
+    a.guardarEmpresa('s1', 'a', 10_000);
+    a.guardarEmpresa('s2', 'b', 10_000);
+    a.guardarEmpresa('s1', 'a2', 10_000);
+    a.guardarEmpresa('s3', 'c', 10_000);
+    expect(a.empresaDe('s2', 0)).toBeUndefined();
+    expect(a.empresaDe('s1', 0)).toBe('a2');
   });
 });
 

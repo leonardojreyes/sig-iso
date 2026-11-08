@@ -20,6 +20,19 @@ const comprobar = (descripcion: string, ok: boolean, detalle = '') => {
   if (!ok) fallos += 1;
   console.log(`${ok ? '✔' : '✖'} ${descripcion}${ok || !detalle ? '' : ` — ${detalle}`}`);
 };
+// El 404 repite la dirección pedida (lo que la persona escribió) y Next añade un identificador aleatorio por respuesta: para
+// comparar dos 404 se sustituyen ambos por una marca.
+const normalizar = (texto: string, slug: string): string =>
+  texto
+    .split(slug)
+    .join('X')
+    .replace(/__next_r="[^"]*"/g, '__next_r="N"');
+const ubicacion = (r: Response): string => {
+  const l = r.headers.get('location');
+  if (!l) return '';
+  const u = new URL(l, web);
+  return u.origin === web ? `${u.pathname}${u.search}` : u.toString();
+};
 const cabeceraCookies = (jar: Map<string, string>) => [...jar].map(([k, v]) => `${k}=${v}`).join('; ');
 const pedir = async (url: string, jar: Map<string, string>, init: RequestInit = {}) => {
   const r = await fetch(url, {
@@ -123,6 +136,66 @@ try {
   );
   comprobar('GET /auth/sesion sin cookie: 401', (await estadoSesion(new Map())).estado === 401);
 
+  // Pantallas internas (proxy de la web): sesión, empresa y caché.
+  const pagina = (ruta: string, jar: Map<string, string>, extra: Record<string, string> = {}) =>
+    pedir(`${web}${ruta}`, new Map(jar), { headers: extra });
+  // Con sesión de A, la empresa verificada es la suya (ruta /contexto: lo que el proxy comprobó).
+  const propia = await pagina('/e/empresa-a/contexto', cookieSesion);
+  comprobar(
+    'con sesión de A: el proxy deja pasar /e/empresa-a/… y confirma la empresa verificada, sin caché',
+    propia.status === 200 &&
+      (await propia.text()) === '{"empresa":"empresa-a"}' &&
+      /no-store/.test(propia.headers.get('cache-control') ?? ''),
+    `respuesta ${propia.status}, cache-control: ${propia.headers.get('cache-control')}`,
+  );
+  const deB = await pagina('/e/empresa-b/contexto', cookieSesion);
+  const textoDeB = await deB.text();
+  const inexistente = await pagina('/e/empresa-c/contexto', cookieSesion);
+  const textoInexistente = await inexistente.text();
+  const panelDeB = await pagina('/e/empresa-b/panel', cookieSesion);
+  const textoPanelDeB = await panelDeB.text();
+  comprobar(
+    'H2.3: con sesión de A, lo de B da 404, igual que una empresa inexistente, sin nombre ni marca de B',
+    deB.status === 404 &&
+      inexistente.status === 404 &&
+      panelDeB.status === 404 &&
+      !/Empresa B|b45309/i.test(textoDeB + textoInexistente + textoPanelDeB) &&
+      normalizar(textoDeB, 'empresa-b') === normalizar(textoInexistente, 'empresa-c'),
+    `respuestas ${deB.status}/${inexistente.status}/${panelDeB.status}; marca de B: ${/Empresa B|b45309/i.test(textoDeB + textoInexistente + textoPanelDeB)}; cuerpos iguales: ${normalizar(textoDeB, 'empresa-b') === normalizar(textoInexistente, 'empresa-c')} (${textoDeB.length}/${textoInexistente.length} bytes)`,
+  );
+  const falsificado = await pagina('/e/empresa-b/contexto', cookieSesion, { 'x-sig-empresa': 'empresa-b' });
+  comprobar(
+    'un encabezado x-sig-empresa falsificado no cambia nada (sigue 404)',
+    falsificado.status === 404,
+    `respuesta ${falsificado.status}`,
+  );
+  const falsificadoPropio = await pagina('/e/empresa-a/contexto', new Map(), { 'x-sig-empresa': 'empresa-a' });
+  comprobar(
+    'sin sesión, el encabezado x-sig-empresa tampoco abre nada (307 a ingresar)',
+    falsificadoPropio.status === 307 && ubicacion(falsificadoPropio).startsWith('/auth/login'),
+    `respuesta ${falsificadoPropio.status}`,
+  );
+  const pedido = '/e/empresa-a/requisitos?q=gobierno';
+  const sinSesion = await pagina(pedido, new Map());
+  comprobar(
+    'H1.3: sin sesión, redirige a /auth/login recordando la pantalla pedida',
+    sinSesion.status === 307 && ubicacion(sinSesion) === `/auth/login?retorno=${encodeURIComponent(pedido)}`,
+    `respuesta ${sinSesion.status} ${ubicacion(sinSesion)}`,
+  );
+  const vuelta = await ingresar(pedido);
+  const alVolver = await pedir(vuelta.regreso, new Map(vuelta.jarWeb));
+  comprobar(
+    'H1.3: tras ingresar vuelve exactamente a la pantalla pedida',
+    alVolver.status === 303 && ubicacion(alVolver) === pedido,
+    ubicacion(alVolver),
+  );
+  const ingresoPublico = await pagina('/e/a/ingreso', new Map());
+  comprobar(
+    'la pantalla de ingreso de cada empresa es pública (200, sin sesión)',
+    ingresoPublico.status === 200,
+    `respuesta ${ingresoPublico.status}`,
+  );
+
   // Cierre: solo POST con Origin propio.
   const logout = (origen: string | null, metodo = 'POST') =>
     pedir(`${web}/auth/logout`, new Map(cookieSesion), {
@@ -158,6 +231,16 @@ try {
     `respuesta ${finKeycloak.status}`,
   );
 
+  comprobar(
+    'el cierre pide al navegador olvidar su caché (Clear-Site-Data)',
+    cierre.headers.get('clear-site-data') === '"cache"',
+  );
+  const trasCierre = await pagina('/e/empresa-a/contexto', cookieSesion);
+  comprobar(
+    'H1.4: tras cerrar sesión, la cookie anterior ya no abre /e/empresa-a/… (307 a ingresar)',
+    trasCierre.status === 307 && ubicacion(trasCierre).startsWith('/auth/login'),
+    `respuesta ${trasCierre.status}`,
+  );
   const robada = await estadoSesion(cookieSesion);
   comprobar(
     'REPRODUCIR la cookie robada después del cierre: 401 (el refresh token está revocado)',

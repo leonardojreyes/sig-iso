@@ -11,6 +11,10 @@ export default {
   agentRules: false,
   transpilePackages: ['@sig/ui', '@sig/tokens'],
   async headers() {
-    return [{ source: '/:path*', headers: cabeceras }];
+    return [
+      { source: '/:path*', headers: cabeceras },
+      // Las pantallas internas nunca se guardan en caché: «atrás» tras cerrar sesión no debe mostrar datos (H1.4).
+      { source: '/e/:path*', headers: [{ key: 'Cache-Control', value: 'no-store' }] },
+    ];
   },
 };
