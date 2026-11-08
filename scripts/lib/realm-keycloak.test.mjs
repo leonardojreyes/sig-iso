@@ -168,6 +168,8 @@ describe('realm resuelto (ADR 025 y 027)', () => {
     expect(realm.eventsExpiration).toBeGreaterThan(0);
     expect(realm.adminEventsEnabled).toBe(true);
     expect(realm.adminEventsDetailsEnabled).toBe(false);
+    // El listener de registro escribiría IP y nombre de usuario de cada fallo en un archivo de texto (datos personales, LOPDP).
+    expect(realm.eventsListeners).toEqual([]);
   });
 
   it('cliente web: confidencial, código con PKCE S256, sin flujos inseguros y URIs exactas sin comodines', () => {
@@ -207,17 +209,43 @@ describe('realm resuelto (ADR 025 y 027)', () => {
     });
   });
 
-  it('alcances explícitos y mínimos: el cliente web recibe «basic», que aporta sub (lo exige la API), y nada de perfil ni correo', () => {
-    expect(realm.clientScopes.map((s) => s.name)).toEqual(['basic']);
+  it('alcances explícitos y mínimos: la web recibe solo «basic» (sub); «roles» solo la cuenta de eventos', () => {
+    expect(realm.clientScopes.map((s) => s.name)).toEqual(['basic', 'roles', 'kc-admin-api']);
     expect(cliente(realm, 'sigiso-web').defaultClientScopes).toEqual(['basic']);
     const sub = realm.clientScopes[0].protocolMappers.find((m) => m.protocolMapper === 'oidc-sub-mapper');
-    expect(sub.config).toMatchObject({
-      'access.token.claim': 'true',
-      'id.token.claim': 'true',
-    });
+    expect(sub.config).toMatchObject({ 'access.token.claim': 'true', 'id.token.claim': 'true' });
     expect(realm.defaultDefaultClientScopes).toEqual(['basic']);
     expect(realm.defaultOptionalClientScopes).toEqual([]);
-    expect(cliente(realm, 'sigiso-events').defaultClientScopes).toEqual(['basic']);
+    expect(cliente(realm, 'sigiso-events').defaultClientScopes).toEqual(['basic', 'roles', 'kc-admin-api']);
+  });
+
+  it('el alcance «roles» pone los roles de cliente y la audiencia de realm-management en el token de la cuenta de eventos', () => {
+    const roles = realm.clientScopes.find((s) => s.name === 'roles');
+    const mapeadores = roles.protocolMappers.map((m) => m.protocolMapper).sort();
+    expect(mapeadores).toEqual(['oidc-audience-resolve-mapper', 'oidc-usermodel-client-role-mapper']);
+    const claim = roles.protocolMappers.find((m) => m.protocolMapper === 'oidc-usermodel-client-role-mapper');
+    expect(claim.config).toMatchObject({
+      'claim.name': 'resource_access.${client_id}.roles',
+      'access.token.claim': 'true',
+    });
+    expect(claim.config['id.token.claim']).toBe('false');
+  });
+
+  it('«kc-admin-api» (exigido por la API de administración de Keycloak 26.8) va en el scope del token y pone la audiencia del realm', () => {
+    const admin = realm.clientScopes.find((s) => s.name === 'kc-admin-api');
+    expect(admin.attributes['include.in.token.scope']).toBe('true');
+    expect(admin.protocolMappers.map((m) => m.protocolMapper)).toEqual(['oidc-admin-api-audience-mapper']);
+    expect(admin.protocolMappers[0].config['access.token.claim']).toBe('true');
+    // Solo la cuenta de eventos lo recibe: la web nunca debe poder llamar a la API de administración.
+    expect(cliente(realm, 'sigiso-web').defaultClientScopes).not.toContain('kc-admin-api');
+    expect(realm.defaultDefaultClientScopes).not.toContain('kc-admin-api');
+  });
+
+  it('con fullScopeAllowed falso, view-events es el único rol que el cliente de eventos puede llevar en su token', () => {
+    expect(cliente(realm, 'sigiso-events').fullScopeAllowed).toBe(false);
+    expect(realm.clientScopeMappings).toEqual({
+      'realm-management': [{ client: 'sigiso-events', roles: ['view-events'] }],
+    });
   });
 
   it('cuenta de servicio de eventos: solo view-events, sin flujos de personas', () => {

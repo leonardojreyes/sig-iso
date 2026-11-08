@@ -114,6 +114,7 @@ const arrancar = async () => {
     javaHome: encontrarJavaHome(destinos.jre),
     secretos: { usuario: env.get('KEYCLOAK_ADMIN_USER'), clave: env.get('KEYCLOAK_ADMIN_PASSWORD') },
     base: process.env,
+    nivelLog: process.env.KEYCLOAK_LOG_LEVEL,
   });
   mkdirSync(join(home, 'data', 'import'), { recursive: true });
   copyFileSync(archivoRealm, join(home, 'data', 'import', 'sigiso-realm.json'));

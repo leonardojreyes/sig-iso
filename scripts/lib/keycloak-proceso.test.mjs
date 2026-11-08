@@ -68,6 +68,14 @@ describe('entornoArranque', () => {
     for (const k of ['JAVA_OPTS', 'JAVA_OPTS_APPEND', 'KC_HTTP_HOST', 'KC_HOSTNAME', 'KC_DB'])
       expect(sucio[k]).toBeUndefined();
   });
+  it('el nivel de registro es opcional y solo admite un formato seguro', () => {
+    expect(env.KC_LOG_LEVEL).toBeUndefined();
+    const con = entornoArranque({ javaHome: '/jre', secretos, base: {}, nivelLog: 'info,org.keycloak.services:debug' });
+    expect(con.KC_LOG_LEVEL).toBe('info,org.keycloak.services:debug');
+    for (const malo of ['info; echo x', 'a b', '$(x)', '']) {
+      expect(() => entornoArranque({ javaHome: '/jre', secretos, base: {}, nivelLog: malo })).toThrow(/registro/i);
+    }
+  });
   it('falla si falta el administrador', () => {
     expect(() => entornoArranque({ javaHome: '/jre', secretos: { usuario: '', clave: 'x' }, base: {} })).toThrow(
       /administrador/i,

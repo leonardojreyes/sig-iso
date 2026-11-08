@@ -38,16 +38,7 @@ export const decodificarPayload = (jwt) => {
   return JSON.parse(Buffer.from(partes[1], 'base64url').toString('utf8'));
 };
 
-/** Devuelve { tokens, state } o lanza si el ingreso no llega al código. No registra contraseñas ni tokens. */
-export const ingresarConCodigo = async ({
-  emisor,
-  clienteId,
-  clienteSecreto,
-  redirectUri,
-  usuario,
-  clave,
-  fetchFn = fetch,
-}) => {
+const enviarCredenciales = async ({ emisor, clienteId, redirectUri, usuario, clave, fetchFn }) => {
   const jar = new Map();
   const pkce = crearPkce();
   const state = randomBytes(16).toString('base64url');
@@ -81,6 +72,56 @@ export const ingresarConCodigo = async ({
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ ...formulario.campos, username: usuario, password: clave }).toString(),
+  });
+  return { envio, state, nonce, pkce };
+};
+
+const sinEtiquetas = (html) =>
+  decodificarHtml(html.replace(/<[^>]*>/g, ''))
+    .replaceAll('&nbsp;', ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/** Texto del error que Keycloak muestra bajo el formulario de ingreso, o null si no hay. */
+export const extraerMensajeError = (html) => {
+  // Tema actual de Keycloak: <span class="… kc-feedback-text">mensaje</span>. Se acepta también un <span id="input-error">.
+  const m =
+    /<span\b[^>]*\bclass="[^"]*\bkc-feedback-text\b[^"]*"[^>]*>([\s\S]*?)<\/span>/.exec(html) ??
+    /<span\b[^>]*\bid="input-error"[^>]*>([\s\S]*?)<\/span>/.exec(html);
+  const texto = m ? sinEtiquetas(m[1]) : '';
+  return texto === '' ? null : texto;
+};
+
+/** Ingreso que debe fallar (usuario inexistente o clave mala): devuelve { estado, mensaje, idioma } de la página de error. */
+export const intentarIngresoFallido = async ({ fetchFn = fetch, ...datos }) => {
+  const { envio } = await enviarCredenciales({ ...datos, fetchFn });
+  const html = await envio.text();
+  return {
+    estado: envio.status,
+    mensaje: extraerMensajeError(html),
+    idioma: /<html[^>]*\blang="([^"]+)"/.exec(html)?.[1] ?? null,
+    // Fragmento de la página alrededor del contenedor de errores (para diagnosticar si cambia el marcado; es HTML público).
+    pista: html.match(/.{0,80}input-error-container.{0,500}/is)?.[0].replace(/\s+/g, ' ') ?? null,
+  };
+};
+
+/** Devuelve { tokens, nonce } o lanza si el ingreso no llega al código. No registra contraseñas ni tokens. */
+export const ingresarConCodigo = async ({
+  emisor,
+  clienteId,
+  clienteSecreto,
+  redirectUri,
+  usuario,
+  clave,
+  fetchFn = fetch,
+}) => {
+  const { envio, state, nonce, pkce } = await enviarCredenciales({
+    emisor,
+    clienteId,
+    redirectUri,
+    usuario,
+    clave,
+    fetchFn,
   });
   const destino = envio.headers.get('location');
   if (envio.status !== 302 || !destino) throw new Error(`El ingreso no fue aceptado (respuesta ${envio.status})`);

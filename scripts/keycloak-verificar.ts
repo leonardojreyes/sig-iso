@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crearJwksRemoto, TokenInvalidoError, TokenVerifierJose } from '@sig/autenticacion';
 import { DATOS_SIEMBRA } from './lib/datos-siembra.ts';
-import { decodificarPayload, ingresarConCodigo } from './lib/flujo-codigo.mjs';
+import { decodificarPayload, ingresarConCodigo, intentarIngresoFallido } from './lib/flujo-codigo.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const emisor = (process.env.OIDC_ISSUER_URL ?? 'http://127.0.0.1:8080/realms/sigiso').replace(/\/+$/, '');
@@ -65,6 +65,33 @@ const ingresar = (alias: string) =>
   });
 
 try {
+  // H1.2: usuario inexistente y contraseña equivocada deben dar el MISMO mensaje, en español. Se hace primero porque el
+  // ingreso correcto posterior de admin-a reinicia su contador de fallos (bloqueo temporal tras 5).
+  const fallido = (usuario: string, clave: string) =>
+    intentarIngresoFallido({ emisor, clienteId, redirectUri, usuario, clave });
+  const claveMala = await fallido('admin-a', 'una-clave-equivocada-123');
+  const sinUsuario = await fallido('persona-que-no-existe', 'una-clave-equivocada-123');
+  comprobar(
+    'credenciales inválidas: ambos casos vuelven al formulario (200) con un mensaje',
+    claveMala.estado === 200 && sinUsuario.estado === 200 && !!claveMala.mensaje && !!sinUsuario.mensaje,
+    `estados ${claveMala.estado}/${sinUsuario.estado}`,
+  );
+  comprobar(
+    'credenciales inválidas: el mensaje es EXACTAMENTE el mismo exista o no el usuario (H1.2)',
+    claveMala.mensaje === sinUsuario.mensaje && claveMala.mensaje !== null,
+  );
+  comprobar(
+    'credenciales inválidas: la página está en español',
+    claveMala.idioma === 'es' && sinUsuario.idioma === 'es',
+    `idioma ${claveMala.idioma}/${sinUsuario.idioma}`,
+  );
+  comprobar(
+    'credenciales inválidas: el mensaje no nombra al usuario ni dice que no existe',
+    !/admin-a|persona-que-no-existe|no existe|not found/i.test(`${claveMala.mensaje} ${sinUsuario.mensaje}`),
+  );
+  console.log(`  (mensaje mostrado: «${claveMala.mensaje}»)`);
+  if (claveMala.mensaje === null) console.log(`  (pista del HTML: ${claveMala.pista})`);
+
   const identidades = new Map<string, string>();
   for (const alias of ['admin-a', 'admin-b']) {
     const dato = DATOS_SIEMBRA.usuarios.find((u) => u.alias === alias)!;
@@ -116,6 +143,69 @@ try {
     'el flujo de contraseña directo está rechazado',
     directo.status === 400 || directo.status === 401,
     `respuesta ${directo.status}`,
+  );
+
+  // Eventos: la cuenta de servicio de solo lectura de eventos (la del worker, 11.1) los ve y quedaron registrados.
+  const secretoEventos = process.env.KEYCLOAK_EVENTS_CLIENT_SECRET;
+  const idEventos = process.env.KEYCLOAK_EVENTS_CLIENT_ID ?? 'sigiso-events';
+  if (!secretoEventos) throw new Error('Falta KEYCLOAK_EVENTS_CLIENT_SECRET: ejecuta pnpm keycloak:realm');
+  const respuestaToken = await fetch(`${emisor}/protocol/openid-connect/token`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: idEventos,
+      client_secret: secretoEventos,
+    }),
+  });
+  comprobar(
+    'la cuenta de eventos obtiene su token (client credentials)',
+    respuestaToken.ok,
+    `respuesta ${respuestaToken.status}`,
+  );
+  const tokenEventos: string = respuestaToken.ok
+    ? ((await respuestaToken.json()) as { access_token: string }).access_token
+    : '';
+  const base = emisor.replace(/\/realms\/[^/]+$/, '');
+  const administracion = (ruta: string) =>
+    fetch(`${base}/admin/realms/${ruta}`, { headers: { authorization: `Bearer ${tokenEventos}` } });
+  if (tokenEventos) {
+    const pe = decodificarPayload(tokenEventos);
+    comprobar(
+      'token de eventos: rol view-events de realm-management y audiencia de la API de administración (Keycloak 26.8)',
+      JSON.stringify(pe.resource_access?.['realm-management']?.roles) === '["view-events"]' &&
+        [pe.aud].flat().some((a: string) => a.endsWith('/admin/realms/sigiso')) &&
+        String(pe.scope).split(' ').includes('kc-admin-api'),
+    );
+  }
+  const lectura = await administracion('sigiso/events?type=LOGIN_ERROR&max=50');
+  comprobar(
+    'la cuenta de eventos lee LOGIN_ERROR (tiene view-events)',
+    lectura.status === 200,
+    `respuesta ${lectura.status}`,
+  );
+  const eventos = lectura.ok ? ((await lectura.json()) as Array<Record<string, unknown>>) : [];
+  const codigos = new Set(eventos.map((e) => String(e.error)));
+  comprobar(
+    'los dos intentos fallidos quedaron registrados como LOGIN_ERROR',
+    codigos.has('invalid_user_credentials') && codigos.has('user_not_found'),
+    [...codigos].join(', '),
+  );
+  const sinUsuarioEvento = eventos.find((e) => e.error === 'user_not_found');
+  comprobar(
+    'el evento de usuario inexistente no trae userId',
+    sinUsuarioEvento !== undefined && sinUsuarioEvento.userId === undefined,
+  );
+  const campos = new Set(eventos.flatMap((e) => Object.keys(e)));
+  console.log(
+    `  (campos de un evento: ${[...campos].sort().join(', ')}; el worker solo copiará tipo, fecha, código de error y userId)`,
+  );
+  const propios = await administracion('sigiso/users');
+  const ajeno = await administracion('master/users');
+  comprobar(
+    'la cuenta de eventos NO puede listar usuarios, ni de su realm ni de otro',
+    (propios.status === 401 || propios.status === 403) && (ajeno.status === 401 || ajeno.status === 403),
+    `respuestas ${propios.status}/${ajeno.status}`,
   );
 } catch (error) {
   fallos += 1;

@@ -19,16 +19,18 @@ export const argumentosArranque = ({ puerto }) => {
   ];
 };
 
-export const entornoArranque = ({ javaHome, secretos, base }) => {
+export const entornoArranque = ({ javaHome, secretos, base, nivelLog }) => {
   if (!secretos?.usuario || !secretos?.clave)
     throw new Error('Falta el administrador de Keycloak: ejecuta pnpm keycloak:realm');
   const limpio = Object.fromEntries(Object.entries(base).filter(([k]) => !HEREDABLES_PROHIBIDAS.test(k)));
+  if (nivelLog !== undefined && !/^[A-Za-z0-9.,:_-]+$/.test(nivelLog)) throw new Error('Nivel de registro no válido');
   return {
     ...limpio,
     JAVA_HOME: javaHome,
     JAVA_OPTS_KC_HEAP: HEAP,
     KC_BOOTSTRAP_ADMIN_USERNAME: secretos.usuario,
     KC_BOOTSTRAP_ADMIN_PASSWORD: secretos.clave,
+    ...(nivelLog === undefined ? {} : { KC_LOG_LEVEL: nivelLog }),
   };
 };
 

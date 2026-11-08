@@ -31,7 +31,7 @@
   "maxDeltaTimeSeconds": 43200,
   "eventsEnabled": true,
   "eventsExpiration": 604800,
-  "eventsListeners": ["jboss-logging"],
+  "eventsListeners": [],
   "enabledEventTypes": [
     "LOGIN",
     "LOGIN_ERROR",
@@ -123,7 +123,7 @@
       "redirectUris": [],
       "webOrigins": [],
       "optionalClientScopes": [],
-      "defaultClientScopes": ["basic"]
+      "defaultClientScopes": ["basic", "roles", "kc-admin-api"]
     }
   ],
   "users": [
@@ -172,8 +172,74 @@
           }
         }
       ]
+    },
+    {
+      "name": "roles",
+      "description": "Roles de cliente y audiencia de realm-management (solo para la cuenta de servicio de eventos)",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "roles de cliente",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "user.attribute": "foo",
+            "claim.name": "resource_access.${client_id}.roles",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "audiencia de roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-resolve-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "kc-admin-api",
+      "description": "Audiencia de la API de administración del realm (Keycloak 26.8); solo para la cuenta de servicio de eventos",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "audiencia de la API de administración",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-admin-api-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "defaultDefaultClientScopes": ["basic"],
-  "defaultOptionalClientScopes": []
+  "defaultOptionalClientScopes": [],
+  "clientScopeMappings": {
+    "realm-management": [
+      {
+        "client": "sigiso-events",
+        "roles": ["view-events"]
+      }
+    ]
+  }
 }
