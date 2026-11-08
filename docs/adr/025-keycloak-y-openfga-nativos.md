@@ -66,6 +66,8 @@ El ADR 009 prevé una cola Valkey. Mientras no exista, el worker **sondea** los 
 - **OpenTelemetry mínimo**: un span por solicitud con método, patrón de ruta, estado y `empresa_id`; exportador a consola; sin recolector ni auto-instrumentación (tarea 12.1).
 - **OpenFeature con proveedor en memoria**, sin flagd (tarea 12.2). Es un desvío consciente del ADR 013 mientras no haya dónde alojar flagd.
 
+> **Actualización (ADR 029, 2026-11-07):** OpenFGA quedó instalado y verificado (tarea 9.1) pero **no se integra** en el corte 0.6; la autorización usa la matriz en código con el rol guardado en la base. Lo demás de este ADR sigue vigente.
+
 ## Alternativas consideradas
 
 | Alternativa                               | Por qué no (o por qué queda abierta)                                                                                                           |

@@ -102,13 +102,14 @@
 | 8.4 ✅ | Arranque y parada, heap acotado, escucha en 127.0.0.1, importación; mapper `empresa_id` con atributo no editable por el usuario | 8.3     | Manual guiado + prueba que decodifica un token real y verifica el claim           | Ingreso de `admin-a` produce un token con su `empresa_id` |
 | 8.5 ✅ | Eventos habilitados y expiración, locale `es` y mensaje genérico de credenciales inválidas (H1.2)                               | 8.4     | Manual guiado: usuario inexistente y contraseña mala dan el mismo mensaje         | Mensaje igual en ambos casos                              |
 
-## Fase 9 — OpenFGA
+## Fase 9 — OpenFGA (9.2 y 9.3 pospuestas por el ADR 029; se sustituyen por la 9.4)
 
 | ID    | Tarea                                                                                                          | Depende       | Pruebas                                                           | Terminado cuando              |
 | ----- | -------------------------------------------------------------------------------------------------------------- | ------------- | ----------------------------------------------------------------- | ----------------------------- |
 | 9.1 ✅ | Verificar versión y licencia de OpenFGA en Homebrew, **informar tamaño**, instalar, base `openfga` y migración | 8.1           | —                                                                 | OpenFGA responde en 127.0.0.1 |
-| 9.2   | Modelo `.fga` con los seis roles del ADR 008 y pruebas del modelo                                              | 9.1           | `fga model test` con casos de `administrador_sig` y `colaborador` | Pruebas del modelo en verde   |
-| 9.3   | Adaptador OpenFGA de `AutorizacionPort` y siembra de tuplas por un puerto que registra `rol.cambiado`          | 9.2, 6.3, 7.1 | Integración con OpenFGA real                                      | Verde                         |
+| 9.2 ⏭ | Modelo `.fga` con los seis roles del ADR 008 y pruebas del modelo                                              | 9.1           | `fga model test` con casos de `administrador_sig` y `colaborador` | Pruebas del modelo en verde   |
+| 9.3 ⏭ | Adaptador OpenFGA de `AutorizacionPort` y siembra de tuplas por un puerto que registra `rol.cambiado`          | 9.2, 6.3, 7.1 | Integración con OpenFGA real                                      | Verde                         |
+| 9.4   | Autorización por rol desde la base (ADR 029): migración 0005 (`usuario.rol`), adaptador `AutorizacionPostgres` con la matriz, siembra con rol y composición de producción | 6.3, 7.1 | Integración con PostgreSQL real: otra empresa no ve roles ajenos, falla cerrada sin rol, matriz | Verde; la adopción funciona en una ejecución real |
 
 ## Fase 10 — Web
 
