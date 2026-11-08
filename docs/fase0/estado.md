@@ -29,7 +29,7 @@
 
 ## Pendiente del responsable
 
-- Verificar numeraciones y títulos de la librería de ejemplo (4.4) y aprobar el ADR 026 (librería global y adopción).
+- Verificar numeraciones y títulos de la librería de ejemplo (4.4) (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). El ADR 026 quedó **aprobado** el 2026-11-08.
 - **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
 - Integrar el PR #5 y agregar `integracion` como check obligatorio (`docs/security/ci-integracion.md`).
 - Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (usar `env -u GITHUB_TOKEN` mientras tanto).

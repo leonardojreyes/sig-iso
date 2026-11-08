@@ -1,6 +1,6 @@
 # ADR 026 — Librería de normas global, adopción por empresa y esquema v2
 
-- **Estado:** Propuesto (pendiente de aprobación del responsable)
+- **Estado:** Aprobado (2026-11-08) por el responsable. La mecánica (catálogo global, adopción, versiones inmutables, esquema v2) ya está implementada y probada; las numeraciones concretas de la librería de ejemplo siguen pendientes de su verificación (tarea 4.4).
 - **Fecha:** 2026-11-05
 - **Decide:** Ing. Leonardo J. Reyes B.
 
