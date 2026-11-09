@@ -5,7 +5,7 @@
 - **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso (ingreso por empresa, aislamiento multiempresa, librería de ejemplo y bitácora inmutable).
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
 - **Rama y PR (2026-11-09):** `main` incluye los PR #1, #3, #4, #5, #6, #7 y #8 (adopción desde la pantalla, 10.7); el #2 se cerró a propósito (PR de prueba que viola las reglas). La rama `feature/paso-0-6-ingreso` (10.8 y 11.1, M1 y seguimiento de la revisión) está rebasada sobre `main` y su PR está abierto. La protección de `main` exige los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
-- **Corte 0.6: 62 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
+- **Corte 0.6: 63 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
 
 ## Corte 0.6 — qué está terminado
 
@@ -50,7 +50,7 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 ## Próximos pasos técnicos
 
 1. ~~11.2 y 11.3~~ diferidas a la Fase 1 (ver arriba).
-2. **12.3** guía de ejecución con la medición final de memoria; **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
+2. ~~12.3~~ hecha (`docs/fase0/guia-de-ejecucion.md`; la pila completa usa 1.430 MB reales de 4 GB, medidos con `ram:report`, que ahora usa la huella real en macOS); **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
 3. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
 
 - **Actualizado:** 2026-11-09

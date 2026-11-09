@@ -3,13 +3,16 @@ import {
   agregar,
   clasificar,
   COMPONENTES,
+  conHuella,
   formatear,
   leerArgumentos,
   listarProcesos,
+  parsearHuella,
   parsearLsof,
   parsearPs,
   parsearPuertosWindows,
   parsearWindows,
+  pidsDeLaPila,
   resumir,
 } from './ram-report.mjs';
 
@@ -234,5 +237,48 @@ describe('listarProcesos (lee los procesos REALES del sistema; macOS, Linux y Wi
     expect(yo.ppid).toBeGreaterThan(0);
     expect(typeof yo.comando).toBe('string');
     expect(lista.length).toBeGreaterThan(5);
+  });
+});
+
+describe('huella real en macOS (el RSS subestima la memoria comprimida)', () => {
+  it('parsearHuella lee phys_footprint en B, KB, MB y GB', () => {
+    expect(parsearHuella('Auxiliary data:\n    phys_footprint: 438 MB\n    phys_footprint_peak: 448 MB')).toBe(438 * KB);
+    expect(parsearHuella('    phys_footprint: 1665 KB')).toBe(1665);
+    expect(parsearHuella('    phys_footprint: 1.5 GB')).toBe(Math.round(1.5 * KB * KB));
+    expect(parsearHuella('    phys_footprint: 2048 B')).toBe(2);
+  });
+
+  it('parsearHuella devuelve null si no hay dato o la unidad es desconocida', () => {
+    expect(parsearHuella('')).toBeNull();
+    expect(parsearHuella('error: no such process')).toBeNull();
+    expect(parsearHuella('    phys_footprint: 5 TB')).toBeNull();
+  });
+
+  it('conHuella reemplaza el RSS solo donde hay huella y conserva el resto', () => {
+    const procs = [
+      { pid: 1, ppid: 0, rssKb: 10 * KB, comando: 'java keycloak' },
+      { pid: 2, ppid: 0, rssKb: 20 * KB, comando: 'postgres' },
+    ];
+    const r = conHuella(procs, new Map([[1, 434 * KB]]));
+    expect(r[0].rssKb).toBe(434 * KB);
+    expect(r[1].rssKb).toBe(20 * KB);
+    expect(procs[0].rssKb).toBe(10 * KB); // no muta la entrada
+  });
+
+  it('pidsDeLaPila incluye hijos de un componente y excluye procesos ajenos', () => {
+    const procs = [
+      { pid: 10, ppid: 1, rssKb: 1, comando: '/opt/homebrew/bin/postgres -D datos' },
+      { pid: 11, ppid: 10, rssKb: 1, comando: 'postgres: checkpointer' },
+      { pid: 99, ppid: 1, rssKb: 1, comando: '/usr/bin/vim notas.txt' },
+    ];
+    expect(pidsDeLaPila(procs, new Map()).sort()).toEqual([10, 11]);
+  });
+
+  it('el informe indica la métrica usada', () => {
+    const agregado = agregar([], new Map());
+    const huella = formatear(resumir(agregado, { presupuestoMb: 4096, totalEquipoMb: 8192, metrica: 'huella' }));
+    expect(huella).toContain('huella real');
+    expect(huella).not.toContain('cota superior');
+    expect(formatear(resumir(agregado, { presupuestoMb: 4096, totalEquipoMb: 8192 }))).toContain('(RSS)');
   });
 });
