@@ -17,6 +17,9 @@ export const ACCIONES = [
   'usuario.baja',
   'datos_iniciales.cargados',
   'bitacora.verificacion',
+  'ia.consulta',
+  'ia.preferencia_cambiada',
+  'ia.configuracion_cargada',
 ] as const;
 export type AccionBitacora = (typeof ACCIONES)[number];
 
@@ -48,6 +51,12 @@ export const MOTIVOS = [
   'huella_invalida',
   'enlace_roto',
   'error_no_clasificado',
+  'modelo_no_permitido',
+  'externo_no_habilitado',
+  'limite_excedido',
+  'texto_de_norma',
+  'modelo_no_disponible',
+  'tiempo_agotado',
 ] as const;
 export type MotivoBitacora = (typeof MOTIVOS)[number];
 
@@ -124,5 +133,40 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
     motivo: 'opcional',
     motivos: ['cadena_rota', 'ancla_perdida', 'secuencia_con_huecos', 'huella_invalida', 'enlace_roto'],
     despues: { problemas: 'entero' },
+  },
+  // Puerto de IA (paso 0.7, spec §7). Se registra QUE hubo una consulta y COMO le fue; nunca el texto enviado ni el recibido (no hay
+  // clave posible para ello). Las medidas son opcionales una por una: un rechazo ocurre antes de llamar al modelo. La falta de permiso
+  // NO es un motivo de esta acción: se registra como `acceso.denegado` (un solo evento por intento). `objetoVersion` es la versión
+  // del prompt. Se usan `unidades_*` y no «tokens» para no chocar con la palabra prohibida de los secretos.
+  'ia.consulta': {
+    ...nada,
+    actores: ['usuario'],
+    empresa: 'obligatoria',
+    resultados: ['ok', 'rechazado', 'error'],
+    motivo: 'opcional',
+    motivos: ['modelo_no_permitido', 'externo_no_habilitado', 'limite_excedido', 'texto_de_norma', 'modelo_no_disponible', 'tiempo_agotado'],
+    objeto: 'obligatorio',
+    objetoVersion: 'obligatorio',
+    despues: { modelo_id: 'uuid', proveedor: { estado: ['local', 'externo'] }, duracion_ms: 'entero', unidades_entrada: 'entero', unidades_salida: 'entero' },
+  },
+  'ia.preferencia_cambiada': {
+    ...nada,
+    actores: ['usuario'],
+    empresa: 'obligatoria',
+    resultados: ['ok'],
+    objeto: 'obligatorio',
+    antes: { modelo_id: 'uuid' },
+    despues: { modelo_id: 'uuid' },
+  },
+  'ia.configuracion_cargada': {
+    ...nada,
+    actores: ['plataforma'],
+    empresa: 'prohibida',
+    resultados: ['ok'],
+    motivo: 'obligatorio',
+    motivos: ['carga_inicial'],
+    objeto: 'obligatorio',
+    objetoVersion: 'obligatorio',
+    despues: { modelos: 'entero', politicas: 'entero' },
   },
 };
