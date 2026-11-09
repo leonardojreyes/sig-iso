@@ -50,7 +50,7 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 ## Próximos pasos técnicos
 
 1. ~~11.2 y 11.3~~ diferidas a la Fase 1 (ver arriba).
-2. ~~12.3~~ hecha (`docs/fase0/guia-de-ejecucion.md`; la pila completa usa ≈ 1 GB reales, `ram:report` marca 463 MB porque macOS comprime memoria: mejora pendiente); **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
+2. ~~12.3~~ hecha (`docs/fase0/guia-de-ejecucion.md`; la pila completa usa 1.430 MB reales de 4 GB, medidos con `ram:report`, que ahora usa la huella real en macOS); **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
 3. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
 
 - **Actualizado:** 2026-11-09

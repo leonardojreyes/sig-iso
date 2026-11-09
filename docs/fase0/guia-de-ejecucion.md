@@ -44,21 +44,19 @@ Para apagar: `Ctrl+C` en `pnpm dev` y `pnpm keycloak:stop`.
 
 ## Consumo de memoria (medido 2026-11-09, Mac de 8 GB)
 
-Pila completa en marcha (PostgreSQL, Keycloak, API y web), tras ejecutar `web:verify-login` y `web:verify-listado`:
+Pila completa en marcha (PostgreSQL, Keycloak, API y web), tras ejecutar `web:verify-login` y `web:verify-listado`, con `pnpm ram:report`:
 
-| Componente    | `ram:report` (RSS) | `footprint` (real, incluye memoria comprimida) |
-| ------------- | -----------------: | ---------------------------------------------: |
-| PostgreSQL    |              38 MB |                                        ~207 MB |
-| Keycloak      |              14 MB |                                        ~434 MB |
-| API (NestJS)  |              65 MB |                                     ~29–65 MB¹ |
-| Web (Next.js) |             345 MB |                                        ~342 MB |
-| **Total**     |         **463 MB** |                               **≈ 1,0–1,1 GB** |
+| Componente    |  Procesos |       MB |
+| ------------- | --------: | -------: |
+| PostgreSQL    |        10 |    248,5 |
+| Keycloak (JVM)|         1 |    444,0 |
+| API (NestJS)  |         5 |    119,9 |
+| Web (Next.js) |         6 |    618,0 |
+| **Total**     |           | **1.430** |
 
-Presupuesto del ADR 007: ~4 GB. Con ≈ 1 GB la pila cabe con holgura (OpenFGA, cuando se use, suma ~53 MB).
+Presupuesto del ADR 007: ~4 GB. La pila usa el 35 % y cabe con holgura (OpenFGA, cuando se use, suma ~53 MB). Es medición en modo desarrollo; `next dev` pesa más que una compilación de producción.
 
-**Advertencia:** en macOS, `pnpm ram:report` subestima los procesos inactivos porque el sistema comprime su memoria (la JVM de Keycloak aparece con 14 MB y su huella real es de ~434 MB). Para una cifra fiable usa `footprint <pid>` (`phys_footprint`). Corregir el script para usar `footprint` en macOS queda como mejora pendiente.
-
-¹ La medición con `footprint` del API usó una coincidencia de procesos aproximada; tómala como cota inferior. El RSS del reporte (65 MB) es la cota de referencia.
+En macOS `ram:report` mide la **huella real** (`footprint`, `phys_footprint`), que incluye la memoria comprimida. El RSS subestima a los procesos inactivos: en la primera medición la JVM de Keycloak aparecía con 14 MB y su huella real es de ~440 MB. En otras plataformas se mide RSS, que es una cota superior (cuenta varias veces la memoria compartida).
 
 ## Problemas conocidos
 

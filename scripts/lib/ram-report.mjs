@@ -4,8 +4,9 @@
 // PRIVACIDAD: las líneas de comando pueden llevar contraseñas. Se usan SOLO para clasificar; nunca se imprimen ni se guardan
 // en el resultado.
 //
-// LÍMITE: se mide RSS (memoria residente). La memoria compartida entre procesos (por ejemplo, PostgreSQL) se cuenta más de una
-// vez, así que el total es una cota superior de lo que ocupa la pila.
+// LÍMITE: por defecto se mide RSS (memoria residente). La memoria compartida entre procesos (por ejemplo, PostgreSQL) se cuenta
+// más de una vez, así que el total es una cota superior. En macOS el RSS SUBESTIMA los procesos inactivos (el sistema comprime
+// su memoria: una JVM de ~430 MB aparece con ~10 MB), así que allí se usa `footprint` (phys_footprint, incluye la comprimida).
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
@@ -132,11 +133,11 @@ export const puertosEnEscucha = async () => {
   }
 };
 
-/** Suma la memoria por componente. Cada proceso cuenta una sola vez: para el componente propio o el del antecesor más cercano que lo tenga. */
-export const agregar = (procesos, puertos) => {
+/** Componente de cada proceso: el propio o el del antecesor más cercano que lo tenga. Devuelve `Map<pid, componente>` solo con los de la pila. */
+const componentesPorPid = (procesos, puertos) => {
   const porPid = new Map(procesos.map((p) => [p.pid, p]));
   const propio = new Map(procesos.map((p) => [p.pid, clasificar(p, puertos.get(p.pid) ?? [])]));
-  const total = Object.fromEntries(COMPONENTES.map((c) => [c.id, { procesos: 0, rssKb: 0 }]));
+  const resultado = new Map();
   for (const p of procesos) {
     let actual = p;
     let componente = null;
@@ -147,16 +148,59 @@ export const agregar = (procesos, puertos) => {
       if (componente) break;
       actual = porPid.get(actual.ppid);
     }
-    if (componente) {
-      total[componente].procesos += 1;
-      total[componente].rssKb += p.rssKb;
-    }
+    if (componente) resultado.set(p.pid, componente);
+  }
+  return resultado;
+};
+
+/** Identificadores de los procesos que pertenecen a la pila. */
+export const pidsDeLaPila = (procesos, puertos) => [...componentesPorPid(procesos, puertos).keys()];
+
+/** Suma la memoria por componente. Cada proceso cuenta una sola vez: para el componente propio o el del antecesor más cercano que lo tenga. */
+export const agregar = (procesos, puertos) => {
+  const total = Object.fromEntries(COMPONENTES.map((c) => [c.id, { procesos: 0, rssKb: 0 }]));
+  const porPid = new Map(procesos.map((p) => [p.pid, p]));
+  for (const [pid, componente] of componentesPorPid(procesos, puertos)) {
+    total[componente].procesos += 1;
+    total[componente].rssKb += porPid.get(pid).rssKb;
   }
   return total;
 };
 
+/** Extrae `phys_footprint` (en KB) de la salida de `footprint -p <pid>`; `null` si no aparece o la unidad no se reconoce. */
+export const parsearHuella = (salida) => {
+  const m = /phys_footprint:\s+([\d.]+)\s*(B|KB|MB|GB)\b/.exec(salida);
+  if (!m) return null;
+  const factor = { B: 1 / 1024, KB: 1, MB: 1024, GB: 1024 * 1024 }[m[2]];
+  return Math.round(Number(m[1]) * factor);
+};
+
+/** Huella real (KB) por pid con `footprint` de macOS; vacío en otras plataformas o si el pid no se puede leer (sin permisos, ya terminó). */
+export const medirHuellas = async (pids) => {
+  const huellas = new Map();
+  if (process.platform !== 'darwin') return huellas;
+  const LOTE = 8;
+  for (let i = 0; i < pids.length; i += LOTE) {
+    await Promise.all(
+      pids.slice(i, i + LOTE).map(async (pid) => {
+        try {
+          const { stdout } = await ejecutar('footprint', ['-p', String(pid)], OPCIONES);
+          const kb = parsearHuella(stdout);
+          if (kb !== null) huellas.set(pid, kb);
+        } catch {
+          /* se conserva el RSS de ese proceso */
+        }
+      }),
+    );
+  }
+  return huellas;
+};
+
+/** Sustituye el RSS por la huella medida donde exista. */
+export const conHuella = (procesos, huellas) => procesos.map((p) => (huellas.has(p.pid) ? { ...p, rssKb: huellas.get(p.pid) } : p));
+
 /** Resumen listo para mostrar: MB por componente, total y estado frente al presupuesto (`cerca` desde el 90 %). */
-export const resumir = (agregado, { presupuestoMb, totalEquipoMb }) => {
+export const resumir = (agregado, { presupuestoMb, totalEquipoMb, metrica = 'rss' }) => {
   const componentes = COMPONENTES.map(({ id, nombre }) => ({
     id,
     nombre,
@@ -167,7 +211,7 @@ export const resumir = (agregado, { presupuestoMb, totalEquipoMb }) => {
   const totalMb = componentes.reduce((s, c) => s + c.mb, 0);
   const porcentajePresupuesto = (totalMb / presupuestoMb) * 100;
   const estado = totalMb > presupuestoMb ? 'excedido' : totalMb >= presupuestoMb * 0.9 ? 'cerca' : 'dentro';
-  return { componentes, totalMb, presupuestoMb, porcentajePresupuesto, estado, totalEquipoMb };
+  return { componentes, totalMb, presupuestoMb, porcentajePresupuesto, estado, totalEquipoMb, metrica };
 };
 
 const MENSAJE = {
@@ -182,12 +226,14 @@ export const formatear = (r) => {
     c.enEjecucion ? `${c.nombre.padEnd(ancho)}  ${String(c.procesos).padStart(8)}  ${c.mb.toFixed(1).padStart(9)}` : `${c.nombre.padEnd(ancho)}  no está en ejecución`,
   );
   return [
-    'Memoria de la pila de desarrollo (RSS)',
+    `Memoria de la pila de desarrollo (${r.metrica === 'huella' ? 'huella real, macOS' : 'RSS'})`,
     `${'Componente'.padEnd(ancho)}  ${'Procesos'.padStart(8)}  ${'MB'.padStart(9)}`,
     ...filas,
     `${'Total'.padEnd(ancho)}  ${r.totalMb.toFixed(1)} MB de ${r.presupuestoMb} MB (${r.porcentajePresupuesto.toFixed(1)} %): ${MENSAJE[r.estado]}`,
     `Memoria del equipo: ${(r.totalEquipoMb / 1024).toFixed(1)} GB`,
-    'Nota: RSS cuenta varias veces la memoria compartida entre procesos; el total es una cota superior.',
+    r.metrica === 'huella'
+      ? 'Nota: huella real de macOS (phys_footprint), incluye la memoria comprimida; los procesos sin permiso de lectura usan RSS.'
+      : 'Nota: RSS cuenta varias veces la memoria compartida entre procesos; el total es una cota superior.',
   ].join('\n');
 };
 
