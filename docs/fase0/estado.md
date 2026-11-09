@@ -5,7 +5,7 @@
 - **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso (ingreso por empresa, aislamiento multiempresa, librería de ejemplo y bitácora inmutable).
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
 - **Rama y PR (2026-11-09):** `main` incluye los PR #1, #3, #4, #5, #6, #7 y #8 (adopción desde la pantalla, 10.7); el #2 se cerró a propósito (PR de prueba que viola las reglas). La rama `feature/paso-0-6-ingreso` (10.8 y 11.1, M1 y seguimiento de la revisión) está rebasada sobre `main` y su PR está abierto. La protección de `main` exige los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
-- **Corte 0.6: 63 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
+- **Corte 0.6: 64 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
 
 ## Corte 0.6 — qué está terminado
 
@@ -27,7 +27,7 @@
 
 - **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` ya está **cargada en la base local** (4.5 hecha, `pnpm libraries:load`), marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
 - **11.1 (hecha); 11.2 y 11.3 DIFERIDAS a la Fase 1 (M5, aprobado 2026-11-09):** el worker de intentos fallidos no hace falta para ver el sistema. El código de 11.1 queda en el repositorio, probado; la bitácora ya acepta esos registros, pero nada los alimenta todavía, y la prueba 12.4 no cubre el paso «intento fallido → bitácora desde Keycloak».
-- **12.3 (hecha) y 12.4 (prueba hecha con `pnpm web:verify-aislamiento`; falta el `/review` completo).** Ver «Brechas y avisos del cierre del corte 0.6».
+- **12.3 y 12.4 (hechas):** prueba `pnpm web:verify-aislamiento` y `/review` completo sin bloqueantes (`docs/revisiones/2026-11-09-review-corte-0-6.md`). Ver «Brechas y avisos del cierre del corte 0.6». Quedan solo 4.4 (tuya) y 11.2/11.3 (diferidas a la Fase 1).
 
 ## Pendiente del responsable
 
@@ -43,7 +43,8 @@
    - **A2, M3 y M4:** registrados abajo como prerrequisitos de la Fase 1.
    - **M2** (amarrar `adoptada_por` a la misma empresa) conviene al pasar por la migración de adopción; **B1–B4** al pasar por esos archivos.
 6. Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (mientras tanto, `env -u GITHUB_TOKEN` en `git` y `gh`).
-7. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global.
+7. **Decidir si se protege `.local/` (secretos de Keycloak) en `.claude/settings.json` y los hooks** (hallazgo del `/review` del 2026-11-09): hoy solo `.env*` está protegido y `.local/secretos-keycloak.json` se puede leer con `Read` o `cat`.
+8. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global.
 
 Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado y las dos empresas de prueba; `pnpm libraries:load` cargó la librería de ejemplo; las claves están en `.env.local` y `.local/` (ignorados). La empresa A no tiene librerías adoptadas (para que pruebes la adopción en pantalla).
 

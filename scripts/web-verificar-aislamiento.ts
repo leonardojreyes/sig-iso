@@ -7,7 +7,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { IntegridadKysely } from "@sig/auditoria";
 import { conTenant, GestorPools, leerUrls } from "@sig/db";
-import { sql } from "kysely";
+import { sql, type RawBuilder, type Transaction } from "kysely";
+import { crearEmpresaId } from "@sig/tenancy";
 import { ingresarConCodigo } from "./lib/flujo-codigo.mjs";
 import { DATOS_SIEMBRA, exigirBaseLocal } from "./lib/datos-siembra.js";
 import {
@@ -43,7 +44,11 @@ const comprobar = (descripcion: string, ok: boolean, detalle = "") => {
   );
 };
 const aviso = (texto: string) => console.log(`· ${texto}`);
-const brecha = (texto: string) => console.log(`⚠ BRECHA CONOCIDA: ${texto}`);
+let brechas = 0;
+const brecha = (texto: string) => {
+  brechas += 1;
+  console.log(`⚠ BRECHA CONOCIDA: ${texto}`);
+};
 
 const tokenDe = async (usuario: string) =>
   (
@@ -100,6 +105,7 @@ try {
   const idB = DATOS_SIEMBRA.empresas.find((e) => e.slug === "empresa-b")?.id;
   if (!idA || !idB)
     throw new Error("Faltan las empresas de prueba en los datos de siembra.");
+  const empresaA = crearEmpresaId(idA);
 
   // ---- Paso 4a: por URL, con la sesión web de A
   const sesionA = await iniciarSesionWeb(
@@ -160,37 +166,49 @@ try {
     "/requisitos/00000000-0000-4000-8000-000000000000",
     tokenAdminA,
   );
-  const conIdDeB = await llamar(`/requisitos/${idB}`, tokenAdminA);
-  const conIdDeA = await llamar(`/requisitos/${idA}`, tokenAdminB);
   comprobar(
     "POR API: A pidiendo una entrada inexistente recibe 404",
     inexistente.estado === 404,
     `respuesta ${inexistente.estado}`,
   );
-  comprobar(
-    "POR API: A pidiendo con el id de la empresa B como entrada recibe el mismo 404 (misma forma)",
-    conIdDeB.estado === 404 && firma404(conIdDeB) === firma404(inexistente),
-  );
-  comprobar(
-    "POR API: B pidiendo con el id de la empresa A como entrada recibe el mismo 404 (misma forma)",
-    conIdDeA.estado === 404 && firma404(conIdDeA) === firma404(inexistente),
-  );
   const listadoB = await llamar("/requisitos", tokenAdminB);
   const listadoA = await llamar("/requisitos", tokenAdminA);
   const entradasA = Array.isArray(listadoA.json)
     ? listadoA.json
-    : ((listadoA.json.items as unknown[]) ?? []);
+    : ((listadoA.json.items as Array<{ id?: string }>) ?? []);
   const entradasB = Array.isArray(listadoB.json)
     ? listadoB.json
     : ((listadoB.json.items as unknown[]) ?? []);
   aviso(
     `entradas visibles por API: A ${entradasA.length}, B ${entradasB.length} (B no ha adoptado nada)`,
   );
+  // Sin entradas visibles para A, «B ve 0» no probaría nada.
+  comprobar(
+    "POR API: A ve sus entradas adoptadas (control positivo del aislamiento)",
+    listadoA.estado === 200 && entradasA.length > 0,
+    `respuesta ${listadoA.estado}, ${entradasA.length} entradas`,
+  );
   comprobar(
     "POR API: B no ve ninguna entrada de las que adoptó A",
     listadoB.estado === 200 && entradasB.length === 0,
     `respuesta ${listadoB.estado}, ${entradasB.length} entradas`,
   );
+  // Cruce real: un id de entrada que A sí ve, pedido por B (que no adoptó esa librería), debe dar el mismo 404 que un id inexistente.
+  const idEntradaDeA = (entradasA[0] as { id?: string } | undefined)?.id;
+  if (idEntradaDeA) {
+    const propia = await llamar(`/requisitos/${idEntradaDeA}`, tokenAdminA);
+    const ajena = await llamar(`/requisitos/${idEntradaDeA}`, tokenAdminB);
+    comprobar(
+      "POR API: A sí obtiene su entrada por id (el id es real)",
+      propia.estado === 200,
+      `respuesta ${propia.estado}`,
+    );
+    comprobar(
+      "POR API: B pidiendo por id una entrada que solo adoptó A recibe el mismo 404 que un id inexistente",
+      ajena.estado === 404 && firma404(ajena) === firma404(inexistente),
+      `respuesta ${ajena.estado}`,
+    );
+  } else comprobar("POR API: el listado de A trae ids de entrada", false);
   comprobar(
     "POR API: sin token → 401",
     (await llamar("/requisitos")).estado === 401,
@@ -256,14 +274,14 @@ try {
   );
 
   // La bitácora de A, vista con el rol de la aplicación y el contexto de A, no contiene filas de B (RLS).
-  const deB = await conTenant(app, idA as never, (trx) =>
+  const deB = await conTenant(app, empresaA, (trx) =>
     sql<{
       n: number;
     }>`select count(*)::int as n from bitacora where empresa_id = ${idB}`.execute(
       trx,
     ),
   );
-  const deA = await conTenant(app, idA as never, (trx) =>
+  const deA = await conTenant(app, empresaA, (trx) =>
     sql<{
       n: number;
     }>`select count(*)::int as n from bitacora where empresa_id = ${idA}`.execute(
@@ -280,32 +298,44 @@ try {
     (deA.rows[0]?.n ?? 0) > 0,
   );
 
-  // Inmutabilidad: `where false` no toca filas, solo prueba el privilegio.
-  for (const [rol, db] of [
-    ["sigiso_app", app],
-    ["sigiso_owner", owner],
-  ] as const) {
+  // Inmutabilidad. UPDATE y DELETE llevan `where false` (no tocan filas); el vaciado de la tabla no admite condición, así que
+  // TODAS las sentencias corren dentro de una transacción que se revierte siempre: si alguna llegara a ejecutarse, se deshace.
+  class Revertir extends Error {}
+  const intentar = async (
+    rol: "sigiso_app" | "sigiso_owner",
+    consulta: RawBuilder<unknown>,
+  ) => {
+    try {
+      const dentro = async (trx: Transaction<unknown>) => {
+        await consulta.execute(trx);
+        throw new Revertir("la sentencia se ejecutó (se revirtió)");
+      };
+      if (rol === "sigiso_app") await conTenant(app, empresaA, dentro);
+      else await owner.transaction().execute(dentro);
+      return null;
+    } catch (e) {
+      return e instanceof Revertir
+        ? "EJECUTADA"
+        : e instanceof Error
+          ? e.message
+          : String(e);
+    }
+  };
+  for (const rol of ["sigiso_app", "sigiso_owner"] as const) {
     for (const [nombre, consulta] of [
       ["UPDATE", sql`update bitacora set motivo = motivo where false`],
       ["DELETE", sql`delete from bitacora where false`],
       ["TRUNCATE", sql`truncate bitacora`],
     ] as const) {
-      let error: unknown;
-      try {
-        if (rol === "sigiso_app")
-          await conTenant(app, idA as never, (trx) => consulta.execute(trx));
-        else await consulta.execute(db);
-      } catch (e) {
-        error = e;
-      }
-      const mensaje = error instanceof Error ? error.message : "";
+      const resultado = await intentar(rol, consulta);
+      const fallo = resultado !== null && resultado !== "EJECUTADA";
       comprobar(
         `INMUTABLE: ${nombre} sobre la bitácora como ${rol} falla`,
-        error !== undefined,
-        "la sentencia se ejecutó",
+        fallo,
+        "la sentencia se ejecutó (y se revirtió)",
       );
-      if (error !== undefined)
-        aviso(`${rol} ${nombre}: ${mensaje.split("\n")[0]?.slice(0, 90)}`);
+      if (fallo)
+        aviso(`${rol} ${nombre}: ${resultado.split("\n")[0]?.slice(0, 90)}`);
     }
   }
 } catch (error) {
@@ -317,7 +347,11 @@ try {
 if (fallos > 0) {
   console.error(`\n${fallos} comprobación(es) fallaron.`);
   process.exitCode = 1;
-} else
+} else if (brechas > 0)
   console.log(
-    "\nTodo correcto: aislamiento por URL y por API, bitácora encadenada e inmutable (ver las brechas conocidas arriba).",
+    `\nComprobaciones correctas, pero queda(n) ${brechas} brecha(s) conocida(s) abierta(s) (ver arriba): el corte no cumple todo lo que pide el plan.`,
+  );
+else
+  console.log(
+    "\nTodo correcto: aislamiento por URL y por API, bitácora encadenada e inmutable.",
   );
