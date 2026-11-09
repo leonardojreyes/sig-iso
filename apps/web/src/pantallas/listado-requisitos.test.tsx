@@ -193,7 +193,7 @@ describe('PantallaListadoRequisitos — estados vacíos', () => {
     expect(texto).toContain('Librerías disponibles en el catálogo');
     expect(texto).toContain('Ejemplo de Estructura Armonizada');
     expect(container.querySelector('table')).toBeNull();
-    expect(container.querySelector('form')).toBeNull(); // sin entradas no hay filtros que ofrecer
+    expect(container.querySelector('form[method="get"]')).toBeNull(); // sin entradas no hay filtros que ofrecer
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -224,5 +224,129 @@ describe('PantallaListadoRequisitos — estados vacíos', () => {
     expect(container.querySelector('table')).toBeNull();
     expect((getByLabelText('Buscar por identificador o título') as HTMLInputElement).defaultValue).toBe('zzz');
     expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe('PantallaListadoRequisitos — adoptar (H4.6, H4.9)', () => {
+  const sinAdopcion = { librerias: [libreria({ adoptada: false })], entradas: [], normasDisponibles: [] };
+  const otraLibreria = libreria({
+    id: '5eed0009-0000-4000-8000-0000000000a9',
+    codigo: 'otra',
+    nombre: 'Otra librería',
+    esEjemplo: false,
+    adoptada: false,
+  });
+
+  it('H4.6 el administrador SIG ve un botón «Adoptar» por cada librería sin adoptar, con un formulario POST a su propia ruta', async () => {
+    const { container, getAllByRole } = pantalla({
+      ...sinAdopcion,
+      librerias: [libreria({ adoptada: false }), otraLibreria],
+      persona: admin,
+    });
+    const botones = getAllByRole('button', { name: /Adoptar/ });
+    expect(botones).toHaveLength(2);
+    const formularios = [...container.querySelectorAll('form[method="post"]')] as HTMLFormElement[];
+    expect(formularios.map((f) => f.getAttribute('action'))).toEqual([
+      '/e/empresa-a/librerias/' + UUID + '/adopcion',
+      '/e/empresa-a/librerias/5eed0009-0000-4000-8000-0000000000a9/adopcion',
+    ]);
+    // El formulario no manda datos: ni empresa, ni persona, ni librería en el cuerpo (todo sale de la dirección y del token).
+    for (const f of formularios)
+      expect(f.querySelectorAll('input:not([type="submit"]), select, textarea')).toHaveLength(0);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('H4.6 el colaborador NO ve el botón ni ningún formulario de adopción', async () => {
+    const { container, queryAllByRole } = pantalla({ ...sinAdopcion, persona: colaborador });
+    expect(queryAllByRole('button', { name: /Adoptar/ })).toHaveLength(0);
+    expect(container.querySelectorAll('form[method="post"]')).toHaveLength(0);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('una librería ya adoptada no ofrece el botón; con otra pendiente, el administrador la ve debajo del listado', () => {
+    const { container, getAllByRole, getByText } = pantalla({ librerias: [libreria(), otraLibreria], persona: admin });
+    const botones = getAllByRole('button', { name: /Adoptar/ });
+    expect(botones).toHaveLength(1);
+    expect(botones[0]!.getAttribute('aria-label')).toBe('Adoptar Otra librería');
+    expect(getByText('Librerías disponibles para adoptar')).toBeTruthy();
+    expect(container.querySelectorAll('form[method="post"]')).toHaveLength(1);
+  });
+
+  it('con todo adoptado, o para un colaborador, no aparece la sección de adopción dentro del listado', () => {
+    expect(pantalla().container.querySelectorAll('form[method="post"]')).toHaveLength(0);
+    expect(
+      pantalla({ librerias: [libreria(), otraLibreria], persona: colaborador }).container.textContent,
+    ).not.toContain('Librerías disponibles para adoptar');
+  });
+
+  it('H4.9 tras adoptar informa cuántas entradas quedaron disponibles', async () => {
+    const { container } = pantalla({ aviso: { tipo: 'adoptada', libreriaId: UUID } });
+    const texto = container.textContent ?? '';
+    expect(texto).toContain('Librería adoptada');
+    expect(texto).toContain('3 entradas disponibles');
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('si ya estaba adoptada lo dice con claridad y sin dar a entender que hubo un cambio', () => {
+    const texto = pantalla({ aviso: { tipo: 'ya_adoptada', libreriaId: UUID } }).container.textContent ?? '';
+    expect(texto).toContain('Esa librería ya estaba adoptada');
+    expect(texto).toContain('No hubo cambios');
+    expect(texto).toContain('3 entradas disponibles');
+  });
+
+  it('un aviso de éxito de una librería que NO está adoptada (dirección inventada) no se muestra', () => {
+    const texto =
+      pantalla({ aviso: { tipo: 'adoptada', libreriaId: '5eed0009-0000-4000-8000-0000000000a9' } }).container
+        .textContent ?? '';
+    expect(texto).not.toContain('Librería adoptada');
+    expect(texto).not.toContain('entradas disponibles');
+  });
+
+  it('un aviso de éxito de una librería que EXISTE pero no está adoptada no se muestra', () => {
+    const texto =
+      pantalla({ ...sinAdopcion, aviso: { tipo: 'adoptada', libreriaId: UUID } }).container.textContent ?? '';
+    expect(texto).not.toContain('Librería adoptada');
+    expect(texto).not.toContain('entradas disponibles');
+  });
+
+  it('con todo adoptado, ni siquiera el administrador ve la sección «disponibles para adoptar»', () => {
+    const texto = pantalla({ persona: admin }).container.textContent ?? '';
+    expect(texto).not.toContain('Librerías disponibles para adoptar');
+    expect(texto).not.toContain('Por ahora el catálogo no tiene librerías.');
+  });
+
+  it.each([
+    ['capítulo', { capitulo: 4 }],
+    ['norma', { norma: 'ISO 9001' }],
+    ['texto', { q: 'contexto' }],
+  ])('con un filtro de %s el aviso de éxito tampoco da un número engañoso', (_n, filtros) => {
+    const texto = pantalla({ aviso: { tipo: 'adoptada', libreriaId: UUID }, filtros }).container.textContent ?? '';
+    expect(texto).toContain('Librería adoptada');
+    expect(texto).not.toContain('entradas disponibles');
+  });
+
+  it('con filtros activos el aviso de éxito no da un número engañoso (el listado está recortado)', () => {
+    const texto =
+      pantalla({ aviso: { tipo: 'adoptada', libreriaId: UUID }, filtros: { q: 'contexto' } }).container.textContent ??
+      '';
+    expect(texto).toContain('Librería adoptada');
+    expect(texto).not.toContain('entradas disponibles');
+  });
+
+  it.each([
+    ['sin_permiso', 'No tiene permiso para adoptar librerías'],
+    ['no_encontrada', 'La librería no existe o la adopción no está disponible'],
+    ['no_disponible', 'No se pudo adoptar la librería'],
+  ] as const)('el aviso «%s» se muestra como advertencia', async (tipo, frase) => {
+    const { container } = pantalla({ aviso: { tipo }, ...sinAdopcion, persona: colaborador });
+    expect(container.textContent).toContain(frase);
+    expect(container.querySelector('[role="alert"]')).toBeTruthy();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('sin aviso no aparece ninguno', () => {
+    const texto = pantalla().container.textContent ?? '';
+    for (const frase of ['Librería adoptada', 'ya estaba adoptada', 'No tiene permiso', 'No se pudo adoptar'])
+      expect(texto).not.toContain(frase);
   });
 });

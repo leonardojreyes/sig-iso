@@ -18,7 +18,8 @@ export const aRespuesta = (decision: DecisionProxy, peticion: NextRequest): Next
     case 'login': {
       const destino = new URL('/auth/login', peticion.url);
       destino.searchParams.set('retorno', decision.retorno);
-      respuesta = NextResponse.redirect(destino, 307);
+      // Un POST (p. ej. adoptar con la sesión vencida) se redirige con 303: el navegador pide /auth/login con GET (con 307 repetiría el POST).
+      respuesta = NextResponse.redirect(destino, peticion.method === 'GET' || peticion.method === 'HEAD' ? 307 : 303);
       break;
     }
     case 'no_encontrado':

@@ -57,3 +57,24 @@ export const paginaWeb = async (entorno: EntornoWeb, ruta: string, sesion: Map<s
   // React separa textos adyacentes con <!-- -->: se quitan para poder buscar frases.
   return { estado: r.status, texto: (await r.text()).replaceAll('<!-- -->', ''), cabeceras: r.headers };
 };
+
+/** Envía un formulario/solicitud a la web SIN seguir redirecciones; `origen` null = sin cabecera Origin. */
+export const enviarWeb = async (
+  entorno: EntornoWeb,
+  ruta: string,
+  sesion: Map<string, string>,
+  opciones: { metodo?: string; origen?: string | null } = {},
+) => {
+  const { metodo = 'POST', origen = entorno.web } = opciones;
+  const r = await pedir(`${entorno.web}${ruta}`, new Map(sesion), {
+    method: metodo,
+    headers: origen === null ? {} : { origin: origen },
+  });
+  const destino = r.headers.get('location');
+  const u = destino ? new URL(destino, entorno.web) : null;
+  return {
+    estado: r.status,
+    destino: u ? `${u.pathname}${u.search}` : null,
+    parametros: u?.searchParams ?? new URLSearchParams(),
+  };
+};

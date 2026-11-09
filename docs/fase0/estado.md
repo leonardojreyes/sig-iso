@@ -4,8 +4,8 @@
 
 - **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso (ingreso por empresa, aislamiento multiempresa, librería de ejemplo y bitácora inmutable).
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
-- **Rama y PR:** `feature/paso-0-6-plataforma`, PR #5 abierto (los controles del CI de cada envío se revisan en la rama).
-- **Corte 0.6: 60 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
+- **Rama y PR (2026-11-08):** `main` ya incluye los PR #1, #3, #4, #5 (cimientos del corte 0.6), #6 (skills) y #7 (carga del catálogo y listado real); el #2 se cerró a propósito (PR de prueba que viola las reglas, no se integra). **Abierto: PR #8** (`feature/paso-0-6-adopcion`, tarea 10.7, adopción desde la pantalla): 6 de 7 checks en verde y `verificar (windows-latest)` en curso al escribir esto; espera tu integración. La protección de `main` exige ya los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
+- **Corte 0.6: 61 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
 
 ## Corte 0.6 — qué está terminado
 
@@ -17,26 +17,37 @@
 - **API completa** (fase 6): contrato OpenAPI, verificación de tokens, guardia, filtro de 403/404 cruzado, controladores, límite de frecuencia, conformidad del contrato.
 - **Autorización por rol desde la base** (ADR 029, tarea 9.4): `usuario.rol` y matriz en código. OpenFGA 1.22.1 instalado pero **pospuesto**.
 - **Keycloak 26.8.2 local** (fase 8): realm sin secretos, arranque en 127.0.0.1, ingreso real verificado, mensaje genérico de credenciales inválidas, clientes integrados deshabilitados.
+- **Adopción desde la pantalla** (10.7): botón solo para el administrador SIG, con `Origin` verificado y aviso de las entradas disponibles.
 - **Listado de requisitos real** (10.6): las entradas de las librerías adoptadas con filtros, rótulo de ejemplo y estados vacíos por rol; la cabecera muestra a la persona real.
 - **Web, hasta la 10.5:** ingreso OIDC con PKCE, sesión (cookie sellada, renovación, cierre), proxy que protege `/e/<empresa>/…` (404 idéntico a otra empresa, sin caché) y **marca real de la empresa**. Verificado de extremo a extremo con `pnpm web:verify-login` (36 comprobaciones).
 - **Siembra** de dos empresas y cuatro cuentas de prueba, `pnpm ram:report`, trazas mínimas y un flag de OpenFeature.
 
-## Corte 0.6 — qué falta (8 tareas)
+## Corte 0.6 — qué falta (7 tareas)
 
 - **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` ya está **cargada en la base local** (4.5 hecha, `pnpm libraries:load`), marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
-- **10.7 y 10.8 (web):** botón de adoptar solo para el administrador SIG (verificando `Origin`); pantalla de ingreso real (hoy es una maqueta y la portada `/` sigue siendo la de demostración).
+- **10.8 (web):** pantalla de ingreso real (hoy es una maqueta y la portada `/` sigue siendo la de demostración).
 - **11.1 a 11.3 (worker):** registro de los intentos fallidos de ingreso leyendo los eventos de Keycloak. No hace falta para ver el sistema.
 - **12.3 y 12.4:** guía de ejecución con la medición final de memoria, y la prueba de aislamiento de extremo a extremo con revisión completa (`/review`).
 
 ## Pendiente del responsable
 
-- Verificar numeraciones y títulos de la librería de ejemplo (4.4) (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). El ADR 026 quedó **aprobado** el 2026-11-08.
-- **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
-- Integrar el PR #5 y agregar `integracion` como check obligatorio (`docs/security/ci-integracion.md`).
-- Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (usar `env -u GITHUB_TOKEN` mientras tanto).
-- Cerrar el proceso `node` viejo que ocupa el puerto 3001 (una API de una sesión anterior).
-- Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global.
-- Base local lista: `pnpm db:init` y `pnpm db:migrate` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga`; las claves están en `.env.local` (ignorado).
+1. **Integrar el PR #8** cuando `verificar (windows-latest)` termine en verde (Rebase and merge o Squash and merge); después `git switch main && git pull`.
+2. **Ramas viejas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `docs/estado-paso-0-4`, `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo.
+3. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`. Mientras tanto la `0.1.0` está cargada solo en tu base local, marcada «borrador, numeraciones sin verificar».
+4. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
+5. **Revisión externa de calidad** (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`, hoy sin seguimiento en git): decidir si se confirma en el repositorio y priorizar sus hallazgos. Orden que propone: A1 (el repositorio es público; decisión tuya), M1 (endurecer permisos y hooks de Claude Code), terminar el corte 0.6, y **antes de empezar la Fase 1**: A2 (el esquema de librerías solo admite la Estructura Armonizada), M3 (un solo rol por persona) y M4 (entidades que faltan en el modelo de dominio), con un `/spec` de «modelo de dominio v2 y esquema de librerías v3». M2 (amarrar `adoptada_por` a la misma empresa) conviene al pasar por la migración de adopción.
+6. Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (mientras tanto, `env -u GITHUB_TOKEN` en `git` y `gh`).
+7. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global.
+
+Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado y las dos empresas de prueba; `pnpm libraries:load` cargó la librería de ejemplo; las claves están en `.env.local` y `.local/` (ignorados). La empresa A no tiene librerías adoptadas (para que pruebes la adopción en pantalla).
+
+## Próximos pasos técnicos
+
+1. **10.8** pantalla de ingreso real (reemplaza la maqueta y la portada de demostración; así no hará falta escribir `/auth/login`).
+2. **11.1 a 11.3** worker de intentos fallidos de ingreso (no hace falta para ver el sistema).
+3. **12.3** guía de ejecución con la medición final de memoria; **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
+4. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
+
 - **Actualizado:** 2026-11-08
 
 ## Respuestas de arranque (`/fase0-inicio`)
@@ -51,22 +62,21 @@
 
 ## Decisiones
 
-ADR 001–022 redactados en `docs/adr/` (estado: Aprobado). Índice: `docs/adr/README.md`.
+ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 aprobado como **provisional** (falta el asesor legal). Índice: `docs/adr/README.md`.
 
 ## Pendientes
 
-- ORM/migraciones (ADR 006): se decide en 0.6, cuando se use la BD por primera vez (el esqueleto 0.2 no la usa).
-- Sin Docker (ADR 022): PostgreSQL 16 nativo (Homebrew, corriendo). Falta crear rol/base `sigiso` (script en 0.6) e instalar Valkey (`brew install valkey`) cuando se construya la cola.
+- ORM y migraciones: decididos en el ADR 024 (Kysely y migraciones SQL) y en uso desde el corte 0.6.
+- Sin Docker (ADR 022): PostgreSQL 16 nativo (Homebrew); Keycloak 26.8.2 y su JRE en `.local/` (ADR 025); OpenFGA 1.22.1 instalado pero sin uso (ADR 029). Falta instalar Valkey (`brew install valkey`) cuando se construya la cola.
 - Repo remoto **público** (decisión del responsable, para habilitar protección de ramas sin plan de pago): https://github.com/leonardojreyes/sig-iso . `GITHUB_TOKEN` del entorno es inválido: usar `env -u GITHUB_TOKEN gh ...` y `env -u GITHUB_TOKEN git push ...`.
 - TypeScript fijado en 5.9 (la v7 nativa rompe typescript-eslint).
 - Elegir librería de PDF/DOCX (ADR 021) cuando se construya el primer reporte.
-- Look and feel completo se pregunta en 0.5.
-- Revisión de `experto-iso`: los subagentes se crean en 0.3; hasta entonces el responsable valida el glosario y el modelo de dominio.
+- Revisión de `experto-iso`: los subagentes existen desde 0.3 (`.claude/agents/`); el responsable valida las numeraciones de las normas con sus ejemplares (4.4).
 - Nota: `CLAUDE.md` global prefiere npm; el monorepo usa pnpm (ADR 003).
 
-## Próximos pasos
+## Próximos pasos de la Fase 0
 
-0.4 → 0.5 → 0.6 → 0.7 → 0.8 → 0.9
+0.1 a 0.5 cerrados → **0.6 (en curso)** → 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 
