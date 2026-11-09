@@ -586,6 +586,9 @@ importers:
       '@sig/normas-schema':
         specifier: workspace:*
         version: link:../packages/normas-schema
+      '@sig/prompts':
+        specifier: workspace:*
+        version: link:../packages/prompts
       '@sig/tenancy':
         specifier: workspace:*
         version: link:../platform/tenancy
