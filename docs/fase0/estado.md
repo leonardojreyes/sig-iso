@@ -35,7 +35,13 @@
 2. **Ramas viejas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `docs/estado-paso-0-4`, `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo.
 3. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`. Mientras tanto la `0.1.0` está cargada solo en tu base local, marcada «borrador, numeraciones sin verificar».
 4. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
-5. **Revisión externa de calidad** (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`, hoy sin seguimiento en git): decidir si se confirma en el repositorio y priorizar sus hallazgos. Orden que propone: A1 (el repositorio es público; decisión tuya), M1 (endurecer permisos y hooks de Claude Code), terminar el corte 0.6, y **antes de empezar la Fase 1**: A2 (el esquema de librerías solo admite la Estructura Armonizada), M3 (un solo rol por persona) y M4 (entidades que faltan en el modelo de dominio), con un `/spec` de «modelo de dominio v2 y esquema de librerías v3». M2 (amarrar `adoptada_por` a la misma empresa) conviene al pasar por la migración de adopción.
+5. **Revisión externa de calidad** (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`, hoy sin seguimiento en git): decidir si se confirma en el repositorio. Seguimiento de sus hallazgos:
+   - **A1** (el repositorio es público): decisión tuya, pendiente; requiere un ADR.
+   - **M1** (permisos y hooks de Claude Code): **corregido 2026-11-09**, ver «Paso 0.3 — notas».
+   - **B5** (este archivo desactualizado): corregido (PR y próximos pasos al día).
+   - **M5** (alcance del 0.6): plan propuesto, a la espera de tu aprobación.
+   - **A2, M3 y M4:** registrados abajo como prerrequisitos de la Fase 1.
+   - **M2** (amarrar `adoptada_por` a la misma empresa) conviene al pasar por la migración de adopción; **B1–B4** al pasar por esos archivos.
 6. Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (mientras tanto, `env -u GITHUB_TOKEN` en `git` y `gh`).
 7. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global.
 
@@ -47,17 +53,25 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 2. **12.3** guía de ejecución con la medición final de memoria; **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
 3. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
 
-- **Actualizado:** 2026-11-08
+- **Actualizado:** 2026-11-09
+
+## Prerrequisitos de la Fase 1 (de la revisión de calidad del 2026-11-08)
+
+**No se empieza la Fase 1 sin resolver estos tres puntos.** Se abordan juntos con un `/spec` de «modelo de dominio v2 y esquema de librerías v3», validado con `experto-iso`, más los ADR correspondientes.
+
+- **A2 · Esquema de librerías limitado a la Estructura Armonizada.** `libreria_entrada` (migración 0002) exige `capitulo between 4 and 10` y `nivel in (1, 2)`, y `packages/normas-schema/libreria-norma.schema.json` tiene la misma restricción. No admite los controles del Anexo A de 27001 ni de 42001 (base de la Declaración de Aplicabilidad) y contradice P14. Corrección: tipo de entrada `clausula | control | objetivo`, sección/tema libre, jerarquía de profundidad variable con `padre_id`, atributos propios por norma; migración nueva + ADR + una librería de prueba con controles de Anexo A.
+- **M3 · Un solo rol por persona.** Pasar a roles múltiples (`usuario_rol` con vigencia opcional) y modelar la relación persona–proceso para validar la independencia del auditor (no audita su propio trabajo) y el acceso limitado en el tiempo del auditor externo. Hoy `usuario.rol` y la matriz en código (ADR 029, tarea 9.4) asumen un solo rol.
+- **M4 · Entidades que faltan en el modelo de dominio** (`docs/producto/modelo-dominio.md`): Certificado (número, organismo, alcance, emisión, vencimiento, estado); Alcance por norma con sedes y exclusiones justificadas; Activo de información; Evaluación de impacto de sistemas de IA (42001); orígenes de No conformidad (queja, incidente, revisión por la dirección); clasificación de hallazgos de auditoría externa (NC mayor, NC menor, observación, oportunidad de mejora) y plazos de cierre.
 
 ## Respuestas de arranque (`/fase0-inicio`)
 
-| # | Pregunta | Respuesta |
-| --- | --- | --- |
-| 1 | Nombre de código | `sig-iso` (se mantiene) |
-| 2 | Destino del primer despliegue | Solo local por ahora (0.8 deja Helm/OpenTofu validados, sin clúster) |
-| 3 | Revisores humanos de PR | Solo el responsable |
-| 4 | Repositorio GitHub | Autorizada su creación (se hará en 0.2; visibilidad privada por defecto) |
-| 5 | Ollama | Modelo pequeño (~3B), local; tamaño a informar antes de descargar (0.7) |
+| #   | Pregunta                      | Respuesta                                                                |
+| --- | ----------------------------- | ------------------------------------------------------------------------ |
+| 1   | Nombre de código              | `sig-iso` (se mantiene)                                                  |
+| 2   | Destino del primer despliegue | Solo local por ahora (0.8 deja Helm/OpenTofu validados, sin clúster)     |
+| 3   | Revisores humanos de PR       | Solo el responsable                                                      |
+| 4   | Repositorio GitHub            | Autorizada su creación (se hará en 0.2; visibilidad privada por defecto) |
+| 5   | Ollama                        | Modelo pequeño (~3B), local; tamaño a informar antes de descargar (0.7)  |
 
 ## Decisiones
 
@@ -84,6 +98,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 - Hooks probados: bloquean `.env*` (también rutas Windows), borrado recursivo forzado, `push` a `main`; permiten `.env.example`, `pnpm test`, push a `feature/*`.
 - **Skills creados (2026-11-08):** `.claude/skills/{modulo-hexagonal,migracion-rls,libreria-normas,endpoint-contrato}/SKILL.md`, cada uno con cuándo usarlo, pasos, ejemplo y criterio de terminado, basados en la estructura real del repositorio (`modules/empresas` y `modules/normas`, `platform/db/migrations`, `packages/normas-schema`, `packages/contracts`, `apps/api`) y en los ADR 001, 010, 024, 025, 026, 027 y 029. Con esto existen los 8 subagentes, 4 skills, 8 comandos y 4 hooks, todos en git (solo `settings.local.json` está ignorado).
 - **Defecto encontrado y corregido en los hooks (2026-11-08):** `settings.json` los invocaba con ruta relativa (`node .claude/hooks/pre-edit.mjs`) y las reglas de denegación del entorno eran relativas al directorio actual (`./.env`); si el directorio de trabajo de Claude Code no era la raíz del repositorio, Node fallaba con código 1 (no bloqueante) y **una escritura de `.env` prosperó** (archivo de prueba, ya borrado). Ahora los cuatro hooks usan `node "$CLAUDE_PROJECT_DIR/.claude/hooks/<nombre>.mjs"` y se agregaron denegaciones `**/.env` para leer, editar y escribir. Verificado ejecutando cada comando desde una subcarpeta: `pre-edit` sale con 2 ante `.env` y con 0 ante un archivo normal. **Los cambios de hooks se aplican al reiniciar la sesión de Claude Code (o revisándolos en `/hooks`).** Para Windows se asume el intérprete de Git Bash, que expande `$CLAUDE_PROJECT_DIR`.
+- **Endurecimiento de permisos y hooks (M1, 2026-11-09):** las reglas del hook de Bash viven ahora en `.claude/hooks/reglas-bash.mjs` (función pura) con 47 pruebas en `reglas-bash.test.mjs` (`pnpm test:hooks`, usa `node:test`). Cambios: bloquea la lectura/copia de `.env`, `.env.local`, `.env.*` (excepto `.env.example`) con `cat|head|tail|less|more|grep|sed|awk|bat|cp|mv|…` y por redirección; con `psql` bloquea `DELETE|UPDATE|ALTER|GRANT|REVOKE|CREATE ROLE` salvo contra `sigiso_test`; bloquea `git checkout .`, `git checkout -- .` y `git restore` (se permite `--staged`). En `settings.json`, `Bash(node:*)` pasó a `node scripts/*`, `node .claude/hooks/*` y `node --test .claude/hooks/*` (`node -e` vuelve a pedir aprobación) y se agregaron denegaciones para `git checkout .` y `git restore`. Los cambios de `settings.json` se aplican al reiniciar la sesión.
 - Limitaciones: hooks no probados en Windows real; el escaneo de secretos del hook Stop es básico (gitleaks completo en 0.4); el hook de Bash evalúa el texto completo del comando, así que puede dar falsos positivos si el texto menciona un comando prohibido.
 
 ## Paso 0.4 — notas
