@@ -1,6 +1,6 @@
 # Spec — Puerto de IA: explicar la evidencia típica de un requisito con el modelo que la empresa permite
 
-- **Estado:** Borrador (pendiente de `experto-iso` y de revisión del responsable)
+- **Estado:** Aprobado por el responsable el 2026-11-09 (revisado por `experto-iso`; Q1 a Q12 con la propuesta por omisión)
 - **Paso:** 0.7 de la Fase 0
 - **Fecha:** 2026-11-09
 
@@ -37,11 +37,11 @@ _Como persona de la empresa, quiero pedir que se me explique con palabras propia
 - **H1.4** Mientras se espera veo un estado de «generando»; si pasan **60 segundos** sin respuesta (Q5) veo un mensaje claro y puedo reintentar.
 - **H1.5** Si ningún modelo permitido está disponible, veo un mensaje en lenguaje llano, sin detalles técnicos, y el resto de la pantalla sigue funcionando.
 - **H1.6** Al modelo solo se le envía la norma y edición consultadas, el identificador de la cláusula, su título breve y la guía propia de la librería. **No se envía nada de la empresa** (ni su nombre, ni marca, ni datos de personas, ni texto escrito libremente por quien consulta).
-- **H1.7** La respuesta no incluye texto literal de las normas: se presenta como orientación redactada con palabras propias. Se considera cumplido cuando la verificación de contenido de las librerías (misma función y mismas reglas) devuelve **cero coincidencias** sobre la respuesta; si devuelve alguna, la respuesta no se muestra, se informa a la persona y se registra el rechazo (Q10).
+- **H1.7** La respuesta no incluye texto literal de las normas: se presenta como orientación redactada con palabras propias. Se considera cumplido cuando la verificación de contenido de las librerías (los mismos detectores: tono normativo, citas largas y enlaces; **sin** los límites de largo y de formato, que son de las guías breves) devuelve **cero coincidencias** sobre la respuesta; el control principal contra paráfrasis cercanas es la muestra de revisión humana (§8); si devuelve alguna, la respuesta no se muestra, se informa a la persona y se registra el rechazo (Q10).
 - **H1.8** La respuesta se muestra como texto: nunca se interpreta como contenido activo de la página.
 - **H1.9** La acción y la respuesta cumplen WCAG 2.2 AA (el estado de «generando» y el resultado se anuncian a tecnologías de apoyo; el botón se maneja con teclado).
 - **H1.10** Cada ejemplo se presenta como «posible evidencia» o equivalente, **nunca** como algo que la empresa «debe tener»; y no son más de cinco, solo los que se deriven de la guía de la librería (no se inventan).
-- **H1.11** La respuesta indica a qué norma y edición se refiere. Si el requisito tiene alcance **parcial o específico** entre normas (H5.7 del corte 0.6), la respuesta lo advierte y **no generaliza** a las demás normas.
+- **H1.11** Se explica **una** norma por vez: la solicitud indica norma y edición (entre las que aplica la entrada) y la respuesta las indica con la cláusula de esa norma. Si el requisito tiene alcance **parcial o específico** entre normas (H5.7 del corte 0.6), la respuesta lo advierte y **no generaliza** a las demás normas.
 - **H1.12** Junto a la respuesta se repite el aviso de la librería: «Basado en una librería de ejemplo con guías propias de SynapTech; las numeraciones están sin verificar» (H5.5 del corte 0.6), mientras la librería siga marcada como borrador.
 
 ### H2 — Elegir el modelo
@@ -74,8 +74,8 @@ _Como plataforma, quiero fijar por empresa qué modelos se permiten y cuál es e
 
 - **H5.1** Cada consulta (exitosa, rechazada o fallida) queda en la bitácora inmutable con: empresa, actor (identificador opaco), modelo, tipo de proveedor (local o externo), duración, tamaño de entrada y salida (en unidades de medida del modelo), resultado y motivo.
 - **H5.2** La bitácora **nunca** contiene el texto enviado, el texto recibido, ni datos personales.
-- **H5.3** Una consulta rechazada también queda registrada, con un motivo de una **lista cerrada**: modelo no permitido por la política (403), proveedor externo no habilitado (403), límite de uso excedido (429), falta de permiso (403) o respuesta con texto de norma (H1.7).
-- **H5.4** Si no se puede registrar la consulta, no se muestra la respuesta (el registro y la acción van juntos).
+- **H5.3** Una consulta rechazada también queda registrada, con un motivo de una **lista cerrada**: modelo no permitido por la política (403), proveedor externo no habilitado (403), límite de uso excedido (429) o respuesta con texto de norma (H1.7). La **falta de permiso** se registra como acceso denegado, igual que en el resto del sistema (un solo evento por intento).
+- **H5.4** Si no se puede registrar la consulta, no se muestra la respuesta (el registro y la acción van juntos): se reintenta una vez y, si vuelve a fallar, la persona recibe un error de servicio no disponible, con una traza técnica sin contenido. Una base de datos caída no deja el rastro de H5.1.
 - **H5.5** Se puede obtener, por empresa, el total de consultas y de tamaño por modelo en un periodo (medición para costos y límites). En este paso se verifica por prueba automatizada, sin pantalla.
 
 ### H6 — Límites y fallas
@@ -120,7 +120,9 @@ Los plazos y bases de tratamiento son hipótesis a confirmar con el asesor legal
 | Evento                   | Cuándo se registra                                                                                   |
 | ------------------------ | ---------------------------------------------------------------------------------------------------- |
 | Consulta de IA realizada | Cada consulta atendida: modelo, tipo de proveedor, duración, tamaño, resultado correcto o error      |
-| Consulta de IA rechazada | Por política (modelo no permitido o externo no habilitado), por límite de uso o por falta de permiso |
+| Consulta de IA rechazada | Por política (modelo no permitido o externo no habilitado), por límite de uso o por respuesta con texto de norma |
+| Cambio de modelo preferido | Cada vez que una persona cambia su modelo preferido (antes y después) |
+| Configuración de IA cargada | Siembra del catálogo de modelos y de las políticas de empresa, con la huella del contenido |
 
 Reglas: sin texto enviado ni recibido; sin datos personales; el motivo del rechazo es un código de una lista cerrada; si no se puede registrar, la consulta no se completa. Los eventos nuevos se agregan al catálogo cerrado de eventos de la bitácora.
 
