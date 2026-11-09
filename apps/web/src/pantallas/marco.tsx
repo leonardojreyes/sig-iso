@@ -25,7 +25,8 @@ export const LogoEmpresa = ({ empresa }: { empresa: Empresa }) =>
 const enlace = 'flex min-h-[var(--sig-density-target-min)] items-center gap-3 rounded-md px-3 text-sm font-medium text-fg hover:bg-surface-muted aria-[current=page]:bg-primary-subtle aria-[current=page]:text-on-primary-subtle';
 
 /** Marco de aplicación: cabecera, navegación lateral y contenido principal. */
-export const MarcoApp = ({ empresa, activo, children }: { empresa: Empresa; activo: 'panel' | 'requisitos'; children: ReactNode }) => (
+/** `persona` es el nombre de quien tiene sesión; solo las pantallas de demostración usan el valor por omisión. */
+export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: { empresa: Empresa; activo: 'panel' | 'requisitos'; persona?: string; children: ReactNode }) => (
   <div className="min-h-screen bg-bg">
     <a href="#contenido" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2">
       {es.app.saltar}
@@ -34,7 +35,7 @@ export const MarcoApp = ({ empresa, activo, children }: { empresa: Empresa; acti
       <LogoEmpresa empresa={empresa} />
       <div className="flex items-center gap-4">
         <SelectorTema />
-        <Avatar nombre="Ana Pérez" />
+        <Avatar nombre={persona} />
       </div>
     </header>
     <div className="grid grid-cols-1 md:grid-cols-[14rem_1fr]">

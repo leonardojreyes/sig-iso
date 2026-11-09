@@ -23,6 +23,7 @@
     "openfga:stop": "node scripts/openfga-dev.mjs stop",
     "openfga:status": "node scripts/openfga-dev.mjs status",
     "web:verify-login": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-ingreso.ts",
+    "web:verify-listado": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-listado.ts",
     "keycloak:realm": "node --import tsx scripts/keycloak-realm.ts",
     "ram:report": "node scripts/ram-report.mjs",
     "db:seed": "node --env-file-if-exists=.env.local --import tsx scripts/db-seed.ts",

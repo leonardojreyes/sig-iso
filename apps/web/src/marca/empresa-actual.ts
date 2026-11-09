@@ -1,12 +1,22 @@
-// La empresa de la sesión para las pantallas internas, con su marca real. Defensa en profundidad: aunque el proxy ya comprobó la
-// sesión, aquí se vuelve a exigir que la empresa de la dirección sea la verificada por él y se pide la marca con el token.
+// La empresa y la persona de la sesión para las pantallas internas, con la marca REAL. Defensa en profundidad: aunque el proxy ya
+// comprobó la sesión, aquí se vuelve a exigir que la empresa de la dirección sea la verificada por él, y que la API (con el token)
+// confirme la misma empresa. El token de acceso se devuelve solo para que el servidor haga más consultas en esta misma solicitud:
+// nunca debe pasar a un componente del navegador.
+import { consultarApi } from '../api/cliente';
+import type { Rol } from '../api/tipos';
+import { validarIdentidad } from '../api/validadores';
 import type { DependenciasSesion } from '../auth/sesion';
 import { crearServicioSesion } from '../auth/sesion';
 import { cargarMarca } from './marca';
 import type { Empresa } from './tipos';
 
+export interface PersonaActual {
+  readonly nombre: string;
+  readonly roles: readonly Rol[];
+}
+
 export type EmpresaActual =
-  | { readonly tipo: 'ok'; readonly empresa: Empresa }
+  | { readonly tipo: 'ok'; readonly empresa: Empresa; readonly persona: PersonaActual; readonly acceso: string }
   | { readonly tipo: 'no_encontrado' }
   | { readonly tipo: 'ingresar' }
   | { readonly tipo: 'no_disponible' };
@@ -26,16 +36,30 @@ export const cargarEmpresaActual = async (
   const acceso = await servicio.obtenerAcceso(sesion);
   if (!acceso.ok) return acceso.motivo === 'expirada' ? { tipo: 'ingresar' } : { tipo: 'no_disponible' };
 
-  const marca = await cargarMarca({
-    slug: entrada.slugVerificado,
-    acceso: acceso.acceso,
-    apiUrl: deps.config.apiUrl,
-    fetchFn: deps.fetchFn,
-  });
-  if (marca.ok) return { tipo: 'ok', empresa: marca.empresa };
-  if (marca.motivo === 'no_autenticado') {
+  const [marca, me] = await Promise.all([
+    cargarMarca({
+      slug: entrada.slugVerificado,
+      acceso: acceso.acceso,
+      apiUrl: deps.config.apiUrl,
+      fetchFn: deps.fetchFn,
+    }),
+    consultarApi({ ruta: '/me', acceso: acceso.acceso, apiUrl: deps.config.apiUrl, fetchFn: deps.fetchFn }),
+  ]);
+  const rechazada =
+    (marca.ok === false && marca.motivo === 'no_autenticado') || (me.ok === false && me.motivo === 'no_autenticado');
+  if (rechazada) {
     deps.almacen.borrar(sesion.sid);
     return { tipo: 'ingresar' };
   }
-  return { tipo: 'no_disponible' };
+  if (!marca.ok || !me.ok) return { tipo: 'no_disponible' };
+  const identidad = validarIdentidad(me.json);
+  if (!identidad) return { tipo: 'no_disponible' };
+  // La API debe confirmar la MISMA empresa que verificó el proxy; si no, nada se muestra.
+  if (identidad.empresa.slug !== entrada.slugVerificado) return { tipo: 'no_encontrado' };
+  return {
+    tipo: 'ok',
+    empresa: marca.empresa,
+    persona: { nombre: identidad.nombre, roles: identidad.roles },
+    acceso: acceso.acceso,
+  };
 };

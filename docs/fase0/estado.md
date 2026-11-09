@@ -5,7 +5,7 @@
 - **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso (ingreso por empresa, aislamiento multiempresa, librería de ejemplo y bitácora inmutable).
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
 - **Rama y PR:** `feature/paso-0-6-plataforma`, PR #5 abierto (los controles del CI de cada envío se revisan en la rama).
-- **Corte 0.6: 59 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
+- **Corte 0.6: 60 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
 
 ## Corte 0.6 — qué está terminado
 
@@ -17,13 +17,14 @@
 - **API completa** (fase 6): contrato OpenAPI, verificación de tokens, guardia, filtro de 403/404 cruzado, controladores, límite de frecuencia, conformidad del contrato.
 - **Autorización por rol desde la base** (ADR 029, tarea 9.4): `usuario.rol` y matriz en código. OpenFGA 1.22.1 instalado pero **pospuesto**.
 - **Keycloak 26.8.2 local** (fase 8): realm sin secretos, arranque en 127.0.0.1, ingreso real verificado, mensaje genérico de credenciales inválidas, clientes integrados deshabilitados.
+- **Listado de requisitos real** (10.6): las entradas de las librerías adoptadas con filtros, rótulo de ejemplo y estados vacíos por rol; la cabecera muestra a la persona real.
 - **Web, hasta la 10.5:** ingreso OIDC con PKCE, sesión (cookie sellada, renovación, cierre), proxy que protege `/e/<empresa>/…` (404 idéntico a otra empresa, sin caché) y **marca real de la empresa**. Verificado de extremo a extremo con `pnpm web:verify-login` (36 comprobaciones).
 - **Siembra** de dos empresas y cuatro cuentas de prueba, `pnpm ram:report`, trazas mínimas y un flag de OpenFeature.
 
-## Corte 0.6 — qué falta (9 tareas)
+## Corte 0.6 — qué falta (8 tareas)
 
 - **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` ya está **cargada en la base local** (4.5 hecha, `pnpm libraries:load`), marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
-- **10.6 a 10.8 (web):** listado real de librerías y requisitos con filtros; botón de adoptar solo para el administrador SIG; pantalla de ingreso real (hoy es una maqueta y la portada `/` sigue siendo la de demostración).
+- **10.7 y 10.8 (web):** botón de adoptar solo para el administrador SIG (verificando `Origin`); pantalla de ingreso real (hoy es una maqueta y la portada `/` sigue siendo la de demostración).
 - **11.1 a 11.3 (worker):** registro de los intentos fallidos de ingreso leyendo los eventos de Keycloak. No hace falta para ver el sistema.
 - **12.3 y 12.4:** guía de ejecución con la medición final de memoria, y la prueba de aislamiento de extremo a extremo con revisión completa (`/review`).
 
