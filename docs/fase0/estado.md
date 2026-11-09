@@ -4,7 +4,7 @@
 
 - **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso (ingreso por empresa, aislamiento multiempresa, librería de ejemplo y bitácora inmutable).
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
-- **Rama y PR (2026-11-08):** `main` ya incluye los PR #1, #3, #4, #5 (cimientos del corte 0.6), #6 (skills) y #7 (carga del catálogo y listado real); el #2 se cerró a propósito (PR de prueba que viola las reglas, no se integra). **Abierto: PR #8** (`feature/paso-0-6-adopcion`, tarea 10.7, adopción desde la pantalla): 6 de 7 checks en verde y `verificar (windows-latest)` en curso al escribir esto; espera tu integración. La protección de `main` exige ya los **7 checks**, incluido `integracion`. La tarea 10.8 está en la rama `feature/paso-0-6-ingreso`, **apilada sobre la del #8**: su PR se abre cuando se integre el #8 (se rebasa antes sobre `main`). Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
+- **Rama y PR (2026-11-09):** `main` incluye los PR #1, #3, #4, #5, #6, #7 y #8 (adopción desde la pantalla, 10.7); el #2 se cerró a propósito (PR de prueba que viola las reglas). La rama `feature/paso-0-6-ingreso` (10.8 y 11.1, M1 y seguimiento de la revisión) está rebasada sobre `main` y su PR está abierto. La protección de `main` exige los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
 - **Corte 0.6: 62 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
 
 ## Corte 0.6 — qué está terminado
@@ -26,12 +26,12 @@
 ## Corte 0.6 — qué falta (6 tareas)
 
 - **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` ya está **cargada en la base local** (4.5 hecha, `pnpm libraries:load`), marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
-- **11.1 (hecha) y 11.2/11.3 (worker):** registro de los intentos fallidos de ingreso leyendo los eventos de Keycloak. No hace falta para ver el sistema.
+- **11.1 (hecha); 11.2 y 11.3 DIFERIDAS a la Fase 1 (M5, aprobado 2026-11-09):** el worker de intentos fallidos no hace falta para ver el sistema. El código de 11.1 queda en el repositorio, probado; la bitácora ya acepta esos registros, pero nada los alimenta todavía, y la prueba 12.4 no cubre el paso «intento fallido → bitácora desde Keycloak».
 - **12.3 y 12.4:** guía de ejecución con la medición final de memoria, y la prueba de aislamiento de extremo a extremo con revisión completa (`/review`).
 
 ## Pendiente del responsable
 
-1. **Integrar el PR #8** cuando `verificar (windows-latest)` termine en verde (Rebase and merge o Squash and merge); después `git switch main && git pull`.
+1. ~~Integrar el PR #8~~ (hecho 2026-11-09). Integrar el PR de `feature/paso-0-6-ingreso` cuando sus 7 checks estén en verde.
 2. **Ramas viejas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `docs/estado-paso-0-4`, `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo.
 3. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`. Mientras tanto la `0.1.0` está cargada solo en tu base local, marcada «borrador, numeraciones sin verificar».
 4. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
@@ -49,7 +49,7 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 
 ## Próximos pasos técnicos
 
-1. **11.2 y 11.3** (11.1 hecha: cliente de eventos, punto de control y sondeo con pruebas) worker de intentos fallidos de ingreso (no hace falta para ver el sistema).
+1. ~~11.2 y 11.3~~ diferidas a la Fase 1 (ver arriba).
 2. **12.3** guía de ejecución con la medición final de memoria; **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
 3. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
 
