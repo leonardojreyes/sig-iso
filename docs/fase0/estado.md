@@ -27,7 +27,7 @@
 
 - **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` ya está **cargada en la base local** (4.5 hecha, `pnpm libraries:load`), marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
 - **11.1 (hecha); 11.2 y 11.3 DIFERIDAS a la Fase 1 (M5, aprobado 2026-11-09):** el worker de intentos fallidos no hace falta para ver el sistema. El código de 11.1 queda en el repositorio, probado; la bitácora ya acepta esos registros, pero nada los alimenta todavía, y la prueba 12.4 no cubre el paso «intento fallido → bitácora desde Keycloak».
-- **12.3 y 12.4:** guía de ejecución con la medición final de memoria, y la prueba de aislamiento de extremo a extremo con revisión completa (`/review`).
+- **12.3 (hecha) y 12.4 (prueba hecha con `pnpm web:verify-aislamiento`; falta el `/review` completo).** Ver «Brechas y avisos del cierre del corte 0.6».
 
 ## Pendiente del responsable
 
@@ -62,6 +62,11 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 - **A2 · Esquema de librerías limitado a la Estructura Armonizada.** `libreria_entrada` (migración 0002) exige `capitulo between 4 and 10` y `nivel in (1, 2)`, y `packages/normas-schema/libreria-norma.schema.json` tiene la misma restricción. No admite los controles del Anexo A de 27001 ni de 42001 (base de la Declaración de Aplicabilidad) y contradice P14. Corrección: tipo de entrada `clausula | control | objetivo`, sección/tema libre, jerarquía de profundidad variable con `padre_id`, atributos propios por norma; migración nueva + ADR + una librería de prueba con controles de Anexo A.
 - **M3 · Un solo rol por persona.** Pasar a roles múltiples (`usuario_rol` con vigencia opcional) y modelar la relación persona–proceso para validar la independencia del auditor (no audita su propio trabajo) y el acceso limitado en el tiempo del auditor externo. Hoy `usuario.rol` y la matriz en código (ADR 029, tarea 9.4) asumen un solo rol.
 - **M4 · Entidades que faltan en el modelo de dominio** (`docs/producto/modelo-dominio.md`): Certificado (número, organismo, alcance, emisión, vencimiento, estado); Alcance por norma con sedes y exclusiones justificadas; Activo de información; Evaluación de impacto de sistemas de IA (42001); orígenes de No conformidad (queja, incidente, revisión por la dirección); clasificación de hallazgos de auditoría externa (NC mayor, NC menor, observación, oportunidad de mejora) y plazos de cierre.
+
+## Brechas y avisos del cierre del corte 0.6
+
+- **H6.10 · el 404 cruzado no se registra como `acceso.cruzado`.** El evento existe y el filtro de la API lo maneja, pero ningún código de producción lo emite y el proxy de la web responde 404 sin escribir en la bitácora. La indistinguibilidad del 404 sí está verificada. Resolverlo en la Fase 1 (detectar «otra empresa» comparando el slug de la URL con la empresa del token).
+- **`pnpm web:verify-listado` adopta la librería para la empresa A** si no estaba adoptada (lo advierte su cabecera). Se ejecutó el 2026-11-09 durante la medición de memoria: **A ya tiene adoptada la librería de ejemplo**, así que el aviso de «la empresa A no tiene librerías adoptadas» de más arriba ya no es cierto. La adopción en pantalla se prueba ahora con `admin-b`. `web:verify-aislamiento` no adopta nada.
 
 ## Respuestas de arranque (`/fase0-inicio`)
 
