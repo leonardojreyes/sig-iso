@@ -52,7 +52,7 @@ describe.skipIf(!hayBase)("AutorizacionPostgres (PostgreSQL real)", () => {
 
   it("el administrador SIG tiene su rol y todos los permisos", async () => {
     expect(await autorizacion().rolesDe(ADMIN_A, A)).toEqual(["administrador_sig"]);
-    for (const p of ["librerias.adoptar", "librerias.ver", "requisitos.ver", "marca.ver"] as const) {
+    for (const p of ["librerias.adoptar", "librerias.ver", "requisitos.ver", "marca.ver", "ia.usar"] as const) {
       expect(await autorizacion().puede(ADMIN_A, p, A), p).toBe(true);
     }
   });
@@ -61,6 +61,7 @@ describe.skipIf(!hayBase)("AutorizacionPostgres (PostgreSQL real)", () => {
     expect(await autorizacion().rolesDe(COLAB_A, A)).toEqual(["colaborador"]);
     expect(await autorizacion().puede(COLAB_A, "librerias.ver", A)).toBe(true);
     expect(await autorizacion().puede(COLAB_A, "librerias.adoptar", A)).toBe(false);
+    expect(await autorizacion().puede(COLAB_A, "ia.usar", A)).toBe(true);
   });
 
   it("cerrado por defecto: sin rol, usuario inexistente o permiso desconocido no hay permiso", async () => {
