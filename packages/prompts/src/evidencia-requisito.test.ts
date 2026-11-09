@@ -143,16 +143,16 @@ describe("qué se envía al modelo (H1.6, H1.11)", () => {
 describe("qué prohíbe y qué pide el prompt (experto-iso)", () => {
   const s = sistema(COMUN);
 
-  it("pide español, lenguaje llano, hasta 5 ejemplos derivados de la guía y unas 150 palabras", () => {
+  it("pide español, lenguaje llano, hasta 5 ejemplos derivados de la guía y poca extensión (los modelos pequeños se pasan: se pide 100 para llegar a ~150)", () => {
     expect(s).toMatch(/español/i);
-    expect(s).toMatch(/150 palabras/);
+    expect(s).toMatch(/100 palabras/);
     expect(s).toMatch(/hasta (5|cinco) ejemplos/i);
     expect(s).toMatch(/gu[ií]a/i);
   });
 
   it("pide fórmulas de práctica habitual en lugar de obligación", () => {
     for (const formula of ["suele", "práctica habitual", "puede servir"])
-      expect(s, formula).toContain(formula);
+      expect(s.toLowerCase(), formula).toContain(formula);
   });
 
   it("prohíbe lenguaje de obligación, citas y comillas, enlaces, otros numerales, otro idioma y hablar por el auditor", () => {
@@ -173,6 +173,30 @@ describe("qué prohíbe y qué pide el prompt (experto-iso)", () => {
     expect(s).toMatch(
       /no (son|sigas|obedezcas)[^.]*instrucciones|solo informaci[oó]n/i,
     );
+  });
+});
+
+describe("formato de la respuesta (prueba previa 1.5: los modelos pequeños ignoraban longitud y formato)", () => {
+  const s = sistema(COMUN);
+
+  it("pide viñetas con guion, de una sola línea, sin introducción ni conclusión", () => {
+    expect(s).toMatch(/vi[ñn]etas/i);
+    expect(s).toMatch(/guion/i);
+    expect(s).toMatch(/una sola l[ií]nea/i);
+    expect(s).toMatch(/sin introducci[oó]n|no escribas introducci[oó]n/i);
+  });
+
+  it("prohíbe numeración, negritas y asteriscos (la respuesta se muestra como texto plano)", () => {
+    expect(s).toMatch(/numeraci[oó]n/i);
+    expect(s).toMatch(/negritas|asteriscos/i);
+  });
+
+  it("pide cada viñeta como un ejemplo concreto en frase nominal (no oraciones con verbos de obligación) y una única línea inicial fija", () => {
+    expect(s).toMatch(/frase nominal|nombra (un|el) ejemplo concreto/i);
+    expect(s).toMatch(/registro|acta|informe/i);
+    expect(s).toContain("Ejemplos de evidencia que suelen respaldar este requisito:");
+    // Las fórmulas ya no se imponen como inicio de cada viñeta: los modelos pequeños las tomaron por encabezados y escribieron frases de obligación.
+    expect(s).not.toMatch(/empieza cada vi[ñn]eta con una de estas f[oó]rmulas/i);
   });
 });
 
