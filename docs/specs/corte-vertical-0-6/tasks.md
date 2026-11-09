@@ -1,7 +1,7 @@
 # Tareas — Corte vertical 0.6
 
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md)
-- **Estado:** En curso (24 de 69 tareas hechas: fases 1, 2 y 3 completas, 4.1 a 4.3, 4.6 y 5.1; 4.4 parcial, ◐ = a la espera de una acción del responsable; PR #5 abierto con los 7 checks en verde; pendiente tuyo: agregar `integracion` como check obligatorio)
+- **Estado:** **Cerrado el 2026-11-09: 65 de 70 tareas hechas** (PR #5 a #11). Quedan fuera del cierre: **4.4** (◐, verificación tuya con los ejemplares), **9.2 y 9.3** (⏭ pospuestas por el ADR 029) y **11.2 y 11.3** (diferidas a la Fase 1, M5). `/review` completo sin bloqueantes: `docs/revisiones/2026-11-09-review-corte-0-6.md`.
 
 ## Cómo leer este documento
 
