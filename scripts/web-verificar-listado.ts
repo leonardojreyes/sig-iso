@@ -1,12 +1,12 @@
 // pnpm web:verify-listado — comprueba con todo REAL (Keycloak, API, PostgreSQL y web) el listado de requisitos (tarea 10.6):
-// estados vacíos por rol, adopción de A por la API, entradas de A, filtros, rótulo de ejemplo y aislamiento con B.
+// estados vacíos por rol, adopción de A DESDE LA PANTALLA (tarea 10.7), entradas de A, filtros, rótulo de ejemplo y aislamiento con B.
 // Requiere: Keycloak, API (pnpm dev api), web (pnpm dev web), la siembra (pnpm db:seed) y la librería cargada (pnpm libraries:load).
-// OJO: la adopción no se puede deshacer desde la aplicación; si A aún no había adoptado, este script la adopta por la API.
+// OJO: la adopción no se puede deshacer desde la aplicación; si A aún no había adoptado, este script la adopta por el formulario.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ingresarConCodigo } from './lib/flujo-codigo.mjs';
-import { iniciarSesionWeb, paginaWeb, type EntornoWeb } from './lib/sesion-web.ts';
+import { enviarWeb, iniciarSesionWeb, paginaWeb, type EntornoWeb } from './lib/sesion-web.ts';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const redirectUri = process.env.OIDC_REDIRECT_URI ?? 'http://localhost:3000/auth/callback';
@@ -94,12 +94,127 @@ try {
   if (bAdopto) aviso('B ya había adoptado la librería: se omite el estado vacío de B.');
   else comprobar('B sin adopción ve su estado vacío (200)', vacioB.estado === 200);
 
-  // ---- A adopta por la API (idempotente)
-  const adopcion = await api(`/librerias/${ejemplo.id}/adopcion`, 'POST');
+  // ---- Adopción desde la pantalla (tarea 10.7)
+  const ruta = `/e/empresa-a/librerias/${ejemplo.id}/adopcion`;
+  const adoptadaPorApi = async () =>
+    ((await (await api('/librerias')).json()) as Array<{ id: string; adoptada: boolean }>).find(
+      (l) => l.id === ejemplo.id,
+    )?.adoptada === true;
+  if (!yaAdoptada) {
+    const adminAntes = await ver('adminA', '/e/empresa-a/requisitos');
+    comprobar(
+      'H4.6 el administrador SIG ve el botón «Adoptar» con un formulario POST a su propia ruta',
+      adminAntes.texto.includes(`action="${ruta}"`) && /<button[^>]*aria-label="Adoptar [^"]+"/.test(adminAntes.texto),
+    );
+    const colabAntes = await ver('colabA', '/e/empresa-a/requisitos');
+    comprobar(
+      'H4.6 el colaborador NO ve el botón ni el formulario de adopción',
+      !colabAntes.texto.includes('/adopcion"') && !/aria-label="Adoptar /.test(colabAntes.texto),
+    );
+  }
+
+  const colabIntenta = await enviarWeb(entorno, ruta, sesion.colabA);
   comprobar(
-    'A adopta la librería de ejemplo por la API (201 la primera vez, 200 si ya estaba)',
-    adopcion.status === 201 || adopcion.status === 200,
-    `respuesta ${adopcion.status}`,
+    'H4.6 un colaborador que envía el formulario por otra vía recibe «sin permiso» (lo decide la API)',
+    colabIntenta.estado === 303 && colabIntenta.parametros.get('adopcion') === 'sin_permiso',
+    `respuesta ${colabIntenta.estado} ${colabIntenta.destino ?? ''}`,
+  );
+  const avisoColab = await ver('colabA', colabIntenta.destino ?? '/e/empresa-a/requisitos');
+  comprobar(
+    'el colaborador ve el aviso «No tiene permiso para adoptar librerías»',
+    avisoColab.estado === 200 && avisoColab.texto.includes('No tiene permiso para adoptar librerías'),
+  );
+  if (!yaAdoptada) comprobar('el intento del colaborador no adoptó nada', !(await adoptadaPorApi()));
+
+  for (const [origen, nombre] of [
+    [null, 'sin Origin'],
+    ['null', 'con Origin «null»'],
+    ['https://evil.example', 'con Origin de otro sitio'],
+    [`${entorno.web}.evil.example`, 'con Origin parecido'],
+  ] as const) {
+    const r = await enviarWeb(entorno, ruta, sesion.adminA, { origen });
+    comprobar(
+      `el administrador ${nombre}: 403 y no adopta`,
+      r.estado === 403 && r.destino === null,
+      `respuesta ${r.estado}`,
+    );
+  }
+  if (!yaAdoptada) comprobar('ningún intento con Origin inválido adoptó nada', !(await adoptadaPorApi()));
+  comprobar(
+    'un GET a la ruta de adopción no hace nada (405)',
+    (await enviarWeb(entorno, ruta, sesion.adminA, { metodo: 'GET' })).estado === 405,
+  );
+  comprobar(
+    'un identificador de librería mal formado es 404',
+    (await enviarWeb(entorno, '/e/empresa-a/librerias/no-es-uuid/adopcion', sesion.adminA)).estado === 404,
+  );
+  const inexistente = await enviarWeb(
+    entorno,
+    '/e/empresa-a/librerias/5eed0009-0000-4000-8000-0000000000ff/adopcion',
+    sesion.adminA,
+  );
+  comprobar(
+    'adoptar una librería que no existe: aviso «no existe», sin error',
+    inexistente.estado === 303 && inexistente.parametros.get('adopcion') === 'no_encontrada',
+    inexistente.destino ?? '',
+  );
+  const deBenA = await enviarWeb(entorno, ruta, sesion.adminB);
+  comprobar(
+    'AISLAMIENTO: la sesión de B enviando la adopción a la ruta de A recibe 404 y no adopta',
+    deBenA.estado === 404,
+    `respuesta ${deBenA.estado}`,
+  );
+  const sinSesionPost = await enviarWeb(entorno, ruta, new Map());
+  comprobar(
+    'sin sesión, el envío manda a ingresar con 303 (el navegador pide /auth/login con GET)',
+    sinSesionPost.estado === 303 && (sinSesionPost.destino ?? '').startsWith('/auth/login'),
+    `respuesta ${sinSesionPost.estado} ${sinSesionPost.destino ?? ''}`,
+  );
+
+  const adopta = await enviarWeb(entorno, ruta, sesion.adminA);
+  const esperado = yaAdoptada ? 'ya_adoptada' : 'adoptada';
+  comprobar(
+    `el administrador adopta desde el formulario: 303 con aviso «${esperado}»`,
+    adopta.estado === 303 &&
+      adopta.parametros.get('adopcion') === esperado &&
+      adopta.parametros.get('libreria') === ejemplo.id,
+    `respuesta ${adopta.estado} ${adopta.destino ?? ''}`,
+  );
+  const tras = await ver('adminA', adopta.destino ?? '/e/empresa-a/requisitos');
+  comprobar(
+    'H4.9 la pantalla informa cuántas entradas quedaron disponibles (21) y ya muestra el listado',
+    tras.estado === 200 && tras.texto.includes('21 entradas disponibles') && cuantas(tras.texto) === 21,
+    `${cuantas(tras.texto)} entradas`,
+  );
+  comprobar(
+    `el aviso dice «${yaAdoptada ? 'ya estaba adoptada' : 'Librería adoptada'}»`,
+    tras.texto.includes(yaAdoptada ? 'Esa librería ya estaba adoptada' : 'Librería adoptada'),
+  );
+  comprobar('la API confirma la adopción de A', await adoptadaPorApi());
+  const otraVez = await enviarWeb(entorno, ruta, sesion.adminA);
+  comprobar(
+    'H4.7 adoptar de nuevo no es un error: «ya adoptada», sin cambios',
+    otraVez.estado === 303 && otraVez.parametros.get('adopcion') === 'ya_adoptada',
+  );
+  const trasOtra = await ver('adminA', otraVez.destino ?? '/e/empresa-a/requisitos');
+  comprobar(
+    'H4.7 repetir la adopción no duplica entradas (siguen 21) y dice «No hubo cambios»',
+    cuantas(trasOtra.texto) === 21 && trasOtra.texto.includes('No hubo cambios'),
+  );
+  const inventado = await ver(
+    'adminA',
+    `/e/empresa-a/requisitos?adopcion=adoptada&libreria=5eed0009-0000-4000-8000-0000000000ff`,
+  );
+  comprobar(
+    'una dirección inventada no muestra un éxito de adopción',
+    inventado.estado === 200 &&
+      !inventado.texto.includes('entradas disponibles') &&
+      !inventado.texto.includes('Librería adoptada'),
+  );
+  const sinAdoptarMas = await ver('adminA', '/e/empresa-a/requisitos');
+  comprobar(
+    'con todo adoptado ya no hay botón de adopción dentro del listado',
+    !sinAdoptarMas.texto.includes('/adopcion"'),
   );
 
   // ---- Después de adoptar: el listado real de A

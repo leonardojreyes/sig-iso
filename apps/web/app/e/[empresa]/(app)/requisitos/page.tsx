@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { crearDependencias } from '../../../../../src/auth/dependencias';
 import { contextoActual } from '../../../../../src/marca/servidor';
+import { leerAviso } from '../../../../../src/librerias/avisos';
 import { PantallaListadoRequisitos } from '../../../../../src/pantallas/listado-requisitos';
 import { cargarListado } from '../../../../../src/requisitos/cargar-listado';
 import { leerFiltros } from '../../../../../src/requisitos/filtros';
@@ -15,7 +16,8 @@ export default async function Page({
 }) {
   const slug = (await params).empresa;
   const { empresa, persona, acceso } = await contextoActual(slug);
-  const { filtros, invalidos } = leerFiltros(await searchParams);
+  const parametros = await searchParams;
+  const { filtros, invalidos } = leerFiltros(parametros);
   const deps = crearDependencias(process.env);
   const r = await cargarListado({ acceso, apiUrl: deps.config.apiUrl, fetchFn: deps.fetchFn, filtros });
   if (r.tipo === 'ingresar') redirect(`/auth/login?retorno=${encodeURIComponent(`/e/${slug}/requisitos`)}`);
@@ -29,6 +31,7 @@ export default async function Page({
       normasDisponibles={r.normasDisponibles}
       filtros={filtros}
       filtrosInvalidos={invalidos}
+      aviso={leerAviso(parametros)}
     />
   );
 }

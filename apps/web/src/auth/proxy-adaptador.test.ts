@@ -36,6 +36,21 @@ describe('aRespuesta (de la decisión al NextResponse)', () => {
     expect(r.headers.get('cache-control')).toMatch(/no-store/);
   });
 
+  it('login desde un POST (p. ej. adoptar con la sesión vencida): 303, para que el navegador pida /auth/login con GET', () => {
+    const post = new NextRequest('http://localhost:3000/e/empresa-a/librerias/x/adopcion', { method: 'POST' });
+    const r = aRespuesta({ tipo: 'login', retorno: '/e/empresa-a/requisitos', cookies: [] }, post);
+    expect(r.status).toBe(303);
+    expect(r.headers.get('location')).toContain('/auth/login?retorno=');
+    for (const metodo of ['GET', 'HEAD']) {
+      expect(
+        aRespuesta(
+          { tipo: 'login', retorno: '/', cookies: [] },
+          new NextRequest('http://localhost:3000/e/empresa-a/panel', { method: metodo }),
+        ).status,
+      ).toBe(307);
+    }
+  });
+
   it('no encontrado: reescribe a una ruta inexistente (404 de Next, sin revelar nada) y sin caché', () => {
     const r = aRespuesta({ tipo: 'no_encontrado', cookies: [] }, peticion('/e/empresa-b/panel'));
     expect(r.headers.get('x-middleware-rewrite')).toBe('http://localhost:3000/no-encontrado');
