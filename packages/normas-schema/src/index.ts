@@ -12,11 +12,14 @@ export {
 } from './validar';
 export {
   contarFrases,
+  detectarTextoNormativo,
   LIMITES,
   revisarContenido,
+  revisarRespuestaIa,
   revisarTexto,
   type CampoTexto,
   type CodigoContenido,
+  type CodigoTextoNormativo,
   type EntradaTextual,
   type HallazgoContenido,
 } from './contenido';
