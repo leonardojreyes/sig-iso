@@ -233,6 +233,44 @@ try {
     `respuesta ${ingresoPublico.status}`,
   );
 
+  // Portada y pantalla de ingreso reales (tarea 10.8).
+  const portada = await pagina('/', new Map());
+  const htmlPortada = (await portada.text()).replaceAll('<!-- -->', '');
+  comprobar(
+    '10.8 la portada sin sesión es real: nombre del producto y UNA acción «Ingresar» hacia /auth/login, sin demostración',
+    portada.status === 200 &&
+      htmlPortada.includes('sig-iso') &&
+      htmlPortada.includes('href="/auth/login"') &&
+      !/Entorno de demostración|Elija una empresa|SynapTech Ecuador|Andes Log/i.test(htmlPortada) &&
+      !/href="\/e\//.test(htmlPortada),
+    `respuesta ${portada.status}`,
+  );
+  const conError = await (await pagina('/?error=ingreso_invalido', new Map())).text();
+  comprobar(
+    'la portada avisa «No se pudo completar el ingreso» cuando el ingreso falló',
+    conError.includes('No se pudo completar el ingreso'),
+  );
+  const inventadoError = await (await pagina('/?error=state_invalido', new Map())).text();
+  comprobar(
+    'un código de error inventado o interno no se muestra',
+    !inventadoError.replace(/<script[\s\S]*?<\/script>/g, '').includes('state_invalido') &&
+      !inventadoError.includes('No se pudo completar el ingreso'),
+  );
+  const xss = await (await pagina(`/?error=${encodeURIComponent('<img src=x onerror=alert(1)>')}`, new Map())).text();
+  comprobar('un error con HTML no se refleja', !xss.includes('onerror=alert'));
+  const conSesion = await pagina('/', new Map(cookieSesion));
+  comprobar(
+    '10.8 con sesión, la portada lleva directo al listado de LA empresa de la persona (tomada de la API)',
+    conSesion.status === 307 && ubicacion(conSesion) === '/e/empresa-a/requisitos',
+    `respuesta ${conSesion.status} ${ubicacion(conSesion)}`,
+  );
+  const ingresoEmpresa = (await (await pagina('/e/empresa-a/ingreso', new Map())).text()).replaceAll('<!-- -->', '');
+  comprobar(
+    '10.8 la pantalla de ingreso de una empresa tiene el enlace que vuelve a su listado y NINGÚN campo de correo ni contraseña',
+    ingresoEmpresa.includes('href="/auth/login?retorno=%2Fe%2Fempresa-a%2Frequisitos"') &&
+      !/<input|type="password"|<form/.test(ingresoEmpresa),
+  );
+
   // Cierre: solo POST con Origin propio.
   const logout = (origen: string | null, metodo = 'POST') =>
     pedir(`${web}/auth/logout`, new Map(cookieSesion), {
@@ -302,6 +340,11 @@ try {
     'state alterado: rechazado (303 a /?error=ingreso_invalido)',
     conStateFalso.status === 303 && conStateFalso.headers.get('location') === `${web}/?error=ingreso_invalido`,
     `respuesta ${conStateFalso.status}`,
+  );
+  const portadaTrasFallo = await (await pagina(ubicacion(conStateFalso), new Map())).text();
+  comprobar(
+    '10.8 de extremo a extremo: tras un ingreso rechazado, la portada muestra el aviso genérico',
+    portadaTrasFallo.includes('No se pudo completar el ingreso'),
   );
 
   // 4) Otro ingreso con iss de otro emisor.

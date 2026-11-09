@@ -4,8 +4,8 @@
 
 - **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso (ingreso por empresa, aislamiento multiempresa, librería de ejemplo y bitácora inmutable).
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
-- **Rama y PR (2026-11-08):** `main` ya incluye los PR #1, #3, #4, #5 (cimientos del corte 0.6), #6 (skills) y #7 (carga del catálogo y listado real); el #2 se cerró a propósito (PR de prueba que viola las reglas, no se integra). **Abierto: PR #8** (`feature/paso-0-6-adopcion`, tarea 10.7, adopción desde la pantalla): 6 de 7 checks en verde y `verificar (windows-latest)` en curso al escribir esto; espera tu integración. La protección de `main` exige ya los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
-- **Corte 0.6: 61 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
+- **Rama y PR (2026-11-09):** `main` incluye los PR #1, #3, #4, #5, #6, #7 y #8 (adopción desde la pantalla, 10.7); el #2 se cerró a propósito (PR de prueba que viola las reglas). La rama `feature/paso-0-6-ingreso` (10.8 y 11.1, M1 y seguimiento de la revisión) está rebasada sobre `main` y su PR está abierto. La protección de `main` exige los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
+- **Corte 0.6: 62 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
 
 ## Corte 0.6 — qué está terminado
 
@@ -17,25 +17,31 @@
 - **API completa** (fase 6): contrato OpenAPI, verificación de tokens, guardia, filtro de 403/404 cruzado, controladores, límite de frecuencia, conformidad del contrato.
 - **Autorización por rol desde la base** (ADR 029, tarea 9.4): `usuario.rol` y matriz en código. OpenFGA 1.22.1 instalado pero **pospuesto**.
 - **Keycloak 26.8.2 local** (fase 8): realm sin secretos, arranque en 127.0.0.1, ingreso real verificado, mensaje genérico de credenciales inválidas, clientes integrados deshabilitados.
+- **Ingreso y portada reales** (10.8): una sola acción hacia Keycloak (la aplicación no pide contraseña), avisos genéricos de error y, con sesión, la portada lleva al listado de la empresa.
 - **Adopción desde la pantalla** (10.7): botón solo para el administrador SIG, con `Origin` verificado y aviso de las entradas disponibles.
 - **Listado de requisitos real** (10.6): las entradas de las librerías adoptadas con filtros, rótulo de ejemplo y estados vacíos por rol; la cabecera muestra a la persona real.
 - **Web, hasta la 10.5:** ingreso OIDC con PKCE, sesión (cookie sellada, renovación, cierre), proxy que protege `/e/<empresa>/…` (404 idéntico a otra empresa, sin caché) y **marca real de la empresa**. Verificado de extremo a extremo con `pnpm web:verify-login` (36 comprobaciones).
 - **Siembra** de dos empresas y cuatro cuentas de prueba, `pnpm ram:report`, trazas mínimas y un flag de OpenFeature.
 
-## Corte 0.6 — qué falta (7 tareas)
+## Corte 0.6 — qué falta (6 tareas)
 
 - **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` ya está **cargada en la base local** (4.5 hecha, `pnpm libraries:load`), marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
-- **10.8 (web):** pantalla de ingreso real (hoy es una maqueta y la portada `/` sigue siendo la de demostración).
-- **11.1 a 11.3 (worker):** registro de los intentos fallidos de ingreso leyendo los eventos de Keycloak. No hace falta para ver el sistema.
+- **11.1 (hecha); 11.2 y 11.3 DIFERIDAS a la Fase 1 (M5, aprobado 2026-11-09):** el worker de intentos fallidos no hace falta para ver el sistema. El código de 11.1 queda en el repositorio, probado; la bitácora ya acepta esos registros, pero nada los alimenta todavía, y la prueba 12.4 no cubre el paso «intento fallido → bitácora desde Keycloak».
 - **12.3 y 12.4:** guía de ejecución con la medición final de memoria, y la prueba de aislamiento de extremo a extremo con revisión completa (`/review`).
 
 ## Pendiente del responsable
 
-1. **Integrar el PR #8** cuando `verificar (windows-latest)` termine en verde (Rebase and merge o Squash and merge); después `git switch main && git pull`.
+1. ~~Integrar el PR #8~~ (hecho 2026-11-09). Integrar el PR de `feature/paso-0-6-ingreso` cuando sus 7 checks estén en verde.
 2. **Ramas viejas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `docs/estado-paso-0-4`, `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo.
 3. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`. Mientras tanto la `0.1.0` está cargada solo en tu base local, marcada «borrador, numeraciones sin verificar».
 4. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
-5. **Revisión externa de calidad** (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`, hoy sin seguimiento en git): decidir si se confirma en el repositorio y priorizar sus hallazgos. Orden que propone: A1 (el repositorio es público; decisión tuya), M1 (endurecer permisos y hooks de Claude Code), terminar el corte 0.6, y **antes de empezar la Fase 1**: A2 (el esquema de librerías solo admite la Estructura Armonizada), M3 (un solo rol por persona) y M4 (entidades que faltan en el modelo de dominio), con un `/spec` de «modelo de dominio v2 y esquema de librerías v3». M2 (amarrar `adoptada_por` a la misma empresa) conviene al pasar por la migración de adopción.
+5. **Revisión externa de calidad** (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`, hoy sin seguimiento en git): decidir si se confirma en el repositorio. Seguimiento de sus hallazgos:
+   - **A1** (el repositorio es público): decisión tuya, pendiente; requiere un ADR.
+   - **M1** (permisos y hooks de Claude Code): **corregido 2026-11-09**, ver «Paso 0.3 — notas».
+   - **B5** (este archivo desactualizado): corregido (PR y próximos pasos al día).
+   - **M5** (alcance del 0.6): plan propuesto, a la espera de tu aprobación.
+   - **A2, M3 y M4:** registrados abajo como prerrequisitos de la Fase 1.
+   - **M2** (amarrar `adoptada_por` a la misma empresa) conviene al pasar por la migración de adopción; **B1–B4** al pasar por esos archivos.
 6. Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (mientras tanto, `env -u GITHUB_TOKEN` en `git` y `gh`).
 7. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global.
 
@@ -43,22 +49,29 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 
 ## Próximos pasos técnicos
 
-1. **10.8** pantalla de ingreso real (reemplaza la maqueta y la portada de demostración; así no hará falta escribir `/auth/login`).
-2. **11.1 a 11.3** worker de intentos fallidos de ingreso (no hace falta para ver el sistema).
-3. **12.3** guía de ejecución con la medición final de memoria; **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
-4. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
+1. ~~11.2 y 11.3~~ diferidas a la Fase 1 (ver arriba).
+2. **12.3** guía de ejecución con la medición final de memoria; **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
+3. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
 
-- **Actualizado:** 2026-11-08
+- **Actualizado:** 2026-11-09
+
+## Prerrequisitos de la Fase 1 (de la revisión de calidad del 2026-11-08)
+
+**No se empieza la Fase 1 sin resolver estos tres puntos.** Se abordan juntos con un `/spec` de «modelo de dominio v2 y esquema de librerías v3», validado con `experto-iso`, más los ADR correspondientes.
+
+- **A2 · Esquema de librerías limitado a la Estructura Armonizada.** `libreria_entrada` (migración 0002) exige `capitulo between 4 and 10` y `nivel in (1, 2)`, y `packages/normas-schema/libreria-norma.schema.json` tiene la misma restricción. No admite los controles del Anexo A de 27001 ni de 42001 (base de la Declaración de Aplicabilidad) y contradice P14. Corrección: tipo de entrada `clausula | control | objetivo`, sección/tema libre, jerarquía de profundidad variable con `padre_id`, atributos propios por norma; migración nueva + ADR + una librería de prueba con controles de Anexo A.
+- **M3 · Un solo rol por persona.** Pasar a roles múltiples (`usuario_rol` con vigencia opcional) y modelar la relación persona–proceso para validar la independencia del auditor (no audita su propio trabajo) y el acceso limitado en el tiempo del auditor externo. Hoy `usuario.rol` y la matriz en código (ADR 029, tarea 9.4) asumen un solo rol.
+- **M4 · Entidades que faltan en el modelo de dominio** (`docs/producto/modelo-dominio.md`): Certificado (número, organismo, alcance, emisión, vencimiento, estado); Alcance por norma con sedes y exclusiones justificadas; Activo de información; Evaluación de impacto de sistemas de IA (42001); orígenes de No conformidad (queja, incidente, revisión por la dirección); clasificación de hallazgos de auditoría externa (NC mayor, NC menor, observación, oportunidad de mejora) y plazos de cierre.
 
 ## Respuestas de arranque (`/fase0-inicio`)
 
-| # | Pregunta | Respuesta |
-| --- | --- | --- |
-| 1 | Nombre de código | `sig-iso` (se mantiene) |
-| 2 | Destino del primer despliegue | Solo local por ahora (0.8 deja Helm/OpenTofu validados, sin clúster) |
-| 3 | Revisores humanos de PR | Solo el responsable |
-| 4 | Repositorio GitHub | Autorizada su creación (se hará en 0.2; visibilidad privada por defecto) |
-| 5 | Ollama | Modelo pequeño (~3B), local; tamaño a informar antes de descargar (0.7) |
+| #   | Pregunta                      | Respuesta                                                                |
+| --- | ----------------------------- | ------------------------------------------------------------------------ |
+| 1   | Nombre de código              | `sig-iso` (se mantiene)                                                  |
+| 2   | Destino del primer despliegue | Solo local por ahora (0.8 deja Helm/OpenTofu validados, sin clúster)     |
+| 3   | Revisores humanos de PR       | Solo el responsable                                                      |
+| 4   | Repositorio GitHub            | Autorizada su creación (se hará en 0.2; visibilidad privada por defecto) |
+| 5   | Ollama                        | Modelo pequeño (~3B), local; tamaño a informar antes de descargar (0.7)  |
 
 ## Decisiones
 
@@ -85,6 +98,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 - Hooks probados: bloquean `.env*` (también rutas Windows), borrado recursivo forzado, `push` a `main`; permiten `.env.example`, `pnpm test`, push a `feature/*`.
 - **Skills creados (2026-11-08):** `.claude/skills/{modulo-hexagonal,migracion-rls,libreria-normas,endpoint-contrato}/SKILL.md`, cada uno con cuándo usarlo, pasos, ejemplo y criterio de terminado, basados en la estructura real del repositorio (`modules/empresas` y `modules/normas`, `platform/db/migrations`, `packages/normas-schema`, `packages/contracts`, `apps/api`) y en los ADR 001, 010, 024, 025, 026, 027 y 029. Con esto existen los 8 subagentes, 4 skills, 8 comandos y 4 hooks, todos en git (solo `settings.local.json` está ignorado).
 - **Defecto encontrado y corregido en los hooks (2026-11-08):** `settings.json` los invocaba con ruta relativa (`node .claude/hooks/pre-edit.mjs`) y las reglas de denegación del entorno eran relativas al directorio actual (`./.env`); si el directorio de trabajo de Claude Code no era la raíz del repositorio, Node fallaba con código 1 (no bloqueante) y **una escritura de `.env` prosperó** (archivo de prueba, ya borrado). Ahora los cuatro hooks usan `node "$CLAUDE_PROJECT_DIR/.claude/hooks/<nombre>.mjs"` y se agregaron denegaciones `**/.env` para leer, editar y escribir. Verificado ejecutando cada comando desde una subcarpeta: `pre-edit` sale con 2 ante `.env` y con 0 ante un archivo normal. **Los cambios de hooks se aplican al reiniciar la sesión de Claude Code (o revisándolos en `/hooks`).** Para Windows se asume el intérprete de Git Bash, que expande `$CLAUDE_PROJECT_DIR`.
+- **Endurecimiento de permisos y hooks (M1, 2026-11-09):** las reglas del hook de Bash viven ahora en `.claude/hooks/reglas-bash.mjs` (función pura) con 47 pruebas en `reglas-bash.test.mjs` (`pnpm test:hooks`, usa `node:test`). Cambios: bloquea la lectura/copia de `.env`, `.env.local`, `.env.*` (excepto `.env.example`) con `cat|head|tail|less|more|grep|sed|awk|bat|cp|mv|…` y por redirección; con `psql` bloquea `DELETE|UPDATE|ALTER|GRANT|REVOKE|CREATE ROLE` salvo contra `sigiso_test`; bloquea `git checkout .`, `git checkout -- .` y `git restore` (se permite `--staged`). En `settings.json`, `Bash(node:*)` pasó a `node scripts/*`, `node .claude/hooks/*` y `node --test .claude/hooks/*` (`node -e` vuelve a pedir aprobación) y se agregaron denegaciones para `git checkout .` y `git restore`. Los cambios de `settings.json` se aplican al reiniciar la sesión.
 - Limitaciones: hooks no probados en Windows real; el escaneo de secretos del hook Stop es básico (gitleaks completo en 0.4); el hook de Bash evalúa el texto completo del comando, así que puede dar falsos positivos si el texto menciona un comando prohibido.
 
 ## Paso 0.4 — notas
