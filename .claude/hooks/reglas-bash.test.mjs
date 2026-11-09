@@ -33,6 +33,13 @@ const bloqueados = [
   "git push --force",
   "git push origin main",
   ["rm", "-rf", "node_modules"].join(" "),
+  // secretos en .local/
+  "cat .local/secretos-keycloak.json",
+  "head -c 100 ./.local/secretos-keycloak.json",
+  "grep . .local/secretos-keycloak.json",
+  "cat .local/realm/sigiso-realm.json",
+  "cp .local/realm/x.json /tmp/x",
+  "cat < .local/secretos-keycloak.json",
 ];
 const permitidos = [
   "cat .env.example",
@@ -52,6 +59,12 @@ const permitidos = [
   "git diff",
   'grep -rn "environment" src',
   "cat src/environment.ts",
+  // .local/ salvo sus secretos
+  "tail -n 20 .local/keycloak.log",
+  "cat .local/dev-all.log",
+  "ls .local",
+  "ls .local/realm",
+  "grep ERROR .local/web-dev.log",
 ];
 
 for (const c of bloqueados)
