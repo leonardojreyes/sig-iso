@@ -11,10 +11,14 @@
 # su contenido de fondo o su detalle difiere de forma relevante; `especifico` = solo existe en una norma.
 #
 # Al verificar: subir `version` a 1.0.0 y QUITAR este bloque de comentarios (una prueba exige que «borrador» y «sin verificar»
-# vayan juntos). Esta librería NO se carga en ningún catálogo mientras sea borrador.
+# vayan juntos).
+#
+# Decisión del responsable (2026-11-08): sin los ejemplares a la mano, esta versión 0.1.0 se carga SOLO como ejemplo en la base local de
+# desarrollo (`pnpm libraries:load`), con el aviso en el nombre. No se usa como si fuera la norma. Al verificar las numeraciones se
+# publica la versión siguiente (las versiones cargadas son inmutables).
 esquema: 2
 codigo: ejemplo-estructura-armonizada
-nombre: Ejemplo de Estructura Armonizada (borrador)
+nombre: Ejemplo de Estructura Armonizada (borrador, numeraciones sin verificar)
 version: 0.1.0
 es_ejemplo: true
 fuente: elaboración propia SynapTech

@@ -20,12 +20,23 @@ const marca = {
   logoUrl: null,
 };
 
-const montar = (opciones: { marca?: () => Response; keycloak?: 'ok' | 'invalid_grant' | 'caido' } = {}) => {
+const identidad = {
+  usuarioId: '5eed0001-0000-4000-8000-0000000000a1',
+  nombre: 'Persona de prueba',
+  roles: ['administrador_sig'],
+  empresa: { slug: 'empresa-a', nombre: 'Empresa A (prueba)' },
+};
+
+const montar = (
+  opciones: { marca?: () => Response; me?: () => Response; keycloak?: 'ok' | 'invalid_grant' | 'caido' } = {},
+) => {
   const llamadas: string[] = [];
   const fetchFn = (async (url: string) => {
     llamadas.push(url.replace(config.apiUrl, 'API').replace(config.emisor, 'KC'));
     if (url === `${config.apiUrl}/empresa/marca`)
       return (opciones.marca ?? (() => new Response(JSON.stringify(marca), { status: 200 })))();
+    if (url === `${config.apiUrl}/me`)
+      return (opciones.me ?? (() => new Response(JSON.stringify(identidad), { status: 200 })))();
     if (url.startsWith(config.apiUrl)) return new Response(null, { status: 204 });
     if (url.endsWith('/token')) {
       if (opciones.keycloak === 'caido') throw new Error('ECONNREFUSED');
@@ -73,8 +84,10 @@ describe('cargarEmpresaActual (marca de la sesión para las pantallas internas)'
     expect(r).toEqual({
       tipo: 'ok',
       empresa: { id: 'empresa-a', nombre: 'Empresa A (prueba)', primario: '#0b5fff', logoUrl: undefined },
+      persona: { nombre: 'Persona de prueba', roles: ['administrador_sig'] },
+      acceso: 'acceso-inicial',
     });
-    expect(llamadas).toEqual(['GET API/empresa/marca'.replace('GET ', '')]);
+    expect([...llamadas].sort()).toEqual(['API/empresa/marca', 'API/me']);
   });
 
   it('si la dirección no es la empresa verificada (o el proxy no verificó nada) es 404 y NO llama a la API', async () => {
@@ -91,6 +104,40 @@ describe('cargarEmpresaActual (marca de la sesión para las pantallas internas)'
       ).toEqual({ tipo: 'no_encontrado' });
     }
     expect(llamadas).toEqual([]);
+  });
+
+  it('la persona (nombre y roles) sale de /me, no de datos de demostración', async () => {
+    const { deps, cookie } = await entorno({
+      me: () =>
+        new Response(JSON.stringify({ ...identidad, nombre: 'Otra Persona', roles: ['colaborador'] }), { status: 200 }),
+    });
+    const r = await cargarEmpresaActual({ slugDeLaDireccion: 'empresa-a', slugVerificado: 'empresa-a', cookie }, deps);
+    expect(r).toMatchObject({ tipo: 'ok', persona: { nombre: 'Otra Persona', roles: ['colaborador'] } });
+  });
+
+  it('si /me trae OTRA empresa distinta de la verificada: no encontrado (nunca se mezclan datos)', async () => {
+    const { deps, cookie } = await entorno({
+      me: () =>
+        new Response(JSON.stringify({ ...identidad, empresa: { slug: 'empresa-b', nombre: 'Empresa B' } }), {
+          status: 200,
+        }),
+    });
+    expect(
+      await cargarEmpresaActual({ slugDeLaDireccion: 'empresa-a', slugVerificado: 'empresa-a', cookie }, deps),
+    ).toEqual({ tipo: 'no_encontrado' });
+  });
+
+  it('/me con 401: ingresar; con error o forma inválida: no disponible', async () => {
+    const dir = { slugDeLaDireccion: 'empresa-a', slugVerificado: 'empresa-a' };
+    const a = await entorno({ me: () => new Response('{}', { status: 401 }) });
+    expect(await cargarEmpresaActual({ ...dir, cookie: a.cookie }, a.deps)).toEqual({ tipo: 'ingresar' });
+    for (const me of [
+      () => new Response('{}', { status: 500 }),
+      () => new Response(JSON.stringify({ ...identidad, extra: 1 }), { status: 200 }),
+    ]) {
+      const b = await entorno({ me });
+      expect(await cargarEmpresaActual({ ...dir, cookie: b.cookie }, b.deps)).toEqual({ tipo: 'no_disponible' });
+    }
   });
 
   it('sin cookie de sesión: ingresar', async () => {

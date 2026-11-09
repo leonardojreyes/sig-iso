@@ -77,3 +77,5 @@ Avísame con una de estas respuestas:
 - **«No coinciden estas filas: …»**, con los números correctos. Corrijo el YAML y lo vuelvo a validar.
 
 Mientras la librería siga como borrador, **no se carga en ningún catálogo**.
+
+> **Estado (2026-11-08):** sin los ejemplares a la mano, la versión `0.1.0` se cargó solo como ejemplo en la base local de desarrollo (`pnpm libraries:load`), con el aviso en el nombre. Esta lista de comprobación sigue pendiente: al completarla se corrige el archivo, se sube la versión y se vuelve a cargar (las versiones cargadas son inmutables).

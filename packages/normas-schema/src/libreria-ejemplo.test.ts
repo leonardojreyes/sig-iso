@@ -27,7 +27,11 @@ describe('libraries/normas/ejemplo-estructura-armonizada.yaml', () => {
   });
 
   it('hace referencia a las tres normas de la v1, con sus ediciones', () => {
-    expect(libreria.referencias.map((r) => `${r.norma} ${r.edicion}`)).toEqual(['ISO 9001 2015', 'ISO/IEC 27001 2022', 'ISO/IEC 42001 2023']);
+    expect(libreria.referencias.map((r) => `${r.norma} ${r.edicion}`)).toEqual([
+      'ISO 9001 2015',
+      'ISO/IEC 27001 2022',
+      'ISO/IEC 42001 2023',
+    ]);
   });
 
   it('tiene las 21 entradas previstas, de primer nivel, con id único', () => {
@@ -42,7 +46,11 @@ describe('libraries/normas/ejemplo-estructura-armonizada.yaml', () => {
   });
 
   it('cada entrada indica su cláusula en las tres normas', () => {
-    for (const e of libreria.entradas) expect(e.aplica_a.map((a) => a.norma), e.id).toEqual(['ISO 9001', 'ISO/IEC 27001', 'ISO/IEC 42001']);
+    for (const e of libreria.entradas)
+      expect(
+        e.aplica_a.map((a) => a.norma),
+        e.id,
+      ).toEqual(['ISO 9001', 'ISO/IEC 27001', 'ISO/IEC 42001']);
   });
 
   it('el capítulo 10 se modela por tema, con el identificador que le da cada norma (no coinciden entre normas)', () => {
@@ -63,12 +71,15 @@ describe('libraries/normas/ejemplo-estructura-armonizada.yaml', () => {
 
   it('las entradas cuyo contenido de fondo difiere entre normas están marcadas como parciales', () => {
     const parciales = libreria.entradas.filter((e) => e.alcance_comun === 'parcial').map((e) => e.id);
-    for (const id of ['ha-4.4', 'ha-6.1', 'ha-6.3', 'ha-7.1', 'ha-8.1', 'ha-9.1', 'ha-mejora']) expect(parciales, id).toContain(id);
+    for (const id of ['ha-4.4', 'ha-6.1', 'ha-6.3', 'ha-7.1', 'ha-8.1', 'ha-9.1', 'ha-mejora'])
+      expect(parciales, id).toContain(id);
   });
 
   it('BORRADOR y SIN VERIFICAR van juntos: la versión 0.x lleva la marca; la 1.0.0 en adelante, no', () => {
     const borrador = libreria.version.startsWith('0.');
     const marca = /NUMERACIONES SIN VERIFICAR/.test(texto);
     expect(marca, `versión ${libreria.version}`).toBe(borrador);
+    // El nombre es lo que viaja al catálogo y se ve en pantalla: un borrador sin verificar debe decirlo ahí también.
+    expect(/sin verificar/i.test(libreria.nombre), `nombre de la versión ${libreria.version}`).toBe(borrador);
   });
 });
