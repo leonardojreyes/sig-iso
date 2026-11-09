@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import esquema from '../libreria-norma.schema.json' with { type: 'json' };
-import { contarFrases, LIMITES, revisarContenido, revisarTexto, type CodigoContenido } from './contenido';
+import { contarFrases, detectarTextoNormativo, LIMITES, revisarContenido, revisarRespuestaIa, revisarTexto, type CodigoContenido } from './contenido';
 
 // TODOS los textos de esta prueba son sintéticos: frases genéricas inventadas, ninguna tomada de una norma.
 const codigos = (campo: 'titulo' | 'guia', texto: string): CodigoContenido[] => revisarTexto(campo, texto);
@@ -194,5 +194,74 @@ describe('revisarContenido', () => {
     const copia = JSON.parse(JSON.stringify(entradas));
     revisarContenido({ entradas });
     expect(entradas).toEqual(copia);
+  });
+});
+
+// Respuestas de IA (paso 0.7): mismos detectores de texto copiado de una norma, SIN los límites de largo, de frases ni de formato
+// que son propios de las guías breves de una librería. Textos sintéticos.
+const RESPUESTA_LARGA_LIMPIA = [
+  'Una práctica habitual es conservar el registro de las áreas que cubre el sistema y de lo que queda fuera.',
+  'Suele servir una lista de procesos con su responsable, revisada cada vez que cambia la organización.',
+  'Puede servir un mapa simple que muestre qué se incluye. También ayuda guardar la fecha de la última revisión.',
+  'Otra opción es anexar un resumen de las conversaciones con las personas que usan el sistema cada día.',
+].join(' ');
+
+describe('detectarTextoNormativo (detector común)', () => {
+  it('devuelve vacío para un texto sin señales de texto normativo', () => {
+    expect(detectarTextoNormativo(GUIA_BUENA)).toEqual([]);
+    expect(detectarTextoNormativo(RESPUESTA_LARGA_LIMPIA)).toEqual([]);
+  });
+
+  it('detecta tono normativo, cita larga y enlace, y solo esos códigos', () => {
+    expect(detectarTextoNormativo('La organización debe registrar sus cambios.')).toEqual(['tono_normativo']);
+    expect(detectarTextoNormativo('Se explica así: «' + 'x'.repeat(LIMITES.citaMin) + '» en la práctica.')).toEqual(['cita_textual']);
+    expect(detectarTextoNormativo('Más información en https://ejemplo.test')).toEqual(['enlace_o_correo']);
+  });
+
+  it('no aplica límites de largo ni de formato', () => {
+    const codigosEncontrados = detectarTextoNormativo(RESPUESTA_LARGA_LIMPIA + '\n- uno\n- dos; tres; cuatro; cinco');
+    expect(codigosEncontrados).toEqual([]);
+  });
+
+  it('NUNCA repite el texto revisado', () => {
+    const secreto = 'ZZZ-contenido-que-no-debe-aparecer';
+    const salida = JSON.stringify(detectarTextoNormativo('La organización debe ' + secreto));
+    expect(salida).not.toContain(secreto);
+  });
+});
+
+describe('revisarRespuestaIa', () => {
+  it('acepta una respuesta larga, con lista, sin señales de texto normativo (no aplican los límites de las guías)', () => {
+    expect(revisarRespuestaIa(RESPUESTA_LARGA_LIMPIA)).toEqual([]);
+    expect(revisarRespuestaIa('Ejemplos posibles:\n- Un registro de áreas.\n- Un mapa de procesos.\n- Una lista de responsables.')).toEqual([]);
+  });
+
+  it.each([
+    ['La organización debe conservar el registro.', 'tono_normativo'],
+    ['Cada cambio shall be recorded.', 'tono_normativo'],
+    ['Se recomienda: «' + 'y'.repeat(LIMITES.citaMin + 5) + '».', 'cita_textual'],
+    ['Consulta www.ejemplo.test para más detalles.', 'enlace_o_correo'],
+    ['Escribe a alguien@ejemplo.test si tienes dudas.', 'enlace_o_correo'],
+  ] as const)('rechaza «%s» con %s', (texto, codigo) => {
+    expect(revisarRespuestaIa(texto)).toContain(codigo);
+  });
+
+  it('una respuesta vacía no tiene señales, pero tampoco se considera válida: lo decide quien la usa', () => {
+    expect(revisarRespuestaIa('')).toEqual([]);
+  });
+
+  it('cero coincidencias es el umbral: cualquier código la deja fuera', () => {
+    expect(revisarRespuestaIa('La organización debe hacerlo. Ver https://ejemplo.test').sort()).toEqual(['enlace_o_correo', 'tono_normativo']);
+  });
+});
+
+describe('revisarTexto: no cambia de comportamiento al usar el detector común', () => {
+  it('conserva el orden de los códigos de una guía con varios problemas', () => {
+    const texto = 'La organización debe registrar todo. «' + 'z'.repeat(LIMITES.citaMin) + '». Ver https://ejemplo.test\n- punto';
+    expect(revisarTexto('guia', texto)).toEqual(['guia_demasiadas_frases', 'tono_normativo', 'cita_textual', 'formato_de_lista', 'enlace_o_correo']);
+  });
+
+  it('el título sigue revisando solo largo, formato y enlaces (no tono ni citas)', () => {
+    expect(revisarTexto('titulo', 'La organización debe registrar')).toEqual([]);
   });
 });
