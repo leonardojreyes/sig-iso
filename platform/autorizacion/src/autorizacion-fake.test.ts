@@ -2,7 +2,7 @@ import { crearEmpresaId, EmpresaIdInvalidoError } from '@sig/tenancy';
 import { describe, expect, it } from 'vitest';
 import { AutorizacionFake } from './autorizacion-fake.js';
 import { ErrorAutorizacion } from './errores.js';
-import { PERMISOS, permisosDe, ROLES, type Permiso, type Rol } from './roles.js';
+import { esPermiso, PERMISOS, permisosDe, ROLES, type Permiso, type Rol } from './roles.js';
 
 const A = crearEmpresaId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
 const B = crearEmpresaId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
@@ -40,6 +40,36 @@ describe('matriz de permisos por rol (ADR 008, corte 0.6)', () => {
     expect(permisosDe('colaborador')).not.toContain('librerias.adoptar');
     expect(Object.isFrozen(ROLES)).toBe(true);
     expect(Object.isFrozen(PERMISOS)).toBe(true);
+  });
+});
+
+describe('permiso ia.usar (puerto de IA, paso 0.7)', () => {
+  it('existe como permiso formal', () => {
+    expect(PERMISOS).toContain('ia.usar');
+    expect(esPermiso('ia.usar')).toBe(true);
+  });
+
+  it('lo tienen el administrador SIG y el colaborador (Q1 del spec: ambos roles)', () => {
+    expect(permisosDe('administrador_sig')).toContain('ia.usar');
+    expect(permisosDe('colaborador')).toContain('ia.usar');
+  });
+
+  it.each(['dueno_proceso', 'auditor_interno', 'auditor_externo', 'alta_direccion'] as Rol[])('el rol %s sigue sin permisos: tampoco puede usar la IA (cerrado por defecto)', (rol) => {
+    expect(permisosDe(rol)).not.toContain('ia.usar');
+  });
+
+  it('puede(): ambos roles sí; sin rol o con el rol de otra empresa, no', async () => {
+    const f = montar();
+    expect(await f.puede(ADMIN, 'ia.usar', A)).toBe(true);
+    expect(await f.puede(COLAB, 'ia.usar', A)).toBe(true);
+    expect(await f.puede(OTRO, 'ia.usar', A)).toBe(false);
+    expect(await f.puede(ADMIN, 'ia.usar', B)).toBe(false);
+  });
+
+  it('usar la IA no concede adoptar librerías al colaborador', async () => {
+    const f = montar();
+    expect(await f.puede(COLAB, 'ia.usar', A)).toBe(true);
+    expect(await f.puede(COLAB, 'librerias.adoptar', A)).toBe(false);
   });
 });
 
