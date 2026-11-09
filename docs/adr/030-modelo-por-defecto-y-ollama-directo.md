@@ -1,6 +1,6 @@
 # ADR 030 — Modelo por defecto del asistente local; Ollama directo en el paso 0.7 y LiteLLM a la Fase 1
 
-- **Estado:** Propuesto (2026-11-09). Pasa a Aprobado cuando el responsable apruebe el recorte del 0.7 y se cumplan las condiciones de «Cuándo se confirma».
+- **Estado:** Propuesto (2026-11-09). Recorte del 0.7 aprobado y prueba previa cumplida; **falta la muestra de revisión humana (tarea 4.6)** y tu aprobación expresa del ADR para pasar a Aprobado.
 - **Fecha:** 2026-11-09
 - **Decide:** Ing. Leonardo J. Reyes B.
 - **Relación:** ajusta parcialmente el ADR 014 (LiteLLM como pasarela). No lo reemplaza: el resto sigue vigente (puerto `AsistentePort`, Ollama local por defecto, segundo proveedor externo deshabilitado, prompts versionados, todo marcado «borrador generado por IA»).
@@ -32,7 +32,18 @@ Prompt v1.0.0 (tres rondas, 25 consultas por modelo):
 | Longitud (se pedían ~150 palabras) | 190 a 280 palabras                                  | 136 a 223 palabras                                                     |
 | Formato                            | siempre 5 ítems numerados con negritas (asteriscos) | prosa o listas de 0 a 15 líneas; a veces cierra con «la empresa debe…» |
 
-Primer ajuste del prompt (formato más estricto y «cada viñeta empieza con una fórmula»; 10 consultas por modelo): `granite3.3:2b` mejoró (0 de 10 rechazadas, 61 a 137 palabras, normalmente 5 viñetas) y `qwen2.5:1.5b` **empeoró** (6 de 10 rechazadas): tomó las fórmulas como encabezados y escribió frases de obligación entre comillas («Suele: "…deben ser…"»). Ese ajuste se descartó; el prompt vigente está en revisión (tarea 1.5).
+**Prompt definitivo** (tercera versión; 15 consultas por modelo, 3 repeticiones de las 5 cláusulas):
+
+| | `qwen2.5:1.5b` | `granite3.3:2b` |
+| --- | --- | --- |
+| Rechazadas por el detector | 0 de 15 (0 %) | 0 de 15 (0 %) |
+| Mediana / máximo por consulta | 7,6 s / 8,3 s | 5,0 s / 7,4 s |
+| Longitud (se pedían 100 palabras para llegar a ~150) | 129 a 254 palabras | 41 a 99 palabras |
+| Viñetas (se pedían de 3 a 5) | 8 a 10; numeración y negritas; repite en el encabezado los datos de la entrada | siempre 5, con la línea inicial pedida |
+
+Con el prompt definitivo ambos pasan el detector, pero **solo `granite3.3:2b` cumple las instrucciones de longitud y de formato**; `qwen2.5:1.5b` las ignora (y tarda más). En `granite3.3:2b` se vio además que algunas viñetas se apartan un poco de la guía (por ejemplo, en `ha-6.1` habló de estudios de mercado), lo que revisará la muestra humana.
+
+Primer ajuste del prompt (formato más estricto y «cada viñeta empieza con una fórmula»; 10 consultas por modelo): `granite3.3:2b` mejoró (0 de 10 rechazadas, 61 a 137 palabras, normalmente 5 viñetas) y `qwen2.5:1.5b` **empeoró** (6 de 10 rechazadas): tomó las fórmulas como encabezados y escribió frases de obligación entre comillas («Suele: "…deben ser…"»). Ese ajuste se descartó: el prompt definitivo ya no obliga a empezar cada viñeta con una fórmula y pide viñetas como frases nominales.
 
 Los tiempos varían entre rondas con la carga del equipo; son del orden de 8 a 23 s, muy por debajo del tope de 60 s del spec.
 
@@ -46,8 +57,8 @@ Los tiempos varían entre rondas con la carga del equipo; son del orden de 8 a 2
 
 ## Cuándo se confirma (pasa a Aprobado)
 
-- El responsable aprueba el recorte del 0.7 (que difiere LiteLLM).
-- La prueba previa con el **prompt definitivo** da una tasa de rechazo del detector de 10 % o menos con `granite3.3:2b`, sin que ningún modelo escriba lenguaje de obligación entre comillas.
+- ~~El responsable aprueba el recorte del 0.7 (que difiere LiteLLM).~~ **Cumplida (2026-11-09).**
+- ~~La prueba previa con el **prompt definitivo** da una tasa de rechazo del detector de 10 % o menos con `granite3.3:2b`~~ **Cumplida (2026-11-09):** 0 de 15, sin lenguaje de obligación.
 - La muestra de revisión humana del spec (tarea 4.6, 5 cláusulas × 2 modelos, firmada por el responsable) no encuentra texto copiado de una norma ni confusiones de dominio en las respuestas de `granite3.3:2b`.
 
 Si algo de esto falla, se revisa el prompt o el modelo antes de seguir; no se afloja el detector.
