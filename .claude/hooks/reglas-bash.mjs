@@ -4,6 +4,9 @@ const LECTORES =
   "cat|head|tail|less|more|grep|egrep|fgrep|rg|sed|awk|bat|cp|mv|source|strings|xxd|od|tee";
 // .env, .env.local, .env.prod…, pero no .env.example
 const ENV = String.raw`(?:^|[\s/"'=<])\.env(?!\.example\b)(?:\.[\w-]+)*(?=$|[\s"';|&<>])`;
+// Secretos locales: .local/secretos-* (claves de las cuentas de prueba y de Keycloak) y .local/realm/ (realm resuelto, con
+// contraseñas). Los registros (*.log) y el resto de .local/ siguen siendo legibles.
+const LOCAL = String.raw`(?:^|[\s/"'=<])\.local/(?:secretos[\w.-]*|realm(?:/\S*)?)(?=$|[\s"';|&<>])`;
 const SQL_ESCRITURA =
   /\b(DELETE|UPDATE|ALTER|GRANT|REVOKE|CREATE\s+ROLE|DROP\s+ROLE)\b/i;
 
@@ -43,6 +46,14 @@ const reglas = [
   [
     /<\s*\S*\.env(?!\.example\b)(\.[\w-]+)*(\s|$)/,
     "lectura de .env por redirección",
+  ],
+  [
+    new RegExp(String.raw`\b(${LECTORES})\b[^|;&]*${LOCAL}`),
+    "lectura/copia de secretos en .local/",
+  ],
+  [
+    /<\s*\S*\.local\/(secretos[\w.-]*|realm\b)/,
+    "lectura de secretos en .local/ por redirección",
   ],
 ];
 

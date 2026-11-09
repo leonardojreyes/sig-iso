@@ -4,7 +4,7 @@
 
 ## Veredicto: **aprobar** (sin hallazgos bloqueantes ni altos)
 
-Pendientes que decide el responsable: H6.10 y la protección de `.local/` (abajo). El merge lo aprueba un humano.
+Pendiente que decide el responsable: H6.10 (abajo). La protección de `.local/` ya se corrigió. El merge lo aprueba un humano.
 
 **No verificado por los revisores:** ejecución de las pruebas, contraste real de tokens, lector de pantalla y navegador, validación `iss/aud/alg` y PKCE en detalle, límites de Nx/ESLint, aprovisionamiento de roles (que `sigiso_app` no sea superusuario ni tenga `BYPASSRLS`), migración 0004 y `docs/` fila por fila.
 
