@@ -1,6 +1,6 @@
 # Spec — Puerto de IA: explicar la evidencia típica de un requisito con el modelo que la empresa permite
 
-- **Estado:** Aprobado por el responsable el 2026-11-09 (revisado por `experto-iso`; Q1 a Q12 con la propuesta por omisión)
+- **Estado:** Aprobado por el responsable el 2026-11-09 (revisado por `experto-iso`; Q1 a Q12 con la propuesta por omisión). **Recorte aprobado el 2026-11-09:** ver «Fuera de alcance» y las historias H2.4, H5.5 y H6.1.
 - **Paso:** 0.7 de la Fase 0
 - **Fecha:** 2026-11-09
 
@@ -51,7 +51,7 @@ _Como persona de la empresa, quiero elegir con qué modelo se genera la respuest
 - **H2.1** Veo solo los modelos que la política de **mi** empresa permite, con su nombre y si es local o externo.
 - **H2.2** Si no elijo, se usa el modelo predeterminado de mi empresa.
 - **H2.3** Si fuerzo la elección de un modelo que mi empresa no permite (por ejemplo, alterando la solicitud), la solicitud se rechaza con «prohibido» (403), no se genera nada y queda registrado.
-- **H2.4** Mi elección se recuerda para mis próximas consultas (ver Q3).
+- **H2.4** ~~Mi elección se recuerda para mis próximas consultas.~~ **Diferido a la Fase 1 (recorte del 0.7, 2026-11-09).** En este paso el modelo se elige en cada consulta y, si no elijo, se usa el predeterminado de mi empresa.
 - **H2.5** Cambiar de modelo no cambia nada más: la misma entrada, el mismo formato de respuesta y los mismos rótulos.
 
 ### H3 — Política de IA por empresa
@@ -76,11 +76,11 @@ _Como plataforma, quiero fijar por empresa qué modelos se permiten y cuál es e
 - **H5.2** La bitácora **nunca** contiene el texto enviado, el texto recibido, ni datos personales.
 - **H5.3** Una consulta rechazada también queda registrada, con un motivo de una **lista cerrada**: modelo no permitido por la política (403), proveedor externo no habilitado (403), límite de uso excedido (429) o respuesta con texto de norma (H1.7). La **falta de permiso** se registra como acceso denegado, igual que en el resto del sistema (un solo evento por intento).
 - **H5.4** Si no se puede registrar la consulta, no se muestra la respuesta (el registro y la acción van juntos): se reintenta una vez y, si vuelve a fallar, la persona recibe un error de servicio no disponible, con una traza técnica sin contenido. Una base de datos caída no deja el rastro de H5.1.
-- **H5.5** Se puede obtener, por empresa, el total de consultas y de tamaño por modelo en un periodo (medición para costos y límites). En este paso se verifica por prueba automatizada, sin pantalla.
+- **H5.5** ~~Se puede obtener, por empresa, el total de consultas y de tamaño por modelo en un periodo.~~ **Diferido a la Fase 1 (recorte del 0.7).** Cada consulta ya registra modelo, duración y tamaños en la bitácora, así que el agregado se podrá calcular después sin perder datos.
 
 ### H6 — Límites y fallas
 
-- **H6.1** Hay un límite de consultas por persona y por minuto (ver Q6). Al excederlo se informa cuándo reintentar y queda registrado.
+- **H6.1** Hay un límite de consultas por persona y por minuto (Q6). Al excederlo se informa cuándo reintentar y queda registrado. (Recorte del 0.7: **solo por persona**; el límite por empresa y el tope de generaciones simultáneas pasan a la Fase 1.)
 - **H6.2** Si el modelo elegido falla o no responde, el mensaje es claro y no revela detalles internos (direcciones, nombres de servidor, trazas).
 - **H6.3** Ninguna falla de IA impide usar el resto del listado.
 
@@ -104,7 +104,7 @@ Los plazos y bases de tratamiento son hipótesis a confirmar con el asesor legal
 | Respuesta generada                                                 | Borrador; no personal si la entrada no lo es             | Solo en pantalla; **no se guarda** (Q2) |
 | Catálogo de modelos (nombre, local o externo, estado)              | Configuración de plataforma                              | Datos de plataforma                     |
 | Política de IA por empresa                                         | Configuración de la empresa; confidencial entre empresas | Datos de la empresa                     |
-| Preferencia de modelo de una persona (Q3)                          | Personal (preferencia, pseudonimizada)                   | Datos de la empresa                     |
+| ~~Preferencia de modelo de una persona (Q3)~~ | Diferida a la Fase 1 (no se guarda en el 0.7) | — |
 | Registro de la consulta (modelo, tamaño, duración, resultado)      | Personal pseudonimizado + auditoría                      | Bitácora inmutable                      |
 | Texto enviado y recibido                                           | **No se conserva**                                       | —                                       |
 
@@ -121,7 +121,7 @@ Los plazos y bases de tratamiento son hipótesis a confirmar con el asesor legal
 | ------------------------ | ---------------------------------------------------------------------------------------------------- |
 | Consulta de IA realizada | Cada consulta atendida: modelo, tipo de proveedor, duración, tamaño, resultado correcto o error      |
 | Consulta de IA rechazada | Por política (modelo no permitido o externo no habilitado), por límite de uso o por respuesta con texto de norma |
-| Cambio de modelo preferido | Cada vez que una persona cambia su modelo preferido (antes y después) |
+| Cambio de modelo preferido | **Fase 1** (la acción queda definida en el catálogo, sin uso en el 0.7) |
 | Configuración de IA cargada | Siembra del catálogo de modelos y de las políticas de empresa, con la huella del contenido |
 
 Reglas: sin texto enviado ni recibido; sin datos personales; el motivo del rechazo es un código de una lista cerrada; si no se puede registrar, la consulta no se completa. Los eventos nuevos se agregan al catálogo cerrado de eventos de la bitácora.
@@ -148,7 +148,9 @@ Esta funcionalidad **es** el primer uso de IA del producto, y se trata como un s
 - Modelos externos **habilitados**: se define que existen y están deshabilitados por omisión; no se prueban con datos reales.
 - Clave propia de la empresa (BYOK) y gestión de secretos de proveedores externos.
 - Respaldo automático a otro modelo cuando uno falla (Q7).
-- Límites por empresa, cuotas de costo y facturación.
+- Límites por empresa, tope de generaciones simultáneas, cuotas de costo y facturación (recorte del 0.7).
+- Recordar el modelo preferido de cada persona, y la medición agregada de consultas por empresa y periodo (recorte del 0.7).
+- Pasarela LiteLLM: en el 0.7 el adaptador habla directo con Ollama (ADR 030); la pasarela se retoma en la Fase 1.
 - Evaluaciones automáticas de calidad de modelos y prompts antes de cambiarlos.
 - Herramientas expuestas a la IA, agentes y cualquier acción automática.
 - Casos de IA que usen datos de la empresa (riesgos, hallazgos, documentos, evidencias).
@@ -163,7 +165,7 @@ Cada una trae una propuesta; si no hay objeción, se toma la propuesta.
 | --- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | Q1  | ¿Pueden usar la acción todos los roles o solo el administrador SIG?         | Ambos: solo lee guías públicas dentro del producto.                                                                                             |
 | Q2  | ¿Se guarda la respuesta?                                                    | No: solo en pantalla. Guardar abre preguntas de aprobación y versión que son de otra fase.                                                      |
-| Q3  | ¿La elección de modelo se recuerda por persona o se elige en cada consulta? | Recordarla por persona (una preferencia); implica un dato nuevo por persona.                                                                    |
+| Q3  | ¿La elección de modelo se recuerda por persona o se elige en cada consulta? | **Resuelta (recorte del 0.7):** se elige en cada consulta; recordarla por persona pasa a la Fase 1. |
 | Q4  | ¿Qué políticas de prueba tienen A y B?                                      | A permite los dos modelos locales (predeterminado el más pequeño); B permite solo uno.                                                          |
 | Q5  | ¿Cuál es el tiempo máximo de espera de una consulta?                        | 60 segundos (equipo de 8 GB, modelos pequeños).                                                                                                 |
 | Q6  | ¿Qué límite de uso por persona?                                             | 10 consultas por minuto por persona.                                                                                                            |

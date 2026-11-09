@@ -18,6 +18,16 @@ Este plan fue revisado por `arquitecto`, `revisor-cumplimiento` y `experto-iso`;
 4. **H1.11 / API:** la solicitud lleva `norma` y `edicion` (dentro de las `aplicaA` de la entrada); se explica **una** norma por vez.
 5. **Nuevos eventos de bitácora:** `ia.preferencia_cambiada` (cambio de modelo de una persona) e `ia.configuracion_cargada` (siembra de catálogo y políticas, con huella del contenido).
 
+## Recorte aprobado el 2026-11-09 (prevalece sobre lo que sigue)
+
+El responsable aprobó reducir el 0.7 al mínimo de su criterio de salida. **Lo que sigue del plan describe el diseño completo; donde choque con esta sección, manda esta sección.**
+
+- **Pasarela:** el adaptador habla **directo con Ollama** (`http://127.0.0.1:11434/v1`). **LiteLLM, la fase D completa (tareas 5.1 a 5.7) y el ADR de excepción a 022/025 pasan a la Fase 1** (ADR 030). Cambiar a LiteLLM después es solo `IA_GATEWAY_URL`.
+- **Modelos:** predeterminado de plataforma `granite3.3:2b`; segundo modelo `qwen2.5:1.5b` (ADR 030, propuesto).
+- **Se difiere a la Fase 1:** el consumo por empresa (`ConsumoIaPort`, tareas 2.8 y 2.12; H5.5); la preferencia de modelo por persona (`ElegirModeloUseCase`, tabla `usuario_ia_preferencia`, `unique (empresa_id, id)` en `usuario`, `PUT /ia/preferencia`; H2.4); el límite por empresa y el tope de generaciones simultáneas (queda el límite por persona; H6.1). El evento `ia.preferencia_cambiada` queda definido en el catálogo, sin uso.
+- **Se queda:** `AsistentePort` y el caso de uso, prompt y detector, política por empresa mínima (`modelo_ia`, `empresa_ia_politica`, `empresa_ia_modelo`) con su prueba de aislamiento, `ia.consulta` y `ia.configuracion_cargada`, permiso `ia.usar`, flag `ia-habilitada`, API `GET /ia/modelos` y `POST /requisitos/{id}/explicacion`, botón y selector por consulta, muestra de calidad firmada, ficha del asistente (con el registro de cambios) y medición de memoria con Ollama.
+- **PR:** A, B, C y E (el D desaparece). Ollama se arranca aparte con `OLLAMA_HOST=127.0.0.1:11434 OLLAMA_MAX_LOADED_MODELS=1 OLLAMA_DEBUG=0 ollama serve`, documentado en la guía de ejecución.
+
 ## Diseño
 
 1. **Módulo nuevo `modules/asistente`** (skill `modulo-hexagonal`). Un módulo solo depende de `platform` y `packages`: **no importa `modules/normas`**. Los puertos `AutorizacionPort`, `FlagsPort` y la unidad de trabajo se **redeclaran** en el módulo (con las pruebas de compatibilidad que trae la plantilla, incluida `unidad-de-trabajo-compatibilidad`). El requisito llega por `RequisitoPort`, cuyo adaptador vive en `apps/api` y delega en `ObtenerRequisitoUseCase` de `modules/normas`.
