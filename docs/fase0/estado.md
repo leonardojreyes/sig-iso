@@ -4,8 +4,8 @@
 
 - **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso (ingreso por empresa, aislamiento multiempresa, librería de ejemplo y bitácora inmutable).
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
-- **Rama y PR (2026-11-08):** `main` ya incluye los PR #1, #3, #4, #5 (cimientos del corte 0.6), #6 (skills) y #7 (carga del catálogo y listado real); el #2 se cerró a propósito (PR de prueba que viola las reglas, no se integra). **Abierto: PR #8** (`feature/paso-0-6-adopcion`, tarea 10.7, adopción desde la pantalla): 6 de 7 checks en verde y `verificar (windows-latest)` en curso al escribir esto; espera tu integración. La protección de `main` exige ya los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
-- **Corte 0.6: 61 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
+- **Rama y PR (2026-11-08):** `main` ya incluye los PR #1, #3, #4, #5 (cimientos del corte 0.6), #6 (skills) y #7 (carga del catálogo y listado real); el #2 se cerró a propósito (PR de prueba que viola las reglas, no se integra). **Abierto: PR #8** (`feature/paso-0-6-adopcion`, tarea 10.7, adopción desde la pantalla): 6 de 7 checks en verde y `verificar (windows-latest)` en curso al escribir esto; espera tu integración. La protección de `main` exige ya los **7 checks**, incluido `integracion`. La tarea 10.8 está en la rama `feature/paso-0-6-ingreso`, **apilada sobre la del #8**: su PR se abre cuando se integre el #8 (se rebasa antes sobre `main`). Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
+- **Corte 0.6: 62 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
 
 ## Corte 0.6 — qué está terminado
 
@@ -17,15 +17,15 @@
 - **API completa** (fase 6): contrato OpenAPI, verificación de tokens, guardia, filtro de 403/404 cruzado, controladores, límite de frecuencia, conformidad del contrato.
 - **Autorización por rol desde la base** (ADR 029, tarea 9.4): `usuario.rol` y matriz en código. OpenFGA 1.22.1 instalado pero **pospuesto**.
 - **Keycloak 26.8.2 local** (fase 8): realm sin secretos, arranque en 127.0.0.1, ingreso real verificado, mensaje genérico de credenciales inválidas, clientes integrados deshabilitados.
+- **Ingreso y portada reales** (10.8): una sola acción hacia Keycloak (la aplicación no pide contraseña), avisos genéricos de error y, con sesión, la portada lleva al listado de la empresa.
 - **Adopción desde la pantalla** (10.7): botón solo para el administrador SIG, con `Origin` verificado y aviso de las entradas disponibles.
 - **Listado de requisitos real** (10.6): las entradas de las librerías adoptadas con filtros, rótulo de ejemplo y estados vacíos por rol; la cabecera muestra a la persona real.
 - **Web, hasta la 10.5:** ingreso OIDC con PKCE, sesión (cookie sellada, renovación, cierre), proxy que protege `/e/<empresa>/…` (404 idéntico a otra empresa, sin caché) y **marca real de la empresa**. Verificado de extremo a extremo con `pnpm web:verify-login` (36 comprobaciones).
 - **Siembra** de dos empresas y cuatro cuentas de prueba, `pnpm ram:report`, trazas mínimas y un flag de OpenFeature.
 
-## Corte 0.6 — qué falta (7 tareas)
+## Corte 0.6 — qué falta (6 tareas)
 
 - **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` ya está **cargada en la base local** (4.5 hecha, `pnpm libraries:load`), marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
-- **10.8 (web):** pantalla de ingreso real (hoy es una maqueta y la portada `/` sigue siendo la de demostración).
 - **11.1 a 11.3 (worker):** registro de los intentos fallidos de ingreso leyendo los eventos de Keycloak. No hace falta para ver el sistema.
 - **12.3 y 12.4:** guía de ejecución con la medición final de memoria, y la prueba de aislamiento de extremo a extremo con revisión completa (`/review`).
 
@@ -43,10 +43,9 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 
 ## Próximos pasos técnicos
 
-1. **10.8** pantalla de ingreso real (reemplaza la maqueta y la portada de demostración; así no hará falta escribir `/auth/login`).
-2. **11.1 a 11.3** worker de intentos fallidos de ingreso (no hace falta para ver el sistema).
-3. **12.3** guía de ejecución con la medición final de memoria; **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
-4. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
+1. **11.1 a 11.3** worker de intentos fallidos de ingreso (no hace falta para ver el sistema).
+2. **12.3** guía de ejecución con la medición final de memoria; **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
+3. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
 
 - **Actualizado:** 2026-11-08
 

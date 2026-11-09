@@ -4,19 +4,18 @@ export const es = {
   nav: { panel: 'Panel', requisitos: 'Requisitos', principal: 'Navegación principal' },
   tema: { etiqueta: 'Tema', sistema: 'Sistema', claro: 'Claro', oscuro: 'Oscuro' },
   inicio: {
-    titulo: 'Entorno de demostración',
-    descripcion: 'Elija una empresa de prueba para ver cómo cambia la marca (logo, colores y nombre) sin tocar código.',
-    entrar: 'Entrar como',
+    titulo: 'Bienvenido',
+    descripcion: 'Ingrese con su cuenta corporativa para ver los requisitos de las librerías de su empresa.',
   },
   ingreso: {
     titulo: 'Iniciar sesión',
-    subtitulo: 'Use su cuenta corporativa (SSO).',
-    sso: 'Continuar con SSO',
-    o: 'o con su correo',
-    correo: 'Correo electrónico',
-    clave: 'Contraseña',
-    entrar: 'Ingresar',
-    nota: 'Pantalla de plantilla: el inicio de sesión real con Keycloak llega en el paso 0.6.',
+    subtitulo: 'Use su cuenta corporativa. Lo llevaremos al servicio de identidad de su empresa y volverá aquí al terminar.',
+    sso: 'Ingresar con mi cuenta corporativa',
+    errores: {
+      ingreso_invalido: { titulo: 'No se pudo completar el ingreso', detalle: 'Intente de nuevo. Si el problema continúa, avise al administrador SIG de su empresa.' },
+      ingreso_cancelado: { titulo: 'El ingreso se canceló', detalle: 'Puede intentarlo de nuevo cuando quiera.' },
+      ingreso_no_disponible: { titulo: 'El ingreso no está disponible en este momento', detalle: 'Intente de nuevo en unos minutos.' },
+    },
   },
   panel: {
     pendienteTitulo: 'El panel llega en una próxima etapa',
