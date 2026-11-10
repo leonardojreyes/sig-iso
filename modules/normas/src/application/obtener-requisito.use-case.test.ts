@@ -26,7 +26,7 @@ describe('ObtenerRequisito', () => {
     adoptar(estado, A, LIB1);
     const r = await caso.ejecutar({ empresaId: A, id: E.contexto.id });
     expect(r).toMatchObject({ id: E.contexto.id, idEstable: 'ha-contexto', libreriaId: LIB1, capitulo: 4, nivel: 1, alcanceComun: 'comun', esEjemplo: true });
-    expect(Object.keys(r).sort()).toEqual(['alcanceComun', 'aplicaA', 'capitulo', 'esEjemplo', 'guia', 'id', 'idEstable', 'libreriaId', 'nivel', 'titulo']);
+    expect(Object.keys(r).sort()).toEqual(['alcanceComun', 'aplicaA', 'capitulo', 'esEjemplo', 'grupo', 'guia', 'id', 'idEstable', 'libreriaId', 'nivel', 'tipo', 'titulo']);
   });
 
   describe('404 indistinguible (spec, contrato)', () => {

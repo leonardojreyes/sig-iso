@@ -4,26 +4,73 @@
   "title": "Librería de normas, esquema v2 (formato abierto sig-iso)",
   "description": "Describe la estructura de una o varias normas SIN incluir su texto: solo identificadores, títulos breves, guía propia y a qué norma, edición y cláusula corresponde cada entrada (ADR 020 y ADR 026). Las reglas entre campos y de contenido se comprueban además en código.",
   "type": "object",
-  "required": ["esquema", "codigo", "nombre", "version", "es_ejemplo", "fuente", "referencias", "entradas"],
+  "required": [
+    "esquema",
+    "codigo",
+    "nombre",
+    "version",
+    "es_ejemplo",
+    "fuente",
+    "referencias",
+    "entradas"
+  ],
   "additionalProperties": false,
   "properties": {
-    "esquema": { "const": 2, "description": "Versión del esquema." },
-    "codigo": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9-]+$", "description": "Identificador de la librería." },
-    "nombre": { "type": "string", "minLength": 1, "maxLength": 120 },
-    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$", "description": "Versión de la librería (semver). Cada versión publicada es inmutable." },
-    "es_ejemplo": { "type": "boolean", "description": "Una librería de ejemplo se muestra rotulada como tal." },
-    "fuente": { "type": "string", "minLength": 1, "maxLength": 200, "description": "Origen del contenido, por ejemplo: elaboración propia SynapTech." },
+    "esquema": {
+      "enum": [
+        2,
+        3
+      ],
+      "description": "Versión del esquema. La 3 agrega controles del Anexo A (tipo y grupo); la 2 sigue siendo válida."
+    },
+    "codigo": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Identificador de la librería."
+    },
+    "nombre": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Versión de la librería (semver). Cada versión publicada es inmutable."
+    },
+    "es_ejemplo": {
+      "type": "boolean",
+      "description": "Una librería de ejemplo se muestra rotulada como tal."
+    },
+    "fuente": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "description": "Origen del contenido, por ejemplo: elaboración propia SynapTech."
+    },
     "referencias": {
       "type": "array",
       "minItems": 1,
       "description": "Normas y ediciones a las que la librería hace referencia.",
       "items": {
         "type": "object",
-        "required": ["norma", "edicion"],
+        "required": [
+          "norma",
+          "edicion"
+        ],
         "additionalProperties": false,
         "properties": {
-          "norma": { "type": "string", "minLength": 1, "maxLength": 60 },
-          "edicion": { "type": "string", "pattern": "^[0-9]{4}$" }
+          "norma": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "edicion": {
+            "type": "string",
+            "pattern": "^[0-9]{4}$"
+          }
         }
       }
     },
@@ -32,31 +79,128 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "capitulo", "nivel", "titulo", "guia", "alcance_comun", "aplica_a"],
+        "required": [
+          "id",
+          "nivel",
+          "titulo",
+          "guia",
+          "alcance_comun",
+          "aplica_a"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{0,40}$", "description": "Identificador estable propio de la librería; no depende de la numeración de una norma." },
-          "capitulo": { "type": "integer", "minimum": 4, "maximum": 10 },
-          "nivel": { "enum": [1, 2] },
-          "titulo": { "type": "string", "minLength": 2, "maxLength": 80, "description": "Título breve y propio." },
-          "guia": { "type": "string", "minLength": 10, "maxLength": 280, "description": "Guía redactada por SynapTech con palabras propias (máx. 280 caracteres y 2 frases; las frases se comprueban en código)." },
-          "alcance_comun": { "enum": ["comun", "parcial", "especifico"], "description": "Si el contenido de fondo es común a las normas, parcial o específico." },
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9.-]{0,40}$",
+            "description": "Identificador estable propio de la librería; no depende de la numeración de una norma."
+          },
+          "capitulo": {
+            "type": "integer",
+            "minimum": 4,
+            "maximum": 10
+          },
+          "nivel": {
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "titulo": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80,
+            "description": "Título breve y propio."
+          },
+          "guia": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 280,
+            "description": "Guía redactada por SynapTech con palabras propias (máx. 280 caracteres y 2 frases; las frases se comprueban en código)."
+          },
+          "alcance_comun": {
+            "enum": [
+              "comun",
+              "parcial",
+              "especifico"
+            ],
+            "description": "Si el contenido de fondo es común a las normas, parcial o específico."
+          },
           "aplica_a": {
             "type": "array",
             "minItems": 1,
             "description": "Identificador de cláusula por norma y edición.",
             "items": {
               "type": "object",
-              "required": ["norma", "edicion", "clausula"],
+              "required": [
+                "norma",
+                "edicion",
+                "clausula"
+              ],
               "additionalProperties": false,
               "properties": {
-                "norma": { "type": "string", "minLength": 1, "maxLength": 60 },
-                "edicion": { "type": "string", "pattern": "^[0-9]{4}$" },
-                "clausula": { "type": "string", "maxLength": 20, "pattern": "^[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*$" }
+                "norma": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "edicion": {
+                  "type": "string",
+                  "pattern": "^[0-9]{4}$"
+                },
+                "clausula": {
+                  "type": "string",
+                  "maxLength": 20,
+                  "pattern": "^[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*$"
+                }
               }
             }
+          },
+          "tipo": {
+            "enum": [
+              "clausula",
+              "control"
+            ],
+            "description": "Cláusula (capítulo 4–10) o control del Anexo A. Por omisión, cláusula."
+          },
+          "grupo": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 60,
+            "description": "Tema del control (solo controles)."
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "tipo": {
+                  "const": "control"
+                }
+              },
+              "required": [
+                "tipo"
+              ]
+            },
+            "then": {
+              "properties": {
+                "grupo": true,
+                "capitulo": false
+              },
+              "required": [
+                "grupo"
+              ]
+            },
+            "else": {
+              "properties": {
+                "capitulo": true,
+                "grupo": false
+              },
+              "required": [
+                "capitulo"
+              ]
+            }
+          }
+        ]
       }
     }
   }

@@ -5,8 +5,12 @@ export interface EntradaDto {
   readonly id: string;
   readonly idEstable: string;
   readonly libreriaId: string;
-  readonly capitulo: number;
+  /** Nulo en un control del Anexo A. */
+  readonly capitulo: number | null;
   readonly nivel: 1 | 2;
+  readonly tipo: 'clausula' | 'control';
+  /** Tema del control; nulo en una cláusula. */
+  readonly grupo: string | null;
   readonly titulo: string;
   readonly guia: string;
   readonly alcanceComun: 'comun' | 'parcial' | 'especifico';
@@ -20,6 +24,8 @@ export const aDto = (e: EntradaLibreria): EntradaDto => ({
   libreriaId: e.libreriaId,
   capitulo: e.capitulo,
   nivel: e.nivel,
+  tipo: e.tipo,
+  grupo: e.grupo,
   titulo: e.titulo,
   guia: e.guia,
   alcanceComun: e.alcanceComun,

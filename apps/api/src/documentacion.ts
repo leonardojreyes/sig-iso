@@ -47,6 +47,7 @@ export const ConsultaRequisitos = (): MethodDecorator =>
     ApiQuery({ name: 'q', required: false, schema: { type: 'string', minLength: 1, maxLength: 80, pattern: '^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .:-]+$' } }),
     ApiQuery({ name: 'capitulo', required: false, schema: { type: 'integer', minimum: 4, maximum: 10 } }),
     ApiQuery({ name: 'norma', required: false, schema: { type: 'string', minLength: 1, maxLength: 60, pattern: '^[A-Za-z0-9 :./-]+$' } }),
+    ApiQuery({ name: 'tipo', required: false, schema: { type: 'string', enum: ['clausula', 'control'] } }),
   ) as MethodDecorator;
 
 /** Respuesta 200 con una lista acotada (`maxItems` del contrato) de elementos del DTO indicado. */

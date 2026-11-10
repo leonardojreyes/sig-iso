@@ -67,3 +67,16 @@ describe('construirConsulta', () => {
     expect(construirConsulta({ capitulo: 7 })).toBe('?capitulo=7');
   });
 });
+
+describe('filtro por tipo', () => {
+  it('lee «clausula» y «control» y los vuelve a poner en la consulta', () => {
+    expect(leerFiltros({ tipo: 'control' })).toEqual({ filtros: { tipo: 'control' }, invalidos: false });
+    expect(leerFiltros({ tipo: 'clausula' }).filtros.tipo).toBe('clausula');
+    expect(construirConsulta({ tipo: 'control', norma: 'ISO/IEC 27001' })).toBe('?norma=ISO%2FIEC+27001&tipo=control');
+  });
+
+  it('descarta un tipo desconocido y avisa', () => {
+    expect(leerFiltros({ tipo: 'objetivo' })).toEqual({ filtros: {}, invalidos: true });
+    expect(leerFiltros({ tipo: ['control', 'clausula'] })).toEqual({ filtros: {}, invalidos: true });
+  });
+});

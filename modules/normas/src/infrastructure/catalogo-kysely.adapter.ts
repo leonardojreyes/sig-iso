@@ -18,8 +18,10 @@ interface FilaEntrada {
   id: string;
   libreria_id: string;
   id_estable: string;
-  capitulo: number;
+  capitulo: number | null;
   nivel: number;
+  tipo: string;
+  grupo: string | null;
   titulo: string;
   guia: string;
   alcance_comun: string;
@@ -38,6 +40,8 @@ const aEntrada = (f: FilaEntrada): EntradaLibreria =>
     idEstable: f.id_estable,
     capitulo: f.capitulo,
     nivel: f.nivel as 1 | 2,
+    tipo: f.tipo as 'clausula' | 'control',
+    grupo: f.grupo,
     titulo: f.titulo,
     guia: f.guia,
     alcanceComun: f.alcance_comun as 'comun' | 'parcial' | 'especifico',
@@ -48,7 +52,7 @@ const aEntrada = (f: FilaEntrada): EntradaLibreria =>
 
 // `aplica_a` sale ordenado por norma y edición para que el resultado sea estable.
 const SELECT_ENTRADA = sql`
-  select e.id, e.libreria_id, e.id_estable, e.capitulo, e.nivel, e.titulo, e.guia, e.alcance_comun, e.orden, l.es_ejemplo,
+  select e.id, e.libreria_id, e.id_estable, e.capitulo, e.nivel, e.tipo, e.grupo, e.titulo, e.guia, e.alcance_comun, e.orden, l.es_ejemplo,
          coalesce((select jsonb_agg(jsonb_build_object('norma', n.norma, 'edicion', n.edicion, 'clausula', n.clausula) order by n.norma, n.edicion)
                      from libreria_entrada_norma n where n.entrada_id = e.id), '[]'::jsonb) as aplica_a
     from libreria_entrada e

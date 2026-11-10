@@ -17,6 +17,8 @@ const entrada = () => ({
   idEstable: 'ha-4.1',
   libreriaId: UUID,
   capitulo: 4,
+  tipo: 'clausula',
+  grupo: null,
   nivel: 1,
   titulo: 'Contexto',
   guia: 'Texto de guía propio.',
@@ -55,6 +57,10 @@ describe('validarLibrerias', () => {
 });
 
 describe('validarEntradas', () => {
+  it('acepta un control del Anexo A: tema en lugar de capítulo', () => {
+    const control = { ...entrada(), tipo: 'control', capitulo: null, grupo: 'Organizacionales' };
+    expect(validarEntradas([control])).toEqual([control]);
+  });
   it('acepta una lista (también vacía)', () => {
     expect(validarEntradas([entrada()])).toEqual([entrada()]);
     expect(validarEntradas([])).toEqual([]);
@@ -69,6 +75,12 @@ describe('validarEntradas', () => {
     ['capítulo por debajo del rango', [{ ...entrada(), capitulo: 3 }]],
     ['capítulo por encima del rango', [{ ...entrada(), capitulo: 11 }]],
     ['capítulo no entero', [{ ...entrada(), capitulo: 4.5 }]],
+    ['cláusula sin capítulo', [{ ...entrada(), capitulo: null }]],
+    ['cláusula con tema', [{ ...entrada(), grupo: 'Organizacionales' }]],
+    ['control con capítulo', [{ ...entrada(), tipo: 'control', grupo: 'Organizacionales' }]],
+    ['control sin tema', [{ ...entrada(), tipo: 'control', capitulo: null }]],
+    ['tipo desconocido', [{ ...entrada(), tipo: 'objetivo' }]],
+    ['tema demasiado largo', [{ ...entrada(), tipo: 'control', capitulo: null, grupo: 'x'.repeat(61) }]],
     ['nivel inválido', [{ ...entrada(), nivel: 3 }]],
     ['título largo', [{ ...entrada(), titulo: 'a'.repeat(81) }]],
     ['guía larga', [{ ...entrada(), guia: 'a'.repeat(281) }]],

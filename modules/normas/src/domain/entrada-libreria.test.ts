@@ -128,3 +128,41 @@ describe('EntradaLibreria — título y guía (regla 3: nada de texto de normas)
   });
   it('queda congelada', () => { expect(Object.isFrozen(EntradaLibreria.crear(base))).toBe(true); });
 });
+
+describe('EntradaLibreria — controles del Anexo A (tipo «control»)', () => {
+  const control = { tipo: 'control' as const, capitulo: null, grupo: 'Organizacionales', idEstable: 'a27-5-1', alcanceComun: 'especifico' as const, aplicaA: [{ norma: 'ISO/IEC 27001', edicion: '2022', clausula: 'A.5.1' }] };
+
+  it('una entrada sin tipo es una cláusula con tema nulo (compatibilidad con las librerías anteriores)', () => {
+    const e = EntradaLibreria.crear(base);
+    expect(e.tipo).toBe('clausula');
+    expect(e.grupo).toBeNull();
+  });
+
+  it('acepta un control con tema, sin capítulo, y conserva el identificador «A.5.1» de su norma', () => {
+    const e = EntradaLibreria.crear({ ...base, ...control });
+    expect(e).toMatchObject({ tipo: 'control', capitulo: null, grupo: 'Organizacionales' });
+    expect(e.aplicaA[0]?.clausula).toBe('A.5.1');
+  });
+
+  it('el tema se recorta y no admite caracteres de control', () => {
+    expect(EntradaLibreria.crear({ ...base, ...control, grupo: '  Personas  ' }).grupo).toBe('Personas');
+    expect(falla({ ...control, grupo: 'Per\nsonas' })?.campo).toBe('grupo');
+  });
+
+  it.each([['sin tema', { grupo: undefined }], ['tema demasiado corto', { grupo: 'a' }], ['tema demasiado largo', { grupo: 'x'.repeat(61) }], ['tema que no es texto', { grupo: 5 }]])('rechaza un control %s', (_n, cambio) => {
+    expect(falla({ ...control, ...cambio })?.campo).toBe('grupo');
+  });
+
+  it('rechaza un control con capítulo y una cláusula con tema', () => {
+    expect(falla({ ...control, capitulo: 5 })?.campo).toBe('capitulo');
+    expect(falla({ grupo: 'Organizacionales' })?.campo).toBe('grupo');
+  });
+
+  it('rechaza un tipo desconocido', () => {
+    expect(falla({ tipo: 'objetivo' })?.campo).toBe('tipo');
+  });
+
+  it('un control no está sujeto a la regla del capítulo 10 por tema', () => {
+    expect(EntradaLibreria.crear({ ...base, ...control, idEstable: 'a27-10' }).tipo).toBe('control');
+  });
+});

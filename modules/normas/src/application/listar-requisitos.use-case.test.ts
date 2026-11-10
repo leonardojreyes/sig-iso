@@ -34,7 +34,7 @@ describe('ListarRequisitos — alcance', () => {
     const { caso, estado } = montar();
     adoptar(estado, A, LIB1);
     const [primera] = await caso.ejecutar({ empresaId: A });
-    expect(Object.keys(primera!).sort()).toEqual(['alcanceComun', 'aplicaA', 'capitulo', 'esEjemplo', 'guia', 'id', 'idEstable', 'libreriaId', 'nivel', 'titulo']);
+    expect(Object.keys(primera!).sort()).toEqual(['alcanceComun', 'aplicaA', 'capitulo', 'esEjemplo', 'grupo', 'guia', 'id', 'idEstable', 'libreriaId', 'nivel', 'tipo', 'titulo']);
     expect(primera!.aplicaA).toEqual([{ norma: 'ISO 9001', edicion: '2015', clausula: '4.1' }, { norma: 'ISO/IEC 27001', edicion: '2022', clausula: '4.1' }]);
   });
 });
@@ -141,5 +141,36 @@ describe('ListarRequisitos — límites y errores', () => {
 
   it('ErrorNormas no se confunde con un parámetro inválido', () => {
     expect(new ParametroInvalidoError('q')).not.toBeInstanceOf(ErrorNormas);
+  });
+});
+
+describe('ListarRequisitos — tipo (cláusula o control del Anexo A)', () => {
+  const conControl = () => {
+    const { caso, estado } = montar();
+    const c = entrada(9, LIB1, { idEstable: 'a27-5-1', titulo: 'Políticas de seguridad', tipo: 'control', capitulo: null, grupo: 'Organizacionales', orden: 9, alcanceComun: 'especifico', aplicaA: [{ norma: 'ISO/IEC 27001', edicion: '2022', clausula: 'A.5.1' }] });
+    estado.entradasCatalogo = [...estado.entradasCatalogo, c];
+    adoptar(estado, A, LIB1);
+    return caso;
+  };
+
+  it('filtra solo controles o solo cláusulas', async () => {
+    const caso = conControl();
+    expect(ids(await caso.ejecutar({ empresaId: A, tipo: 'control' }))).toEqual(['a27-5-1']);
+    expect(ids(await caso.ejecutar({ empresaId: A, tipo: 'clausula' }))).not.toContain('a27-5-1');
+  });
+
+  it('un control no coincide con el filtro por capítulo', async () => {
+    const caso = conControl();
+    expect(ids(await caso.ejecutar({ empresaId: A, capitulo: 4 }))).not.toContain('a27-5-1');
+  });
+
+  it('la búsqueda mira también el tema del control', async () => {
+    const caso = conControl();
+    expect(ids(await caso.ejecutar({ empresaId: A, q: 'organizacionales' }))).toEqual(['a27-5-1']);
+  });
+
+  it('rechaza un tipo desconocido', async () => {
+    const caso = conControl();
+    await expect(caso.ejecutar({ empresaId: A, tipo: 'objetivo' as never })).rejects.toBeInstanceOf(ParametroInvalidoError);
   });
 });

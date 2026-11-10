@@ -25,6 +25,8 @@ const entrada = (c: Partial<EntradaLibreria> = {}): EntradaLibreria => ({
   libreriaId: UUID,
   capitulo: 4,
   nivel: 1,
+  tipo: 'clausula',
+  grupo: null,
   titulo: 'Contexto de la organización',
   guia: 'Anota qué factores dentro y fuera de la empresa pueden ayudar o estorbar a lograr sus resultados.',
   alcanceComun: 'comun',
@@ -348,5 +350,38 @@ describe('PantallaListadoRequisitos — adoptar (H4.6, H4.9)', () => {
     const texto = pantalla().container.textContent ?? '';
     for (const frase of ['Librería adoptada', 'ya estaba adoptada', 'No tiene permiso', 'No se pudo adoptar'])
       expect(texto).not.toContain(frase);
+  });
+});
+
+describe('PantallaListadoRequisitos — controles del Anexo A', () => {
+  const control = entrada({
+    id: '5eed0009-0000-4000-8000-0000000000a9',
+    idEstable: 'a27-5-1',
+    tipo: 'control',
+    capitulo: null,
+    grupo: 'Organizacionales',
+    titulo: 'Políticas de seguridad',
+    alcanceComun: 'especifico',
+    aplicaA: [{ norma: 'ISO/IEC 27001', edicion: '2022', clausula: 'A.5.1' }],
+  });
+
+  it('muestra el tema del control en lugar del capítulo y su identificador de la norma', () => {
+    const { container } = pantalla({ entradas: [control] });
+    const fila = within(container.querySelector('tbody tr') as HTMLElement);
+    expect(fila.getByText('Organizacionales')).toBeTruthy();
+    expect(fila.getByText('A.5.1')).toBeTruthy();
+  });
+
+  it('ofrece filtrar por tipo (cláusulas o controles del Anexo A) y conserva la selección', () => {
+    const { container } = pantalla({ entradas: [control], filtros: { tipo: 'control' } });
+    const select = container.querySelector('select[name="tipo"]') as HTMLSelectElement;
+    expect(select).toBeTruthy();
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['', 'clausula', 'control']);
+    expect(select.value).toBe('control');
+  });
+
+  it('no tiene violaciones de accesibilidad con controles', async () => {
+    const { container } = pantalla({ entradas: [control] });
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

@@ -3,6 +3,10 @@ import { ErrorNormas, exigirTexto, exigirUuid } from './errores.js';
 
 export type AlcanceComun = 'comun' | 'parcial' | 'especifico';
 
+/** Una entrada es una cláusula (capítulo 4–10) o un control (Anexo A), que se agrupa por tema en lugar de capítulo. */
+export type TipoEntrada = 'clausula' | 'control';
+const TIPOS: readonly string[] = ['clausula', 'control'];
+
 export interface CorrespondenciaNorma {
   readonly norma: string;
   readonly edicion: string;
@@ -13,7 +17,8 @@ export interface DatosEntrada {
   readonly id: string;
   readonly libreriaId: string;
   readonly idEstable: string;
-  readonly capitulo: number;
+  /** Obligatorio en una cláusula; nulo en un control. */
+  readonly capitulo: number | null;
   readonly nivel: 1 | 2;
   readonly titulo: string;
   readonly guia: string;
@@ -21,6 +26,10 @@ export interface DatosEntrada {
   readonly aplicaA: readonly CorrespondenciaNorma[];
   readonly esEjemplo: boolean;
   readonly orden: number;
+  /** Por omisión `clausula` (las librerías anteriores no lo traen). */
+  readonly tipo?: TipoEntrada;
+  /** Tema del control (Anexo A); obligatorio en un control y ausente en una cláusula. */
+  readonly grupo?: string | null;
 }
 
 const ID_ESTABLE = /^[a-z0-9][a-z0-9.-]{0,40}$/;
@@ -55,7 +64,7 @@ export class EntradaLibreria {
     readonly id: string,
     readonly libreriaId: string,
     readonly idEstable: string,
-    readonly capitulo: number,
+    readonly capitulo: number | null,
     readonly nivel: 1 | 2,
     readonly titulo: string,
     readonly guia: string,
@@ -63,6 +72,8 @@ export class EntradaLibreria {
     readonly aplicaA: readonly CorrespondenciaNorma[],
     readonly esEjemplo: boolean,
     readonly orden: number,
+    readonly tipo: TipoEntrada,
+    readonly grupo: string | null,
   ) {
     Object.freeze(this);
   }
@@ -70,9 +81,20 @@ export class EntradaLibreria {
   static crear(d: DatosEntrada): EntradaLibreria {
     const id = exigirUuid('id', d.id);
     const libreriaId = exigirUuid('libreriaId', d.libreriaId);
-    if (typeof d.capitulo !== 'number' || !Number.isInteger(d.capitulo) || d.capitulo < 4 || d.capitulo > 10) throw new ErrorNormas('capitulo');
+    const tipo = d.tipo ?? 'clausula';
+    if (!TIPOS.includes(tipo)) throw new ErrorNormas('tipo');
+    let grupo: string | null = null;
+    if (tipo === 'clausula') {
+      if (typeof d.capitulo !== 'number' || !Number.isInteger(d.capitulo) || d.capitulo < 4 || d.capitulo > 10) throw new ErrorNormas('capitulo');
+      if (d.grupo !== undefined && d.grupo !== null) throw new ErrorNormas('grupo');
+    } else {
+      if (d.capitulo !== null && d.capitulo !== undefined) throw new ErrorNormas('capitulo');
+      if (typeof d.grupo !== 'string') throw new ErrorNormas('grupo');
+      grupo = d.grupo.trim();
+      if (grupo.length < 2 || grupo.length > 60 || /[\u0000-\u001f\u007f]/.test(grupo)) throw new ErrorNormas('grupo');
+    }
     if (typeof d.idEstable !== 'string' || !ID_ESTABLE.test(d.idEstable)) throw new ErrorNormas('idEstable');
-    if (d.capitulo === 10 && NUMERICO.test(d.idEstable)) throw new ErrorNormas('idEstable', ['capitulo_10_por_tema']);
+    if (tipo === 'clausula' && d.capitulo === 10 && NUMERICO.test(d.idEstable)) throw new ErrorNormas('idEstable', ['capitulo_10_por_tema']);
     if (d.nivel !== 1 && d.nivel !== 2) throw new ErrorNormas('nivel');
     const titulo = texto('titulo', d.titulo, 2, 80);
     const guia = texto('guia', d.guia, 10, 280);
@@ -82,6 +104,6 @@ export class EntradaLibreria {
     if (new Set(aplicaA.map((a) => `${a.norma}|${a.edicion}`)).size !== aplicaA.length) throw new ErrorNormas('aplicaA', ['norma_repetida']);
     if (typeof d.esEjemplo !== 'boolean') throw new ErrorNormas('esEjemplo');
     if (typeof d.orden !== 'number' || !Number.isInteger(d.orden) || d.orden < 0) throw new ErrorNormas('orden');
-    return new EntradaLibreria(id, libreriaId, d.idEstable, d.capitulo, d.nivel, titulo, guia, d.alcanceComun as AlcanceComun, Object.freeze(aplicaA), d.esEjemplo, d.orden);
+    return new EntradaLibreria(id, libreriaId, d.idEstable, tipo === 'clausula' ? (d.capitulo as number) : null, d.nivel, titulo, guia, d.alcanceComun as AlcanceComun, Object.freeze(aplicaA), d.esEjemplo, d.orden, tipo, grupo);
   }
 }

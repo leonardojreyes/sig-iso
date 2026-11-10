@@ -249,6 +249,13 @@ paths:
             minLength: 1
             maxLength: 60
             pattern: ^[A-Za-z0-9 :./-]+$
+        - name: tipo
+          in: query
+          required: false
+          description: Cláusulas (capítulos 4 a 10) o controles del Anexo A.
+          schema:
+            type: string
+            enum: [clausula, control]
       responses:
         '200':
           description: Entradas que cumplen el filtro.
@@ -563,7 +570,7 @@ components:
     EntradaLibreria:
       type: object
       description: Una entrada (apartado) de una librería adoptada. Una cláusula real puede descomponerse en varios requisitos evaluables.
-      required: [id, idEstable, libreriaId, capitulo, nivel, titulo, guia, alcanceComun, aplicaA, esEjemplo]
+      required: [id, idEstable, libreriaId, capitulo, nivel, tipo, grupo, titulo, guia, alcanceComun, aplicaA, esEjemplo]
       additionalProperties: false
       properties:
         id:
@@ -580,12 +587,20 @@ components:
           format: uuid
           maxLength: 36
         capitulo:
-          type: integer
+          type: [integer, 'null']
           minimum: 4
           maximum: 10
+          description: Capítulo de la Estructura Armonizada; nulo en un control del Anexo A.
         nivel:
           type: integer
           enum: [1, 2]
+        tipo:
+          type: string
+          enum: [clausula, control]
+        grupo:
+          type: [string, 'null']
+          maxLength: 60
+          description: Tema del control del Anexo A; nulo en una cláusula.
         titulo:
           type: string
           maxLength: 80

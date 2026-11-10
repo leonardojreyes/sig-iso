@@ -128,7 +128,7 @@ export const PantallaListadoRequisitos = ({
   const adoptadas = librerias.filter((l) => l.adoptada);
   const hayEjemplo = adoptadas.some((l) => l.esEjemplo) || entradas.some((e) => e.esEjemplo);
   const esAdmin = persona.roles.includes('administrador_sig');
-  const hayFiltros = filtros.q !== undefined || filtros.capitulo !== undefined || filtros.norma !== undefined;
+  const hayFiltros = filtros.q !== undefined || filtros.capitulo !== undefined || filtros.norma !== undefined || filtros.tipo !== undefined;
   const avisoPantalla = aviso && (
     <div className="mb-4">
       <AvisoDeAdopcion aviso={aviso} librerias={librerias} entradas={entradas} hayFiltros={hayFiltros} />
@@ -175,7 +175,7 @@ export const PantallaListadoRequisitos = ({
       )}
 
       <Card className="mb-6">
-        <form method="get" aria-label={t.filtros} className="grid items-end gap-4 md:grid-cols-[2fr_1fr_1fr_auto]">
+        <form method="get" aria-label={t.filtros} className="grid items-end gap-4 md:grid-cols-[2fr_1fr_1fr_1fr_auto]">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="q">{t.buscar}</Label>
             <Input id="q" name="q" type="search" defaultValue={filtros.q ?? ''} maxLength={80} />
@@ -193,6 +193,14 @@ export const PantallaListadoRequisitos = ({
                   {t.capituloN(c)}
                 </option>
               ))}
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="tipo">{t.tipo}</Label>
+            <Select id="tipo" name="tipo" defaultValue={filtros.tipo ?? ''}>
+              <option value="">{t.todosTipos}</option>
+              <option value="clausula">{t.tipos.clausula}</option>
+              <option value="control">{t.tipos.control}</option>
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -239,7 +247,7 @@ export const PantallaListadoRequisitos = ({
             <tbody>
               {entradas.map((e) => (
                 <tr key={e.id}>
-                  <Td className="tabular-nums">{e.capitulo}</Td>
+                  <Td className={e.capitulo === null ? undefined : 'tabular-nums'}>{e.capitulo ?? e.grupo}</Td>
                   <Td>
                     <p className="font-medium">{e.titulo}</p>
                     <p className="mt-1 text-fg-muted">{e.guia}</p>
