@@ -170,3 +170,20 @@ describe('AutorizacionFake.rolesDe', () => {
     await expect(montar().rolesDe(ADMIN, e as never)).rejects.toBeInstanceOf(EmpresaIdInvalidoError);
   });
 });
+
+describe('permisos del diagnóstico y del alcance (MVP, M2)', () => {
+  it('el colaborador consulta y evalúa, pero no gestiona ni aprueba el alcance', async () => {
+    const f = montar();
+    for (const p of ['diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver'] as const) expect(await f.puede(COLAB, p, A), p).toBe(true);
+    for (const p of ['alcance.gestionar', 'alcance.aprobar'] as const) expect(await f.puede(COLAB, p, A), p).toBe(false);
+  });
+  it('el administrador SIG puede todo, incluida la aprobación del alcance', async () => {
+    const f = montar();
+    for (const p of ['diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver', 'alcance.gestionar', 'alcance.aprobar'] as const) expect(await f.puede(ADMIN, p, A), p).toBe(true);
+  });
+  it('sin rol o con el rol de otra empresa no puede nada', async () => {
+    const f = montar();
+    expect(await f.puede(OTRO, 'diagnostico.evaluar', A)).toBe(false);
+    expect(await f.puede(ADMIN, 'alcance.aprobar', B)).toBe(false);
+  });
+});
