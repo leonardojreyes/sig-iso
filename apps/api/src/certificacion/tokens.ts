@@ -1,0 +1,5 @@
+export const LISTAR_ALCANCES = Symbol('LISTAR_ALCANCES');
+export const GUARDAR_ALCANCE = Symbol('GUARDAR_ALCANCE');
+export const APROBAR_ALCANCE = Symbol('APROBAR_ALCANCE');
+export const DIAGNOSTICO = Symbol('LISTAR_DIAGNOSTICO');
+export const EVALUAR_ENTRADA = Symbol('EVALUAR_ENTRADA');

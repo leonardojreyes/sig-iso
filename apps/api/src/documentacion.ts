@@ -7,7 +7,7 @@ export class ProblemaResponse {
   @ApiProperty({ type: String, enum: ['about:blank'], maxLength: 20 }) type!: string;
   @ApiProperty({ type: String, maxLength: 120 }) title!: string;
   @ApiProperty({ type: 'integer', minimum: 400, maximum: 599 }) status!: number;
-  @ApiProperty({ type: String, enum: ['no_autenticado', 'sin_permiso', 'no_encontrado', 'parametro_invalido', 'limite_excedido', 'error_interno'] }) codigo!: string;
+  @ApiProperty({ type: String, enum: ['no_autenticado', 'sin_permiso', 'no_encontrado', 'parametro_invalido', 'conflicto', 'limite_excedido', 'error_interno'] }) codigo!: string;
 }
 
 const DESCRIPCIONES: Record<number, string> = {
@@ -15,6 +15,7 @@ const DESCRIPCIONES: Record<number, string> = {
   401: 'Falta el token, está vencido, alterado o no trae empresa.',
   403: 'Sin permiso. No distingue si lo pedido existe.',
   404: 'No encontrado. Es la única respuesta para «no existe», «es de otra empresa» y «no adoptada».',
+  409: 'El estado actual no permite la acción, o otra persona cambió la evaluación mientras se editaba.',
   429: 'Demasiadas solicitudes en poco tiempo. Se puede reintentar después de `Retry-After` segundos.',
   500: 'Error interno. Sin detalles de la solicitud.',
 };

@@ -17,3 +17,10 @@ export const exigirPermiso = async (autorizacion: AutorizacionPort, usuarioId: s
 
 /** Identificador de norma apto para el objeto de la bitácora: «ISO/IEC 27001» → «iso-iec-27001». */
 export const identificadorDeNorma = (norma: string): string => norma.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+const PATRON_NORMA = /^[A-Za-z0-9 :./-]+$/;
+/** La norma recibida debe ser un texto de forma válida. Se llama DESPUÉS de decidir el permiso (401 → 403 → 400 → 404). */
+export const validarNorma = (norma: unknown): string => {
+  if (typeof norma !== 'string' || norma.length < 1 || norma.length > 60 || !PATRON_NORMA.test(norma)) throw new ParametroInvalidoError('norma');
+  return norma;
+};

@@ -2,7 +2,7 @@ import { Alcance } from '../domain/alcance.js';
 import { ErrorCertificacion } from '../domain/errores.js';
 import type { AutorizacionPort } from './autorizacion.port.js';
 import type { CatalogoLecturaPort } from './catalogo-lectura.port.js';
-import { exigirPermiso, identificadorDeNorma, identificar } from './comunes.js';
+import { exigirPermiso, identificadorDeNorma, identificar, validarNorma } from './comunes.js';
 import type { ContextoCertificacion, Reloj } from './contexto.js';
 import { ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError } from './errores.js';
 import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
@@ -53,6 +53,7 @@ export class GuardarAlcanceUseCase {
   async ejecutar(entrada: { empresaId: string; usuarioId: string; norma: string; texto: string }): Promise<AlcanceDto> {
     const { empresaId, usuarioId } = identificar(entrada.empresaId, entrada.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'alcance.gestionar', empresaId);
+    validarNorma(entrada.norma);
     if (!(await normasAdoptadas(this.catalogo, empresaId)).includes(entrada.norma)) throw new EntradaNoEncontradaError();
 
     return this.unidad.ejecutar(empresaId, async (c) => {
@@ -93,6 +94,7 @@ export class AprobarAlcanceUseCase {
   async ejecutar(entrada: { empresaId: string; usuarioId: string; norma: string }): Promise<AlcanceDto> {
     const { empresaId, usuarioId } = identificar(entrada.empresaId, entrada.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'alcance.aprobar', empresaId);
+    validarNorma(entrada.norma);
     if (!(await normasAdoptadas(this.catalogo, empresaId)).includes(entrada.norma)) throw new EntradaNoEncontradaError();
 
     return this.unidad.ejecutar(empresaId, async (c) => {

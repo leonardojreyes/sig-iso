@@ -51,10 +51,13 @@ describe.skipIf(!hayBase)('certificación sobre PostgreSQL real: alcance y diagn
       await sql`insert into usuario (id, empresa_id, nombre, correo) values (${usuario}, ${id}, ${'Persona ' + slug}, ${slug + '@example.test'}) on conflict do nothing`.execute(trx);
     });
   };
+  // La bitácora es inmutable: no se puede limpiar. Cada ejecución mide solo los hechos posteriores a este punto de partida.
+  let base = '0';
   const hechos = (empresa: typeof A) =>
-    conTenant(owner(), empresa, async (trx) => (await sql<{ accion: string; usuario_id: string; despues: unknown; antes: unknown }>`select accion, usuario_id, antes, despues from bitacora where empresa_id = ${empresa} and accion in ('evaluacion.cambiada','alcance.cambiado','alcance.aprobado') order by id`.execute(trx)).rows);
+    conTenant(owner(), empresa, async (trx) => (await sql<{ accion: string; usuario_id: string; despues: unknown; antes: unknown }>`select accion, usuario_id, antes, despues from bitacora where empresa_id = ${empresa} and id > ${base}::bigint and accion in ('evaluacion.cambiada','alcance.cambiado','alcance.aprobado') order by id`.execute(trx)).rows);
 
   beforeAll(async () => {
+    base = (await sql<{ m: string }>`select coalesce(max(id), 0)::text as m from bitacora`.execute(owner())).rows[0]!.m;
     await limpiar(A);
     await limpiar(B);
     await conTenant(owner(), A, async (trx) => {

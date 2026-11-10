@@ -135,7 +135,7 @@ describe('conformidad del OpenAPI generado con el contrato (tarea 6.7)', () => {
     const conLimite = Object.entries<Json>(contrato.paths).flatMap(([ruta, item]) =>
       METODOS.filter((m) => item[m]?.responses?.['429']).map((m) => ({ ruta, m })),
     );
-    expect(conLimite.length).toBe(8); // todas menos /health
+    expect(conLimite.length).toBe(13); // todas menos /health
     for (const { ruta, m } of conLimite) {
       const r = generado.paths[ruta][m].responses['429'] as Json;
       expect(Object.keys(r.headers ?? {}), `${m} ${ruta}`).toEqual(['Retry-After']);

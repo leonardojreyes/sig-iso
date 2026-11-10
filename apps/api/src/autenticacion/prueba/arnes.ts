@@ -19,7 +19,7 @@ export interface Arnes {
   readonly app: INestApplication;
   readonly base: string;
   firmar(empresaId: string, usuarioId: string, extra?: Record<string, unknown>): Promise<string>;
-  pedir(ruta: string, token?: string, metodo?: string): Promise<Response>;
+  pedir(ruta: string, token?: string, metodo?: string, cuerpo?: unknown): Promise<Response>;
   cerrar(): Promise<void>;
 }
 
@@ -63,7 +63,12 @@ export const crearArnes = async (opciones: {
       const payload: JWTPayload = { iss: EMISOR, aud: AUDIENCIA, azp: CLIENTE, typ: 'Bearer', sub: usuarioId, empresa_id: empresaId, iat: seg(ahora) - 5, exp: seg(ahora) + 290, ...extra };
       return new SignJWT(payload).setProtectedHeader({ alg: 'RS256', kid: 'k1' }).sign(par.privateKey);
     },
-    pedir: (ruta, token, metodo = 'GET') => fetch(`${base}${ruta}`, { method: metodo, headers: token ? { authorization: `Bearer ${token}` } : {} }),
+    pedir: (ruta, token, metodo = 'GET', cuerpo) =>
+      fetch(`${base}${ruta}`, {
+        method: metodo,
+        headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(cuerpo !== undefined ? { 'content-type': 'application/json' } : {}) },
+        ...(cuerpo !== undefined ? { body: JSON.stringify(cuerpo) } : {}),
+      }),
     cerrar: () => app.close(),
   };
 };

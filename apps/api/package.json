@@ -28,6 +28,7 @@
     "@sig/auditoria": "workspace:*",
     "@sig/autenticacion": "workspace:*",
     "@sig/autorizacion": "workspace:*",
+    "@sig/certificacion": "workspace:*",
     "@sig/db": "workspace:*",
     "@sig/empresas": "workspace:*",
     "@sig/normas": "workspace:*",

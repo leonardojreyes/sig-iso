@@ -3,6 +3,7 @@ import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
+import { AprobarAlcanceUseCase, EvaluarEntradaUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
 import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
@@ -11,12 +12,15 @@ import type { RegistradorHechos } from './autenticacion/registrador-token-invali
 import type { OpcionesEmpresaSesion } from './empresas/empresa-sesion.module.js';
 import { leerConfiguracionFlags } from './flags/configuracion.js';
 import { FlagsOpenFeature } from './flags/flags-openfeature.js';
+import { CatalogoNormasAdapter } from './certificacion/catalogo-normas.adapter.js';
+import type { OpcionesCertificacionApi } from './certificacion/certificacion-api.module.js';
 import type { OpcionesNormasApi } from './normas/normas-api.module.js';
 
 export interface Composicion {
   readonly autenticacion: OpcionesAutenticacion;
   readonly negocio: OpcionesEmpresaSesion;
   readonly normas: OpcionesNormasApi;
+  readonly certificacion: OpcionesCertificacionApi;
   readonly hechos: RegistradorHechos;
   readonly autorizacion: AutorizacionPort;
   readonly flags: FlagsPort;
@@ -53,6 +57,12 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
   // Una unidad de trabajo por ejecución sobre el pool del rol de la aplicación (con la RLS aplicada).
   const unidad: UnidadDeTrabajoPort<ContextoAdopcion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoNormas(obtenerPools().db('app')).ejecutar(empresaId, fn) };
 
+  const librerias = new ListarLibreriasUseCase(unidad);
+  const requisitos = new ListarRequisitosUseCase(unidad);
+  const catalogo = new CatalogoNormasAdapter(librerias, requisitos);
+  const unidadCertificacion: UnidadDeTrabajoCertificacionPort<ContextoCertificacion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoCertificacion(obtenerPools().db('app')).ejecutar(empresaId, fn) };
+  const reloj = (): Date => new Date();
+
   return {
     hechos,
     autorizacion,
@@ -65,9 +75,16 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
     negocio: { identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos },
     normas: {
       adoptar: new AdoptarLibreriaUseCase(unidad, autorizacion, () => new Date(), flags),
-      librerias: new ListarLibreriasUseCase(unidad),
-      requisitos: new ListarRequisitosUseCase(unidad),
+      librerias,
+      requisitos,
       requisito: new ObtenerRequisitoUseCase(unidad),
+    },
+    certificacion: {
+      alcances: new ListarAlcancesUseCase(unidadCertificacion, autorizacion, catalogo),
+      guardarAlcance: new GuardarAlcanceUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      aprobarAlcance: new AprobarAlcanceUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      diagnostico: new ListarDiagnosticoUseCase(unidadCertificacion, autorizacion, catalogo),
+      evaluar: new EvaluarEntradaUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
     },
   };
 };

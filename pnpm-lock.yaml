@@ -244,6 +244,9 @@ importers:
       '@sig/autorizacion':
         specifier: workspace:*
         version: link:../../platform/autorizacion
+      '@sig/certificacion':
+        specifier: workspace:*
+        version: link:../../modules/certificacion
       '@sig/db':
         specifier: workspace:*
         version: link:../../platform/db

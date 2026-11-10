@@ -1,6 +1,6 @@
 import { Evaluacion } from '../domain/evaluacion.js';
 import { ErrorCertificacion } from '../domain/errores.js';
-import type { EstadoEvaluacion } from '../domain/estado-evaluacion.js';
+import { esEstadoEvaluacion, type EstadoEvaluacion } from '../domain/estado-evaluacion.js';
 import type { AutorizacionPort } from './autorizacion.port.js';
 import type { CatalogoLecturaPort } from './catalogo-lectura.port.js';
 import { exigirPermiso, identificar } from './comunes.js';
@@ -58,6 +58,9 @@ export class EvaluarEntradaUseCase {
     const { empresaId, usuarioId } = identificar(entrada.empresaId, entrada.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'diagnostico.evaluar', empresaId);
 
+    if (typeof entrada.libreriaCodigo !== 'string' || !/^[a-z0-9-]{1,64}$/.test(entrada.libreriaCodigo)) throw new ParametroInvalidoError('libreriaCodigo');
+    if (typeof entrada.idEstable !== 'string' || !/^[a-z0-9][a-z0-9.-]{0,40}$/.test(entrada.idEstable)) throw new ParametroInvalidoError('idEstable');
+    if (!esEstadoEvaluacion(entrada.estado)) throw new ParametroInvalidoError('estado');
     const versionEsperada = entrada.versionEsperada ?? 0;
     if (!Number.isInteger(versionEsperada) || versionEsperada < 0) throw new ParametroInvalidoError('versionEsperada');
 

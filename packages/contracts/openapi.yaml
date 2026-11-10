@@ -305,6 +305,202 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /alcances:
+    get:
+      operationId: listarAlcances
+      summary: Alcance de cada norma adoptada
+      description: Una fila por norma de las librerías adoptadas; el alcance no definido llega con `texto` nulo.
+      tags: [alcance]
+      x-permiso: alcance.ver
+      responses:
+        '200':
+          description: Alcances de la empresa.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 20
+                items:
+                  $ref: '#/components/schemas/Alcance'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: guardarAlcance
+      summary: Define o cambia el texto del alcance de una norma
+      description: 'Cambiar el texto de un alcance aprobado lo devuelve a «sin aprobar». Orden de evaluación: 401, 403, 400, 404 (norma no adoptada).'
+      tags: [alcance]
+      x-permiso: alcance.gestionar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlcanceEntrada'
+      responses:
+        '200':
+          description: El alcance guardado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alcance'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /alcances/aprobacion:
+    post:
+      operationId: aprobarAlcance
+      summary: Aprueba el texto vigente del alcance de una norma
+      description: 'Queda quién y cuándo. Orden de evaluación: 401, 403, 400, 404 (norma no adoptada o sin alcance definido), 409 (ya aprobado).'
+      tags: [alcance]
+      x-permiso: alcance.aprobar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlcanceNorma'
+      responses:
+        '200':
+          description: El alcance aprobado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alcance'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /diagnostico:
+    get:
+      operationId: obtenerDiagnostico
+      summary: Entradas de las librerías adoptadas con su evaluación y la madurez
+      description: |
+        La madurez se calcula sobre todas las entradas de la norma elegida (o de todas), sin importar los demás filtros.
+        Es la madurez de la autoevaluación, no una probabilidad de certificarse. Orden: 401, 403, 400.
+      tags: [diagnostico]
+      x-permiso: diagnostico.ver
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 80
+            pattern: ^[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .:-]+$
+        - name: norma
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 60
+            pattern: ^[A-Za-z0-9 :./-]+$
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [clausula, control]
+        - name: estado
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [cumple, parcial, no_cumple, no_aplica, sin_evaluar]
+      responses:
+        '200':
+          description: El diagnóstico.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Diagnostico'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /diagnostico/evaluaciones:
+    put:
+      operationId: evaluarEntrada
+      summary: Evalúa (o vuelve a evaluar) una cláusula o un control
+      description: |
+        Concurrencia optimista: `versionEsperada` es la versión que la persona vio (0 o ausente la primera vez). Si otra persona
+        la cambió antes, responde 409 y no pisa su trabajo. Orden: 401, 403, 400, 404 (la entrada no existe para esta empresa), 409.
+      tags: [diagnostico]
+      x-permiso: diagnostico.evaluar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluacionEntrada'
+      responses:
+        '200':
+          description: La evaluación guardada (o la vigente si no hubo cambios).
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evaluacion'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearerAuth:
@@ -410,6 +606,20 @@ components:
             title: Límite de solicitudes excedido
             status: 429
             codigo: limite_excedido
+    Conflicto:
+      description: El estado actual no permite la acción (alcance ya aprobado) o otra persona cambió la evaluación mientras se editaba.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problema'
+          example:
+            type: about:blank
+            title: Conflicto
+            status: 409
+            codigo: conflicto
     ErrorInterno:
       description: Error interno. Si falla el registro en la bitácora de una acción, la acción no se completa y se responde con este error.
       headers:
@@ -444,7 +654,7 @@ components:
           maximum: 599
         codigo:
           type: string
-          enum: [no_autenticado, sin_permiso, no_encontrado, parametro_invalido, limite_excedido, error_interno]
+          enum: [no_autenticado, sin_permiso, no_encontrado, parametro_invalido, conflicto, limite_excedido, error_interno]
     Salud:
       type: object
       required: [status, time]
@@ -634,3 +844,245 @@ components:
         esEjemplo:
           type: boolean
           description: Si la librería es de ejemplo, la interfaz lo rotula y remite al ejemplar oficial de la empresa.
+    AlcanceNorma:
+      type: object
+      required: [norma]
+      additionalProperties: false
+      properties:
+        norma:
+          type: string
+          minLength: 1
+          maxLength: 60
+          pattern: ^[A-Za-z0-9 :./-]+$
+    AlcanceEntrada:
+      type: object
+      required: [norma, texto]
+      additionalProperties: false
+      properties:
+        norma:
+          type: string
+          minLength: 1
+          maxLength: 60
+          pattern: ^[A-Za-z0-9 :./-]+$
+        texto:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    Alcance:
+      type: object
+      required: [norma, texto, aprobado, aprobadoEn, actualizadoEn]
+      additionalProperties: false
+      properties:
+        norma:
+          type: string
+          maxLength: 60
+        texto:
+          type: [string, 'null']
+          maxLength: 4000
+          description: Nulo mientras el alcance no se haya definido.
+        aprobado:
+          type: boolean
+        aprobadoEn:
+          type: [string, 'null']
+          format: date-time
+          maxLength: 40
+        actualizadoEn:
+          type: [string, 'null']
+          format: date-time
+          maxLength: 40
+    EstadoEvaluacion:
+      type: string
+      enum: [cumple, parcial, no_cumple, no_aplica]
+    EvaluacionEntrada:
+      type: object
+      required: [libreriaCodigo, idEstable, estado]
+      additionalProperties: false
+      properties:
+        libreriaCodigo:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          maxLength: 64
+        idEstable:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9.-]{0,40}$
+          maxLength: 41
+        estado:
+          $ref: '#/components/schemas/EstadoEvaluacion'
+        comentario:
+          type: [string, 'null']
+          maxLength: 1000
+          description: Obligatorio (mínimo 5 caracteres) para «no aplica».
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        fechaObjetivo:
+          type: [string, 'null']
+          format: date
+          maxLength: 10
+        versionEsperada:
+          type: integer
+          minimum: 0
+    Evaluacion:
+      type: object
+      required: [libreriaCodigo, idEstable, estado, comentario, responsableId, fechaObjetivo, version]
+      additionalProperties: false
+      properties:
+        libreriaCodigo:
+          type: string
+          maxLength: 64
+        idEstable:
+          type: string
+          maxLength: 41
+        estado:
+          $ref: '#/components/schemas/EstadoEvaluacion'
+        comentario:
+          type: [string, 'null']
+          maxLength: 1000
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        fechaObjetivo:
+          type: [string, 'null']
+          format: date
+          maxLength: 10
+        version:
+          type: integer
+          minimum: 1
+    EvaluacionVigente:
+      type: object
+      required: [estado, comentario, fechaObjetivo, version]
+      additionalProperties: false
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoEvaluacion'
+        comentario:
+          type: [string, 'null']
+          maxLength: 1000
+        fechaObjetivo:
+          type: [string, 'null']
+          format: date
+          maxLength: 10
+        version:
+          type: integer
+          minimum: 1
+    FilaDiagnostico:
+      type: object
+      required: [libreriaCodigo, idEstable, tipo, capitulo, grupo, titulo, guia, aplicaA, evaluacion]
+      additionalProperties: false
+      properties:
+        libreriaCodigo:
+          type: string
+          maxLength: 64
+        idEstable:
+          type: string
+          maxLength: 41
+        tipo:
+          type: string
+          enum: [clausula, control]
+        capitulo:
+          type: [integer, 'null']
+          minimum: 4
+          maximum: 10
+        grupo:
+          type: [string, 'null']
+          maxLength: 60
+        titulo:
+          type: string
+          maxLength: 80
+        guia:
+          type: string
+          maxLength: 280
+        aplicaA:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: object
+            required: [norma, edicion, clausula]
+            additionalProperties: false
+            properties:
+              norma: {type: string, maxLength: 60}
+              edicion: {type: string, pattern: '^[0-9]{4}$', maxLength: 4}
+              clausula: {type: string, pattern: '^[A-Za-z0-9]+(\.[A-Za-z0-9]+)*$', maxLength: 20}
+        evaluacion:
+          oneOf:
+            - $ref: '#/components/schemas/EvaluacionVigente'
+            - type: 'null'
+          description: Nulo = sin evaluar.
+    Desglose:
+      type: object
+      required: [cumple, parcial, noCumple, noAplica, sinEvaluar, total, porcentaje]
+      additionalProperties: false
+      properties:
+        cumple: {type: integer, minimum: 0}
+        parcial: {type: integer, minimum: 0}
+        noCumple: {type: integer, minimum: 0}
+        noAplica: {type: integer, minimum: 0}
+        sinEvaluar: {type: integer, minimum: 0}
+        total: {type: integer, minimum: 0}
+        porcentaje:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 100
+          description: Nulo si no hay nada evaluado que cuente (no es 0).
+    MadurezNorma:
+      type: object
+      required: [norma, desglose]
+      additionalProperties: false
+      properties:
+        norma:
+          type: string
+          maxLength: 60
+        desglose:
+          $ref: '#/components/schemas/Desglose'
+    MadurezAgrupador:
+      type: object
+      required: [tipo, nombre, desglose]
+      additionalProperties: false
+      properties:
+        tipo:
+          type: string
+          enum: [capitulo, tema]
+        nombre:
+          type: string
+          maxLength: 60
+          description: Capítulo (por ejemplo «4») o tema del Anexo A.
+        desglose:
+          $ref: '#/components/schemas/Desglose'
+    Madurez:
+      type: object
+      required: [porNorma, porAgrupador, clausulas]
+      additionalProperties: false
+      properties:
+        porNorma:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/MadurezNorma'
+        porAgrupador:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/MadurezAgrupador'
+        clausulas:
+          $ref: '#/components/schemas/Desglose'
+    Diagnostico:
+      type: object
+      required: [filas, madurez, normas]
+      additionalProperties: false
+      properties:
+        filas:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/FilaDiagnostico'
+        madurez:
+          $ref: '#/components/schemas/Madurez'
+        normas:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 60
