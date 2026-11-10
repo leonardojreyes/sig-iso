@@ -1,6 +1,6 @@
 # Spec — Modelo de dominio v2 y esquema de librerías v3
 
-- **Estado:** Borrador (pendiente de `experto-iso` y de revisión del responsable)
+- **Estado:** Aprobado por el responsable el 2026-11-09 (validado por `experto-iso`; Q1 a Q10 con la propuesta por omisión)
 - **Origen:** hallazgos A2, M3 y M4 de la revisión de calidad del 2026-11-08 (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`); prerrequisito de la Fase 1 (ruta MVP, ADR 031).
 - **Fecha:** 2026-11-09
 
