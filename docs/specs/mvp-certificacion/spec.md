@@ -1,6 +1,6 @@
 # Spec — MVP: de las normas a la Declaración de Aplicabilidad
 
-- **Estado:** Borrador (pendiente de `experto-iso` y de revisión del responsable)
+- **Estado:** Aprobado por el responsable el 2026-11-09 (validado por `experto-iso`; Q1 a Q11 con la propuesta por omisión)
 - **Ruta:** MVP para uso interno de SynapTech (ADR 031); fases 1 y 2 de `docs/producto/vision.md`.
 - **Depende de:** `docs/specs/modelo-dominio-v2/spec.md` (librerías con Anexo A, alcance con sedes y exclusiones).
 - **Fecha:** 2026-11-09
