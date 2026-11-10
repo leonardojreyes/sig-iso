@@ -1,6 +1,6 @@
 // API pública de @sig/certificacion (MVP): alcance y diagnóstico. Nadie importa por rutas internas.
-export { Alcance, ALCANCE_MAX, COMENTARIO_MAX, ErrorCertificacion, ESTADOS_EVALUACION, esEstadoEvaluacion, Evaluacion, JUSTIFICACION_MIN, calcularMadurez, desglosar } from './domain/index.js';
-export type { DatosAlcance, DatosEvaluacion, Desglose, EntradaParaMadurez, EstadoEvaluacion, Madurez, MadurezAgrupador } from './domain/index.js';
+export { Alcance, ALCANCE_MAX, COMENTARIO_MAX, Control, DESCRIPCION_CONTROL_MAX, ErrorCertificacion, MAPEOS_POR_CONTROL_MAX, MapeoControl, NOMBRE_CONTROL_MAX, ESTADOS_EVALUACION, esEstadoEvaluacion, Evaluacion, JUSTIFICACION_MIN, calcularMadurez, desglosar } from './domain/index.js';
+export type { CambiosControl, DatosAlcance, DatosControl, DatosEvaluacion, DatosMapeoControl, EstadoControl, Desglose, EntradaParaMadurez, EstadoEvaluacion, Madurez, MadurezAgrupador } from './domain/index.js';
 export { AprobarAlcanceUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, type AlcanceDto } from './application/alcance.use-cases.js';
 export { AUTORIZACION, type AutorizacionPort, type Permiso } from './application/autorizacion.port.js';
 export { CATALOGO_LECTURA, type CatalogoLecturaPort, type EntradaCatalogo } from './application/catalogo-lectura.port.js';

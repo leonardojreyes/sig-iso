@@ -187,3 +187,22 @@ describe('permisos del diagnóstico y del alcance (MVP, M2)', () => {
     expect(await f.puede(ADMIN, 'alcance.aprobar', B)).toBe(false);
   });
 });
+
+describe('permisos de los controles de la empresa (MVP, M3)', () => {
+  it('el colaborador consulta el marco de controles, pero no lo gestiona', async () => {
+    const f = montar();
+    expect(await f.puede(COLAB, 'controles.ver', A)).toBe(true);
+    expect(await f.puede(COLAB, 'controles.gestionar', A)).toBe(false);
+  });
+  it('el administrador SIG consulta y gestiona', async () => {
+    const f = montar();
+    for (const p of ['controles.ver', 'controles.gestionar'] as const) expect(await f.puede(ADMIN, p, A), p).toBe(true);
+  });
+  it('ningún rol sin permisos ve ni gestiona controles, y no hay permiso en otra empresa', async () => {
+    const f = montar();
+    for (const p of ['controles.ver', 'controles.gestionar'] as const) {
+      expect(await f.puede(OTRO, p, A), p).toBe(false);
+      expect(await f.puede(ADMIN, p, B), p).toBe(false);
+    }
+  });
+});
