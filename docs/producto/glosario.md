@@ -14,6 +14,7 @@ Definiciones de trabajo redactadas por SynapTech con palabras propias (no reprod
 | **Equivalencia entre normas** | Relación declarada entre entradas de normas distintas: común, parcial o específica, con nota propia y quién la verificó. Por omisión es parcial y sin verificar. |
 | **Mapeo** | Relación entre un control y un requisito. Base de "un requisito común, una evidencia, varias normas". |
 | **Evidencia** | Registro o archivo que demuestra que un control opera (con responsable, fecha, vigencia y hash SHA-256). Se reutiliza para todos los requisitos mapeados. |
+| **Información documentada** | Término de las normas para lo que la organización debe mantener (documentos) o conservar (registros). En el producto, la evidencia es de uno de esos dos tipos. |
 | **Vigencia (de evidencia)** | Fecha hasta la cual la evidencia sigue siendo válida; genera alertas de vencimiento. |
 | **Hallazgo** | Resultado de una auditoría: conformidad, observación, oportunidad de mejora o no conformidad. |
 | **No conformidad (NC)** | Incumplimiento de un requisito. Se clasifica en mayor o menor. |
