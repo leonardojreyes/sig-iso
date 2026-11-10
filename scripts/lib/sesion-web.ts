@@ -63,12 +63,16 @@ export const enviarWeb = async (
   entorno: EntornoWeb,
   ruta: string,
   sesion: Map<string, string>,
-  opciones: { metodo?: string; origen?: string | null } = {},
+  opciones: { metodo?: string; origen?: string | null; cuerpo?: Readonly<Record<string, string>> } = {},
 ) => {
-  const { metodo = 'POST', origen = entorno.web } = opciones;
+  const { metodo = 'POST', origen = entorno.web, cuerpo } = opciones;
   const r = await pedir(`${entorno.web}${ruta}`, new Map(sesion), {
     method: metodo,
-    headers: origen === null ? {} : { origin: origen },
+    headers: {
+      ...(origen === null ? {} : { origin: origen }),
+      ...(cuerpo ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
+    },
+    ...(cuerpo && metodo !== 'GET' ? { body: new URLSearchParams(cuerpo).toString() } : {}),
   });
   const destino = r.headers.get('location');
   const u = destino ? new URL(destino, entorno.web) : null;
