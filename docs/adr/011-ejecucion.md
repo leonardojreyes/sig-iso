@@ -1,6 +1,6 @@
 # ADR 011 — Ejecución: Docker Compose en desarrollo; Kubernetes + Helm en servidores
 
-- **Estado:** Aprobado (2026-11-04)
+- **Estado:** Parcialmente reemplazado por el ADR 031 (el despliegue en Kubernetes y Helm se difiere hasta tener servidor); aprobado el 2026-11-04
 - **Fecha:** 2026-11-04
 - **Decide:** Ing. Leonardo J. Reyes B.
 

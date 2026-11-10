@@ -33,3 +33,4 @@ Formato MADR breve. Se crean con el comando `/adr`. Aprobados el 2026-11-04 (pas
 | [027](027-sesion-web-y-empresa-desde-el-token.md) | Sesión web y empresa | BFF con OIDC (código + PKCE); la empresa sale solo del token verificado | Aprobado  |
 | [028](028-privacidad-y-bitacora.md)          | Privacidad y bitácora      | identificador opaco; pseudonimización; retención y derechos provisionales  | Aprobado (provisional; falta asesor legal) |
 | [029](029-autorizacion-por-rol-en-la-base.md) | Autorización por rol en la base | rol en `usuario` y matriz en código; OpenFGA pospuesto con disparadores | Aprobado |
+| [031](031-ruta-mvp-se-difiere-el-0-8-y-se-reduce-el-0-9.md) | Ruta MVP | se difiere el paso 0.8 hasta tener servidor; el 0.9 se reduce a STRIDE, clasificación de datos y política de IA | Aprobado |
