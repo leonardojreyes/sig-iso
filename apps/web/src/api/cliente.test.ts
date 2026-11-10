@@ -22,7 +22,6 @@ describe('consultarApi (GET con el token de la sesión)', () => {
     expect(await consultar(vi.fn(async () => json({}, 401)))).toEqual({ ok: false, motivo: 'no_autenticado' });
     for (const resp of [
       () => json({}, 400),
-      () => json({}, 403),
       () => json({}, 429),
       () => json({}, 500),
       () => json({}, 201),
@@ -34,6 +33,10 @@ describe('consultarApi (GET con el token de la sesión)', () => {
       ok: false,
       motivo: 'no_disponible',
     });
+  });
+
+  it('403 → sin permiso (la pantalla lo dice sin revelar qué existe)', async () => {
+    expect(await consultar(vi.fn(async () => json({}, 403)))).toEqual({ ok: false, motivo: 'sin_permiso' });
   });
 
   it('solo acepta rutas propias de la API (no se puede apuntar a otro servidor con el token)', async () => {
