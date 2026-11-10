@@ -19,5 +19,5 @@ La Mac de desarrollo (8 GB de RAM) ya tiene PostgreSQL 16 instalado con Homebrew
 ## Consecuencias
 
 - Paridad de versión: PostgreSQL 16 local vs 17 en Compose. Se fija 16 como versión mínima soportada y el Compose se baja a `postgres:16-alpine`.
-- `pnpm infra:up` (paso 0.8) deberá soportar el modo sin Docker o documentarlo como "no disponible en esta máquina".
+- `pnpm infra:up` (paso 0.8) deberá soportar el modo sin Docker o documentarlo como "no disponible en esta máquina". **Nota (ADR 031, 2026-11-09):** el paso 0.8 se difiere hasta tener servidor; `infra:up/down` queda sin uso y se resuelve al retomarlo.
 - Las reglas de permisos de `.claude/settings.json` no incluyen `docker compose` como obligatorias.

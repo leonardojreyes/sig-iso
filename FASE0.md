@@ -319,11 +319,15 @@ Preferir MIT, Apache 2.0, BSD o MPL. AGPL solo para componentes usados sin modif
 - **Criterio de salida:** el mismo caso de uso responde con dos modelos distintos sin cambiar código; la llamada queda medida y registrada sin datos sensibles.
 
 ### 0.8 Infraestructura como código
+> **Enmienda 2026-11-09 (ADR 031): este paso se DIFIERE completo** hasta el primer despliegue en servidor. Lo que sigue queda como dirección futura.
+
 - **Actividades:** chart Helm de la aplicación validado con `helm lint` y `helm template`; módulos OpenTofu para el destino indicado en 4.2; manifiestos de Argo CD preparados. Si el destino es "solo local", dejar esto preparado y validado, sin levantar clúster.
 - **Entregable visible:** `pnpm infra:up` recrea el ambiente local desde cero (volúmenes nuevos, realm, datos semilla).
 - **Criterio de salida:** ambiente recreado con un comando; chart válido.
 
 ### 0.9 Seguridad y cumplimiento
+> **Enmienda 2026-11-09 (ADR 031): el 0.9 se REDUCE** a `docs/security/stride.md` (breve), `clasificacion-datos.md` y `politica-ia.md`. El registro LOPDP, la política de derechos de autor de las normas, el mapeo a Anexo A y la due diligence quedan para antes del primer cliente externo.
+
 - **Actividades:** modelo de amenazas STRIDE; clasificación de datos; registro de actividades de tratamiento (LOPDP); política de uso de IA; política de derechos de autor de normas (2.5); **mapeo de lo construido en la Fase 0 a controles de ISO 27001 Anexo A y de ISO 42001 Anexo A** (como primer insumo del propio SIG de SynapTech).
 - **Archivos:** `docs/security/stride.md`, `clasificacion-datos.md`, `registro-lopdp.md`, `politica-ia.md`, `mapeo-controles-fase0.md`.
 - **Criterio de salida:** paquete listo para una due diligence y revisado por `revisor-seguridad` y `revisor-cumplimiento`.
@@ -331,6 +335,8 @@ Preferir MIT, Apache 2.0, BSD o MPL. AGPL solo para componentes usados sin modif
 ---
 
 ## 7. Criterio de salida de la Fase 0
+
+> **Enmienda 2026-11-09 (ADR 031):** se quita de este criterio «el ambiente se recrea con un comando» (depende del 0.8 diferido). El resto se mantiene.
 
 El esqueleto caminante funciona en web con el look and feel aprobado: un usuario inicia sesión con SSO de Keycloak, ve solo los datos y la marca de su empresa, consulta la librería de ejemplo de normas, pide ayuda a la IA con el modelo que eligió y todo queda en la bitácora de auditoría y trazado con OpenTelemetry; el cambio pasó por el pipeline con todos los controles en verde; el ambiente se recrea con un comando; y el consumo diario cabe en la máquina de 8 GB.
 
