@@ -96,3 +96,36 @@ export interface Diagnostico {
   readonly madurez: Madurez;
   readonly normas: readonly string[];
 }
+
+export type EstadoControl = 'vigente' | 'retirado';
+
+export interface EntradaDeMapeo {
+  readonly tipo: 'clausula' | 'control';
+  readonly titulo: string;
+  readonly aplicaA: readonly CorrespondenciaNorma[];
+}
+
+export interface MapeoDeControl {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  /** Nula si la entrada ya no está entre las librerías que la empresa adoptó. */
+  readonly entrada: EntradaDeMapeo | null;
+}
+
+export interface ControlMarco {
+  readonly id: string;
+  readonly codigo: string;
+  readonly nombre: string;
+  readonly descripcion: string | null;
+  readonly responsableId: string | null;
+  readonly estado: EstadoControl;
+  readonly version: number;
+  readonly mapeos: readonly MapeoDeControl[];
+  /** Normas que alcanza por los mapeos cuyas entradas siguen adoptadas. */
+  readonly normas: readonly string[];
+}
+
+export interface MarcoControles {
+  readonly controles: readonly ControlMarco[];
+  readonly normas: readonly string[];
+}

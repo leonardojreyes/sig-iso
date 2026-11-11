@@ -1,6 +1,6 @@
 // La respuesta de la API se trata como un dato externo: forma EXACTA (sin campos de más ni de menos), tipos, patrones y topes del
 // contrato. Lo que no cumple se rechaza entero (nunca se corrige ni se muestra a medias).
-import type { Alcance, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol } from './tipos';
+import type { Alcance, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol } from './tipos';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLES: readonly string[] = [
@@ -225,4 +225,42 @@ export const validarDiagnostico = (cuerpo: unknown): Diagnostico | null => {
     filas.push({ libreriaCodigo: f.libreriaCodigo, idEstable: f.idEstable, tipo: f.tipo, capitulo: f.capitulo as number | null, grupo: f.grupo as string | null, titulo: f.titulo, guia: f.guia, aplicaA, evaluacion });
   }
   return { filas, madurez: m, normas: o.normas as string[] };
+};
+
+const entradaDeMapeo = (v: unknown): EntradaDeMapeo | null | undefined => {
+  if (v === null) return null;
+  const o = objeto(v);
+  if (!o || !claves(o, ['tipo', 'titulo', 'aplicaA'])) return undefined;
+  if ((o.tipo !== 'clausula' && o.tipo !== 'control') || !texto(o.titulo, 80, undefined, 1)) return undefined;
+  const aplicaA = correspondencias(o.aplicaA);
+  return aplicaA ? { tipo: o.tipo, titulo: o.titulo, aplicaA } : undefined;
+};
+
+export const validarMarcoControles = (cuerpo: unknown): MarcoControles | null => {
+  const o = objeto(cuerpo);
+  if (!o || !claves(o, ['controles', 'normas'])) return null;
+  if (!Array.isArray(o.controles) || o.controles.length > 500 || !Array.isArray(o.normas) || o.normas.length > 20) return null;
+  if (!o.normas.every((n) => texto(n, 60, undefined, 1))) return null;
+  const controles: ControlMarco[] = [];
+  for (const item of o.controles) {
+    const c = objeto(item);
+    if (!c || !claves(c, ['id', 'codigo', 'nombre', 'descripcion', 'responsableId', 'estado', 'version', 'mapeos', 'normas'])) return null;
+    if (!texto(c.id, 36, UUID) || !texto(c.codigo, 20, /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/, 1) || !texto(c.nombre, 120, undefined, 1)) return null;
+    if (c.descripcion !== null && !texto(c.descripcion, 1000, undefined, 1)) return null;
+    if (c.responsableId !== null && !texto(c.responsableId, 36, UUID)) return null;
+    if (c.estado !== 'vigente' && c.estado !== 'retirado') return null;
+    if (!entero(c.version, 1) || !Array.isArray(c.mapeos) || c.mapeos.length > 50 || !Array.isArray(c.normas) || c.normas.length > 20) return null;
+    if (!c.normas.every((n) => texto(n, 60, undefined, 1))) return null;
+    const mapeos: MapeoDeControl[] = [];
+    for (const m of c.mapeos) {
+      const mo = objeto(m);
+      if (!mo || !claves(mo, ['libreriaCodigo', 'idEstable', 'entrada'])) return null;
+      if (!texto(mo.libreriaCodigo, 64, /^[a-z0-9][a-z0-9-]{0,63}$/, 1) || !texto(mo.idEstable, 41, /^[a-z0-9][a-z0-9.-]{0,40}$/)) return null;
+      const entrada = entradaDeMapeo(mo.entrada);
+      if (entrada === undefined) return null;
+      mapeos.push({ libreriaCodigo: mo.libreriaCodigo, idEstable: mo.idEstable, entrada });
+    }
+    controles.push({ id: c.id, codigo: c.codigo, nombre: c.nombre, descripcion: c.descripcion as string | null, responsableId: c.responsableId as string | null, estado: c.estado, version: c.version, mapeos, normas: c.normas as string[] });
+  }
+  return { controles, normas: o.normas as string[] };
 };

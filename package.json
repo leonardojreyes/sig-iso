@@ -25,6 +25,7 @@
     "web:verify-login": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-ingreso.ts",
     "web:verify-aislamiento": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-aislamiento.ts",
     "web:verify-listado": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-listado.ts",
+    "web:verify-controles": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-controles.ts",
     "web:verify-diagnostico": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-diagnostico.ts",
     "keycloak:realm": "node --import tsx scripts/keycloak-realm.ts",
     "ram:report": "node scripts/ram-report.mjs",
