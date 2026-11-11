@@ -16,6 +16,11 @@ export const ACCIONES = [
   'control.retirado',
   'mapeo.creado',
   'mapeo.eliminado',
+  'evidencia.creada',
+  'evidencia.reemplazada',
+  'evidencia.eliminada',
+  'evidencia.descargada',
+  'evidencia.subida_rechazada',
   'acceso.denegado',
   'acceso.cruzado',
   'token.invalido',
@@ -56,6 +61,9 @@ export const MOTIVOS = [
   'huella_invalida',
   'enlace_roto',
   'error_no_clasificado',
+  'tipo_no_permitido',
+  'tamano_excedido',
+  'firma_invalida',
 ] as const;
 export type MotivoBitacora = (typeof MOTIVOS)[number];
 
@@ -124,6 +132,14 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   'control.retirado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'mapeo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'mapeo.eliminado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Evidencias con archivo (MVP, M4). El hecho lleva la HUELLA SHA-256 del archivo como versión del objeto (queda fijada en la cadena
+  // inmutable); el título, el nombre del archivo y su contenido NUNCA van a la bitácora. El objeto es `evidencia:<uuid>` o, si se
+  // rechaza una subida, el control `control:<codigo>`.
+  'evidencia.creada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
+  'evidencia.reemplazada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
+  'evidencia.eliminada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
+  'evidencia.descargada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
+  'evidencia.subida_rechazada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['tipo_no_permitido', 'tamano_excedido', 'firma_invalida'], objeto: 'obligatorio', objetoVersion: 'opcional' },
   'acceso.denegado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['sin_permiso'], objeto: 'opcional' },
   'acceso.cruzado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['empresa_distinta'], objeto: 'opcional' },
   'token.invalido': { ...nada, actores: ['sistema'], empresa: 'opcional', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['token_vencido', 'token_alterado', 'sin_empresa'] },

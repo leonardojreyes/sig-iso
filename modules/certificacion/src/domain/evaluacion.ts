@@ -1,11 +1,11 @@
 import type { EmpresaId } from '@sig/tenancy';
 import { ErrorCertificacion } from './errores.js';
 import { esEstadoEvaluacion, type EstadoEvaluacion } from './estado-evaluacion.js';
+import { fechaValida } from './fechas.js';
 
 const CODIGO = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const ID_ESTABLE = /^[a-z0-9][a-z0-9.-]{0,40}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const FECHA = /^(\d{4})-(\d{2})-(\d{2})$/;
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
 export const COMENTARIO_MAX = 1000;
 /** Marcar «no aplica» exige una justificación; esto evita un comentario de relleno. */
@@ -24,14 +24,6 @@ export interface DatosEvaluacion {
   readonly fechaObjetivo?: string | null;
   readonly version: number;
 }
-
-const fechaValida = (t: string): boolean => {
-  const m = FECHA.exec(t);
-  if (!m) return false;
-  const [, a, mes, d] = m;
-  const f = new Date(Date.UTC(Number(a), Number(mes) - 1, Number(d)));
-  return f.getUTCFullYear() === Number(a) && f.getUTCMonth() === Number(mes) - 1 && f.getUTCDate() === Number(d);
-};
 
 /** Evaluación de una cláusula o un control de la norma. «No aplica» exige justificación (en el comentario). */
 export class Evaluacion {
