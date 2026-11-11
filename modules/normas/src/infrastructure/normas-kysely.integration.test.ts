@@ -213,7 +213,7 @@ describe.skipIf(!hayBase)('adaptadores de normas (PostgreSQL real)', () => {
       const r = (await listarRequisitos().ejecutar({ empresaId: A })).filter((e) => e.libreriaId === L1);
       expect(r.map((e) => e.idEstable)).toEqual(['ha-contexto', 'ha-liderazgo', 'ha-mejora']);
       expect(r[2]).toEqual({
-        id: entradas['ha-mejora'], idEstable: 'ha-mejora', libreriaId: L1, capitulo: 10, nivel: 1, titulo: 'Mejora',
+        id: entradas['ha-mejora'], idEstable: 'ha-mejora', libreriaId: L1, capitulo: 10, nivel: 1, tipo: 'clausula', grupo: null, titulo: 'Mejora',
         guia: 'Explica con palabras propias qué conviene tener resuelto en este apartado.', alcanceComun: 'parcial', esEjemplo: true,
         aplicaA: [{ norma: 'ISO 9001', edicion: '2015', clausula: '10.3' }, { norma: 'ISO/IEC 27001', edicion: '2022', clausula: '10.1' }],
       });

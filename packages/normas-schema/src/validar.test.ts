@@ -54,7 +54,7 @@ describe('estructura de la librería', () => {
   it.each<Caso>([
     ['sin esquema', (l: Obj) => delete l.esquema, 'esquema', 'campo_obligatorio'],
     ['esquema 1', (l: Obj) => (l.esquema = 1), 'esquema', 'esquema_no_soportado'],
-    ['esquema 3', (l: Obj) => (l.esquema = 3), 'esquema', 'esquema_no_soportado'],
+    ['esquema 4', (l: Obj) => (l.esquema = 4), 'esquema', 'esquema_no_soportado'],
     ['código con mayúsculas', (l: Obj) => (l.codigo = 'Prueba'), 'codigo', 'formato_invalido'],
     ['código con espacios', (l: Obj) => (l.codigo = 'prueba sintetica'), 'codigo', 'formato_invalido'],
     ['código demasiado largo', (l: Obj) => (l.codigo = 'a'.repeat(65)), 'codigo', 'demasiado_largo'],
@@ -181,5 +181,62 @@ describe('los errores no repiten el contenido recibido', () => {
       }),
     );
     expect(e.map((x) => x.ruta).sort()).toEqual(['entradas[0].capitulo', 'entradas[1].guia', 'fuente']);
+  });
+});
+
+// Esquema 3: controles del Anexo A (tipo «control», con tema en lugar de capítulo). Los archivos del esquema 2 siguen siendo válidos.
+describe('esquema 3: controles del Anexo A', () => {
+  const control = (): Obj => ({
+    id: 'a27-5-1',
+    tipo: 'control',
+    grupo: 'Organizacionales',
+    nivel: 1,
+    titulo: 'Políticas de seguridad',
+    guia: 'Define y comunica las reglas generales de seguridad de la información de tu empresa. Revísalas cada cierto tiempo.',
+    alcance_comun: 'especifico',
+    aplica_a: [{ norma: 'ISO/IEC 27001', edicion: '2022', clausula: 'A.5.1' }],
+  });
+  const conControl = (cambio: (c: Obj) => void = () => undefined): unknown => {
+    const l = clonar(libreriaValida());
+    l.esquema = 3;
+    const refs = l.referencias as Obj[];
+    if (!refs.some((r) => r.norma === 'ISO/IEC 27001' && r.edicion === '2022')) refs.push({ norma: 'ISO/IEC 27001', edicion: '2022' });
+    const c = control();
+    cambio(c);
+    (l.entradas as Obj[]).push(c);
+    return l;
+  };
+
+  it('acepta un control con tema y sin capítulo, y las cláusulas del esquema 2 en una librería v3', () => {
+    const r = validarLibreria(conControl());
+    expect(r.ok, JSON.stringify(r.ok ? [] : r.errores)).toBe(true);
+  });
+
+  it('una librería del esquema 2 sigue siendo válida sin tipo ni grupo', () => {
+    expect(validarLibreria(libreriaValida()).ok).toBe(true);
+  });
+
+  it('rechaza un control sin tema', () => rechaza(conControl((c) => delete c.grupo)));
+  it('rechaza un control con capítulo', () => rechaza(conControl((c) => (c.capitulo = 5))));
+  it('rechaza una cláusula con tema', () => {
+    const l = clonar(libreriaValida());
+    l.esquema = 3;
+    entrada(l).grupo = 'Organizacionales';
+    rechaza(l);
+  });
+  it('rechaza una cláusula sin capítulo', () => {
+    const l = clonar(libreriaValida());
+    l.esquema = 3;
+    delete entrada(l).capitulo;
+    rechaza(l);
+  });
+  it('rechaza un tipo desconocido y un tema demasiado corto o largo', () => {
+    rechaza(conControl((c) => (c.tipo = 'objetivo')));
+    rechaza(conControl((c) => (c.grupo = 'a')));
+    rechaza(conControl((c) => (c.grupo = 'x'.repeat(61))));
+  });
+  it('un identificador de control como «A.5.1» cabe en aplica_a', () => {
+    expect(validarLibreria(conControl()).ok).toBe(true);
+    rechaza(conControl((c) => (c.aplica_a = [{ norma: 'ISO/IEC 27001', edicion: '2022', clausula: 'A 5 1' }])));
   });
 });

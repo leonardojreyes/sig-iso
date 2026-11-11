@@ -24,7 +24,9 @@ interface BdCatalogo {
     id: string;
     libreria_id: string;
     id_estable: string;
-    capitulo: number;
+    capitulo: number | null;
+    tipo: string;
+    grupo: string | null;
     nivel: number;
     titulo: string;
     guia: string;
@@ -121,7 +123,9 @@ const intentarCarga = (catalogo: Kysely<unknown>, l: Libreria, huella: string): 
         .values({
           libreria_id: lib.id,
           id_estable: e.id,
-          capitulo: e.capitulo,
+          capitulo: e.capitulo ?? null,
+          tipo: e.tipo ?? 'clausula',
+          grupo: e.grupo ?? null,
           nivel: e.nivel,
           titulo: e.titulo,
           guia: e.guia,

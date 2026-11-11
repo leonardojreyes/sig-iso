@@ -5,6 +5,7 @@ export interface FiltrosRequisitos {
   q?: string;
   capitulo?: number;
   norma?: string;
+  tipo?: 'clausula' | 'control';
 }
 
 const texto = (valor: unknown, parametro: string): string => {
@@ -17,6 +18,11 @@ export const leerFiltrosRequisitos = (consulta: Readonly<Record<string, unknown>
   const filtros: FiltrosRequisitos = {};
   if (consulta['q'] !== undefined) filtros.q = texto(consulta['q'], 'q');
   if (consulta['norma'] !== undefined) filtros.norma = texto(consulta['norma'], 'norma');
+  if (consulta['tipo'] !== undefined) {
+    const t = texto(consulta['tipo'], 'tipo');
+    if (t !== 'clausula' && t !== 'control') throw new ParametroInvalidoError('tipo');
+    filtros.tipo = t;
+  }
   if (consulta['capitulo'] !== undefined) {
     const t = texto(consulta['capitulo'], 'capitulo');
     // Solo dígitos: «4.5», «abc», «», « 5» y «+5» no son un entero. El rango (4 a 10) lo comprueba el caso de uso.
