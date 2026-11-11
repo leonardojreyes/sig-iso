@@ -2,10 +2,10 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** 0.6 Plataforma transversal y corte vertical — en curso (ingreso por empresa, aislamiento multiempresa, librería de ejemplo y bitácora inmutable).
-- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (integrado en #1 y #3), 0.5 (integrado en #4).
-- **Rama y PR (2026-11-09):** `main` incluye los PR #1, #3, #4, #5, #6, #7 y #8 (adopción desde la pantalla, 10.7); el #2 se cerró a propósito (PR de prueba que viola las reglas). La rama `feature/paso-0-6-ingreso` (10.8 y 11.1, M1 y seguimiento de la revisión) está rebasada sobre `main` y su PR está abierto. La protección de `main` exige los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
-- **Corte 0.6: 64 de 68 tareas hechas** (2 más quedan pospuestas por el ADR 029). Plan en `docs/specs/corte-vertical-0-6/` (`tasks.md` tiene el detalle y las notas de cada tarea).
+- **Paso actual:** **0.7 Puerto de IA — en preparación.** Spec, plan y 42 tareas aprobados el 2026-11-09 (PR #13); hay un **recorte del alcance propuesto, a la espera de tu aprobación** (ver «Próximos pasos técnicos»). El paso 0.6 queda cerrado.
+- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (#1 y #3), 0.5 (#4) y **0.6 (cerrado el 2026-11-09; PR #5 a #11)**.
+- **PR (2026-11-11):** `main` incluye los PR #1, #3, #4, #5 (cimientos), #6 (skills), #7 (catálogo y listado), #8 (adopción desde la pantalla), #9 (ingreso real, cliente de eventos de Keycloak y endurecimiento de hooks), #10 (guía de ejecución y medición de memoria) , #11 (prueba de aislamiento de extremo a extremo y `/review` del corte) y #12 (protección de `.local/`). El #2 se cerró a propósito (PR de prueba que viola las reglas). **Abiertos** (al 2026-11-11): #13 (spec, plan y tareas del 0.7), #14 (cimientos del puerto de IA), #16 y #17 (documentos), #18 (spec del modelo de dominio v2) y #19 (MVP M1, Anexo A de 27001). La protección de `main` exige los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
+- **Corte 0.6 cerrado: 65 de 70 tareas hechas.** Las 5 restantes no bloquean: **4.4** (tuya), **9.2 y 9.3** (OpenFGA, pospuestas por el ADR 029) y **11.2 y 11.3** (worker de intentos fallidos, diferidas a la Fase 1). Plan en `docs/specs/corte-vertical-0-6/`; `/review` completo sin bloqueantes en `docs/revisiones/2026-11-09-review-corte-0-6.md`.
 
 ## Corte 0.6 — qué está terminado
 
@@ -23,36 +23,30 @@
 - **Web, hasta la 10.5:** ingreso OIDC con PKCE, sesión (cookie sellada, renovación, cierre), proxy que protege `/e/<empresa>/…` (404 idéntico a otra empresa, sin caché) y **marca real de la empresa**. Verificado de extremo a extremo con `pnpm web:verify-login` (36 comprobaciones).
 - **Siembra** de dos empresas y cuatro cuentas de prueba, `pnpm ram:report`, trazas mínimas y un flag de OpenFeature.
 
-## Corte 0.6 — qué falta (6 tareas)
+## Corte 0.6 — lo que queda fuera del cierre (5 tareas)
 
-- **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` ya está **cargada en la base local** (4.5 hecha, `pnpm libraries:load`), marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
-- **11.1 (hecha); 11.2 y 11.3 DIFERIDAS a la Fase 1 (M5, aprobado 2026-11-09):** el worker de intentos fallidos no hace falta para ver el sistema. El código de 11.1 queda en el repositorio, probado; la bitácora ya acepta esos registros, pero nada los alimenta todavía, y la prueba 12.4 no cubre el paso «intento fallido → bitácora desde Keycloak».
-- **12.3 y 12.4 (hechas):** prueba `pnpm web:verify-aislamiento` y `/review` completo sin bloqueantes (`docs/revisiones/2026-11-09-review-corte-0-6.md`). Ver «Brechas y avisos del cierre del corte 0.6». Quedan solo 4.4 (tuya) y 11.2/11.3 (diferidas a la Fase 1).
+- **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` está **cargada en la base local**, marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
+- **9.2 y 9.3:** OpenFGA, pospuestas por el ADR 029 hasta que haya permisos por objeto. La autorización por rol funciona desde la base.
+- **11.2 y 11.3 (diferidas a la Fase 1, M5):** el worker de intentos fallidos y de eventos de administración. El código de 11.1 queda en el repositorio, probado; la bitácora acepta esos registros, pero nada los alimenta todavía, y la prueba de aislamiento no cubre el paso «intento fallido → bitácora desde Keycloak».
 
 ## Pendiente del responsable
 
-1. ~~Integrar el PR #8~~ (hecho 2026-11-09). Integrar el PR de `feature/paso-0-6-ingreso` cuando sus 7 checks estén en verde.
-2. **Ramas viejas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `docs/estado-paso-0-4`, `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo.
-3. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`. Mientras tanto la `0.1.0` está cargada solo en tu base local, marcada «borrador, numeraciones sin verificar».
-4. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
-5. **Revisión externa de calidad** (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`, hoy sin seguimiento en git): decidir si se confirma en el repositorio. Seguimiento de sus hallazgos:
-   - **A1** (el repositorio es público): decisión tuya, pendiente; requiere un ADR.
-   - **M1** (permisos y hooks de Claude Code): **corregido 2026-11-09**, ver «Paso 0.3 — notas».
-   - **B5** (este archivo desactualizado): corregido (PR y próximos pasos al día).
-   - **M5** (alcance del 0.6): plan propuesto, a la espera de tu aprobación.
-   - **A2, M3 y M4:** registrados abajo como prerrequisitos de la Fase 1.
-   - **M2** (amarrar `adoptada_por` a la misma empresa) conviene al pasar por la migración de adopción; **B1–B4** al pasar por esos archivos.
-6. Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (mientras tanto, `env -u GITHUB_TOKEN` en `git` y `gh`).
-7. ~~Proteger `.local/`~~ (hecho 2026-11-09, hallazgo del `/review`): ver «Paso 0.3 — notas».
-8. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global.
+1. ~~Integrar el PR #12~~ (protección de `.local/`: **integrado**). Cuando quieras, el **#13** (spec, plan y tareas del 0.7). Rebase and merge o Squash and merge.
+2. **Aprobar o ajustar el recorte del 0.7** y el ADR 030 (modelo por defecto del asistente), propuestos tras la prueba previa.
+3. **Ramas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `feature/paso-0-6-adopcion`, `feature/paso-0-6-ingreso`, `feature/paso-0-6-cierre`, `feature/paso-0-6-aislamiento-e2e`, `feature/proteger-local`, `docs/estado-paso-0-4` y `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo, y las ramas del 0.7 (`feature/spec-ia-0-7`, `feature/ia-cimientos`) hasta integrarlas.
+4. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`.
+5. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
+6. **A1 de la revisión de calidad** (el repositorio de GitHub es público): decisión tuya, pendiente; requiere un ADR. Sus demás hallazgos (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`): M1, M5 y la protección de `.local/` resueltos; A2, M3 y M4 son prerrequisitos de la Fase 1 (abajo); **M2** conviene al pasar por la migración de adopción y **B1–B4** al pasar por esos archivos.
+7. Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (mientras tanto, `env -u GITHUB_TOKEN` en `git` y `gh`).
+8. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global (ver H6.10 abajo).
 
-Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado y las dos empresas de prueba; `pnpm libraries:load` cargó la librería de ejemplo; las claves están en `.env.local` y `.local/` (ignorados). La empresa A no tiene librerías adoptadas (para que pruebes la adopción en pantalla).
+Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado y las dos empresas de prueba; `pnpm libraries:load` cargó la librería de ejemplo; las claves están en `.env.local` y `.local/` (ignorados). **La empresa A ya tiene adoptada la librería de ejemplo** (la adoptó `pnpm web:verify-listado` el 2026-11-09); la adopción en pantalla se prueba con `admin-b`, que no ha adoptado nada. Guía de ejecución: `docs/fase0/guia-de-ejecucion.md`.
 
 ## Próximos pasos técnicos
 
-1. ~~11.2 y 11.3~~ diferidas a la Fase 1 (ver arriba).
-2. ~~12.3~~ hecha (`docs/fase0/guia-de-ejecucion.md`; la pila completa usa 1.430 MB reales de 4 GB, medidos con `ram:report`, que ahora usa la huella real en macOS); **12.4** prueba de aislamiento de extremo a extremo y `/review` completo. Con eso se cierra el corte 0.6.
-3. Después: 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9. Antes de la Fase 1, el `/spec` del modelo de dominio v2 (punto 5 de los pendientes).
+1. **0.7 Puerto de IA:** aprobar el recorte propuesto, integrar el PR #13 y seguir con `/implement` (tareas 1.5 en adelante; la 1.1 a la 1.4 están hechas en `feature/ia-cimientos`). Ollama local con `qwen2.5:1.5b` y `granite3.3:2b`, ya instalados (2,4 GB, no se descarga nada). Spec, plan y tareas en `docs/specs/puerto-ia-0-7/`.
+2. **0.8** (Helm y OpenTofu validados, sin clúster) y **0.9** (seguridad y cumplimiento).
+3. Antes de la Fase 1, el `/spec` del modelo de dominio v2 y del esquema de librerías v3 (A2, M3 y M4, abajo).
 
 - **Actualizado:** 2026-11-09
 
@@ -67,7 +61,7 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 ## Brechas y avisos del cierre del corte 0.6
 
 - **H6.10 · el 404 cruzado no se registra como `acceso.cruzado`.** El evento existe y el filtro de la API lo maneja, pero ningún código de producción lo emite y el proxy de la web responde 404 sin escribir en la bitácora. La indistinguibilidad del 404 sí está verificada. Resolverlo en la Fase 1 (detectar «otra empresa» comparando el slug de la URL con la empresa del token).
-- **`pnpm web:verify-listado` adopta la librería para la empresa A** si no estaba adoptada (lo advierte su cabecera). Se ejecutó el 2026-11-09 durante la medición de memoria: **A ya tiene adoptada la librería de ejemplo**, así que el aviso de «la empresa A no tiene librerías adoptadas» de más arriba ya no es cierto. La adopción en pantalla se prueba ahora con `admin-b`. `web:verify-aislamiento` no adopta nada.
+- **`pnpm web:verify-listado` adopta la librería para la empresa A** si no estaba adoptada (lo advierte su cabecera). `web:verify-aislamiento` no adopta nada.
 
 ## Respuestas de arranque (`/fase0-inicio`)
 
@@ -95,7 +89,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.5 cerrados → **0.6 (en curso)** → 0.7 → 0.8 → 0.9
+0.1 a 0.6 cerrados → **0.7 (en preparación)** → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 
@@ -111,7 +105,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 ## Paso 0.4 — notas
 
 - Pipeline: `.github/workflows/ci.yml` (lint, tipos, cobertura 80 % en dominio, build en macOS+Windows, validación de librerías) y `seguridad.yml` (gitleaks, Semgrep CE, OSV, Trivy, SBOM CycloneDX, licencias). Artefactos `evidencia-*` (90 días); ver `docs/security/evidencias/README.md`.
-- **Protección de la rama principal activa:** PR obligatorio, 6 checks requeridos (`verificar` macOS/Windows, `gitleaks`, `semgrep`, `osv-scanner y licencias`, `trivy y SBOM CycloneDX`), historial lineal, sin force-push, también para administradores. Revisores requeridos: 0 (el responsable es el único revisor).
+- **Protección de la rama principal activa:** PR obligatorio, 7 checks requeridos (`verificar` macOS/Windows, `integracion`, `gitleaks`, `semgrep`, `osv-scanner y licencias`, `trivy y SBOM CycloneDX`; eran 6 hasta el paso 0.6), historial lineal, sin force-push, también para administradores. Revisores requeridos: 0 (el responsable es el único revisor).
 - **PR correcto (#1):** 6 de 6 checks en verde, incluido Windows. Integrado por el responsable.
 - **PR que viola reglas (#2, cerrado sin integrar):** `gitleaks` detectó 2 secretos falsos y `osv-scanner y licencias` rechazó `mupdf@1.28.1` (AGPL-3.0-or-later). Estado de merge: BLOCKED. Además, GitHub push protection bloqueó por sí solo una clave con formato AWS.
 - El primer run falló por dos defectos propios (tag inexistente de `trivy-action`, carpeta `libraries/normas` ausente en checkout limpio); corregidos en #1.
