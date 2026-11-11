@@ -36,6 +36,26 @@ erDiagram
     SISTEMA_IA }o--o{ CONTROL : "se gobierna con"
     SISTEMA_IA }o--o{ RIESGO : "evalúa impacto"
 
+    %% --- v2 (spec modelo-dominio-v2). MVP: Alcance, Sede, Exclusión y la jerarquía de la librería. El resto, después. ---
+    REQUISITO }o--o| REQUISITO : "tiene como padre"
+    EMPRESA ||--o{ ALCANCE : define
+    ALCANCE }o--|| EDICION : "de una norma y edición"
+    ALCANCE ||--o{ SEDE : incluye
+    ALCANCE ||--o{ EXCLUSION : justifica
+    EXCLUSION }o--|| REQUISITO : excluye
+    EMPRESA ||--o{ CERTIFICADO : obtiene
+    CERTIFICADO }o--|| EDICION : certifica
+    CERTIFICADO }o--o| CERTIFICADO : "reemplaza al del ciclo anterior"
+    PROYECTO_CERTIFICACION ||--o{ CERTIFICADO : "termina en"
+    EMPRESA ||--o{ ACTIVO_INFORMACION : inventaria
+    PROCESO }o--o{ ACTIVO_INFORMACION : usa
+    SISTEMA_IA ||--o{ EVALUACION_IMPACTO_IA : "se evalúa con"
+    EMPRESA ||--o{ USUARIO : emplea
+    USUARIO ||--o{ ASIGNACION_ROL : tiene
+    USUARIO ||--o{ PERSONA_PROCESO : "se relaciona con"
+    PROCESO ||--o{ PERSONA_PROCESO : "tiene personas"
+    AUDITORIA }o--o{ PROCESO : audita
+
     NORMA {
         string id PK
         string nombre
@@ -50,7 +70,10 @@ erDiagram
     REQUISITO {
         string id PK
         string edicion_id FK
-        string clausula
+        string tipo "clausula|control|agrupador"
+        string subtipo "tema|objetivo_control|capitulo (solo agrupador)"
+        string padre_id FK "jerarquía de hasta 4 niveles"
+        string identificador_en_norma "p. ej. 4.3 o A.5.1"
         string titulo_breve
         string guia_propia
     }
@@ -87,12 +110,76 @@ erDiagram
     HALLAZGO {
         string id PK
         string tipo "NC mayor|NC menor|observacion|oportunidad"
+        string etapa_origen "etapa1|etapa2|seguimiento|recertificacion|interna"
+        string estado "abierto|plan_propuesto|plan_aceptado|verificado|cerrado"
+        date fecha_limite_cierre "la fija el organismo"
+    }
+    NO_CONFORMIDAD {
+        string id PK
+        string origen "auditoria_interna|auditoria_externa|indicador|queja|incidente|revision_direccion|riesgo|proveedor"
     }
     SISTEMA_IA {
         string id PK
         string proposito
         string proveedor
         string nivel_impacto
+    }
+    ALCANCE {
+        string id PK
+        string empresa_id FK
+        string edicion_id FK
+        string descripcion
+        string interfaces_dependencias "27001 y 42001"
+        string rol_organizacion "42001"
+    }
+    SEDE {
+        string id PK
+        string alcance_id FK
+        string nombre
+    }
+    EXCLUSION {
+        string id PK
+        string alcance_id FK
+        string requisito_id FK "solo clausulas que la norma permite no aplicar"
+        string justificacion
+    }
+    CERTIFICADO {
+        string id PK
+        string empresa_id FK
+        string edicion_id FK
+        string numero
+        date decision_certificacion
+        date vence
+        string estado "vigente|suspendido|alcance_reducido|vencido|retirado"
+    }
+    ACTIVO_INFORMACION {
+        string id PK
+        string empresa_id FK
+        string nombre
+        string responsable
+        string clasificacion
+    }
+    EVALUACION_IMPACTO_IA {
+        string id PK
+        string sistema_ia_id FK
+        date fecha
+        string responsable
+    }
+    USUARIO {
+        string id PK
+        string empresa_id FK
+    }
+    ASIGNACION_ROL {
+        string id PK
+        string usuario_id FK
+        string rol
+        date desde
+        date hasta "obligatoria para auditor externo"
+    }
+    PERSONA_PROCESO {
+        string usuario_id FK
+        string proceso_id FK
+        string relacion "duena|participa|diseno|supervisa"
     }
 ```
 
@@ -104,3 +191,16 @@ erDiagram
 4. **Declaración de Aplicabilidad** se deriva de Controles y Mapeos reales (27001 y 42001).
 5. **Bitácora inmutable (P15):** transversal; toda creación, cambio, aprobación y eliminación se registra (quién, qué, cuándo, antes/después).
 6. **Revisión por la dirección** y **Declaración de Aplicabilidad** son documentos generados; se modelarán en `/spec` de sus módulos.
+7. **Entradas de librería:** una entrada es de tipo cláusula, control o agrupador (tema, objetivo de control o capítulo), con un padre opcional. Es solo una referencia: identificador, título breve y guía propia, nunca el texto de la norma.
+8. **Control de la norma frente a control de la empresa:** la Declaración de Aplicabilidad se arma por **control de la norma** (27001 y 42001); el **control de la empresa** puede ser adicional y no tener equivalente en el Anexo A.
+9. **Independencia del auditor:** nadie audita un proceso con el que tiene relación (dueña, participa, diseñó, supervisa) ni uno que auditó recientemente; se evalúa por auditoría y por proceso.
+
+## Marcas del MVP (spec `docs/specs/modelo-dominio-v2/spec.md`)
+
+| Entrada | Marca |
+| --- | --- |
+| Jerarquía y tipos de la librería, identificador por norma, Anexo A | **MVP** |
+| Alcance, Sede, Exclusión | **MVP** |
+| Certificado, Activo de información, Evaluación de impacto de IA, origen de NC, estados y plazos de hallazgos | después |
+| Asignación de rol con vigencia, Persona–proceso | después (antes de la primera auditoría interna) |
+| Diagnóstico y Declaración de Aplicabilidad | se modelan en el spec del MVP |
