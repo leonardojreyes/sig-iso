@@ -1,9 +1,10 @@
 // Composición de producción: arma el verificador de tokens, el registro de hechos y los casos de uso a partir del entorno.
+import { randomUUID } from 'node:crypto';
 import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
-import { AprobarAlcanceUseCase, EvaluarEntradaUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
+import { AgregarMapeoUseCase, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
 import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
@@ -85,6 +86,12 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       aprobarAlcance: new AprobarAlcanceUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
       diagnostico: new ListarDiagnosticoUseCase(unidadCertificacion, autorizacion, catalogo),
       evaluar: new EvaluarEntradaUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      listarControles: new ListarControlesUseCase(unidadCertificacion, autorizacion, catalogo),
+      crearControl: new CrearControlUseCase(unidadCertificacion, autorizacion, reloj, () => randomUUID()),
+      cambiarControl: new CambiarControlUseCase(unidadCertificacion, autorizacion, reloj),
+      retirarControl: new RetirarControlUseCase(unidadCertificacion, autorizacion, reloj),
+      agregarMapeo: new AgregarMapeoUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      quitarMapeo: new QuitarMapeoUseCase(unidadCertificacion, autorizacion),
     },
   };
 };

@@ -280,6 +280,117 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/controles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Marco de controles unificado de la empresa
+         * @description Cada control con las entradas de las normas que cubre y las normas que alcanza. Por omisión solo los vigentes. Un mapeo a una
+         *     entrada que la empresa ya no tiene adoptada llega con `entrada` nula y no suma normas. Orden de evaluación: 401, 403, 400.
+         */
+        get: operations["listarControles"];
+        put?: never;
+        /**
+         * Crea un control de la empresa
+         * @description El código es propio de la empresa y no se repite, ni siquiera con el de un control retirado (409). Orden de evaluación: 401, 403, 400, 409.
+         */
+        post: operations["crearControl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/controles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Cambia el nombre, la descripción o el responsable de un control vigente
+         * @description Concurrencia optimista: `versionEsperada` es la versión que la persona vio. Si otra persona lo cambió antes, o el control
+         *     está retirado, responde 409. Lo que no se envía se conserva; `null` quita la descripción o el responsable. Orden de evaluación:
+         *     401, 403, 400, 404 (no existe o es de otra empresa), 409.
+         */
+        put: operations["cambiarControl"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/controles/{id}/retiro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retira un control
+         * @description Un control no se borra: se retira y queda su rastro. Deja de cambiarse y de recibir mapeos, y su código no se reutiliza.
+         *     Orden de evaluación: 401, 403, 400, 404, 409 (versión distinta o ya retirado).
+         */
+        post: operations["retirarControl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/controles/{id}/mapeos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Relaciona un control con una entrada de una norma adoptada
+         * @description 201 la primera vez y 200 si el mapeo ya existía (no es un error). Un control retirado o con el tope de 50 mapeos responde 409.
+         *     La entrada que la empresa no adoptó responde 404, igual que un control inexistente o de otra empresa. Orden de evaluación:
+         *     401, 403, 400, 404, 409.
+         */
+        post: operations["agregarMapeo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/controles/{id}/mapeos/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita la relación entre un control y una entrada
+         * @description No exige que la entrada siga adoptada. Un mapeo que no existe responde 404 y un control retirado, 409. Orden de evaluación:
+         *     401, 403, 400, 404, 409.
+         */
+        post: operations["quitarMapeo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -471,6 +582,80 @@ export interface components {
         Diagnostico: {
             filas: components["schemas"]["FilaDiagnostico"][];
             madurez: components["schemas"]["Madurez"];
+            normas: string[];
+        };
+        /** @enum {string} */
+        EstadoControl: "vigente" | "retirado";
+        Control: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            nombre: string;
+            descripcion: string | null;
+            /** Format: uuid */
+            responsableId: string | null;
+            estado: components["schemas"]["EstadoControl"];
+            version: number;
+        };
+        ControlEntrada: {
+            codigo: string;
+            nombre: string;
+            descripcion?: string | null;
+            /** Format: uuid */
+            responsableId?: string | null;
+        };
+        ControlCambios: {
+            versionEsperada: number;
+            nombre?: string;
+            descripcion?: string | null;
+            /** Format: uuid */
+            responsableId?: string | null;
+        };
+        ControlVersion: {
+            versionEsperada: number;
+        };
+        MapeoEntrada: {
+            libreriaCodigo: string;
+            idEstable: string;
+        };
+        MapeoResultado: {
+            libreriaCodigo: string;
+            idEstable: string;
+            /** @description Verdadero si se creó (201); falso si ya existía (200). */
+            creado: boolean;
+        };
+        EntradaDeMapeo: {
+            /** @enum {string} */
+            tipo: "clausula" | "control";
+            titulo: string;
+            aplicaA: {
+                norma: string;
+                edicion: string;
+                clausula: string;
+            }[];
+        };
+        MapeoDeControl: {
+            libreriaCodigo: string;
+            idEstable: string;
+            /** @description Nula si la entrada ya no está entre las librerías que la empresa adoptó. */
+            entrada: components["schemas"]["EntradaDeMapeo"] | null;
+        };
+        ControlMarco: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            nombre: string;
+            descripcion: string | null;
+            /** Format: uuid */
+            responsableId: string | null;
+            estado: components["schemas"]["EstadoControl"];
+            version: number;
+            mapeos: components["schemas"]["MapeoDeControl"][];
+            /** @description Normas que alcanza por los mapeos cuyas entradas siguen adoptadas. */
+            normas: string[];
+        };
+        MarcoControles: {
+            controles: components["schemas"]["ControlMarco"][];
             normas: string[];
         };
     };
@@ -1002,6 +1187,215 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Evaluacion"];
                 };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarControles: {
+        parameters: {
+            query?: {
+                /** @description Solo los controles que alcanzan esta norma. */
+                norma?: string;
+                incluirRetirados?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El marco de controles. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarcoControles"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    crearControl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControlEntrada"];
+            };
+        };
+        responses: {
+            /** @description El control creado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Control"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarControl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControlCambios"];
+            };
+        };
+        responses: {
+            /** @description El control con los cambios, o tal como estaba si no hubo cambios. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Control"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    retirarControl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControlVersion"];
+            };
+        };
+        responses: {
+            /** @description El control retirado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Control"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    agregarMapeo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapeoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El mapeo ya existía; no hubo cambios. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapeoResultado"];
+                };
+            };
+            /** @description El mapeo creado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapeoResultado"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    quitarMapeo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapeoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El mapeo se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             400: components["responses"]["ParametrosInvalidos"];
             401: components["responses"]["NoAutenticado"];

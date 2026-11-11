@@ -93,3 +93,73 @@ export class DiagnosticoResponse {
   @ApiProperty({ type: MadurezResponse }) madurez!: MadurezResponse;
   @ApiProperty({ type: 'array', items: { type: 'string', maxLength: 60 }, maxItems: 20 }) normas!: string[];
 }
+
+// ---- Controles de la empresa y mapeos (M3)
+
+export class ControlEntradaRequest {
+  @ApiProperty({ type: String, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$', maxLength: 20 }) codigo!: string;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 120 }) nombre!: string;
+  @ApiProperty({ type: String, maxLength: 1000, nullable: true, required: false }) descripcion?: string | null;
+  @ApiProperty({ type: String, format: 'uuid', maxLength: 36, nullable: true, required: false }) responsableId?: string | null;
+}
+
+export class ControlCambiosRequest {
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 120, required: false }) nombre?: string;
+  @ApiProperty({ type: String, maxLength: 1000, nullable: true, required: false }) descripcion?: string | null;
+  @ApiProperty({ type: String, format: 'uuid', maxLength: 36, nullable: true, required: false }) responsableId?: string | null;
+}
+
+export class ControlVersionRequest {
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+}
+
+export class MapeoEntradaRequest {
+  @ApiProperty({ type: String, pattern: '^[a-z0-9][a-z0-9-]{0,63}$', maxLength: 64 }) libreriaCodigo!: string;
+  @ApiProperty({ type: String, pattern: '^[a-z0-9][a-z0-9.-]{0,40}$', maxLength: 41 }) idEstable!: string;
+}
+
+export class MapeoResultadoResponse {
+  @ApiProperty({ type: String, maxLength: 64 }) libreriaCodigo!: string;
+  @ApiProperty({ type: String, maxLength: 41 }) idEstable!: string;
+  @ApiProperty({ type: Boolean, description: 'Verdadero si se creó (201); falso si ya existía (200).' }) creado!: boolean;
+}
+
+export class ControlResponse {
+  @ApiProperty({ type: String, format: 'uuid', maxLength: 36 }) id!: string;
+  @ApiProperty({ type: String, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$', maxLength: 20 }) codigo!: string;
+  @ApiProperty({ type: String, maxLength: 120 }) nombre!: string;
+  @ApiProperty({ type: String, maxLength: 1000, nullable: true }) descripcion!: string | null;
+  @ApiProperty({ type: String, format: 'uuid', maxLength: 36, nullable: true }) responsableId!: string | null;
+  @ApiProperty({ type: String, enum: ['vigente', 'retirado'] }) estado!: string;
+  @ApiProperty({ type: 'integer', minimum: 1 }) version!: number;
+}
+
+export class EntradaDeMapeoResponse {
+  @ApiProperty({ type: String, enum: ['clausula', 'control'] }) tipo!: string;
+  @ApiProperty({ type: String, maxLength: 80 }) titulo!: string;
+  @ApiProperty({ type: [CorrespondenciaNormaResponse], minItems: 1, maxItems: 20 }) aplicaA!: CorrespondenciaNormaResponse[];
+}
+
+export class MapeoDeControlResponse {
+  @ApiProperty({ type: String, maxLength: 64 }) libreriaCodigo!: string;
+  @ApiProperty({ type: String, maxLength: 41 }) idEstable!: string;
+  @ApiProperty({ type: EntradaDeMapeoResponse, nullable: true, description: 'Nula si la entrada ya no está entre las librerías que la empresa adoptó.' }) entrada!: EntradaDeMapeoResponse | null;
+}
+
+export class ControlMarcoResponse {
+  @ApiProperty({ type: String, format: 'uuid', maxLength: 36 }) id!: string;
+  @ApiProperty({ type: String, maxLength: 20 }) codigo!: string;
+  @ApiProperty({ type: String, maxLength: 120 }) nombre!: string;
+  @ApiProperty({ type: String, maxLength: 1000, nullable: true }) descripcion!: string | null;
+  @ApiProperty({ type: String, format: 'uuid', maxLength: 36, nullable: true }) responsableId!: string | null;
+  @ApiProperty({ type: String, enum: ['vigente', 'retirado'] }) estado!: string;
+  @ApiProperty({ type: 'integer', minimum: 1 }) version!: number;
+  @ApiProperty({ type: [MapeoDeControlResponse], maxItems: 50 }) mapeos!: MapeoDeControlResponse[];
+  @ApiProperty({ type: 'array', items: { type: 'string', maxLength: 60 }, maxItems: 20, description: 'Normas que alcanza por los mapeos cuyas entradas siguen adoptadas.' }) normas!: string[];
+}
+
+export class MarcoControlesResponse {
+  @ApiProperty({ type: [ControlMarcoResponse], maxItems: 500 }) controles!: ControlMarcoResponse[];
+  @ApiProperty({ type: 'array', items: { type: 'string', maxLength: 60 }, maxItems: 20 }) normas!: string[];
+}

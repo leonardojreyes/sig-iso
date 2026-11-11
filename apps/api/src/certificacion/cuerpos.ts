@@ -35,3 +35,32 @@ export const leerFiltrosDiagnostico = (consulta: Readonly<Record<string, unknown
   for (const k of ['q', 'norma', 'tipo', 'estado']) if (consulta[k] !== undefined) f[k] = consulta[k];
   return f as FiltrosDiagnostico;
 };
+
+// ---- Controles de la empresa y mapeos (M3)
+
+/** Copia solo las claves conocidas que vengan presentes (los demás campos se ignoran; el caso de uso valida lo que pasa). */
+const elegir = (o: Record<string, unknown>, claves: readonly string[]): Record<string, unknown> => {
+  const r: Record<string, unknown> = {};
+  for (const k of claves) if (o[k] !== undefined) r[k] = o[k];
+  return r;
+};
+
+export const leerControlEntrada = (cuerpo: unknown): { codigo: string; nombre: string; descripcion?: string | null; responsableId?: string | null } =>
+  elegir(campos(cuerpo), ['codigo', 'nombre', 'descripcion', 'responsableId']) as { codigo: string; nombre: string; descripcion?: string | null; responsableId?: string | null };
+
+export const leerControlCambios = (cuerpo: unknown): { versionEsperada?: number; nombre?: string; descripcion?: string | null; responsableId?: string | null } =>
+  elegir(campos(cuerpo), ['versionEsperada', 'nombre', 'descripcion', 'responsableId']);
+
+export const leerControlVersion = (cuerpo: unknown): { versionEsperada?: number } => elegir(campos(cuerpo), ['versionEsperada']);
+
+export const leerMapeoEntrada = (cuerpo: unknown): { libreriaCodigo: string; idEstable: string } =>
+  elegir(campos(cuerpo), ['libreriaCodigo', 'idEstable']) as { libreriaCodigo: string; idEstable: string };
+
+/** `?incluirRetirados=true|false`; cualquier otra cosa pasa tal cual y el caso de uso la rechaza con 400. */
+export const leerFiltrosControles = (consulta: Readonly<Record<string, unknown>>): { norma?: string; incluirRetirados?: boolean } => {
+  const f: Record<string, unknown> = {};
+  if (consulta['norma'] !== undefined) f['norma'] = consulta['norma'];
+  const r = consulta['incluirRetirados'];
+  if (r !== undefined) f['incluirRetirados'] = r === 'true' ? true : r === 'false' ? false : r;
+  return f as { norma?: string; incluirRetirados?: boolean };
+};

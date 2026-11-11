@@ -501,6 +501,256 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /controles:
+    get:
+      operationId: listarControles
+      summary: Marco de controles unificado de la empresa
+      description: |
+        Cada control con las entradas de las normas que cubre y las normas que alcanza. Por omisión solo los vigentes. Un mapeo a una
+        entrada que la empresa ya no tiene adoptada llega con `entrada` nula y no suma normas. Orden de evaluación: 401, 403, 400.
+      tags: [controles]
+      x-permiso: controles.ver
+      parameters:
+        - name: norma
+          in: query
+          required: false
+          description: Solo los controles que alcanzan esta norma.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 60
+            pattern: ^[A-Za-z0-9 :./-]+$
+        - name: incluirRetirados
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: El marco de controles.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarcoControles'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      operationId: crearControl
+      summary: Crea un control de la empresa
+      description: |
+        El código es propio de la empresa y no se repite, ni siquiera con el de un control retirado (409). Orden de evaluación: 401, 403, 400, 409.
+      tags: [controles]
+      x-permiso: controles.gestionar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ControlEntrada'
+      responses:
+        '201':
+          description: El control creado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Control'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /controles/{id}:
+    put:
+      operationId: cambiarControl
+      summary: Cambia el nombre, la descripción o el responsable de un control vigente
+      description: |
+        Concurrencia optimista: `versionEsperada` es la versión que la persona vio. Si otra persona lo cambió antes, o el control
+        está retirado, responde 409. Lo que no se envía se conserva; `null` quita la descripción o el responsable. Orden de evaluación:
+        401, 403, 400, 404 (no existe o es de otra empresa), 409.
+      tags: [controles]
+      x-permiso: controles.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ControlCambios'
+      responses:
+        '200':
+          description: El control con los cambios, o tal como estaba si no hubo cambios.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Control'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /controles/{id}/retiro:
+    post:
+      operationId: retirarControl
+      summary: Retira un control
+      description: |
+        Un control no se borra: se retira y queda su rastro. Deja de cambiarse y de recibir mapeos, y su código no se reutiliza.
+        Orden de evaluación: 401, 403, 400, 404, 409 (versión distinta o ya retirado).
+      tags: [controles]
+      x-permiso: controles.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ControlVersion'
+      responses:
+        '200':
+          description: El control retirado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Control'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /controles/{id}/mapeos:
+    post:
+      operationId: agregarMapeo
+      summary: Relaciona un control con una entrada de una norma adoptada
+      description: |
+        201 la primera vez y 200 si el mapeo ya existía (no es un error). Un control retirado o con el tope de 50 mapeos responde 409.
+        La entrada que la empresa no adoptó responde 404, igual que un control inexistente o de otra empresa. Orden de evaluación:
+        401, 403, 400, 404, 409.
+      tags: [controles]
+      x-permiso: controles.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MapeoEntrada'
+      responses:
+        '200':
+          description: El mapeo ya existía; no hubo cambios.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapeoResultado'
+        '201':
+          description: El mapeo creado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapeoResultado'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /controles/{id}/mapeos/eliminacion:
+    post:
+      operationId: quitarMapeo
+      summary: Quita la relación entre un control y una entrada
+      description: |
+        No exige que la entrada siga adoptada. Un mapeo que no existe responde 404 y un control retirado, 409. Orden de evaluación:
+        401, 403, 400, 404, 409.
+      tags: [controles]
+      x-permiso: controles.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MapeoEntrada'
+      responses:
+        '204':
+          description: El mapeo se quitó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearerAuth:
@@ -1080,6 +1330,205 @@ components:
             $ref: '#/components/schemas/FilaDiagnostico'
         madurez:
           $ref: '#/components/schemas/Madurez'
+        normas:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 60
+    EstadoControl:
+      type: string
+      enum: [vigente, retirado]
+    Control:
+      type: object
+      required: [id, codigo, nombre, descripcion, responsableId, estado, version]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$
+          maxLength: 20
+        nombre:
+          type: string
+          maxLength: 120
+        descripcion:
+          type: [string, 'null']
+          maxLength: 1000
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        estado:
+          $ref: '#/components/schemas/EstadoControl'
+        version:
+          type: integer
+          minimum: 1
+    ControlEntrada:
+      type: object
+      required: [codigo, nombre]
+      additionalProperties: false
+      properties:
+        codigo:
+          type: string
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$
+          maxLength: 20
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+        descripcion:
+          type: [string, 'null']
+          maxLength: 1000
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+    ControlCambios:
+      type: object
+      required: [versionEsperada]
+      additionalProperties: false
+      properties:
+        versionEsperada:
+          type: integer
+          minimum: 1
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+        descripcion:
+          type: [string, 'null']
+          maxLength: 1000
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+    ControlVersion:
+      type: object
+      required: [versionEsperada]
+      additionalProperties: false
+      properties:
+        versionEsperada:
+          type: integer
+          minimum: 1
+    MapeoEntrada:
+      type: object
+      required: [libreriaCodigo, idEstable]
+      additionalProperties: false
+      properties:
+        libreriaCodigo:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9-]{0,63}$
+          maxLength: 64
+        idEstable:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9.-]{0,40}$
+          maxLength: 41
+    MapeoResultado:
+      type: object
+      required: [libreriaCodigo, idEstable, creado]
+      additionalProperties: false
+      properties:
+        libreriaCodigo:
+          type: string
+          maxLength: 64
+        idEstable:
+          type: string
+          maxLength: 41
+        creado:
+          type: boolean
+          description: Verdadero si se creó (201); falso si ya existía (200).
+    EntradaDeMapeo:
+      type: object
+      required: [tipo, titulo, aplicaA]
+      additionalProperties: false
+      properties:
+        tipo:
+          type: string
+          enum: [clausula, control]
+        titulo:
+          type: string
+          maxLength: 80
+        aplicaA:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            type: object
+            required: [norma, edicion, clausula]
+            additionalProperties: false
+            properties:
+              norma: {type: string, maxLength: 60}
+              edicion: {type: string, pattern: '^[0-9]{4}$', maxLength: 4}
+              clausula: {type: string, pattern: '^[A-Za-z0-9]+(\.[A-Za-z0-9]+)*$', maxLength: 20}
+    MapeoDeControl:
+      type: object
+      required: [libreriaCodigo, idEstable, entrada]
+      additionalProperties: false
+      properties:
+        libreriaCodigo:
+          type: string
+          maxLength: 64
+        idEstable:
+          type: string
+          maxLength: 41
+        entrada:
+          oneOf:
+            - $ref: '#/components/schemas/EntradaDeMapeo'
+            - type: 'null'
+          description: Nula si la entrada ya no está entre las librerías que la empresa adoptó.
+    ControlMarco:
+      type: object
+      required: [id, codigo, nombre, descripcion, responsableId, estado, version, mapeos, normas]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          maxLength: 20
+        nombre:
+          type: string
+          maxLength: 120
+        descripcion:
+          type: [string, 'null']
+          maxLength: 1000
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        estado:
+          $ref: '#/components/schemas/EstadoControl'
+        version:
+          type: integer
+          minimum: 1
+        mapeos:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/MapeoDeControl'
+        normas:
+          type: array
+          maxItems: 20
+          description: Normas que alcanza por los mapeos cuyas entradas siguen adoptadas.
+          items:
+            type: string
+            maxLength: 60
+    MarcoControles:
+      type: object
+      required: [controles, normas]
+      additionalProperties: false
+      properties:
+        controles:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/ControlMarco'
         normas:
           type: array
           maxItems: 20
