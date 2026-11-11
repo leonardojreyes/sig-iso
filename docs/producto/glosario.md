@@ -8,11 +8,11 @@ Definiciones de trabajo redactadas por SynapTech con palabras propias (no reprod
 | **Edición** | Versión publicada de una norma (p. ej. 27001:2022). Una norma puede tener varias; la transición entre ediciones tiene su propio análisis de brechas. |
 | **Estructura Armonizada** | Esqueleto común de cláusulas 4 a 10 compartido por las normas de sistemas de gestión; permite reutilizar evidencias entre normas. |
 | **Requisito** | Condición que la norma exige cumplir, identificada por cláusula (entrada de tipo cláusula de la librería). Se evalúa como cumple / parcial / no cumple / no aplica. |
-| **Control de la empresa** | Medida interna de la empresa que satisface uno o varios requisitos y controles de la norma. Puede ser adicional (de otra fuente, sin equivalente en el Anexo A). Se mapea muchos a muchos con las entradas de la norma. |
-| **Control de la norma** | Entrada de tipo control del Anexo A de una librería (27001:2022 o 42001:2023): una medida de referencia que la Declaración de Aplicabilidad evalúa. No es lo mismo que el control de la empresa. |
+| **Control de la empresa** | Medida interna de la empresa que satisface uno o varios requisitos y controles de la norma. Puede ser adicional (de otra fuente, sin equivalente en el Anexo A). Se mapea muchos a muchos con las entradas de la norma. Se identifica con un código propio de la empresa y **no se borra: se retira** (deja de cambiarse y de recibir mapeos, queda su rastro y su código no se reutiliza). |
+| **Control de la norma** | Entrada de tipo control del Anexo A de una librería (27001:2022 o 42001:2023): una medida de referencia que la Declaración de Aplicabilidad evalúa. En la librería de SynapTech para 27001 (borrador, numeraciones sin verificar) hay 93, repartidos en cuatro temas: organizacionales, personas, físicos y tecnológicos; en el MVP se evalúan en el diagnóstico. No es lo mismo que el control de la empresa. |
 | **Agrupador** | Entrada de una librería que reúne a otras: un tema (27001:2022), un objetivo de control (42001:2023) o un capítulo (Estructura Armonizada). |
 | **Equivalencia entre normas** | Relación declarada entre entradas de normas distintas: común, parcial o específica, con nota propia y quién la verificó. Por omisión es parcial y sin verificar. |
-| **Mapeo** | Relación entre un control y un requisito. Base de "un requisito común, una evidencia, varias normas". |
+| **Mapeo** | Relación entre un control de la empresa y una entrada de una norma adoptada (una cláusula o un control de la norma). Base de "un requisito común, una evidencia, varias normas". Se puede quitar; cada alta y baja queda en la bitácora. |
 | **Evidencia** | Registro o archivo que demuestra que un control opera (con responsable, fecha, vigencia y hash SHA-256). Se reutiliza para todos los requisitos mapeados. |
 | **Vigencia (de evidencia)** | Fecha hasta la cual la evidencia sigue siendo válida; genera alertas de vencimiento. |
 | **Hallazgo** | Resultado de una auditoría: conformidad, observación, oportunidad de mejora o no conformidad. |
@@ -36,10 +36,16 @@ Definiciones de trabajo redactadas por SynapTech con palabras propias (no reprod
 | **Seguimiento (vigilancia)** | Auditorías periódicas durante el ciclo. El primero, a más tardar 12 meses después de la decisión de certificación; luego el segundo. |
 | **Recertificación** | Auditoría completa antes del vencimiento del certificado para iniciar un nuevo ciclo. |
 | **Transición de edición** | Migración a una nueva edición de la norma dentro del plazo del organismo/IAF, con análisis de brechas propio. |
-| **Alcance** | Límites del sistema: sedes, procesos, productos y exclusiones justificadas. |
+| **Alcance** | Límites del sistema: sedes, procesos, productos y exclusiones justificadas. En el MVP es un texto por norma que una persona aprueba (queda quién y cuándo); si el texto cambia, vuelve a «sin aprobar». |
 | **Parte interesada** | Persona u organización con requisitos relevantes para el sistema. |
 | **Proyecto de certificación** | Instancia que recorre las etapas E0–E8 para una norma o combinación. |
 | **Empresa (tenant)** | Organización cliente aislada por RLS; unidad de multiempresa. |
 | **Librería de normas** | Archivo YAML versionado con la estructura de una norma (sin su texto). |
 | **Sistema de IA** | Sistema inventariado para 42001; el asistente del propio producto es uno. |
 | **Borrador generado por IA** | Marca obligatoria en todo contenido de IA hasta aprobación humana. |
+| **Entrada (de una librería)** | Cláusula o control de una librería de normas, con un identificador estable propio, un título breve y una guía de SynapTech. Una misma entrada puede aplicar a varias normas, cada una con su numeración (compartir un número no significa pedir lo mismo). |
+| **Diagnóstico (autoevaluación)** | Evaluación que la empresa hace de cada entrada de las librerías que adoptó, antes de la auditoría. Es un juicio propio, no un resultado oficial. |
+| **Evaluación** | Estado que la empresa le da a una entrada: cumple, parcial, no cumple o no aplica (este último exige justificar). Lleva comentario, responsable y fecha objetivo. Una entrada sin evaluación está **sin evaluar**. |
+| **Madurez** | Porcentaje que resume la autoevaluación: cumple vale 100, parcial 50 y no cumple 0; «no aplica» no cuenta y «sin evaluar» se muestra aparte. Si no hay nada evaluable no hay porcentaje. Mide la autoevaluación, no la probabilidad de certificarse. |
+| **Marco de controles unificado** | Vista de los controles de la empresa con las entradas que cubren y las normas que alcanzan: una medida se trabaja una vez y se ve cubriendo varias normas. |
+| **Retirar (un control)** | Dar de baja un control sin borrarlo: deja de cambiarse y de recibir mapeos, queda su rastro y su código no se reutiliza. |

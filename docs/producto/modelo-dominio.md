@@ -2,6 +2,8 @@
 
 Diagrama de entidades (Mermaid). Toda entidad de negocio lleva `empresa_id` (RLS), salvo las librerías globales de normas (Norma, Edición, Requisito), que son de solo lectura para las empresas. Las claves y atributos finales se definen en cada `/spec`.
 
+> **Este diagrama es el norte, no lo construido.** El MVP de certificación (plan en `docs/specs/mvp-certificacion/plan.md`) implementa un subconjunto con algunas diferencias deliberadas; están en la sección «Lo construido en el MVP» más abajo, con las tablas reales.
+
 ```mermaid
 erDiagram
     EMPRESA ||--o{ PROYECTO_CERTIFICACION : tiene
@@ -183,6 +185,40 @@ erDiagram
     }
 ```
 
+## Lo construido en el MVP (hitos M1 a M3, 2026-11-11)
+
+Tablas reales de PostgreSQL. Todo lo de la empresa lleva `empresa_id` con RLS forzada y claves foráneas compuestas `(empresa_id, id)`; el catálogo de librerías es global y de solo lectura para las empresas.
+
+```mermaid
+erDiagram
+    EMPRESA ||--o{ USUARIO : tiene
+    EMPRESA ||--o{ EMPRESA_LIBRERIA : adopta
+    LIBRERIA ||--o{ EMPRESA_LIBRERIA : "es adoptada por"
+    LIBRERIA ||--o{ LIBRERIA_ENTRADA : contiene
+    LIBRERIA_ENTRADA ||--|{ LIBRERIA_ENTRADA_NORMA : "corresponde a"
+    EMPRESA ||--o{ ALCANCE : "define, uno por norma"
+    EMPRESA ||--o{ EVALUACION : "evalúa entradas"
+    EMPRESA ||--o{ CONTROL : mantiene
+    CONTROL ||--o{ CONTROL_MAPEO : "responde a"
+    LIBRERIA_ENTRADA ||..o{ EVALUACION : "se referencia por codigo de libreria e id estable"
+    LIBRERIA_ENTRADA ||..o{ CONTROL_MAPEO : "se referencia por codigo de libreria e id estable"
+    EMPRESA ||--o{ BITACORA : registra
+```
+
+Las líneas punteadas no son claves foráneas: la entrada se referencia por `(código de librería, id estable)` y la evaluación fija además la versión de la librería usada (`libreria_id`), de modo que publicar una versión nueva de la librería no deja huérfana ninguna evaluación ni mapeo.
+
+| En el norte | En el MVP | Diferencias y notas |
+| --- | --- | --- |
+| Norma, Edición, Requisito | `libreria`, `libreria_entrada`, `libreria_entrada_norma` | No hay tablas `norma` ni `edicion`: la entrada lleva su tipo (`clausula` o `control` del Anexo A), su tema (`grupo`) y, por cada norma a la que aplica, la edición y su numeración propia en `libreria_entrada_norma`. Sin jerarquía de padres. |
+| Control | `control` | Medida **propia de la empresa**, con código único por empresa, estado `vigente` o `retirado` y versión. El responsable es un `responsable_id` (persona de la empresa). Aún no cuelga de un Proceso. |
+| Mapeo | `control_mapeo` | Relaciona un control con **una entrada** (cláusula o control del Anexo A) de las librerías adoptadas. Máximo 50 por control. |
+| *(no estaba)* **Evaluación** | `evaluacion` | Estado de cada entrada para la empresa: cumple, parcial, no cumple o no aplica; «sin evaluar» es la **ausencia de fila**. Lleva comentario, responsable, fecha objetivo y versión. |
+| Proyecto de certificación (alcance) | `alcance` | El proyecto es **implícito** (uno por empresa). El alcance es un texto por norma con su aprobación (quién y cuándo); sedes y exclusiones en tablas quedan para después. |
+| Evidencia | *(M4, pendiente)* | Con archivo, huella SHA-256, vigencia y reemplazo; una evidencia respaldará varias entradas. |
+| Declaración de Aplicabilidad | *(M5, pendiente)* | Se derivará del diagnóstico y de los controles reales. |
+| Bitácora inmutable | `bitacora`, `bitacora_ancla` | Encadenada por huellas; nada la modifica ni la borra. |
+| Etapas, Auditoría, Hallazgo, No conformidad, Riesgo, Documento, Indicador, Sistema de IA, Proceso | *(fuera del MVP)* | Siguen siendo el norte. |
+
 ## Reglas de dominio clave
 
 1. **Un requisito común, una evidencia, varias normas:** la Evidencia cuelga del Control; el Mapeo conecta el Control con los Requisitos de cualquier Edición.
@@ -195,6 +231,15 @@ erDiagram
 8. **Control de la norma frente a control de la empresa:** la Declaración de Aplicabilidad se arma por **control de la norma** (27001 y 42001); el **control de la empresa** puede ser adicional y no tener equivalente en el Anexo A.
 9. **Independencia del auditor:** nadie audita un proceso con el que tiene relación (dueña, participa, diseñó, supervisa) ni uno que auditó recientemente; se evalúa por auditoría y por proceso.
 
+**Reglas que ya cumple el MVP** (añadidas al construir M1 a M3):
+
+10. **«Sin evaluar» no se guarda.** Una entrada sin fila está sin evaluar. Marcar «no aplica» exige una justificación de al menos 5 caracteres. Cambiar una evaluación es con **concurrencia optimista** por versión: si otra persona la cambió antes, el cambio se rechaza y no se pisa su trabajo.
+11. **Madurez de la autoevaluación.** Cumple vale 100, parcial 50 y no cumple 0; «no aplica» queda fuera del cálculo y «sin evaluar» se cuenta aparte (no suma como cumplido). Sin nada evaluable el porcentaje es **nulo**, no 0. Se calcula por norma, por capítulo (cláusulas) y por tema (controles del Anexo A). Es una medida de la autoevaluación, **no** una probabilidad de certificarse.
+12. **Un control no se borra, se retira.** Un control retirado no se cambia ni recibe mapeos, y su código no se reutiliza. Los mapeos sí se pueden quitar. Cada alta, cambio, retiro y baja queda en la bitácora.
+13. **Aprobar el alcance** deja constancia de quién y cuándo; cambiar el texto de un alcance aprobado lo devuelve a «sin aprobar».
+14. **Solo se trabaja con lo adoptado.** Evaluar, mapear o definir el alcance solo es posible sobre entradas y normas de las librerías que la empresa adoptó; lo demás responde como inexistente, igual que lo de otra empresa.
+15. **La bitácora no guarda textos libres.** Ni el comentario de una evaluación, ni el texto del alcance, ni el nombre o la descripción de un control: solo estados, banderas y el objeto afectado.
+
 ## Marcas del MVP (spec `docs/specs/modelo-dominio-v2/spec.md`)
 
 | Entrada | Marca |
@@ -204,3 +249,5 @@ erDiagram
 | Certificado, Activo de información, Evaluación de impacto de IA, origen de NC, estados y plazos de hallazgos | después |
 | Asignación de rol con vigencia, Persona–proceso | después (antes de la primera auditoría interna) |
 | Diagnóstico y Declaración de Aplicabilidad | se modelan en el spec del MVP |
+
+> **El plan del MVP manda sobre estas marcas** (`docs/specs/mvp-certificacion/plan.md`, aprobado el 2026-11-10, es posterior y recorta el spec v2): en el MVP la jerarquía de librerías **no entra** (las entradas son planas, con tipo y tema), el alcance es **un texto por norma con su aprobación** y las sedes y exclusiones en tablas quedan para después. Lo que sí está construido está en «Lo construido en el MVP», arriba.

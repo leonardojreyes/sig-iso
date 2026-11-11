@@ -2,12 +2,46 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** **0.7 Puerto de IA — en preparación.** Spec, plan y 42 tareas aprobados el 2026-11-09 (PR #13); hay un **recorte del alcance propuesto, a la espera de tu aprobación** (ver «Próximos pasos técnicos»). El paso 0.6 queda cerrado.
-- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (#1 y #3), 0.5 (#4) y **0.6 (cerrado el 2026-11-09; PR #5 a #11)**.
-- **PR (2026-11-11):** `main` incluye los PR #1, #3, #4, #5 (cimientos), #6 (skills), #7 (catálogo y listado), #8 (adopción desde la pantalla), #9 (ingreso real, cliente de eventos de Keycloak y endurecimiento de hooks), #10 (guía de ejecución y medición de memoria) , #11 (prueba de aislamiento de extremo a extremo y `/review` del corte) y #12 (protección de `.local/`). El #2 se cerró a propósito (PR de prueba que viola las reglas). **Abiertos** (al 2026-11-11): #13 (spec, plan y tareas del 0.7), #14 (cimientos del puerto de IA), #16 y #17 (documentos), #18 (spec del modelo de dominio v2) y #19 (MVP M1, Anexo A de 27001). La protección de `main` exige los **7 checks**, incluido `integracion`. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
+- **Paso actual:** **MVP de certificación** (plan ágil, `docs/specs/mvp-certificacion/plan.md`): **M1, M2 y M3 hechos**; siguen M4, M5 y M6. Ver la sección «MVP de certificación — qué está hecho». El **0.7 (puerto de IA)** quedó en preparación (spec aprobado en el PR #13, cimientos en el #14) y el plan lo deja **fuera del MVP**.
+- **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (#1 y #3), 0.5 (#4) y **0.6 (cerrado el 2026-11-09; PR #5 a #11)**. Siguen fuera del MVP: el resto del 0.7, el 0.8 y el 0.9.
+- **PR (2026-11-11):** `main` incluye los PR #1, #3 a #12, #15 (cierre formal del 0.6), #18 (spec del modelo de dominio v2) y #19 (**MVP M1**, Anexo A de 27001). El #2 se cerró a propósito (PR de prueba que viola las reglas). **Abiertos:** #13 (spec, plan y tareas del 0.7), #14 (cimientos del puerto de IA, esperando sus checks) y #16 y #17 (documentos). La protección de `main` exige los **7 checks**, incluido `integracion`, y que la rama esté al día. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
+- **Rama del MVP:** M2 y M3 están en `feature/mvp-m2-m3`, **rebasada sobre `main` el 2026-11-11** (la antigua `feature/mvp-m2-diagnostico` de GitHub quedó obsoleta: tiene la historia previa al rebase). Es el **hito H2**; falta abrir su PR.
 - **Corte 0.6 cerrado: 65 de 70 tareas hechas.** Las 5 restantes no bloquean: **4.4** (tuya), **9.2 y 9.3** (OpenFGA, pospuestas por el ADR 029) y **11.2 y 11.3** (worker de intentos fallidos, diferidas a la Fase 1). Plan en `docs/specs/corte-vertical-0-6/`; `/review` completo sin bloqueantes en `docs/revisiones/2026-11-09-review-corte-0-6.md`.
 
-## Corte 0.6 — qué está terminado
+## MVP de certificación — qué está hecho
+
+Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs largos; proceso ágil: una rama por rebanada, TDD, PR por hito y **un solo `/review` completo al final**). Código en `modules/certificacion` (hexagonal: dominio, aplicación, infraestructura), la API en `apps/api/src/certificacion/` y las pantallas en `apps/web`. Migraciones `0006` a `0008`.
+
+| Hito | Qué entrega | Estado |
+| --- | --- | --- |
+| **M1** | Anexo A de ISO/IEC 27001:2022 como librería propia (**93 controles** planos, con tipo y grupo, guías de SynapTech; «borrador, numeraciones sin verificar»), esquema de librerías v3 y migración `0006`; el listado de requisitos muestra tipo y grupo | **Hecho** (`5bc949b`) |
+| **M2** | **Alcance** por norma (texto y aprobación con quién y cuándo) y **diagnóstico**: estado por entrada (cumple, parcial, no cumple, no aplica; «sin evaluar» = no hay fila), comentario, fecha objetivo, **madurez** por norma, capítulo y tema, y concurrencia optimista por versión | **Hecho** |
+| **M3** | **Controles de la empresa** y **mapeos** muchos a muchos con las entradas de las normas adoptadas (**marco de controles unificado**: una medida, varias normas) | **Hecho** |
+| M4 | Evidencias con archivo (huella SHA-256, vigencia, reemplazo, descarga protegida) y cobertura. Requiere el ADR 032 (almacén de archivos) | Pendiente |
+| M5 | Declaración de Aplicabilidad de 27001 derivada del diagnóstico y los controles, aprobación con versión congelada y exportación a Word. Requiere el ADR 033 | Pendiente |
+| M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
+
+**M2 y M3 en detalle** (para no tener que releer el código):
+
+- **Tablas** (todas con `empresa_id`, RLS forzada y clave foránea compuesta con la empresa; una prueba de aislamiento por tabla): `alcance` y `evaluacion` (`0007`), `control` y `control_mapeo` (`0008`). La aplicación **no puede borrar** alcances, evaluaciones ni controles: un control se **retira** y su código no se reutiliza. Los mapeos sí se pueden quitar (con rastro). Las entradas de las normas se referencian por `(código de librería, id estable)` **sin clave foránea**, con la versión de la librería fijada al evaluar, así una versión nueva de la librería no deja nada huérfano.
+- **API** (contrato primero en `packages/contracts/openapi.yaml`, 19 operaciones protegidas en total): `GET/PUT /alcances`, `POST /alcances/aprobacion`, `GET /diagnostico`, `PUT /diagnostico/evaluaciones`, `GET/POST /controles`, `PUT /controles/{id}`, `POST /controles/{id}/retiro`, `POST /controles/{id}/mapeos` (201 o 200 si ya existía) y `POST /controles/{id}/mapeos/eliminacion` (204). Orden de evaluación **401 → 403 → 400 → 404 → 409**: el permiso se decide antes que la forma, y un recurso de otra empresa es un 404 indistinguible de uno inexistente. El contrato tiene un código nuevo, `409 conflicto` (versión vieja, código repetido, control retirado, tope de 50 mapeos por control).
+- **Pantallas** (`/e/<empresa>/…`): `diagnostico`, `alcance` y `controles`, con navegación propia. Las escrituras son formularios `POST` hacia rutas propias de la web que verifican el `Origin`, que la empresa de la dirección sea la verificada y una lista cerrada de campos, y reenvían a la API con el token de la sesión; **la web no decide nada**. El resultado vuelve como un aviso de una lista cerrada. Un 403 se muestra como «sin acceso», sin revelar qué existe.
+- **Permisos** (`platform/autorizacion`): el administrador SIG tiene todo; el colaborador consulta el alcance, el diagnóstico y el marco de controles y puede evaluar; los demás roles todavía no pueden nada (ADR 029). Permisos nuevos: `diagnostico.ver|evaluar`, `alcance.ver|gestionar|aprobar`, `controles.ver|gestionar`.
+- **Bitácora** (acciones nuevas, siempre dentro de la misma transacción que el cambio): `evaluacion.cambiada`, `alcance.cambiado|aprobado`, `control.creado|cambiado|retirado`, `mapeo.creado|eliminado`. Solo estados, banderas y el objeto: **nunca** el comentario, el texto del alcance ni el nombre o la descripción de un control.
+- **Verificación de extremo a extremo** con todo real (Keycloak, API, PostgreSQL y web): `pnpm web:verify-diagnostico` (44 comprobaciones) y `pnpm web:verify-controles` (51). Cubren permisos por rol, `Origin`, concurrencia y aislamiento con la empresa B. **Escriben en tu base local** (marca `VERIF-`): los controles de prueba quedan retirados, no se borran.
+- **Medición del 2026-11-11:** `pnpm lint` sin errores (queda un aviso que ya existía), `pnpm typecheck` y `pnpm test` en verde (16 de 16 tareas).
+
+**Límites conocidos del MVP** (decisiones ya tomadas; no son defectos pendientes de corregir):
+
+- Las pantallas **no asignan responsable** (ni en el diagnóstico ni en los controles), aunque la API lo admite. Hoy nada lo asigna; cuando se agregue, reevaluar una entrada debe conservar el responsable.
+- «Aprobar» el alcance aprueba el texto **ya guardado**, no lo que esté escrito en la caja; la pantalla lo dice.
+- El `409 conflicto` de la API es genérico (el contrato es deliberadamente cerrado); el aviso de la web enumera las causas posibles.
+- Un mapeo cuya entrada dejó de estar adoptada se sigue mostrando, sin título y rotulado, y no suma normas al control.
+- Solo el administrador SIG gestiona controles y alcance; que el colaborador **proponga** cambios queda para después.
+- **Solo datos de prueba** hasta que el asesor legal valide el ADR 028 (sin cambios).
+- El campo `nombre` de un control es el título de una medida, no el de una persona: por eso tiene una **excepción explícita** en la prueba de privacidad del contrato (el resto de los cuerpos de petición no admite nombres).
+
+## Corte 0.6 (cerrado) — qué está terminado
 
 - **Catálogo:** `pnpm libraries:load` (4.5) carga las librerías con el rol del catálogo, de forma idempotente, todo o nada, con la huella de cada versión y un hecho de plataforma por carga.
 - **Base de datos y aislamiento:** PostgreSQL 16 con RLS, roles `sigiso_*`, migraciones 0001–0005, prueba de aislamiento entre empresas (fases 1 y 2).
@@ -31,30 +65,34 @@
 
 ## Pendiente del responsable
 
-1. ~~Integrar el PR #12~~ (protección de `.local/`: **integrado**). Cuando quieras, el **#13** (spec, plan y tareas del 0.7). Rebase and merge o Squash and merge.
-2. **Aprobar o ajustar el recorte del 0.7** y el ADR 030 (modelo por defecto del asistente), propuestos tras la prueba previa.
-3. **Ramas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `feature/paso-0-6-adopcion`, `feature/paso-0-6-ingreso`, `feature/paso-0-6-cierre`, `feature/paso-0-6-aislamiento-e2e`, `feature/proteger-local`, `docs/estado-paso-0-4` y `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo, y las ramas del 0.7 (`feature/spec-ia-0-7`, `feature/ia-cimientos`) hasta integrarlas.
+1. **PR del hito H2 (M2 + M3).** El #19 (M1) ya está integrado y la rama `feature/mvp-m2-m3` está rebasada sobre `main`. Falta **subirla (`git push -u origin feature/mvp-m2-m3`) y abrir su PR**; el 2026-11-11 el acceso a GitHub desde esta máquina falla **de forma intermitente** con «SSL certificate problem: unable to get local issuer certificate» (`git`) y un error de handshake TLS (`gh`), así que esa subida quedó pendiente (la historia de la rama vieja `feature/mvp-m2-diagnostico` cambió con el rebase, por eso se sube con otro nombre en vez de reescribirla). El **#14** (cimientos de IA) sigue abierto y cambia `platform/autorizacion/src/roles.ts`: cuando entre habrá un segundo rebase corto para juntar su lista de permisos con la del MVP. Cada PR necesita los 7 checks en verde y el merge es tuyo.
+2. **Aprobar o ajustar el recorte del 0.7** y el ADR 030 (modelo por defecto del asistente), propuestos tras la prueba previa, e integrar el **#13** cuando quieras. El plan del MVP deja todo esto para después, así que no bloquea.
+3. **Ramas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `feature/paso-0-6-adopcion`, `feature/paso-0-6-ingreso`, `feature/paso-0-6-cierre`, `feature/paso-0-6-aislamiento-e2e`, `feature/proteger-local`, `feature/mvp-m1-anexo-a`, `docs/cierre-paso-0-6`, `docs/spec-dominio-v2`, la obsoleta `feature/mvp-m2-diagnostico`, `docs/estado-paso-0-4` y `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo, y las ramas del 0.7 (`feature/spec-ia-0-7`, `feature/ia-cimientos`) hasta integrarlas.
 4. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`.
 5. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
 6. **A1 de la revisión de calidad** (el repositorio de GitHub es público): decisión tuya, pendiente; requiere un ADR. Sus demás hallazgos (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`): M1, M5 y la protección de `.local/` resueltos; A2, M3 y M4 son prerrequisitos de la Fase 1 (abajo); **M2** conviene al pasar por la migración de adopción y **B1–B4** al pasar por esos archivos.
 7. Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (mientras tanto, `env -u GITHUB_TOKEN` en `git` y `gh`).
 8. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global (ver H6.10 abajo).
 
-Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado y las dos empresas de prueba; `pnpm libraries:load` cargó la librería de ejemplo; las claves están en `.env.local` y `.local/` (ignorados). **La empresa A ya tiene adoptada la librería de ejemplo** (la adoptó `pnpm web:verify-listado` el 2026-11-09); la adopción en pantalla se prueba con `admin-b`, que no ha adoptado nada. Guía de ejecución: `docs/fase0/guia-de-ejecucion.md`.
+Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado (**hasta la `0008`**) y las dos empresas de prueba; `pnpm libraries:load` carga las librerías (la de ejemplo y, desde M1, el Anexo A de 27001; si todavía no adoptaste esta última, hazlo desde la pantalla de requisitos); las claves están en `.env.local` y `.local/` (ignorados). La empresa A ya adoptó la librería de ejemplo (ver «Brechas y avisos»). Los scripts `web:verify-diagnostico` y `web:verify-controles` dejaron en tu base datos de prueba de A: una evaluación, un alcance y controles `VERIF-…` retirados.
 
 ## Próximos pasos técnicos
 
-1. **0.7 Puerto de IA:** aprobar el recorte propuesto, integrar el PR #13 y seguir con `/implement` (tareas 1.5 en adelante; la 1.1 a la 1.4 están hechas en `feature/ia-cimientos`). Ollama local con `qwen2.5:1.5b` y `granite3.3:2b`, ya instalados (2,4 GB, no se descarga nada). Spec, plan y tareas en `docs/specs/puerto-ia-0-7/`.
-2. **0.8** (Helm y OpenTofu validados, sin clúster) y **0.9** (seguridad y cumplimiento).
-3. Antes de la Fase 1, el `/spec` del modelo de dominio v2 y del esquema de librerías v3 (A2, M3 y M4, abajo).
+1. **Abrir el PR de H2 (M2 + M3)** desde `feature/mvp-m2-m3` y, cuando el #14 entre, hacer el rebase corto de `roles.ts` (ver «Pendiente del responsable»).
+2. **M4 — evidencias con archivo.** Primero el ADR 032 (almacén de archivos detrás de `AlmacenArchivosPort`, adaptador de sistema de archivos local; lista cerrada de tipos por la firma del contenido; 25 MB; huella SHA-256), migración `0009`, subida y descarga protegida, reemplazo y **cobertura** (una evidencia respalda varias entradas).
+3. **M5 — Declaración de Aplicabilidad de 27001.** ADR 033 (`docx` detrás de `GeneradorDocumentoPort`, licencias comprobadas con `scripts/check-licenses.mjs`), derivada del diagnóstico y los controles, marcada preliminar, aprobación con versión congelada e inmutable y exportación a Word.
+4. **M6 — cierre del MVP:** un solo `/review` completo (arquitecto, multiempresa, seguridad y cumplimiento), STRIDE ampliado, este archivo y `docs/fase0/guia-de-ejecucion.md`.
+5. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
 
-- **Actualizado:** 2026-11-09
+
+- **Actualizado:** 2026-11-11
 
 ## Prerrequisitos de la Fase 1 (de la revisión de calidad del 2026-11-08)
 
 **No se empieza la Fase 1 sin resolver estos tres puntos.** Se abordan juntos con un `/spec` de «modelo de dominio v2 y esquema de librerías v3», validado con `experto-iso`, más los ADR correspondientes.
 
 - **A2 · Esquema de librerías limitado a la Estructura Armonizada.** `libreria_entrada` (migración 0002) exige `capitulo between 4 and 10` y `nivel in (1, 2)`, y `packages/normas-schema/libreria-norma.schema.json` tiene la misma restricción. No admite los controles del Anexo A de 27001 ni de 42001 (base de la Declaración de Aplicabilidad) y contradice P14. Corrección: tipo de entrada `clausula | control | objetivo`, sección/tema libre, jerarquía de profundidad variable con `padre_id`, atributos propios por norma; migración nueva + ADR + una librería de prueba con controles de Anexo A.
+- **Avance con el MVP (2026-11-11):** **A2** quedó resuelto en lo mínimo con M1 (migración `0006` y esquema v3: `tipo` `clausula` o `control`, `grupo`, `capitulo` opcional en los controles, y la librería del Anexo A de 27001); siguen pendientes la jerarquía con `padre_id`, el tipo `objetivo`, los atributos por norma y las librerías de 42001 y 9001. **M4** (el alcance) quedó cubierto con un texto por norma y su aprobación; sedes y exclusiones en tablas, Certificado, Activo de información, evaluación de impacto de IA, orígenes de NC y clasificación de hallazgos siguen pendientes. **M3** (roles múltiples) sigue pendiente: el MVP funciona con un solo rol por persona.
 - **M3 · Un solo rol por persona.** Pasar a roles múltiples (`usuario_rol` con vigencia opcional) y modelar la relación persona–proceso para validar la independencia del auditor (no audita su propio trabajo) y el acceso limitado en el tiempo del auditor externo. Hoy `usuario.rol` y la matriz en código (ADR 029, tarea 9.4) asumen un solo rol.
 - **M4 · Entidades que faltan en el modelo de dominio** (`docs/producto/modelo-dominio.md`): Certificado (número, organismo, alcance, emisión, vencimiento, estado); Alcance por norma con sedes y exclusiones justificadas; Activo de información; Evaluación de impacto de sistemas de IA (42001); orígenes de No conformidad (queja, incidente, revisión por la dirección); clasificación de hallazgos de auditoría externa (NC mayor, NC menor, observación, oportunidad de mejora) y plazos de cierre.
 
@@ -83,13 +121,13 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 - Sin Docker (ADR 022): PostgreSQL 16 nativo (Homebrew); Keycloak 26.8.2 y su JRE en `.local/` (ADR 025); OpenFGA 1.22.1 instalado pero sin uso (ADR 029). Falta instalar Valkey (`brew install valkey`) cuando se construya la cola.
 - Repo remoto **público** (decisión del responsable, para habilitar protección de ramas sin plan de pago): https://github.com/leonardojreyes/sig-iso . `GITHUB_TOKEN` del entorno es inválido: usar `env -u GITHUB_TOKEN gh ...` y `env -u GITHUB_TOKEN git push ...`.
 - TypeScript fijado en 5.9 (la v7 nativa rompe typescript-eslint).
-- Elegir librería de PDF/DOCX (ADR 021) cuando se construya el primer reporte.
+- Librería de DOCX: el plan fija `docx` (MIT) en el ADR 033, que se escribe al empezar M5 y completa el ADR 021; PDF queda fuera del MVP.
 - Revisión de `experto-iso`: los subagentes existen desde 0.3 (`.claude/agents/`); el responsable valida las numeraciones de las normas con sus ejemplares (4.4).
 - Nota: `CLAUDE.md` global prefiere npm; el monorepo usa pnpm (ADR 003).
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.6 cerrados → **0.7 (en preparación)** → 0.8 → 0.9
+0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M3 hechos; M4 a M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 
