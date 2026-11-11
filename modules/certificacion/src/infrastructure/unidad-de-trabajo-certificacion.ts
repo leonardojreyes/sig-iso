@@ -3,7 +3,9 @@ import { UnidadDeTrabajoKysely } from '@sig/db';
 import type { Kysely } from 'kysely';
 import type { ContextoCertificacion } from '../application/contexto.js';
 import { AlcanceKysely } from './alcance-kysely.adapter.js';
+import { ControlKysely } from './control-kysely.adapter.js';
 import { EvaluacionKysely } from './evaluacion-kysely.adapter.js';
+import { MapeoKysely } from './mapeo-kysely.adapter.js';
 
 /**
  * Unidad de trabajo del módulo sobre PostgreSQL. `db` debe ser el pool del rol de la aplicación. En cada ejecución se abre una
@@ -13,5 +15,7 @@ export const crearUnidadDeTrabajoCertificacion = (db: Kysely<unknown>): UnidadDe
   new UnidadDeTrabajoKysely<ContextoCertificacion>(db, (trx, empresaId) => ({
     evaluaciones: new EvaluacionKysely(trx, empresaId),
     alcances: new AlcanceKysely(trx, empresaId),
+    controles: new ControlKysely(trx, empresaId),
+    mapeos: new MapeoKysely(trx, empresaId),
     bitacora: new Bitacora(BitacoraKysely.enTransaccion(trx)),
   }));

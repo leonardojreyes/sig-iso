@@ -1,11 +1,13 @@
 import { validarEvento, type EventoBitacora } from '@sig/auditoria';
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
 import type { Alcance } from '../../domain/alcance.js';
+import type { Control } from '../../domain/control.js';
+import type { MapeoControl } from '../../domain/mapeo-control.js';
 import type { Evaluacion } from '../../domain/evaluacion.js';
 import type { AutorizacionPort, Permiso } from '../autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from '../catalogo-lectura.port.js';
 import type { ContextoCertificacion } from '../contexto.js';
-import type { AlcanceRepositoryPort, EvaluacionRepositoryPort } from '../repositorios.port.js';
+import type { AlcanceRepositoryPort, ControlRepositoryPort, EvaluacionRepositoryPort, MapeoRepositoryPort } from '../repositorios.port.js';
 import type { UnidadDeTrabajoPort } from '../unidad-de-trabajo.port.js';
 
 export const A: EmpresaId = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000f1');
@@ -25,6 +27,8 @@ export const entradas = {
 export class EstadoFalso {
   evaluaciones = new Map<string, Evaluacion & { _por?: string }>();
   alcances = new Map<string, Alcance>();
+  controles = new Map<string, Control>();
+  mapeos = new Map<string, MapeoControl>();
   eventos: EventoBitacora[] = [];
   /** Entradas adoptadas por empresa. */
   catalogoPorEmpresa = new Map<EmpresaId, readonly EntradaCatalogo[]>();
@@ -51,7 +55,7 @@ export const crearCatalogoFalso = (estado: EstadoFalso): CatalogoLecturaPort => 
 export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<ContextoCertificacion> => ({
   ejecutar: async (empresaId, fn) => {
     const clave = (c: string) => `${empresaId}|${c}`;
-    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), ex: [...estado.eventos] };
+    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), ex: [...estado.eventos] };
     const evaluaciones: EvaluacionRepositoryPort = {
       listar: async () => [...estado.evaluaciones.entries()].filter(([k]) => k.startsWith(`${empresaId}|`)).map(([, v]) => v),
       obtener: async (codigo, id) => estado.evaluaciones.get(clave(`${codigo}|${id}`)) ?? null,
@@ -72,9 +76,37 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       obtener: async (norma) => estado.alcances.get(clave(norma)) ?? null,
       guardar: async (a) => void estado.alcances.set(clave(a.norma), a),
     };
+    const propios = <T extends { empresaId: EmpresaId }>(m: Map<string, T>): T[] => [...m.values()].filter((v) => v.empresaId === empresaId);
+    const controles: ControlRepositoryPort = {
+      listar: async () => propios(estado.controles).sort((a, b) => a.codigo.localeCompare(b.codigo)),
+      obtener: async (id) => propios(estado.controles).find((c) => c.id === id) ?? null,
+      crear: async (c) => {
+        if (propios(estado.controles).some((x) => x.codigo === c.codigo)) return false;
+        estado.controles.set(c.id, c);
+        return true;
+      },
+      actualizar: async (c, _u, _a, esperada) => {
+        const actual = propios(estado.controles).find((x) => x.id === c.id);
+        if (estado.carrera || !actual || actual.version !== esperada) return false;
+        estado.controles.set(c.id, c);
+        return true;
+      },
+    };
+    const mapeos: MapeoRepositoryPort = {
+      listar: async () => propios(estado.mapeos),
+      contar: async (controlId) => propios(estado.mapeos).filter((m) => m.controlId === controlId).length,
+      agregar: async (m) => {
+        if (estado.mapeos.has(`${empresaId}|${m.clave}`)) return false;
+        estado.mapeos.set(`${empresaId}|${m.clave}`, m);
+        return true;
+      },
+      quitar: async (m) => estado.mapeos.delete(`${empresaId}|${m.clave}`),
+    };
     const contexto: ContextoCertificacion = {
       evaluaciones,
       alcances,
+      controles,
+      mapeos,
       bitacora: {
         registrar: async (evento) => {
           if (estado.fallarBitacora) throw new Error('bitácora no disponible');
@@ -88,6 +120,8 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
     } catch (e) {
       estado.evaluaciones = copia.ev;
       estado.alcances = copia.al;
+      estado.controles = copia.co;
+      estado.mapeos = copia.ma;
       estado.eventos = copia.ex;
       throw e;
     }
