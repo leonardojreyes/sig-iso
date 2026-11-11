@@ -5,6 +5,7 @@ import type { ContextoCertificacion } from '../application/contexto.js';
 import { AlcanceKysely } from './alcance-kysely.adapter.js';
 import { ControlKysely } from './control-kysely.adapter.js';
 import { EvaluacionKysely } from './evaluacion-kysely.adapter.js';
+import { EvidenciaKysely } from './evidencia-kysely.adapter.js';
 import { MapeoKysely } from './mapeo-kysely.adapter.js';
 
 /**
@@ -17,5 +18,6 @@ export const crearUnidadDeTrabajoCertificacion = (db: Kysely<unknown>): UnidadDe
     alcances: new AlcanceKysely(trx, empresaId),
     controles: new ControlKysely(trx, empresaId),
     mapeos: new MapeoKysely(trx, empresaId),
+    evidencias: new EvidenciaKysely(trx, empresaId),
     bitacora: new Bitacora(BitacoraKysely.enTransaccion(trx)),
   }));

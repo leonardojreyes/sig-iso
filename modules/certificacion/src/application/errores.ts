@@ -39,3 +39,11 @@ export class ConflictoDeVersionError extends ConflictoError {
     this.name = 'ConflictoDeVersionError';
   }
 }
+
+/** El archivo subido no se acepta: motivo cerrado (el mismo que registra la bitácora). Se traduce a 413 o 415 en la API. */
+export class ArchivoRechazadoError extends Error {
+  constructor(readonly motivo: 'tipo_no_permitido' | 'tamano_excedido' | 'firma_invalida') {
+    super('El archivo no se acepta.');
+    this.name = 'ArchivoRechazadoError';
+  }
+}

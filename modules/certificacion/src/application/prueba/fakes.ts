@@ -2,12 +2,15 @@ import { validarEvento, type EventoBitacora } from '@sig/auditoria';
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
 import type { Alcance } from '../../domain/alcance.js';
 import type { Control } from '../../domain/control.js';
+import type { LectorBytes } from '../../domain/deteccion-archivo.js';
+import { sha256Hex } from './archivos.js';
 import type { MapeoControl } from '../../domain/mapeo-control.js';
 import type { Evaluacion } from '../../domain/evaluacion.js';
+import type { AlmacenArchivosPort, ResultadoGuardado } from '../almacen-archivos.port.js';
 import type { AutorizacionPort, Permiso } from '../autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from '../catalogo-lectura.port.js';
 import type { ContextoCertificacion } from '../contexto.js';
-import type { AlcanceRepositoryPort, ControlRepositoryPort, EvaluacionRepositoryPort, MapeoRepositoryPort } from '../repositorios.port.js';
+import type { AlcanceRepositoryPort, ControlRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, MapeoRepositoryPort } from '../repositorios.port.js';
 import type { UnidadDeTrabajoPort } from '../unidad-de-trabajo.port.js';
 
 export const A: EmpresaId = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000f1');
@@ -29,6 +32,7 @@ export class EstadoFalso {
   alcances = new Map<string, Alcance>();
   controles = new Map<string, Control>();
   mapeos = new Map<string, MapeoControl>();
+  evidencias = new Map<string, FilaEvidencia>();
   eventos: EventoBitacora[] = [];
   /** Entradas adoptadas por empresa. */
   catalogoPorEmpresa = new Map<EmpresaId, readonly EntradaCatalogo[]>();
@@ -55,7 +59,7 @@ export const crearCatalogoFalso = (estado: EstadoFalso): CatalogoLecturaPort => 
 export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<ContextoCertificacion> => ({
   ejecutar: async (empresaId, fn) => {
     const clave = (c: string) => `${empresaId}|${c}`;
-    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), ex: [...estado.eventos] };
+    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), evi: new Map(estado.evidencias), ex: [...estado.eventos] };
     const evaluaciones: EvaluacionRepositoryPort = {
       listar: async () => [...estado.evaluaciones.entries()].filter(([k]) => k.startsWith(`${empresaId}|`)).map(([, v]) => v),
       obtener: async (codigo, id) => estado.evaluaciones.get(clave(`${codigo}|${id}`)) ?? null,
@@ -102,7 +106,29 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       },
       quitar: async (m) => estado.mapeos.delete(`${empresaId}|${m.clave}`),
     };
+    const propiasEvi = (): FilaEvidencia[] => [...estado.evidencias.values()].filter((f) => f.evidencia.empresaId === empresaId);
+    const evidencias: EvidenciaRepositoryPort = {
+      obtener: async (id) => estado.evidencias.get(`${empresaId}|${id}`) ?? null,
+      listarDeControl: async (controlId, historicas) =>
+        propiasEvi()
+          .filter((f) => f.evidencia.controlId === controlId && (historicas || f.evidencia.activa))
+          .sort((a, b) => b.creadaEn.getTime() - a.creadaEn.getTime()),
+      listarActivas: async () => propiasEvi().filter((f) => f.evidencia.activa).map((f) => f.evidencia),
+      contarActivas: async (controlId) => propiasEvi().filter((f) => f.evidencia.controlId === controlId && f.evidencia.activa).length,
+      crear: async (e, _u, ahora) => {
+        if (propiasEvi().some((f) => f.evidencia.archivo.id === e.archivo.id)) return false;
+        estado.evidencias.set(`${empresaId}|${e.id}`, { evidencia: e, creadaEn: ahora });
+        return true;
+      },
+      cambiarEstado: async (e) => {
+        const actual = estado.evidencias.get(`${empresaId}|${e.id}`);
+        if (estado.carrera || !actual || !actual.evidencia.activa) return false;
+        estado.evidencias.set(`${empresaId}|${e.id}`, { evidencia: e, creadaEn: actual.creadaEn });
+        return true;
+      },
+    };
     const contexto: ContextoCertificacion = {
+      evidencias,
       evaluaciones,
       alcances,
       controles,
@@ -122,8 +148,69 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       estado.alcances = copia.al;
       estado.controles = copia.co;
       estado.mapeos = copia.ma;
+      estado.evidencias = copia.evi;
       estado.eventos = copia.ex;
       throw e;
     }
   },
 });
+
+/**
+ * Almacén de archivos en memoria que respeta la separación por empresa: lo que una empresa guarda no se puede abrir, confirmar ni
+ * descartar con otra. Permite provocar fallos y comprobar que NO se leyó el flujo (para probar que se decide antes de recibir bytes).
+ */
+export class AlmacenFalso implements AlmacenArchivosPort {
+  readonly temporales = new Map<string, Uint8Array>();
+  readonly archivos = new Map<string, Uint8Array>();
+  /** Cuántos fragmentos de flujo se llegaron a leer en total. */
+  fragmentosLeidos = 0;
+  fallar: { confirmar?: boolean; abrir?: boolean } = {};
+
+  async guardarTemporal(empresaId: EmpresaId, flujo: AsyncIterable<Uint8Array>, maximoBytes: number): Promise<ResultadoGuardado> {
+    const partes: Uint8Array[] = [];
+    let total = 0;
+    for await (const parte of flujo) {
+      this.fragmentosLeidos += 1;
+      total += parte.length;
+      if (total > maximoBytes) return { ok: false, motivo: 'tamano_excedido' };
+      partes.push(parte);
+    }
+    const bytes = new Uint8Array(total);
+    let desde = 0;
+    for (const p of partes) {
+      bytes.set(p, desde);
+      desde += p.length;
+    }
+    const id = globalThis.crypto.randomUUID();
+    this.temporales.set(`${empresaId}|${id}`, bytes);
+    return { ok: true, temporal: { id, bytes: total, sha256: sha256Hex(bytes) } };
+  }
+
+  async abrirLector(empresaId: EmpresaId, temporalId: string): Promise<LectorBytes> {
+    const b = this.temporales.get(`${empresaId}|${temporalId}`);
+    if (!b) throw new Error('temporal inexistente');
+    return { tamano: b.length, leer: async (d, h) => b.subarray(d, Math.min(h, b.length)) };
+  }
+
+  async confirmar(empresaId: EmpresaId, temporalId: string, archivoId: string): Promise<void> {
+    if (this.fallar.confirmar) throw new Error('el almacén no pudo confirmar el archivo');
+    const b = this.temporales.get(`${empresaId}|${temporalId}`);
+    if (!b) throw new Error('temporal inexistente');
+    if (this.archivos.has(`${empresaId}|${archivoId}`)) throw new Error('el archivo ya existe');
+    this.archivos.set(`${empresaId}|${archivoId}`, b);
+    this.temporales.delete(`${empresaId}|${temporalId}`);
+  }
+
+  async descartar(empresaId: EmpresaId, temporalId: string): Promise<void> {
+    this.temporales.delete(`${empresaId}|${temporalId}`);
+  }
+
+  async abrir(empresaId: EmpresaId, archivoId: string): Promise<AsyncIterable<Uint8Array>> {
+    if (this.fallar.abrir) throw new Error('el almacén no pudo abrir el archivo');
+    const b = this.archivos.get(`${empresaId}|${archivoId}`);
+    if (!b) throw new Error('archivo inexistente');
+    return (async function* () {
+      yield b;
+    })();
+  }
+}

@@ -1,6 +1,7 @@
 import type { Alcance } from '../domain/alcance.js';
 import type { Control } from '../domain/control.js';
 import type { Evaluacion } from '../domain/evaluacion.js';
+import type { Evidencia } from '../domain/evidencia.js';
 import type { MapeoControl } from '../domain/mapeo-control.js';
 
 /** Repositorio de evaluaciones, ligado a la empresa y la transacción de la unidad de trabajo. */
@@ -41,4 +42,25 @@ export interface MapeoRepositoryPort {
   agregar(mapeo: MapeoControl, usuarioId: string, ahora: Date): Promise<boolean>;
   /** Falso si no existía. */
   quitar(mapeo: MapeoControl): Promise<boolean>;
+}
+
+/** Una evidencia con el momento en que se registró (el dominio no lo guarda: la evidencia es inmutable). */
+export interface FilaEvidencia {
+  readonly evidencia: Evidencia;
+  readonly creadaEn: Date;
+}
+
+/** Repositorio de evidencias, ligado a la empresa y la transacción. */
+export interface EvidenciaRepositoryPort {
+  obtener(id: string): Promise<FilaEvidencia | null>;
+  /** Las evidencias de un control, de la más nueva a la más antigua; sin las reemplazadas ni eliminadas salvo que se pidan. */
+  listarDeControl(controlId: string, incluirHistoricas: boolean): Promise<readonly FilaEvidencia[]>;
+  /** Todas las evidencias ACTIVAS de la empresa (para la cobertura). */
+  listarActivas(): Promise<readonly Evidencia[]>;
+  /** Cuántas evidencias activas tiene el control. Bloquea la fila del control hasta el fin de la transacción, así dos subidas a la vez no pasan el tope. */
+  contarActivas(controlId: string): Promise<number>;
+  /** Falso si el archivo del almacén ya estaba registrado. */
+  crear(evidencia: Evidencia, usuarioId: string, ahora: Date): Promise<boolean>;
+  /** Guarda el estado nuevo, solo si la evidencia seguía activa. Falso si otra persona la cambió antes. */
+  cambiarEstado(evidencia: Evidencia, usuarioId: string, ahora: Date): Promise<boolean>;
 }
