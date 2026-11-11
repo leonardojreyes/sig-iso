@@ -56,6 +56,25 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 
 **Hitos de PR:** H1 = M1; H2 = M2 + M3; H3 = M4 + M5 + M6.
 
+## Diseño de M3 — controles de la empresa y mapeos
+
+**Qué es un control de la empresa:** una medida propia de la organización («Política de contraseñas», «Revisión trimestral de accesos»), **no** un control del Anexo A. Una misma medida puede responder a varias entradas de una o varias normas: de ahí el **marco de controles unificado** (se trabaja una vez, se cubre en varias normas). La relación con la norma se guarda **entrada por entrada** (sin jerarquías ni equivalencias, que quedan fuera del MVP).
+
+**Tablas (migración `0008`, todo con `empresa_id` y RLS forzada):**
+
+| Tabla | Contenido | Reglas |
+| --- | --- | --- |
+| `control` | `id`, `codigo` (1–20, `[A-Za-z0-9._-]`), `nombre` (1–120), `descripcion` (≤1000, opcional), `responsable_id` (opcional), `estado` (`vigente` o `retirado`), `version` (concurrencia optimista), quién y cuándo creó y cambió | `unique (empresa_id, codigo)` y `unique (empresa_id, id)` (clave foránea compuesta). **Sin DELETE** para la aplicación: un control se **retira** (queda el rastro) y su código no se reutiliza. |
+| `control_mapeo` | `control_id` + `(libreria_codigo, id_estable)` de la entrada, quién y cuándo | PK sobre las cuatro columnas (sin duplicados); clave foránea compuesta `(empresa_id, control_id)`. La entrada se referencia **sin FK** (como `evaluacion`: el catálogo es por versión) y el caso de uso comprueba que esté en las librerías adoptadas. La aplicación puede **insertar y borrar** mapeos (no actualizar); cada alta y baja va a la bitácora. |
+
+**Dominio (`modules/certificacion/src/domain`):** `Control` (crear, cambiar nombre, descripción y responsable, retirar; un control retirado no se cambia ni recibe mapeos) y `MapeoControl` (valor: control + entrada). Tope de **50 mapeos por control**. Los textos no admiten caracteres de control.
+
+**Permisos:** `controles.ver` (administrador SIG y colaborador) y `controles.gestionar` (solo administrador SIG: crear, cambiar, retirar y mapear). El colaborador consulta el marco; proponer cambios queda para después.
+
+**Bitácora** (claves y motivos cerrados; **nunca** el nombre ni la descripción): `control.creado`, `control.cambiado`, `control.retirado` (objeto `control:<codigo>`) y `mapeo.creado`, `mapeo.eliminado` (objeto `mapeo:<codigo>.<id_estable>`).
+
+**Lo que M3 no hace:** evidencias y cobertura (M4), derivar la Declaración (M5), importar controles ni plantillas.
+
 ## Prerrequisito (tuyo)
 
 Integrar los PR abiertos #13 a #18 (documentos y la fase 1 del 0.7) para partir de un `main` actualizado y evitar conflictos en el catálogo de bitácora y en `estado.md`; los que no quieras (por ejemplo los specs largos) los cierras. Opcional: una regla de permisos que me deje `gh pr create`, para ahorrar un paso por PR.

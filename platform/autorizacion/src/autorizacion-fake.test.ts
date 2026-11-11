@@ -170,3 +170,39 @@ describe('AutorizacionFake.rolesDe', () => {
     await expect(montar().rolesDe(ADMIN, e as never)).rejects.toBeInstanceOf(EmpresaIdInvalidoError);
   });
 });
+
+describe('permisos del diagnóstico y del alcance (MVP, M2)', () => {
+  it('el colaborador consulta y evalúa, pero no gestiona ni aprueba el alcance', async () => {
+    const f = montar();
+    for (const p of ['diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver'] as const) expect(await f.puede(COLAB, p, A), p).toBe(true);
+    for (const p of ['alcance.gestionar', 'alcance.aprobar'] as const) expect(await f.puede(COLAB, p, A), p).toBe(false);
+  });
+  it('el administrador SIG puede todo, incluida la aprobación del alcance', async () => {
+    const f = montar();
+    for (const p of ['diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver', 'alcance.gestionar', 'alcance.aprobar'] as const) expect(await f.puede(ADMIN, p, A), p).toBe(true);
+  });
+  it('sin rol o con el rol de otra empresa no puede nada', async () => {
+    const f = montar();
+    expect(await f.puede(OTRO, 'diagnostico.evaluar', A)).toBe(false);
+    expect(await f.puede(ADMIN, 'alcance.aprobar', B)).toBe(false);
+  });
+});
+
+describe('permisos de los controles de la empresa (MVP, M3)', () => {
+  it('el colaborador consulta el marco de controles, pero no lo gestiona', async () => {
+    const f = montar();
+    expect(await f.puede(COLAB, 'controles.ver', A)).toBe(true);
+    expect(await f.puede(COLAB, 'controles.gestionar', A)).toBe(false);
+  });
+  it('el administrador SIG consulta y gestiona', async () => {
+    const f = montar();
+    for (const p of ['controles.ver', 'controles.gestionar'] as const) expect(await f.puede(ADMIN, p, A), p).toBe(true);
+  });
+  it('ningún rol sin permisos ve ni gestiona controles, y no hay permiso en otra empresa', async () => {
+    const f = montar();
+    for (const p of ['controles.ver', 'controles.gestionar'] as const) {
+      expect(await f.puede(OTRO, p, A), p).toBe(false);
+      expect(await f.puede(ADMIN, p, B), p).toBe(false);
+    }
+  });
+});

@@ -1,0 +1,40 @@
+{
+  "name": "@sig/certificacion",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "nx": {
+    "tags": [
+      "type:module"
+    ],
+    "targets": {
+      "test": {
+        "cache": false
+      },
+      "test:cov": {
+        "cache": false
+      }
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "test:cov": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@sig/tenancy": "workspace:*",
+    "@sig/auditoria": "workspace:*",
+    "@sig/db": "workspace:*",
+    "kysely": "^0.29.8"
+  },
+  "devDependencies": {
+    "@sig/autorizacion": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./prueba": "./src/application/prueba/index.ts"
+  }
+}

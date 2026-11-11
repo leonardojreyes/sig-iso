@@ -76,3 +76,5 @@ Guarda esta lista en `docs/producto/vision.md` en el paso 0.1. Se construyen des
 | 4 | Apoyo | Partes interesadas, requisitos legales (incluida LOPDP), competencias y formación, proveedores, comunicación. |
 | 5 | Monitoreo continuo | Conectores que recogen evidencias y prueban controles automáticamente (Keycloak, GitHub, etc.). |
 | Transversal | Asistente de IA | Redactar borradores de documentos y políticas, sugerir evidencias para un requisito, resumir hallazgos, proponer causa raíz; siempre como borrador que aprueba un humano. |
+
+> **Avance (2026-11-11).** El recorte que se está construyendo es el MVP de certificación (`docs/specs/mvp-certificacion/plan.md`): del módulo «Normas y requisitos» el Anexo A de 27001 como librería; del «Diagnóstico» la autoevaluación con madurez, más el alcance por norma; de «Controles y evidencias» el marco unificado con mapeos (M3), y quedan las evidencias con archivo (M4) y la Declaración de Aplicabilidad exportable (M5). El estado al día está en `docs/fase0/estado.md`. Esta visión no cambia: sigue siendo el norte.

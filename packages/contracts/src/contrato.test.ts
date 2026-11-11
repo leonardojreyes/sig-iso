@@ -113,7 +113,7 @@ describe('documento', () => {
 describe('operaciones del corte 0.6', () => {
   it('son exactamente las del plan', () => {
     expect(operaciones.map((o) => o.id).sort()).toEqual(
-      ['GET /health', 'GET /me', 'GET /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /librerias', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}'].sort(),
+      ['GET /health', 'GET /me', 'GET /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /librerias', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}', 'GET /alcances', 'PUT /alcances', 'POST /alcances/aprobacion', 'GET /diagnostico', 'PUT /diagnostico/evaluaciones', 'GET /controles', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion'].sort(),
     );
   });
 
@@ -153,11 +153,29 @@ describe('seguridad', () => {
       'POST /librerias/{id}/adopcion': ['path:id'],
       'GET /requisitos': ['query:capitulo', 'query:norma', 'query:q', 'query:tipo'],
       'GET /requisitos/{id}': ['path:id'],
+      'GET /alcances': [],
+      'PUT /alcances': [],
+      'POST /alcances/aprobacion': [],
+      'GET /diagnostico': ['query:estado', 'query:norma', 'query:q', 'query:tipo'],
+      'PUT /diagnostico/evaluaciones': [],
+      'GET /controles': ['query:incluirRetirados', 'query:norma'],
+      'POST /controles': [],
+      'PUT /controles/{id}': ['path:id'],
+      'POST /controles/{id}/retiro': ['path:id'],
+      'POST /controles/{id}/mapeos': ['path:id'],
+      'POST /controles/{id}/mapeos/eliminacion': ['path:id'],
     };
+    // Solo estas tres reciben cuerpo, y su esquema es cerrado y sin campos de empresa (la empresa sale del token).
+    const conCuerpo = ['PUT /alcances', 'POST /alcances/aprobacion', 'PUT /diagnostico/evaluaciones', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion'];
     for (const o of operaciones) {
       const parametros = [...((doc.paths[o.ruta]!.parameters ?? []) as Obj[]), ...((o.op.parameters ?? []) as Obj[])].map((p: any) => (p.$ref ? resolver(p.$ref)! : p));
       expect(parametros.map((p: any) => `${p.in}:${p.name}`).sort(), o.id).toEqual(esperados[o.id]);
-      expect(o.op.requestBody, `${o.id} no recibe cuerpo`).toBeUndefined();
+      if (conCuerpo.includes(o.id)) {
+        const ref = o.op.requestBody?.content?.['application/json']?.schema?.$ref as string;
+        const esquema = resolver(ref)!;
+        expect(esquema.additionalProperties, o.id).toBe(false);
+        expect(Object.keys(esquema.properties).filter((k) => /empresa|tenant/i.test(k)), `${o.id} no lleva la empresa`).toEqual([]);
+      } else expect(o.op.requestBody, `${o.id} no recibe cuerpo`).toBeUndefined();
     }
     for (const o of operaciones) expect(o.ruta, o.id).not.toMatch(/\{(?!id\})[^}]*\}/);
   });
@@ -167,8 +185,10 @@ describe('seguridad', () => {
     expect(doc.components.responses.LimiteExcedido!.headers['Retry-After'].$ref).toBe('#/components/headers/RetryAfter');
   });
 
-  it('solo la adopción declara un permiso formal (x-permiso) y declara el 403', () => {
-    expect(operaciones.filter((o) => o.op['x-permiso']).map((o) => [o.id, o.op['x-permiso']])).toEqual([['POST /librerias/{id}/adopcion', 'administrador_sig']]);
+  it('solo las acciones restringidas declaran un permiso formal (x-permiso) y el 403', () => {
+    expect(operaciones.filter((o) => o.op['x-permiso']).map((o) => [o.id, o.op['x-permiso']]).sort()).toEqual(
+      [['POST /librerias/{id}/adopcion', 'administrador_sig'], ['GET /alcances', 'alcance.ver'], ['PUT /alcances', 'alcance.gestionar'], ['POST /alcances/aprobacion', 'alcance.aprobar'], ['GET /diagnostico', 'diagnostico.ver'], ['PUT /diagnostico/evaluaciones', 'diagnostico.evaluar'], ['GET /controles', 'controles.ver'], ['POST /controles', 'controles.gestionar'], ['PUT /controles/{id}', 'controles.gestionar'], ['POST /controles/{id}/retiro', 'controles.gestionar'], ['POST /controles/{id}/mapeos', 'controles.gestionar'], ['POST /controles/{id}/mapeos/eliminacion', 'controles.gestionar']].sort(),
+    );
     expect(op('POST /librerias/{id}/adopcion').responses['403']).toBeDefined();
   });
 
@@ -182,7 +202,7 @@ describe('seguridad', () => {
 describe('errores que no filtran datos', () => {
   it('hay una sola respuesta 404 y todas la reutilizan: «no existe», «es de otra empresa» y «librería no adoptada» son indistinguibles', () => {
     const cuatrocientoscuatro = operaciones.filter((o) => o.op.responses['404']);
-    expect(cuatrocientoscuatro.map((o) => o.id).sort()).toEqual(['GET /requisitos/{id}', 'POST /librerias/{id}/adopcion']);
+    expect(cuatrocientoscuatro.map((o) => o.id).sort()).toEqual(['GET /requisitos/{id}', 'POST /alcances/aprobacion', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/retiro', 'POST /librerias/{id}/adopcion', 'PUT /alcances', 'PUT /controles/{id}', 'PUT /diagnostico/evaluaciones']);
     for (const o of cuatrocientoscuatro) expect(o.op.responses['404'].$ref, o.id).toBe('#/components/responses/NoEncontrado');
     const r = doc.components.responses.NoEncontrado!;
     expect(r.description).toMatch(/indistinguible/i);
@@ -194,12 +214,12 @@ describe('errores que no filtran datos', () => {
     expect(p.additionalProperties).toBe(false);
     expect(Object.keys(p.properties).sort()).toEqual(['codigo', 'status', 'title', 'type']);
     expect(p.required.sort()).toEqual(['codigo', 'status', 'title', 'type']);
-    expect(p.properties.codigo.enum).toEqual(['no_autenticado', 'sin_permiso', 'no_encontrado', 'parametro_invalido', 'limite_excedido', 'error_interno']);
+    expect(p.properties.codigo.enum).toEqual(['no_autenticado', 'sin_permiso', 'no_encontrado', 'parametro_invalido', 'conflicto', 'limite_excedido', 'error_interno']);
     expect(p.properties.type).toMatchObject({ const: 'about:blank' });
   });
 
   it('los errores usan application/problem+json y su código coincide con el estado', () => {
-    const esperado: Record<string, [number, string]> = { NoAutenticado: [401, 'no_autenticado'], SinPermiso: [403, 'sin_permiso'], NoEncontrado: [404, 'no_encontrado'], ParametrosInvalidos: [400, 'parametro_invalido'], LimiteExcedido: [429, 'limite_excedido'], ErrorInterno: [500, 'error_interno'] };
+    const esperado: Record<string, [number, string]> = { NoAutenticado: [401, 'no_autenticado'], SinPermiso: [403, 'sin_permiso'], NoEncontrado: [404, 'no_encontrado'], ParametrosInvalidos: [400, 'parametro_invalido'], Conflicto: [409, 'conflicto'], LimiteExcedido: [429, 'limite_excedido'], ErrorInterno: [500, 'error_interno'] };
     for (const [nombre, [estado, codigo]] of Object.entries(esperado)) {
       const r = doc.components.responses[nombre]!;
       expect(Object.keys(r.content), nombre).toEqual(['application/problem+json']);
@@ -208,8 +228,8 @@ describe('errores que no filtran datos', () => {
     }
   });
 
-  it('el 403 solo existe donde hay una acción restringida (adoptar)', () => {
-    expect(operaciones.filter((o) => o.op.responses['403']).map((o) => o.id)).toEqual(['POST /librerias/{id}/adopcion']);
+  it('el 403 solo existe donde hay una acción restringida (tiene x-permiso)', () => {
+    expect(operaciones.filter((o) => o.op.responses['403']).map((o) => o.id).sort()).toEqual(operaciones.filter((o) => o.op['x-permiso']).map((o) => o.id).sort());
   });
 });
 
@@ -357,6 +377,8 @@ describe('las respuestas no pueden ganar campos de empresa ni datos personales s
   });
 });
 
+const NOMBRES_DE_MEDIDA = new Set(['POST /controles nombre', 'PUT /controles/{id} nombre']);
+
 describe('privacidad del contrato', () => {
   it('los ejemplos y las descripciones no traen direcciones de red ni correos reales (solo @example.test)', () => {
     expect(texto).not.toMatch(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
@@ -366,7 +388,12 @@ describe('privacidad del contrato', () => {
   it('ninguna operación recibe datos personales: solo identificadores y filtros acotados', () => {
     for (const o of operaciones) {
       const cuerpo = o.op.requestBody?.content?.['application/json']?.schema;
-      for (const clave of propiedades(cuerpo)) expect(clave, `${o.id} cuerpo`).not.toMatch(/nombre|correo|email|password|clave|token|telefono|cedula/i);
+      for (const clave of propiedades(cuerpo)) {
+        // Excepción deliberada: el «nombre» de un control es el título de una medida de la organización, no el de una persona
+        // (la interfaz pide no incluir datos personales y la bitácora nunca lo guarda).
+        if (NOMBRES_DE_MEDIDA.has(`${o.id} ${clave}`)) continue;
+        expect(clave, `${o.id} cuerpo`).not.toMatch(/nombre|correo|email|password|clave|token|telefono|cedula/i);
+      }
     }
   });
 });

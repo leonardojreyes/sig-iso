@@ -5,10 +5,10 @@ export const ROLES = Object.freeze(['administrador_sig', 'dueno_proceso', 'audit
 export type Rol = (typeof ROLES)[number];
 
 /** Permisos formales. `librerias.adoptar` es el `x-permiso` del contrato OpenAPI (POST /librerias/{id}/adopcion). */
-export const PERMISOS = Object.freeze(['librerias.adoptar', 'librerias.ver', 'requisitos.ver', 'marca.ver'] as const);
+export const PERMISOS = Object.freeze(['librerias.adoptar', 'librerias.ver', 'requisitos.ver', 'marca.ver', 'diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver', 'alcance.gestionar', 'alcance.aprobar', 'controles.ver', 'controles.gestionar'] as const);
 export type Permiso = (typeof PERMISOS)[number];
 
-const CONSULTA: readonly Permiso[] = Object.freeze(['librerias.ver', 'requisitos.ver', 'marca.ver']);
+const CONSULTA: readonly Permiso[] = Object.freeze(['librerias.ver', 'requisitos.ver', 'marca.ver', 'diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver', 'controles.ver']);
 
 const MATRIZ: ReadonlyMap<Rol, readonly Permiso[]> = new Map<Rol, readonly Permiso[]>([
   ['administrador_sig', PERMISOS],

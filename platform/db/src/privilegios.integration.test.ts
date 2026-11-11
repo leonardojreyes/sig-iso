@@ -37,6 +37,10 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   libreria_entrada: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
   libreria_entrada_norma: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
   empresa_libreria: { app: ["SELECT", "INSERT"] },
+  alcance: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: nada se borra (migración 0007)
+  evaluacion: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE (migración 0007)
+  control: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: un control se retira (migración 0008)
+  control_mapeo: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro, nunca se actualiza (migración 0008)
   bitacora: { app: ["SELECT"] }, // INSERT solo por columna (app y plataforma); ver la prueba de columnas de la bitácora
   bitacora_ancla: {}, // solo el dueño lee y añade; nadie modifica ni borra
   kysely_migration: {},
@@ -196,20 +200,74 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
 
     it("la bitácora: la aplicación y la plataforma solo insertan columnas permitidas; nadie modifica ni borra", async () => {
       const col = async (rol: string, columna: string, permiso: string) =>
-        (await sql<{ ok: boolean }>`select has_column_privilege(${rol}, 'public.bitacora', ${columna}, ${permiso}) as ok`.execute(owner())).rows[0]?.ok;
-      const permitidas = ["empresa_id", "actor_tipo", "usuario_id", "accion", "objeto", "objeto_version", "resultado", "motivo", "trace_id", "origen_id", "antes", "despues"];
-      const prohibidas = ["id", "creada_en", "secuencia", "hash_previo", "hash"];
+        (
+          await sql<{
+            ok: boolean;
+          }>`select has_column_privilege(${rol}, 'public.bitacora', ${columna}, ${permiso}) as ok`.execute(
+            owner(),
+          )
+        ).rows[0]?.ok;
+      const permitidas = [
+        "empresa_id",
+        "actor_tipo",
+        "usuario_id",
+        "accion",
+        "objeto",
+        "objeto_version",
+        "resultado",
+        "motivo",
+        "trace_id",
+        "origen_id",
+        "antes",
+        "despues",
+      ];
+      const prohibidas = [
+        "id",
+        "creada_en",
+        "secuencia",
+        "hash_previo",
+        "hash",
+      ];
       for (const rol of ["sigiso_app", "sigiso_plataforma"]) {
-        for (const c of permitidas) expect({ rol, c, ok: await col(rol, c, "INSERT") }).toEqual({ rol, c, ok: true });
-        for (const c of prohibidas) expect({ rol, c, ok: await col(rol, c, "INSERT") }).toEqual({ rol, c, ok: false });
+        for (const c of permitidas)
+          expect({ rol, c, ok: await col(rol, c, "INSERT") }).toEqual({
+            rol,
+            c,
+            ok: true,
+          });
+        for (const c of prohibidas)
+          expect({ rol, c, ok: await col(rol, c, "INSERT") }).toEqual({
+            rol,
+            c,
+            ok: false,
+          });
       }
-      for (const rol of ["sigiso_app", "sigiso_plataforma", "sigiso_catalogo", "sigiso_owner"]) {
-        for (const permiso of rol === "sigiso_owner" ? ["UPDATE"] : ["UPDATE", "REFERENCES"]) {
-          const r = await sql<{ ok: boolean }>`select has_any_column_privilege(${rol}, 'public.bitacora', ${permiso}) as ok`.execute(owner());
-          expect({ rol, permiso, ok: r.rows[0]?.ok }).toEqual({ rol, permiso, ok: false });
+      for (const rol of [
+        "sigiso_app",
+        "sigiso_plataforma",
+        "sigiso_catalogo",
+        "sigiso_owner",
+      ]) {
+        for (const permiso of rol === "sigiso_owner"
+          ? ["UPDATE"]
+          : ["UPDATE", "REFERENCES"]) {
+          const r = await sql<{
+            ok: boolean;
+          }>`select has_any_column_privilege(${rol}, 'public.bitacora', ${permiso}) as ok`.execute(
+            owner(),
+          );
+          expect({ rol, permiso, ok: r.rows[0]?.ok }).toEqual({
+            rol,
+            permiso,
+            ok: false,
+          });
         }
       }
-      const catalogo = await sql<{ ok: boolean }>`select has_any_column_privilege('sigiso_catalogo', 'public.bitacora', 'INSERT') as ok`.execute(owner());
+      const catalogo = await sql<{
+        ok: boolean;
+      }>`select has_any_column_privilege('sigiso_catalogo', 'public.bitacora', 'INSERT') as ok`.execute(
+        owner(),
+      );
       expect(catalogo.rows[0]?.ok).toBe(false);
     });
 
@@ -226,7 +284,10 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
       expect(await col("sigiso_app", "usuario", "correo")).toBe(true);
       for (const c of ["id", "empresa_id", "creada_en"])
         expect(await col("sigiso_app", "usuario", c)).toBe(false);
-      for (const t of Object.keys(ESPERADO).filter((x) => x !== "usuario")) {
+      // alcance, evaluacion y control se actualizan a propósito (versión y texto vigentes); su RLS forzada se comprueba abajo.
+      for (const t of Object.keys(ESPERADO).filter(
+        (x) => !["usuario", "alcance", "evaluacion", "control"].includes(x),
+      )) {
         const r = await sql<{
           ok: boolean;
         }>`select has_any_column_privilege('sigiso_app', ${"public." + t}, 'UPDATE') as ok`.execute(
@@ -241,12 +302,16 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('empresa', 'usuario', 'empresa_libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'empresa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
+        "alcance",
+        "control",
+        "control_mapeo",
         "empresa",
         "empresa_libreria",
+        "evaluacion",
         "libreria_entrada",
         "libreria_entrada_norma",
         "usuario",
@@ -267,7 +332,15 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
       }>`select p.proname as n from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public'`.execute(
         owner(),
       );
-      expect(r.rows.map((f) => f.n).sort()).toEqual(["app_tenant_id", "bitacora_anclar", "bitacora_campo", "bitacora_encadenar", "bitacora_huella", "bitacora_inmutable", "bitacora_verificar"]);
+      expect(r.rows.map((f) => f.n).sort()).toEqual([
+        "app_tenant_id",
+        "bitacora_anclar",
+        "bitacora_campo",
+        "bitacora_encadenar",
+        "bitacora_huella",
+        "bitacora_inmutable",
+        "bitacora_verificar",
+      ]);
     });
 
     it("las funciones de la bitácora solo las ejecuta el dueño (las de disparador, nadie directamente)", async () => {
@@ -280,12 +353,26 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         ["bitacora_inmutable()", []],
       ];
       for (const [firma, permitidos] of funciones) {
-        for (const rol of ["sigiso_owner", "sigiso_app", "sigiso_catalogo", "sigiso_plataforma", "public"]) {
-          const r = await sql<{ ok: boolean }>`select has_function_privilege(${rol}, ${firma}, 'EXECUTE') as ok`.execute(owner());
+        for (const rol of [
+          "sigiso_owner",
+          "sigiso_app",
+          "sigiso_catalogo",
+          "sigiso_plataforma",
+          "public",
+        ]) {
+          const r = await sql<{
+            ok: boolean;
+          }>`select has_function_privilege(${rol}, ${firma}, 'EXECUTE') as ok`.execute(
+            owner(),
+          );
           const esperado = permitidos.includes(rol);
           // El dueño es dueño de las funciones de disparador y puede ejecutarlas; solo se comprueba que ningún otro rol pueda.
           if (rol === "sigiso_owner" && permitidos.length === 0) continue;
-          expect({ firma, rol, ok: r.rows[0]?.ok }).toEqual({ firma, rol, ok: esperado });
+          expect({ firma, rol, ok: r.rows[0]?.ok }).toEqual({
+            firma,
+            rol,
+            ok: esperado,
+          });
         }
       }
     });
@@ -351,7 +438,11 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
 
     it("no puede cambiar la configuración del servidor (ALTER SYSTEM no corre en transacción: se consulta el privilegio)", async () => {
       for (const rol of ["app", "catalogo", "plataforma"] as const) {
-        const r = await sql<{ ok: boolean }>`select has_parameter_privilege(${ROL[rol]}, 'max_connections', 'ALTER SYSTEM') as ok`.execute(owner());
+        const r = await sql<{
+          ok: boolean;
+        }>`select has_parameter_privilege(${ROL[rol]}, 'max_connections', 'ALTER SYSTEM') as ok`.execute(
+          owner(),
+        );
         expect({ rol, ok: r.rows[0]?.ok }).toEqual({ rol, ok: false });
       }
     });
