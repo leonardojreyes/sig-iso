@@ -40,6 +40,7 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   alcance: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: nada se borra (migración 0007)
   evaluacion: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE (migración 0007)
   control: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: un control se retira (migración 0008)
+  evidencia: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas (estado y quién y cuándo), sin DELETE (migración 0009)
   control_mapeo: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro, nunca se actualiza (migración 0008)
   bitacora: { app: ["SELECT"] }, // INSERT solo por columna (app y plataforma); ver la prueba de columnas de la bitácora
   bitacora_ancla: {}, // solo el dueño lee y añade; nadie modifica ni borra
@@ -286,7 +287,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         expect(await col("sigiso_app", "usuario", c)).toBe(false);
       // alcance, evaluacion y control se actualizan a propósito (versión y texto vigentes); su RLS forzada se comprueba abajo.
       for (const t of Object.keys(ESPERADO).filter(
-        (x) => !["usuario", "alcance", "evaluacion", "control"].includes(x),
+        (x) => !["usuario", "alcance", "evaluacion", "control", "evidencia"].includes(x),
       )) {
         const r = await sql<{
           ok: boolean;
@@ -302,7 +303,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'empresa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'evidencia', 'empresa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
@@ -312,6 +313,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         "empresa",
         "empresa_libreria",
         "evaluacion",
+        "evidencia",
         "libreria_entrada",
         "libreria_entrada_norma",
         "usuario",
