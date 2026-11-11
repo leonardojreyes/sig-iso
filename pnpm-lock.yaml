@@ -460,6 +460,15 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
 
+  packages/prompts:
+    devDependencies:
+      '@sig/normas-schema':
+        specifier: workspace:*
+        version: link:../normas-schema
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
+
   packages/tokens:
     devDependencies:
       style-dictionary:
@@ -577,6 +586,9 @@ importers:
       '@sig/normas-schema':
         specifier: workspace:*
         version: link:../packages/normas-schema
+      '@sig/prompts':
+        specifier: workspace:*
+        version: link:../packages/prompts
       '@sig/tenancy':
         specifier: workspace:*
         version: link:../platform/tenancy

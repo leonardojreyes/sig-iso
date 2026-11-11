@@ -89,6 +89,29 @@ const hayCitaLarga = (texto: string): boolean => [...texto.matchAll(CITA)].some(
 const formatoDeLista = (texto: string): boolean =>
   texto.includes('\n') || VINETA.test(texto) || coincidencias(texto, ENUMERACION_LETRAS) >= 2 || coincidencias(texto, ENUMERACION_NUMEROS) >= 2 || coincidencias(texto, /;/g) > LIMITES.puntoYComaMax;
 
+/** Códigos que delatan texto copiado de una norma. Son los mismos para una guía de librería y para una respuesta de IA. */
+export type CodigoTextoNormativo = Extract<CodigoContenido, 'tono_normativo' | 'cita_textual' | 'enlace_o_correo'>;
+
+/**
+ * Detector común de señales de texto normativo: tono de obligación, cita larga entre comillas y enlaces o correos.
+ * NO aplica límites de largo, de frases ni de formato (esos son propios de las guías breves, ver `revisarTexto`). Devuelve
+ * códigos, sin repetidos y sin repetir el texto revisado.
+ */
+export const detectarTextoNormativo = (texto: string): CodigoTextoNormativo[] => {
+  const encontrados: CodigoTextoNormativo[] = [];
+  if (tonoNormativo(texto)) encontrados.push('tono_normativo');
+  if (hayCitaLarga(texto)) encontrados.push('cita_textual');
+  if (ENLACE_O_CORREO.test(texto)) encontrados.push('enlace_o_correo');
+  return encontrados;
+};
+
+/**
+ * Revisa una respuesta generada por IA (paso 0.7, H1.7): solo las señales de texto normativo del detector común, sin los
+ * límites de las guías. El umbral es cero coincidencias. Es una barrera de estructura: la garantía contra paráfrasis cercanas a
+ * una norma es la revisión humana de una muestra (spec del paso 0.7, §8).
+ */
+export const revisarRespuestaIa = (texto: string): CodigoTextoNormativo[] => detectarTextoNormativo(texto);
+
 /** Revisa un texto. Devuelve los códigos de las reglas que incumple (sin repetidos y sin repetir el texto). */
 export const revisarTexto = (campo: CampoTexto, texto: string): CodigoContenido[] => {
   const encontrados = new Set<CodigoContenido>();
@@ -107,10 +130,11 @@ export const revisarTexto = (campo: CampoTexto, texto: string): CodigoContenido[
   const lista = frases(texto);
   if (lista.length > LIMITES.frasesMax) encontrados.add('guia_demasiadas_frases');
   if (lista.some((f) => longitud(f) > LIMITES.fraseMax)) encontrados.add('frase_demasiado_larga');
-  if (tonoNormativo(texto)) encontrados.add('tono_normativo');
-  if (hayCitaLarga(texto)) encontrados.add('cita_textual');
+  const normativo = detectarTextoNormativo(texto);
+  if (normativo.includes('tono_normativo')) encontrados.add('tono_normativo');
+  if (normativo.includes('cita_textual')) encontrados.add('cita_textual');
   if (formatoDeLista(texto)) encontrados.add('formato_de_lista');
-  if (ENLACE_O_CORREO.test(texto)) encontrados.add('enlace_o_correo');
+  if (normativo.includes('enlace_o_correo')) encontrados.add('enlace_o_correo');
   return [...encontrados];
 };
 

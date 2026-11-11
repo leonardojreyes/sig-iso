@@ -17,6 +17,7 @@
     "@sig/autorizacion": "workspace:*",
     "@sig/db": "workspace:*",
     "@sig/normas-schema": "workspace:*",
+    "@sig/prompts": "workspace:*",
     "@sig/tenancy": "workspace:*",
     "kysely": "^0.29.8",
     "pg": "^8.23.1",

@@ -33,6 +33,7 @@
     "db:init": "node --env-file-if-exists=.env.local scripts/db-init.mjs",
     "infra:up": "docker compose -f infra/compose/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/compose/docker-compose.yml down",
+    "ia:prueba-previa": "node --import tsx scripts/ia-prueba-previa.ts",
     "test:hooks": "node --test .claude/hooks/reglas-bash.test.mjs",
     "test:cov": "node scripts/nx.mjs run-many -t test:cov --parallel=1",
     "libraries:load": "node --env-file-if-exists=.env.local --import tsx scripts/libraries-load.ts",
