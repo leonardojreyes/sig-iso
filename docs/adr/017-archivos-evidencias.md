@@ -1,6 +1,6 @@
 # ADR 017 — Archivos (evidencias): almacenamiento compatible S3 con hash SHA-256
 
-- **Estado:** Aprobado (2026-11-04)
+- **Estado:** Aprobado (2026-11-04); complementado por el [ADR 032](032-archivos-de-evidencia.md) (adaptador local del MVP, tipos permitidos y descarga)
 - **Fecha:** 2026-11-04
 - **Decide:** Ing. Leonardo J. Reyes B.
 

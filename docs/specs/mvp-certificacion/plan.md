@@ -75,6 +75,30 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 
 **Lo que M3 no hace:** evidencias y cobertura (M4), derivar la Declaración (M5), importar controles ni plantillas.
 
+## Diseño de M4 — evidencias con archivo y cobertura
+
+**Qué es una evidencia:** un registro o archivo que demuestra que un **control de la empresa** opera. Cuelga del **control** (no de la entrada): la entrada de la norma queda respaldada **a través de los mapeos** de M3. Así «una evidencia, varias normas» sale sola: subir una evidencia a un control que cubre varias entradas las respalda todas.
+
+**Tabla (migración `0009`, con `empresa_id` y RLS forzada):** `evidencia` guarda el control (clave foránea compuesta), el `tipo` (`documento` o `registro`), el título (1–120), la **fecha del hecho**, la **vigencia** opcional (`vigente_hasta`, no anterior a la fecha del hecho), el `estado` (`activa`, `reemplazada` o `eliminada`), la evidencia a la que reemplaza (`reemplaza_id`) y los datos del archivo: nombre en el almacén (UUID del servidor), nombre original normalizado (≤120), tipo de contenido **de la lista cerrada**, tamaño (1 byte a 25 MB) y **SHA-256**. Los datos del archivo **no se pueden modificar** una vez guardados: la aplicación solo puede actualizar `estado` y quién y cuándo (permiso por columna, como en `usuario`) y **no puede borrar** filas. Reemplazar crea una evidencia nueva y marca la anterior como `reemplazada`; eliminar marca `eliminada`. **El archivo físico no se borra** en el MVP.
+
+**Cobertura (se calcula, no se guarda):** para cada entrada de las librerías adoptadas que no esté evaluada como «no aplica»:
+- **cubierta:** algún control vigente mapeado a ella tiene al menos una evidencia activa y vigente;
+- **evidencia vencida:** hay evidencias activas pero todas pasaron su vigencia;
+- **sin evidencia:** hay controles vigentes mapeados, pero ninguna evidencia activa;
+- **sin control:** ningún control vigente la cubre.
+
+Se resume por norma (cantidades y porcentaje de cubiertas) y por entrada. «Hoy» se calcula con la fecha de Ecuador (`America/Guayaquil`). Es una medida de **cobertura documental**, no una opinión sobre la eficacia del control.
+
+**Permisos:** `evidencias.ver` (administrador SIG y colaborador), `evidencias.registrar` (administrador SIG y colaborador: subir y reemplazar) y `evidencias.eliminar` (solo administrador SIG).
+
+**Tope:** 100 evidencias activas por control (acota la respuesta y evita acumulación sin sentido).
+
+**API (contrato primero):** `GET/POST /controles/{id}/evidencias` (la subida es `multipart/form-data`, **un archivo por petición**), `POST /evidencias/{id}/reemplazo` (multipart), `POST /evidencias/{id}/eliminacion` (204), `GET /evidencias/{id}/archivo` (descarga) y `GET /cobertura`. La subida y la descarga siguen el **ADR 032**: la empresa sale del token, el tipo se decide por la **firma del contenido** (nunca por la extensión ni por lo que diga el cliente), la descarga es siempre un adjunto con `nosniff` y queda en la bitácora.
+
+**Bitácora** (claves y motivos cerrados; nunca el título ni el nombre del archivo): `evidencia.creada`, `evidencia.reemplazada`, `evidencia.eliminada`, `evidencia.descargada` y `evidencia.subida_rechazada` (motivos `tipo_no_permitido`, `tamano_excedido`, `firma_invalida`).
+
+**Lo que M4 no hace** (queda fuera por el plan): cuota por empresa, antivirus, conciliación de archivos huérfanos, verificación de la huella al descargar, vencimiento registrado como hecho por el _worker_ y vista previa en el navegador.
+
 ## Prerrequisito (tuyo)
 
 Integrar los PR abiertos #13 a #18 (documentos y la fase 1 del 0.7) para partir de un `main` actualizado y evitar conflictos en el catálogo de bitácora y en `estado.md`; los que no quieras (por ejemplo los specs largos) los cierras. Opcional: una regla de permisos que me deje `gh pr create`, para ahorrar un paso por PR.
