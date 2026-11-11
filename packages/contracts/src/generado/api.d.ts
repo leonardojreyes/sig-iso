@@ -269,9 +269,14 @@ export interface components {
             idEstable: string;
             /** Format: uuid */
             libreriaId: string;
-            capitulo: number;
+            /** @description Capítulo de la Estructura Armonizada; nulo en un control del Anexo A. */
+            capitulo: number | null;
             /** @enum {integer} */
             nivel: 1 | 2;
+            /** @enum {string} */
+            tipo: "clausula" | "control";
+            /** @description Tema del control del Anexo A; nulo en una cláusula. */
+            grupo: string | null;
             titulo: string;
             guia: string;
             /** @enum {string} */
@@ -601,6 +606,8 @@ export interface operations {
                 capitulo?: number;
                 /** @description Norma a la que aplica la entrada, por ejemplo «ISO 9001». */
                 norma?: string;
+                /** @description Cláusulas (capítulos 4 a 10) o controles del Anexo A. */
+                tipo?: "clausula" | "control";
             };
             header?: never;
             path?: never;

@@ -151,7 +151,7 @@ describe('seguridad', () => {
       'POST /sesion/cierre': [],
       'GET /librerias': [],
       'POST /librerias/{id}/adopcion': ['path:id'],
-      'GET /requisitos': ['query:capitulo', 'query:norma', 'query:q'],
+      'GET /requisitos': ['query:capitulo', 'query:norma', 'query:q', 'query:tipo'],
       'GET /requisitos/{id}': ['path:id'],
     };
     for (const o of operaciones) {
@@ -267,7 +267,7 @@ describe('comportamiento de cada endpoint', () => {
 
   it('el listado de requisitos filtra por texto, capítulo (4 a 10) y norma, todos opcionales y acotados', () => {
     const params = Object.fromEntries(op('GET /requisitos').parameters.map((p: any) => [p.name, p]));
-    expect(Object.keys(params).sort()).toEqual(['capitulo', 'norma', 'q']);
+    expect(Object.keys(params).sort()).toEqual(['capitulo', 'norma', 'q', 'tipo']);
     for (const p of Object.values<any>(params)) expect(p.in).toBe('query');
     for (const p of Object.values<any>(params)) expect(p.required ?? false).toBe(false);
     expect(params.capitulo.schema).toMatchObject({ type: 'integer', minimum: 4, maximum: 10 });
@@ -303,7 +303,7 @@ describe('comportamiento de cada endpoint', () => {
 
   it('la entrada indica su identificador, a qué norma, edición y cláusula corresponde y si es de ejemplo (H5.1, H5.5)', () => {
     const r = doc.components.schemas.EntradaLibreria!;
-    for (const campo of ['id', 'idEstable', 'libreriaId', 'capitulo', 'nivel', 'titulo', 'guia', 'alcanceComun', 'aplicaA', 'esEjemplo']) expect(r.required, campo).toContain(campo);
+    for (const campo of ['id', 'idEstable', 'libreriaId', 'capitulo', 'nivel', 'tipo', 'grupo', 'titulo', 'guia', 'alcanceComun', 'aplicaA', 'esEjemplo']) expect(r.required, campo).toContain(campo);
     expect(r.properties.aplicaA.items.required.sort()).toEqual(['clausula', 'edicion', 'norma']);
     expect(new RegExp(r.properties.idEstable.pattern, 'u').test('ha-4.1')).toBe(true);
   });
@@ -340,7 +340,7 @@ describe('las respuestas no pueden ganar campos de empresa ni datos personales s
     expect(propiedadesDe('Marca')).toEqual(['ajustadoPorContraste', 'colorOriginal', 'colorPrimario', 'logoUrl', 'nombre']);
     expect(propiedadesDe('LibreriaResumen')).toEqual(['adoptada', 'codigo', 'esEjemplo', 'fuente', 'id', 'nombre', 'version']);
     expect(propiedadesDe('Adopcion')).toEqual(['adoptadaEn', 'entradas', 'libreriaId', 'yaAdoptada']);
-    expect(propiedadesDe('EntradaLibreria')).toEqual(['alcanceComun', 'aplicaA', 'capitulo', 'esEjemplo', 'guia', 'id', 'idEstable', 'libreriaId', 'nivel', 'titulo']);
+    expect(propiedadesDe('EntradaLibreria')).toEqual(['alcanceComun', 'aplicaA', 'capitulo', 'esEjemplo', 'grupo', 'guia', 'id', 'idEstable', 'libreriaId', 'nivel', 'tipo', 'titulo']);
   });
 
   it('la empresa solo aparece en Identidad.empresa, como un objeto (no una lista), y en ninguna otra respuesta', () => {

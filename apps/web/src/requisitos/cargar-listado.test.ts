@@ -18,6 +18,8 @@ const entrada = (norma: string, id = 'ha-4.1') => ({
   idEstable: id,
   libreriaId: UUID,
   capitulo: 4,
+  tipo: 'clausula',
+  grupo: null,
   nivel: 1,
   titulo: 'Contexto',
   guia: 'Texto de guía propio.',

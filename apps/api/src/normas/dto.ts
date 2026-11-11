@@ -29,8 +29,10 @@ export class EntradaLibreriaResponse {
   @ApiProperty({ type: String, format: 'uuid', maxLength: 36 }) id!: string;
   @ApiProperty({ type: String, pattern: '^[a-z0-9][a-z0-9.-]{0,40}$', maxLength: 41 }) idEstable!: string;
   @ApiProperty({ type: String, format: 'uuid', maxLength: 36 }) libreriaId!: string;
-  @ApiProperty({ type: 'integer', minimum: 4, maximum: 10 }) capitulo!: number;
+  @ApiProperty({ type: 'integer', minimum: 4, maximum: 10, nullable: true }) capitulo!: number | null;
   @ApiProperty({ type: 'integer', enum: [1, 2] }) nivel!: number;
+  @ApiProperty({ type: String, enum: ['clausula', 'control'] }) tipo!: string;
+  @ApiProperty({ type: String, maxLength: 60, nullable: true }) grupo!: string | null;
   @ApiProperty({ type: String, maxLength: 80 }) titulo!: string;
   @ApiProperty({ type: String, maxLength: 280 }) guia!: string;
   @ApiProperty({ type: String, enum: ['comun', 'parcial', 'especifico'] }) alcanceComun!: string;

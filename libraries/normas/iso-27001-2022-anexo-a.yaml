@@ -1,0 +1,1041 @@
+# BORRADOR — NUMERACIONES SIN VERIFICAR (misma pendiente que la tarea 4.4 del corte 0.6).
+#
+# Anexo A de ISO/IEC 27001:2022: 93 controles en cuatro temas (Organizacionales A.5, Personas A.6, Físicos A.7, Tecnológicos A.8).
+# Librería de elaboración propia: NO es la norma ni su texto (regla 3 del proyecto). Los títulos son paráfrasis breves y las guías están
+# redactadas con palabras de SynapTech. Algunos títulos pueden parecerse al nombre usual del control: su uso final está pendiente de la
+# decisión del responsable (Q3 del spec de dominio v2).
+# La numeración y el reparto por tema salen de la memoria de experto-iso y DEBEN comprobarse con el ejemplar vigente antes de dejar de
+# marcarla como borrador. Al verificar: subir la versión y quitar este bloque (una prueba exige que «borrador» y «sin verificar» vayan juntos).
+esquema: 3
+codigo: iso-27001-2022-anexo-a
+nombre: ISO/IEC 27001:2022 Anexo A (borrador, numeraciones sin verificar)
+version: 0.1.0
+es_ejemplo: true
+fuente: elaboración propia SynapTech
+referencias:
+  - norma: ISO/IEC 27001
+    edicion: "2022"
+entradas:
+  - id: "a27-5-1"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Políticas de seguridad"
+    guia: "Redacta las reglas generales de seguridad de la información, apruébalas en la dirección y compártelas con el personal. Revísalas cuando algo importante cambie."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.1"
+  - id: "a27-5-2"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Roles y responsabilidades"
+    guia: "Reparte por escrito quién cuida qué en seguridad de la información, de modo que cada tarea tenga una persona a cargo."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.2"
+  - id: "a27-5-3"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Separación de funciones"
+    guia: "Evita que una sola persona pueda iniciar, aprobar y ejecutar una tarea sensible sin que otra intervenga."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.3"
+  - id: "a27-5-4"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Responsabilidades de la dirección"
+    guia: "La dirección pide al personal que siga las reglas de seguridad y da el ejemplo con su propio comportamiento."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.4"
+  - id: "a27-5-5"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Contacto con autoridades"
+    guia: "Ten a mano a quién llamar en las autoridades competentes ante un incidente o una exigencia legal, y quién lo hace."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.5"
+  - id: "a27-5-6"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Contacto con grupos especializados"
+    guia: "Mantén vínculo con foros o comunidades de seguridad para enterarte de amenazas y buenas prácticas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.6"
+  - id: "a27-5-7"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Inteligencia de amenazas"
+    guia: "Reúne y analiza información sobre amenazas actuales para ajustar tus defensas antes de que te afecten."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.7"
+  - id: "a27-5-8"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Seguridad en proyectos"
+    guia: "Incluye la seguridad de la información desde el inicio de cada proyecto, sea del tipo que sea."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.8"
+  - id: "a27-5-9"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Inventario de activos"
+    guia: "Lleva una lista de la información y de los activos que la sostienen, con una persona responsable de cada uno."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.9"
+  - id: "a27-5-10"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Uso aceptable de activos"
+    guia: "Define cómo se pueden usar la información y los equipos de la empresa y comunica esas reglas al personal."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.10"
+  - id: "a27-5-11"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Devolución de activos"
+    guia: "Recupera los equipos, accesos y documentos cuando alguien se va o cambia de función."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.11"
+  - id: "a27-5-12"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Clasificación de la información"
+    guia: "Agrupa la información por su nivel de sensibilidad para tratar cada grupo con la protección que le corresponde."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.12"
+  - id: "a27-5-13"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Etiquetado de la información"
+    guia: "Marca la información según su clasificación para que cualquiera sepa cómo manejarla."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.13"
+  - id: "a27-5-14"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Transferencia de información"
+    guia: "Define cómo se envía o comparte información con otros, dentro y fuera de la empresa, y cómo se protege en el camino."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.14"
+  - id: "a27-5-15"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Control de acceso"
+    guia: "Fija quién puede entrar a qué información y recursos, según la necesidad de su trabajo."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.15"
+  - id: "a27-5-16"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Gestión de identidades"
+    guia: "Administra el ciclo de vida de las identidades de las personas y sistemas: alta, cambios y baja."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.16"
+  - id: "a27-5-17"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Información de autenticación"
+    guia: "Controla cómo se crean, entregan y cuidan las contraseñas y otros medios para comprobar quién es cada quien."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.17"
+  - id: "a27-5-18"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Derechos de acceso"
+    guia: "Asigna, revisa y retira los accesos de cada persona de forma ordenada y con aprobación."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.18"
+  - id: "a27-5-19"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Seguridad con proveedores"
+    guia: "Define qué pides a los proveedores que tocan tu información y cómo se gestiona esa relación."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.19"
+  - id: "a27-5-20"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Acuerdos con proveedores"
+    guia: "Deja por escrito en los acuerdos con cada proveedor los compromisos de seguridad de la información."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.20"
+  - id: "a27-5-21"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Cadena de suministro de TIC"
+    guia: "Considera los riesgos de seguridad de los productos y servicios tecnológicos que dependen de terceros."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.21"
+  - id: "a27-5-22"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Seguimiento de proveedores"
+    guia: "Vigila y revisa los servicios de tus proveedores y gestiona sus cambios para mantener el nivel de seguridad acordado."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.22"
+  - id: "a27-5-23"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Servicios en la nube"
+    guia: "Define cómo se adquieren, usan y dejan los servicios en la nube cuidando la seguridad de tu información."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.23"
+  - id: "a27-5-24"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Planificación de incidentes"
+    guia: "Prepara con anticipación cómo se gestionarán los incidentes: roles, procesos y canales de aviso."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.24"
+  - id: "a27-5-25"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Evaluación de eventos"
+    guia: "Decide con un criterio claro qué eventos de seguridad cuentan como incidente y cuáles no."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.25"
+  - id: "a27-5-26"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Respuesta a incidentes"
+    guia: "Atiende cada incidente con el procedimiento definido, de modo que se contenga, se resuelva y quede registrado."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.26"
+  - id: "a27-5-27"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Aprender de los incidentes"
+    guia: "Usa lo ocurrido en los incidentes para mejorar controles y evitar que se repitan."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.27"
+  - id: "a27-5-28"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Recolección de evidencia"
+    guia: "Define cómo se identifica, reúne y conserva la evidencia de un incidente para poder usarla después."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.28"
+  - id: "a27-5-29"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Seguridad en una interrupción"
+    guia: "Mantén la seguridad de la información incluso cuando la operación normal se interrumpe."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.29"
+  - id: "a27-5-30"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Preparación de TIC para continuidad"
+    guia: "Planifica y prueba que los servicios tecnológicos puedan recuperarse según los objetivos de continuidad del negocio."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.30"
+  - id: "a27-5-31"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Requisitos legales y contractuales"
+    guia: "Identifica las leyes, normas y contratos que afectan la seguridad de tu información y mantenlos al día."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.31"
+  - id: "a27-5-32"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Propiedad intelectual"
+    guia: "Respeta los derechos de autor y las licencias del software y los contenidos que usa la empresa."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.32"
+  - id: "a27-5-33"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Protección de registros"
+    guia: "Cuida los registros de la empresa contra pérdida, alteración y acceso indebido durante su tiempo de conservación."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.33"
+  - id: "a27-5-34"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Privacidad y datos personales"
+    guia: "Protege los datos personales según la ley aplicable y las expectativas de las personas titulares."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.34"
+  - id: "a27-5-35"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Revisión independiente"
+    guia: "Haz que alguien ajeno al equipo revise cada cierto tiempo cómo se gestiona la seguridad de la información."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.35"
+  - id: "a27-5-36"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Cumplimiento de reglas internas"
+    guia: "Comprueba regularmente que se cumplen las políticas y normas de seguridad de la empresa."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.36"
+  - id: "a27-5-37"
+    tipo: control
+    grupo: "Organizacionales"
+    nivel: 1
+    titulo: "Procedimientos documentados"
+    guia: "Documenta los procedimientos de operación de los sistemas de información y ponlos al alcance de quien los usa."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.5.37"
+  - id: "a27-6-1"
+    tipo: control
+    grupo: "Personas"
+    nivel: 1
+    titulo: "Selección de personal"
+    guia: "Verifica los antecedentes de quienes van a incorporarse, en proporción a su cargo y a la información que manejarán."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.6.1"
+  - id: "a27-6-2"
+    tipo: control
+    grupo: "Personas"
+    nivel: 1
+    titulo: "Condiciones de empleo"
+    guia: "Deja claras en los contratos las responsabilidades de seguridad de la información de la persona y de la empresa."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.6.2"
+  - id: "a27-6-3"
+    tipo: control
+    grupo: "Personas"
+    nivel: 1
+    titulo: "Concienciación y formación"
+    guia: "Capacita al personal en seguridad de la información, según su función, y refuerza el aprendizaje con regularidad."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.6.3"
+  - id: "a27-6-4"
+    tipo: control
+    grupo: "Personas"
+    nivel: 1
+    titulo: "Proceso disciplinario"
+    guia: "Ten un proceso conocido para actuar cuando alguien incumple las reglas de seguridad."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.6.4"
+  - id: "a27-6-5"
+    tipo: control
+    grupo: "Personas"
+    nivel: 1
+    titulo: "Salida o cambio de puesto"
+    guia: "Define qué obligaciones de seguridad siguen vigentes cuando una persona termina o cambia de función, y comunícalas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.6.5"
+  - id: "a27-6-6"
+    tipo: control
+    grupo: "Personas"
+    nivel: 1
+    titulo: "Acuerdos de confidencialidad"
+    guia: "Firma acuerdos de confidencialidad con quienes acceden a información sensible y revísalos cuando haga falta."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.6.6"
+  - id: "a27-6-7"
+    tipo: control
+    grupo: "Personas"
+    nivel: 1
+    titulo: "Trabajo remoto"
+    guia: "Define cómo se protege la información cuando el personal trabaja fuera de las instalaciones de la empresa."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.6.7"
+  - id: "a27-6-8"
+    tipo: control
+    grupo: "Personas"
+    nivel: 1
+    titulo: "Reporte de eventos"
+    guia: "Ofrece un canal sencillo para que cualquiera avise pronto de un evento de seguridad que observe."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.6.8"
+  - id: "a27-7-1"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Perímetros físicos"
+    guia: "Delimita las áreas que protegen información y activos sensibles con barreras adecuadas a su riesgo."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.1"
+  - id: "a27-7-2"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Entrada física"
+    guia: "Controla quién entra a las áreas protegidas y deja constancia de los accesos."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.2"
+  - id: "a27-7-3"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Oficinas y salas seguras"
+    guia: "Diseña oficinas, salas e instalaciones para que la información no quede expuesta a miradas o accesos indebidos."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.3"
+  - id: "a27-7-4"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Vigilancia física"
+    guia: "Observa de forma continua los espacios para detectar accesos físicos no autorizados."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.4"
+  - id: "a27-7-5"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Amenazas físicas y ambientales"
+    guia: "Protege las instalaciones contra incendios, inundaciones y otros riesgos del entorno."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.5"
+  - id: "a27-7-6"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Trabajo en áreas seguras"
+    guia: "Fija reglas de comportamiento para quienes trabajan dentro de las áreas protegidas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.6"
+  - id: "a27-7-7"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Escritorio y pantalla limpios"
+    guia: "Evita dejar papeles o sesiones abiertas a la vista cuando nadie está en el puesto."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.7"
+  - id: "a27-7-8"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Ubicación de equipos"
+    guia: "Coloca y protege los equipos para reducir riesgos del entorno y accesos de personas no autorizadas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.8"
+  - id: "a27-7-9"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Activos fuera de la empresa"
+    guia: "Protege los equipos y la información que salen de las instalaciones, considerando los riesgos de cada lugar."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.9"
+  - id: "a27-7-10"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Medios de almacenamiento"
+    guia: "Gestiona los discos y memorias durante todo su ciclo de vida: adquisición, uso, traslado y baja."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.10"
+  - id: "a27-7-11"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Servicios de apoyo"
+    guia: "Protege los equipos frente a fallas de electricidad, comunicaciones y otros servicios de apoyo."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.11"
+  - id: "a27-7-12"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Seguridad del cableado"
+    guia: "Resguarda el cableado de energía y datos contra interceptación, interferencia y daños."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.12"
+  - id: "a27-7-13"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Mantenimiento de equipos"
+    guia: "Mantén los equipos de forma planificada para conservar su disponibilidad e integridad."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.13"
+  - id: "a27-7-14"
+    tipo: control
+    grupo: "Físicos"
+    nivel: 1
+    titulo: "Baja o reutilización segura"
+    guia: "Antes de desechar o reutilizar un equipo, comprueba que no quede información sensible almacenada."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.7.14"
+  - id: "a27-8-1"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Dispositivos de usuario"
+    guia: "Protege la información que se guarda o se procesa en los equipos y móviles que usan las personas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.1"
+  - id: "a27-8-2"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Accesos privilegiados"
+    guia: "Limita y vigila los accesos con permisos elevados y asígnalos solo a quien los necesita."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.2"
+  - id: "a27-8-3"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Restricción de acceso a la información"
+    guia: "Aplica las reglas de acceso para que cada persona vea solo la información que le corresponde."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.3"
+  - id: "a27-8-4"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Acceso al código fuente"
+    guia: "Gestiona con cuidado quién puede leer o cambiar el código fuente y las herramientas de desarrollo."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.4"
+  - id: "a27-8-5"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Autenticación segura"
+    guia: "Usa métodos de autenticación acordes al riesgo para confirmar la identidad antes de dar acceso."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.5"
+  - id: "a27-8-6"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Gestión de la capacidad"
+    guia: "Vigila el uso de recursos tecnológicos y planifica su crecimiento para evitar fallas por falta de capacidad."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.6"
+  - id: "a27-8-7"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Protección contra malware"
+    guia: "Combina herramientas y hábitos del personal para prevenir, detectar y frenar el software malicioso."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.7"
+  - id: "a27-8-8"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Vulnerabilidades técnicas"
+    guia: "Busca y corrige a tiempo las debilidades de los sistemas, evaluando el riesgo de cada una."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.8"
+  - id: "a27-8-9"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Gestión de la configuración"
+    guia: "Define, registra y vigila las configuraciones seguras de equipos, redes y programas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.9"
+  - id: "a27-8-10"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Eliminación de información"
+    guia: "Borra la información cuando ya no se necesita, de forma que no pueda recuperarse."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.10"
+  - id: "a27-8-11"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Enmascaramiento de datos"
+    guia: "Oculta o transforma los datos sensibles cuando no hace falta mostrarlos completos."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.11"
+  - id: "a27-8-12"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Prevención de fuga de datos"
+    guia: "Detecta y evita que información sensible salga de la empresa por canales no autorizados."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.12"
+  - id: "a27-8-13"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Copias de seguridad"
+    guia: "Haz copias de respaldo de la información y de los sistemas y comprueba cada tanto que se pueden restaurar."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.13"
+  - id: "a27-8-14"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Redundancia"
+    guia: "Incorpora duplicidad en los servicios críticos para que sigan operando si algo falla."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.14"
+  - id: "a27-8-15"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Registro de eventos"
+    guia: "Registra las actividades relevantes de los sistemas, protege esos registros y revísalos."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.15"
+  - id: "a27-8-16"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Seguimiento de actividades"
+    guia: "Observa redes, sistemas y aplicaciones para notar comportamientos anormales y reaccionar."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.16"
+  - id: "a27-8-17"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Sincronización de relojes"
+    guia: "Sincroniza la hora de los sistemas para que los registros se puedan comparar con fiabilidad."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.17"
+  - id: "a27-8-18"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Herramientas con privilegios"
+    guia: "Restringe y controla las utilidades que pueden saltarse las protecciones de los sistemas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.18"
+  - id: "a27-8-19"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Instalación de software"
+    guia: "Controla cómo y quién instala programas en los sistemas en producción."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.19"
+  - id: "a27-8-20"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Seguridad de redes"
+    guia: "Protege y gestiona las redes y sus dispositivos para resguardar la información que circula por ellas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.20"
+  - id: "a27-8-21"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Servicios de red"
+    guia: "Define y vigila los mecanismos de seguridad y los niveles de servicio de las redes propias y contratadas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.21"
+  - id: "a27-8-22"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Segmentación de redes"
+    guia: "Separa las redes en grupos según su función y sensibilidad para contener el alcance de un problema."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.22"
+  - id: "a27-8-23"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Filtrado web"
+    guia: "Limita el acceso a sitios externos inseguros para reducir la exposición a contenido malicioso."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.23"
+  - id: "a27-8-24"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Uso de criptografía"
+    guia: "Define cuándo y cómo se usa el cifrado y cómo se administran las claves durante su vida útil."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.24"
+  - id: "a27-8-25"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Desarrollo seguro"
+    guia: "Establece reglas para que la seguridad forme parte de todo el ciclo de desarrollo de software."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.25"
+  - id: "a27-8-26"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Requisitos de seguridad de aplicaciones"
+    guia: "Identifica y acuerda los requisitos de seguridad al construir o adquirir una aplicación."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.26"
+  - id: "a27-8-27"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Arquitectura segura"
+    guia: "Aplica principios de ingeniería segura al diseñar y mantener sistemas de información."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.27"
+  - id: "a27-8-28"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Programación segura"
+    guia: "Aplica prácticas de codificación segura para evitar fallas comunes al escribir software."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.28"
+  - id: "a27-8-29"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Pruebas de seguridad"
+    guia: "Prueba la seguridad durante el desarrollo y antes de aceptar un sistema o cambio."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.29"
+  - id: "a27-8-30"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Desarrollo contratado"
+    guia: "Dirige, vigila y revisa el desarrollo de software que realizan terceros para tu empresa."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.30"
+  - id: "a27-8-31"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Separación de entornos"
+    guia: "Mantén separados los entornos de desarrollo, prueba y producción para proteger lo que opera."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.31"
+  - id: "a27-8-32"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Gestión de cambios"
+    guia: "Controla los cambios a sistemas e instalaciones con un proceso ordenado y registrado."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.32"
+  - id: "a27-8-33"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Datos de prueba"
+    guia: "Elige, protege y gestiona con cuidado la información que se usa para probar sistemas."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.33"
+  - id: "a27-8-34"
+    tipo: control
+    grupo: "Tecnológicos"
+    nivel: 1
+    titulo: "Auditorías de los sistemas"
+    guia: "Planifica y acuerda las pruebas de auditoría en sistemas operativos para no afectar el servicio."
+    alcance_comun: especifico
+    aplica_a:
+      - norma: ISO/IEC 27001
+        edicion: "2022"
+        clausula: "A.8.34"

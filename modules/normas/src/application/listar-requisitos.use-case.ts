@@ -10,6 +10,8 @@ export interface ListarRequisitosEntrada {
   readonly q?: string;
   readonly capitulo?: number;
   readonly norma?: string;
+  /** Cláusulas o controles del Anexo A. */
+  readonly tipo?: 'clausula' | 'control';
 }
 
 /** Tope del contrato (`maxItems`). */
@@ -22,7 +24,7 @@ const PATRON_NORMA = /^[A-Za-z0-9 :./-]+$/;
 /** Sin mayúsculas ni tildes, para comparar. */
 const plano = (texto: string): string => texto.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
-const validar = (e: ListarRequisitosEntrada): { q: string | null; capitulo: number | null; norma: string | null } => {
+const validar = (e: ListarRequisitosEntrada): { q: string | null; capitulo: number | null; norma: string | null; tipo: 'clausula' | 'control' | null } => {
   let q: string | null = null;
   if (e.q !== undefined) {
     const t = typeof e.q === 'string' ? e.q.trim() : '';
@@ -39,7 +41,12 @@ const validar = (e: ListarRequisitosEntrada): { q: string | null; capitulo: numb
     if (typeof e.norma !== 'string' || e.norma.length < 1 || e.norma.length > 60 || !PATRON_NORMA.test(e.norma)) throw new ParametroInvalidoError('norma');
     norma = e.norma;
   }
-  return { q, capitulo, norma };
+  let tipo: 'clausula' | 'control' | null = null;
+  if (e.tipo !== undefined) {
+    if (e.tipo !== 'clausula' && e.tipo !== 'control') throw new ParametroInvalidoError('tipo');
+    tipo = e.tipo;
+  }
+  return { q, capitulo, norma, tipo };
 };
 
 /**
@@ -51,7 +58,7 @@ export class ListarRequisitosUseCase {
 
   async ejecutar(entrada: ListarRequisitosEntrada): Promise<EntradaDto[]> {
     const empresaId = crearEmpresaId(entrada.empresaId);
-    const { q, capitulo, norma } = validar(entrada);
+    const { q, capitulo, norma, tipo } = validar(entrada);
 
     return this.unidad.ejecutar(empresaId, async ({ catalogo, adopciones }) => {
       const [librerias, adoptadas, entradas] = await Promise.all([catalogo.listarLibrerias(), adopciones.listarLibreriaIds(), catalogo.listarEntradas()]);
@@ -61,8 +68,9 @@ export class ListarRequisitosUseCase {
       const visibles = entradas
         .filter((e) => propias.has(e.libreriaId))
         .filter((e) => capitulo === null || e.capitulo === capitulo)
+        .filter((e) => tipo === null || e.tipo === tipo)
         .filter((e) => norma === null || e.aplicaA.some((a) => a.norma === norma))
-        .filter((e) => q === null || [e.idEstable, e.titulo, ...e.aplicaA.map((a) => a.clausula)].some((campo) => plano(campo).includes(q)))
+        .filter((e) => q === null || [e.idEstable, e.titulo, e.grupo ?? '', ...e.aplicaA.map((a) => a.clausula)].some((campo) => plano(campo).includes(q)))
         .sort((a, b) => (codigo.get(a.libreriaId) ?? '').localeCompare(codigo.get(b.libreriaId) ?? '') || a.orden - b.orden);
       if (visibles.length > TOPE_REQUISITOS) throw new Error(`El resultado supera el tope de ${TOPE_REQUISITOS} entradas del contrato`);
       return visibles.map(aDto);

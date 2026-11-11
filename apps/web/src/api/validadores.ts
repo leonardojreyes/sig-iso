@@ -72,6 +72,8 @@ export const validarEntradas = (cuerpo: unknown): EntradaLibreria[] | null => {
         'libreriaId',
         'capitulo',
         'nivel',
+        'tipo',
+        'grupo',
         'titulo',
         'guia',
         'alcanceComun',
@@ -86,7 +88,11 @@ export const validarEntradas = (cuerpo: unknown): EntradaLibreria[] | null => {
       !texto(o.idEstable, 41, /^[a-z0-9][a-z0-9.-]{0,40}$/)
     )
       return null;
-    if (!Number.isInteger(o.capitulo) || (o.capitulo as number) < 4 || (o.capitulo as number) > 10) return null;
+    if (o.capitulo !== null && (!Number.isInteger(o.capitulo) || (o.capitulo as number) < 4 || (o.capitulo as number) > 10)) return null;
+    if (o.tipo !== 'clausula' && o.tipo !== 'control') return null;
+    if (o.grupo !== null && !texto(o.grupo, 60, undefined, 2)) return null;
+    // Coherencia: una cláusula lleva capítulo y no grupo; un control, al revés.
+    if ((o.tipo === 'clausula') !== (o.capitulo !== null) || (o.tipo === 'control') !== (o.grupo !== null)) return null;
     if (o.nivel !== 1 && o.nivel !== 2) return null;
     if (!texto(o.titulo, 80, undefined, 1) || !texto(o.guia, 280, undefined, 1)) return null;
     if (o.alcanceComun !== 'comun' && o.alcanceComun !== 'parcial' && o.alcanceComun !== 'especifico') return null;
@@ -96,8 +102,10 @@ export const validarEntradas = (cuerpo: unknown): EntradaLibreria[] | null => {
       id: o.id,
       idEstable: o.idEstable,
       libreriaId: o.libreriaId,
-      capitulo: o.capitulo as number,
+      capitulo: o.capitulo as number | null,
       nivel: o.nivel,
+      tipo: o.tipo,
+      grupo: o.grupo as string | null,
       titulo: o.titulo,
       guia: o.guia,
       alcanceComun: o.alcanceComun,

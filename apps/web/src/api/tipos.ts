@@ -23,8 +23,12 @@ export interface EntradaLibreria {
   readonly id: string;
   readonly idEstable: string;
   readonly libreriaId: string;
-  readonly capitulo: number;
+  /** Nulo en un control del Anexo A. */
+  readonly capitulo: number | null;
   readonly nivel: 1 | 2;
+  readonly tipo: 'clausula' | 'control';
+  /** Tema del control; nulo en una cláusula. */
+  readonly grupo: string | null;
   readonly titulo: string;
   readonly guia: string;
   readonly alcanceComun: AlcanceComun;

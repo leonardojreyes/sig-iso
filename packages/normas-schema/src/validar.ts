@@ -1,4 +1,4 @@
-// Validador de librerías de normas, esquema v2 (ADR 026): estructura (JSON Schema) y reglas entre campos.
+// Validador de librerías de normas, esquemas v2 y v3 (ADR 026; la v3 agrega los controles del Anexo A): estructura (JSON Schema) y reglas entre campos.
 // Los errores se expresan con códigos y rutas: NUNCA repiten el contenido recibido ni nombres de campos desconocidos,
 // porque ese contenido podría ser, justamente, lo que no debe guardarse (texto de una norma o datos personales).
 import Ajv2020, { type ErrorObject } from 'ajv/dist/2020.js';
@@ -17,8 +17,13 @@ export interface CorrespondenciaNorma extends ReferenciaNorma {
 
 export interface EntradaLibreria {
   readonly id: string;
-  readonly capitulo: number;
+  /** Obligatorio en una cláusula; ausente en un control. */
+  readonly capitulo?: number;
   readonly nivel: 1 | 2;
+  /** Por omisión, cláusula. */
+  readonly tipo?: 'clausula' | 'control';
+  /** Tema de un control (obligatorio solo en controles). */
+  readonly grupo?: string;
   readonly titulo: string;
   readonly guia: string;
   readonly alcance_comun: AlcanceComun;
@@ -26,7 +31,7 @@ export interface EntradaLibreria {
 }
 
 export interface Libreria {
-  readonly esquema: 2;
+  readonly esquema: 2 | 3;
   readonly codigo: string;
   readonly nombre: string;
   readonly version: string;
@@ -106,7 +111,7 @@ const idDeEntrada = (datos: unknown, indice: number | null): string | null => {
 const traducir = (e: ErrorObject, datos: unknown): ErrorLibreria => {
   let ruta = aRuta(e.instancePath);
   if (e.keyword === 'required') ruta = ruta === '' ? String(e.params.missingProperty) : `${ruta}.${String(e.params.missingProperty)}`;
-  const codigo: CodigoError = e.keyword === 'const' ? (ruta === 'esquema' ? 'esquema_no_soportado' : 'valor_no_permitido') : (CODIGO_POR_PALABRA[e.keyword] ?? 'invalido');
+  const codigo: CodigoError = e.keyword === 'const' || (e.keyword === 'enum' && ruta === 'esquema') ? (ruta === 'esquema' ? 'esquema_no_soportado' : 'valor_no_permitido') : (CODIGO_POR_PALABRA[e.keyword] ?? 'invalido');
   const indice = indiceDeEntrada(ruta);
   return { entrada: idDeEntrada(datos, indice), indice, ruta, codigo };
 };
