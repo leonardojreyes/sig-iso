@@ -37,6 +37,31 @@ Regla 2 (aislamiento: una prueba por tabla nueva que intenta leer lo de otra emp
 
 Un solo módulo `modules/certificacion` (Nx no permite que dos módulos se importen), con subcarpetas por agregado; un módulo Nest por rebanada en `apps/api/src/certificacion/`; contrato primero; puertos redeclarados; `CatalogoLecturaPort` con adaptador en `apps/api` que delega en `modules/normas` solo por su `index.ts`. Permisos nuevos en `roles.ts` (administrador SIG todos; colaborador: ver, registrar evidencias y proponer evaluaciones; **no** aprobar alcance ni Declaración). Tablas `*_version` solo con `select, insert` para `sigiso_app` y un disparador contra `update`/`delete` (como la bitácora), con prueba.
 
+## Diseño de M5 — Declaración de Aplicabilidad de 27001
+
+**Qué es:** una fila por **control del Anexo A** de las librerías adoptadas que aplican a 27001. Se **deriva** (no se escribe a mano) del diagnóstico, los controles de la empresa y las evidencias; si la empresa quiere cambiar algo, cambia el diagnóstico o los controles y la declaración se recalcula.
+
+**Derivación de cada fila** (función pura en el dominio):
+
+- **Aplicabilidad:** `aplica` si la evaluación es cumple, parcial o no cumple; `no_aplica` si la empresa lo evaluó así (su **justificación** es el comentario, que ya es obligatorio); `por_decidir` si no hay evaluación.
+- **Implementación:** `implementado` (cumple), `parcial`, `no_implementado` (no cumple) o `sin_evaluar`; vacía si no aplica.
+- **Controles de la empresa** que la cubren (por código, vigentes) y su **estado de cobertura** de M4.
+- Título breve y grupo vienen de la librería (propios); **nunca** texto de la norma.
+
+**Aprobación:** solo el administrador SIG. **Se rechaza (409 `incompleta`) si queda algún control «por decidir»**, porque una declaración con huecos no se puede presentar al auditor; una aplicable sin control mapeado **sí** se permite y se marca en el documento como «sin control asignado» (es un hallazgo, no un impedimento). Al aprobar se guarda una **versión congelada** (número correlativo por empresa, quién y cuándo, el texto del alcance de 27001 vigente en ese momento y todas las filas con sus textos). No se edita ni se borra; una nueva aprobación crea la versión siguiente.
+
+**Tablas (migración `0010`, `empresa_id`, RLS forzada, sin `update` ni `delete` para la aplicación):** `declaracion_version` (número, aprobada por/en, conteos) y `declaracion_fila` (clave foránea compuesta con la versión; entrada, título, grupo, aplicabilidad, implementación, justificación, códigos de controles, cobertura). Una prueba de aislamiento por tabla.
+
+**Permisos:** `declaracion.ver` y `declaracion.exportar` (administrador SIG y colaborador), `declaracion.aprobar` (solo administrador SIG).
+
+**API (contrato primero):** `GET /declaracion` (borrador derivado y datos de la última versión aprobada), `POST /declaracion/aprobacion` (201), `GET /declaracion/versiones`, `GET /declaracion/versiones/{id}` (filas congeladas), `GET /declaracion/documento` (borrador, con rótulo «preliminar») y `GET /declaracion/versiones/{id}/documento` (desde la copia congelada). Descargas con las reglas del ADR 032.
+
+**Bitácora** (claves cerradas, sin textos): `declaracion.aprobada` (número y conteos) y `declaracion.exportada` (borrador o número de versión; se registra **antes** de entregar).
+
+**Pasos:** 1 migración y aislamiento · 2 dominio, permisos y eventos · 3 casos de uso, `GeneradorDocumentoPort` y adaptadores (`docx`) · 4 API · 5 web (pantalla, aprobar, historial, descarga) y `web:verify-declaracion`.
+
+**Lo que M5 no hace:** firma electrónica, comparar versiones, plantillas de formato propias de la empresa, PDF, controles que no sean del Anexo A y declaración para 9001 o 42001.
+
 ## Bitácora (acciones nuevas, claves y motivos cerrados)
 
 `alcance.aprobado`, `evaluacion.cambiada` (estado anterior y nuevo), `control.creado|cambiado|retirado`, `mapeo.creado|eliminado`, `evidencia.creada|reemplazada|eliminada|descargada|subida_rechazada` (motivos `tipo_no_permitido`, `tamano_excedido`, `firma_invalida`), `declaracion.generada|aprobada|exportada`.
@@ -62,10 +87,10 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 
 **Tablas (migración `0008`, todo con `empresa_id` y RLS forzada):**
 
-| Tabla | Contenido | Reglas |
-| --- | --- | --- |
-| `control` | `id`, `codigo` (1–20, `[A-Za-z0-9._-]`), `nombre` (1–120), `descripcion` (≤1000, opcional), `responsable_id` (opcional), `estado` (`vigente` o `retirado`), `version` (concurrencia optimista), quién y cuándo creó y cambió | `unique (empresa_id, codigo)` y `unique (empresa_id, id)` (clave foránea compuesta). **Sin DELETE** para la aplicación: un control se **retira** (queda el rastro) y su código no se reutiliza. |
-| `control_mapeo` | `control_id` + `(libreria_codigo, id_estable)` de la entrada, quién y cuándo | PK sobre las cuatro columnas (sin duplicados); clave foránea compuesta `(empresa_id, control_id)`. La entrada se referencia **sin FK** (como `evaluacion`: el catálogo es por versión) y el caso de uso comprueba que esté en las librerías adoptadas. La aplicación puede **insertar y borrar** mapeos (no actualizar); cada alta y baja va a la bitácora. |
+| Tabla           | Contenido                                                                                                                                                                                                                    | Reglas                                                                                                                                                                                                                                                                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `control`       | `id`, `codigo` (1–20, `[A-Za-z0-9._-]`), `nombre` (1–120), `descripcion` (≤1000, opcional), `responsable_id` (opcional), `estado` (`vigente` o `retirado`), `version` (concurrencia optimista), quién y cuándo creó y cambió | `unique (empresa_id, codigo)` y `unique (empresa_id, id)` (clave foránea compuesta). **Sin DELETE** para la aplicación: un control se **retira** (queda el rastro) y su código no se reutiliza.                                                                                                                                                             |
+| `control_mapeo` | `control_id` + `(libreria_codigo, id_estable)` de la entrada, quién y cuándo                                                                                                                                                 | PK sobre las cuatro columnas (sin duplicados); clave foránea compuesta `(empresa_id, control_id)`. La entrada se referencia **sin FK** (como `evaluacion`: el catálogo es por versión) y el caso de uso comprueba que esté en las librerías adoptadas. La aplicación puede **insertar y borrar** mapeos (no actualizar); cada alta y baja va a la bitácora. |
 
 **Dominio (`modules/certificacion/src/domain`):** `Control` (crear, cambiar nombre, descripción y responsable, retirar; un control retirado no se cambia ni recibe mapeos) y `MapeoControl` (valor: control + entrada). Tope de **50 mapeos por control**. Los textos no admiten caracteres de control.
 
@@ -82,6 +107,7 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 **Tabla (migración `0009`, con `empresa_id` y RLS forzada):** `evidencia` guarda el control (clave foránea compuesta), el `tipo` (`documento` o `registro`), el título (1–120), la **fecha del hecho**, la **vigencia** opcional (`vigente_hasta`, no anterior a la fecha del hecho), el `estado` (`activa`, `reemplazada` o `eliminada`), la evidencia a la que reemplaza (`reemplaza_id`) y los datos del archivo: nombre en el almacén (UUID del servidor), nombre original normalizado (≤120), tipo de contenido **de la lista cerrada**, tamaño (1 byte a 25 MB) y **SHA-256**. Los datos del archivo **no se pueden modificar** una vez guardados: la aplicación solo puede actualizar `estado` y quién y cuándo (permiso por columna, como en `usuario`) y **no puede borrar** filas. Reemplazar crea una evidencia nueva y marca la anterior como `reemplazada`; eliminar marca `eliminada`. **El archivo físico no se borra** en el MVP.
 
 **Cobertura (se calcula, no se guarda):** para cada entrada de las librerías adoptadas que no esté evaluada como «no aplica»:
+
 - **cubierta:** algún control vigente mapeado a ella tiene al menos una evidencia activa y vigente;
 - **evidencia vencida:** hay evidencias activas pero todas pasaron su vigencia;
 - **sin evidencia:** hay controles vigentes mapeados, pero ninguna evidencia activa;

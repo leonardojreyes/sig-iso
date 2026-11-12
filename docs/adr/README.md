@@ -34,4 +34,4 @@ Formato MADR breve. Se crean con el comando `/adr`. Aprobados el 2026-11-04 (pas
 | [028](028-privacidad-y-bitacora.md)          | Privacidad y bitácora      | identificador opaco; pseudonimización; retención y derechos provisionales  | Aprobado (provisional; falta asesor legal) |
 | [029](029-autorizacion-por-rol-en-la-base.md) | Autorización por rol en la base | rol en `usuario` y matriz en código; OpenFGA pospuesto con disparadores | Aprobado |
 | [032](032-archivos-de-evidencia.md) | Archivos de evidencia | almacén detrás de un puerto; adaptador local; lista cerrada por firma del contenido | Aprobado |
-| [033](033-exportacion-word-de-la-declaracion.md) | Exportación Word de la Declaración | `docx` (MIT) detrás de `GeneradorDocumentoPort`; versión aprobada congelada | Propuesto |
+| [033](033-exportacion-word-de-la-declaracion.md) | Exportación Word de la Declaración | `docx` (MIT) detrás de `GeneradorDocumentoPort`; versión aprobada congelada | Aprobado |

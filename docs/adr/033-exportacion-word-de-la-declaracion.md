@@ -1,6 +1,6 @@
 # ADR 033 — Exportación a Word de la Declaración de Aplicabilidad: `docx` detrás de un puerto
 
-- **Estado:** Propuesto (2026-11-12), como parte del plan del MVP de certificación (M5)
+- **Estado:** Aprobado (2026-11-12), como parte del plan del MVP de certificación (M5)
 - **Fecha:** 2026-11-12
 - **Decide:** Ing. Leonardo J. Reyes B.
 
