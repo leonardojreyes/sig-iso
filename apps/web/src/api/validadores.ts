@@ -1,6 +1,6 @@
 // La respuesta de la API se trata como un dato externo: forma EXACTA (sin campos de más ni de menos), tipos, patrones y topes del
 // contrato. Lo que no cumple se rechaza entero (nunca se corrige ni se muestra a medias).
-import type { Alcance, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol } from './tipos';
+import type { Alcance, Cobertura, CoberturaEntrada, Evidencia, ResumenCobertura, TipoArchivo, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol } from './tipos';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLES: readonly string[] = [
@@ -263,4 +263,83 @@ export const validarMarcoControles = (cuerpo: unknown): MarcoControles | null =>
     controles.push({ id: c.id, codigo: c.codigo, nombre: c.nombre, descripcion: c.descripcion as string | null, responsableId: c.responsableId as string | null, estado: c.estado, version: c.version, mapeos, normas: c.normas as string[] });
   }
   return { controles, normas: o.normas as string[] };
+};
+
+const TIPOS_ARCHIVO: readonly string[] = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'text/plain',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+];
+const SHA256 = /^[0-9a-f]{64}$/;
+
+export const validarEvidencias = (cuerpo: unknown): Evidencia[] | null => {
+  if (!Array.isArray(cuerpo) || cuerpo.length > 100) return null;
+  const salida: Evidencia[] = [];
+  for (const item of cuerpo) {
+    const o = objeto(item);
+    if (!o || !claves(o, ['id', 'controlId', 'tipo', 'titulo', 'fechaHecho', 'vigenteHasta', 'estado', 'reemplazaId', 'vigente', 'vencida', 'creadaEn', 'archivo'])) return null;
+    if (!texto(o.id, 36, UUID) || !texto(o.controlId, 36, UUID)) return null;
+    if (o.tipo !== 'documento' && o.tipo !== 'registro') return null;
+    if (!texto(o.titulo, 120, undefined, 1) || !texto(o.fechaHecho, 10, FECHA)) return null;
+    if (o.vigenteHasta !== null && !texto(o.vigenteHasta, 10, FECHA)) return null;
+    if (o.estado !== 'activa' && o.estado !== 'reemplazada' && o.estado !== 'eliminada') return null;
+    if (o.reemplazaId !== null && !texto(o.reemplazaId, 36, UUID)) return null;
+    if (typeof o.vigente !== 'boolean' || typeof o.vencida !== 'boolean' || (o.vigente && o.vencida)) return null;
+    // Coherencia: solo una evidencia activa puede estar vigente o vencida.
+    if (o.estado !== 'activa' && (o.vigente || o.vencida)) return null;
+    if (!texto(o.creadaEn, 40, FECHA_HORA)) return null;
+    const a = objeto(o.archivo);
+    if (!a || !claves(a, ['nombre', 'tipo', 'bytes', 'sha256'])) return null;
+    if (!texto(a.nombre, 120, undefined, 1) || typeof a.tipo !== 'string' || !TIPOS_ARCHIVO.includes(a.tipo)) return null;
+    if (!entero(a.bytes, 1) || a.bytes > 26_214_400 || !texto(a.sha256, 64, SHA256)) return null;
+    salida.push({
+      id: o.id, controlId: o.controlId, tipo: o.tipo, titulo: o.titulo, fechaHecho: o.fechaHecho, vigenteHasta: o.vigenteHasta as string | null,
+      estado: o.estado, reemplazaId: o.reemplazaId as string | null, vigente: o.vigente, vencida: o.vencida, creadaEn: o.creadaEn,
+      archivo: { nombre: a.nombre, tipo: a.tipo as TipoArchivo, bytes: a.bytes, sha256: a.sha256 },
+    });
+  }
+  return salida;
+};
+
+const resumen = (o: Record<string, unknown>, extra: readonly string[] = []): boolean => {
+  if (!claves(o, [...extra, 'total', 'cubiertas', 'evidenciaVencida', 'sinEvidencia', 'sinControl', 'porcentaje'])) return false;
+  for (const k of ['total', 'cubiertas', 'evidenciaVencida', 'sinEvidencia', 'sinControl'] as const) if (!entero(o[k])) return false;
+  if (o.porcentaje !== null && (!entero(o.porcentaje) || (o.porcentaje as number) > 100)) return false;
+  // Las cuentas suman el total.
+  return (o.cubiertas as number) + (o.evidenciaVencida as number) + (o.sinEvidencia as number) + (o.sinControl as number) === o.total;
+};
+
+const ESTADOS_COBERTURA: readonly string[] = ['cubierta', 'evidencia_vencida', 'sin_evidencia', 'sin_control', 'no_aplica'];
+
+export const validarCobertura = (cuerpo: unknown): Cobertura | null => {
+  const o = objeto(cuerpo);
+  if (!o || !claves(o, ['hoy', 'entradas', 'porNorma', 'total', 'normas'])) return null;
+  if (!texto(o.hoy, 10, FECHA) || !Array.isArray(o.entradas) || o.entradas.length > 500 || !Array.isArray(o.porNorma) || o.porNorma.length > 20 || !Array.isArray(o.normas) || o.normas.length > 20) return null;
+  if (!o.normas.every((n) => texto(n, 60, undefined, 1))) return null;
+  const total = objeto(o.total);
+  if (!total || !resumen(total)) return null;
+  const porNorma: Cobertura['porNorma'][number][] = [];
+  for (const item of o.porNorma) {
+    const n = objeto(item);
+    if (!n || !resumen(n, ['norma']) || !texto(n.norma, 60, undefined, 1)) return null;
+    porNorma.push(n as unknown as Cobertura['porNorma'][number]);
+  }
+  const entradas: CoberturaEntrada[] = [];
+  for (const item of o.entradas) {
+    const e = objeto(item);
+    if (!e || !claves(e, ['libreriaCodigo', 'idEstable', 'tipo', 'capitulo', 'grupo', 'titulo', 'normas', 'estado', 'controles', 'evidencias'])) return null;
+    if (!texto(e.libreriaCodigo, 64, /^[a-z0-9-]+$/, 1) || !texto(e.idEstable, 41, /^[a-z0-9][a-z0-9.-]{0,40}$/)) return null;
+    if (e.tipo !== 'clausula' && e.tipo !== 'control') return null;
+    if (e.capitulo !== null && (!entero(e.capitulo, 4) || e.capitulo > 10)) return null;
+    if (e.grupo !== null && !texto(e.grupo, 60, undefined, 2)) return null;
+    if ((e.tipo === 'clausula') !== (e.capitulo !== null) || (e.tipo === 'control') !== (e.grupo !== null)) return null;
+    if (!texto(e.titulo, 80, undefined, 1) || !Array.isArray(e.normas) || e.normas.length < 1 || e.normas.length > 20 || !e.normas.every((n) => texto(n, 60, undefined, 1))) return null;
+    if (typeof e.estado !== 'string' || !ESTADOS_COBERTURA.includes(e.estado) || !entero(e.controles) || !entero(e.evidencias)) return null;
+    entradas.push(e as unknown as CoberturaEntrada);
+  }
+  return { hoy: o.hoy, entradas, porNorma, total: total as unknown as ResumenCobertura, normas: o.normas as string[] };
 };

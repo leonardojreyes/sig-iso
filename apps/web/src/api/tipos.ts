@@ -129,3 +129,65 @@ export interface MarcoControles {
   readonly controles: readonly ControlMarco[];
   readonly normas: readonly string[];
 }
+
+export type TipoArchivo =
+  | 'application/pdf'
+  | 'image/png'
+  | 'image/jpeg'
+  | 'text/plain'
+  | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  | 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+export type TipoEvidencia = 'documento' | 'registro';
+export type EstadoEvidencia = 'activa' | 'reemplazada' | 'eliminada';
+
+export interface Evidencia {
+  readonly id: string;
+  readonly controlId: string;
+  readonly tipo: TipoEvidencia;
+  readonly titulo: string;
+  readonly fechaHecho: string;
+  readonly vigenteHasta: string | null;
+  readonly estado: EstadoEvidencia;
+  /** La evidencia a la que reemplazó, si es un reemplazo. */
+  readonly reemplazaId: string | null;
+  /** Activa y con la vigencia al día (fecha de hoy en Ecuador). */
+  readonly vigente: boolean;
+  /** Activa pero con la vigencia ya pasada. */
+  readonly vencida: boolean;
+  readonly creadaEn: string;
+  readonly archivo: { readonly nombre: string; readonly tipo: TipoArchivo; readonly bytes: number; readonly sha256: string };
+}
+
+export type EstadoCobertura = 'cubierta' | 'evidencia_vencida' | 'sin_evidencia' | 'sin_control' | 'no_aplica';
+
+export interface ResumenCobertura {
+  readonly total: number;
+  readonly cubiertas: number;
+  readonly evidenciaVencida: number;
+  readonly sinEvidencia: number;
+  readonly sinControl: number;
+  /** Nulo si no hay ninguna entrada a la que pedir cobertura (no es 0). */
+  readonly porcentaje: number | null;
+}
+
+export interface CoberturaEntrada {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  readonly tipo: 'clausula' | 'control';
+  readonly capitulo: number | null;
+  readonly grupo: string | null;
+  readonly titulo: string;
+  readonly normas: readonly string[];
+  readonly estado: EstadoCobertura;
+  readonly controles: number;
+  readonly evidencias: number;
+}
+
+export interface Cobertura {
+  readonly hoy: string;
+  readonly entradas: readonly CoberturaEntrada[];
+  readonly porNorma: readonly (ResumenCobertura & { readonly norma: string })[];
+  readonly total: ResumenCobertura;
+  readonly normas: readonly string[];
+}
