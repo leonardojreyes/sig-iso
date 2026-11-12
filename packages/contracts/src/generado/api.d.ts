@@ -391,6 +391,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/controles/{id}/evidencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evidencias de un control
+         * @description De la más nueva a la más antigua. Por omisión solo las activas; con `incluirHistoricas` también las reemplazadas y eliminadas.
+         *     Cada una indica si está vigente o vencida según la fecha de hoy en Ecuador. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["listarEvidencias"];
+        put?: never;
+        /**
+         * Sube una evidencia con su archivo a un control vigente
+         * @description `multipart/form-data` con **un solo archivo** (campo `archivo`) de hasta 25 MB. **Los campos de texto van ANTES del archivo**: la API
+         *     decide el permiso, los datos y el control antes de leer un solo byte del archivo. El tipo se decide por el **contenido** (PDF, PNG,
+         *     JPEG, TXT, DOCX, XLSX o PPTX; sin macros ni SVG ni HTML), nunca por la extensión ni por el tipo que declare el cliente: un archivo
+         *     de otro tipo responde 415 y uno de más de 25 MB, 413. Una petición sin archivo responde 400. Un control retirado o con 100
+         *     evidencias activas responde 409. Orden de evaluación: 401, 403, 400, 404, 409, 413 o 415.
+         */
+        post: operations["subirEvidencia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidencias/{id}/reemplazo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reemplaza una evidencia activa por otra con un archivo nuevo
+         * @description Misma subida que `subirEvidencia` (campos antes del archivo, un archivo de hasta 25 MB, tipo por contenido). La anterior queda
+         *     «reemplazada», con su archivo intacto, y la nueva apunta a ella. El título y el tipo se heredan si no se envían; la fecha del
+         *     hecho es obligatoria. Reemplazar una evidencia que ya no está activa, o de un control retirado, responde 409. Si el archivo
+         *     nuevo se rechaza, la original sigue activa.
+         */
+        post: operations["reemplazarEvidencia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidencias/{id}/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Elimina una evidencia activa
+         * @description Cambia su estado a «eliminada» y queda el rastro; el archivo **no se borra**. Solo se elimina una evidencia activa (409 si ya no
+         *     lo está). Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["eliminarEvidencia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidencias/{id}/archivo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descarga el archivo de una evidencia
+         * @description Siempre como **adjunto** (`Content-Disposition: attachment`), con el tipo que se detectó al subir, `X-Content-Type-Options: nosniff`
+         *     y sin caché. La extensión del nombre es la que corresponde a ese tipo. La descarga **queda en la bitácora antes** de entregar el
+         *     archivo y, si no se puede registrar, no se entrega. Una evidencia reemplazada se descarga (es el historial); una eliminada no
+         *     (404). Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["descargarEvidencia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cobertura": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobertura documental de las entradas de las normas adoptadas
+         * @description Para cada entrada que no se evaluó como «no aplica»: cubierta (algún control vigente que la cubre tiene una evidencia activa y
+         *     vigente), evidencia vencida, sin evidencia o sin control. Se resume por norma. Mide la cobertura documental, no la eficacia de
+         *     los controles. Orden de evaluación: 401, 403, 400.
+         */
+        get: operations["obtenerCobertura"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -402,7 +520,7 @@ export interface components {
             title: string;
             status: number;
             /** @enum {string} */
-            codigo: "no_autenticado" | "sin_permiso" | "no_encontrado" | "parametro_invalido" | "conflicto" | "limite_excedido" | "error_interno";
+            codigo: "no_autenticado" | "sin_permiso" | "no_encontrado" | "parametro_invalido" | "conflicto" | "archivo_demasiado_grande" | "tipo_no_permitido" | "limite_excedido" | "error_interno";
         };
         Salud: {
             /** @constant */
@@ -658,6 +776,115 @@ export interface components {
             controles: components["schemas"]["ControlMarco"][];
             normas: string[];
         };
+        /** @enum {string} */
+        TipoEvidencia: "documento" | "registro";
+        /** @enum {string} */
+        EstadoEvidencia: "activa" | "reemplazada" | "eliminada";
+        /** @enum {string} */
+        TipoArchivo: "application/pdf" | "image/png" | "image/jpeg" | "text/plain" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document" | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" | "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        ArchivoEvidencia: {
+            /** @description Etiqueta normalizada (sin carpetas ni símbolos); en el almacén el archivo es un UUID del servidor. */
+            nombre: string;
+            tipo: components["schemas"]["TipoArchivo"];
+            bytes: number;
+            sha256: string;
+        };
+        Evidencia: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            controlId: string;
+            tipo: components["schemas"]["TipoEvidencia"];
+            titulo: string;
+            /** Format: date */
+            fechaHecho: string;
+            /** Format: date */
+            vigenteHasta: string | null;
+            estado: components["schemas"]["EstadoEvidencia"];
+            /** Format: uuid */
+            reemplazaId: string | null;
+            /** @description Activa y con la vigencia al día (fecha de hoy en Ecuador). */
+            vigente: boolean;
+            /** @description Activa pero con la vigencia ya pasada. */
+            vencida: boolean;
+            /** Format: date-time */
+            creadaEn: string;
+            archivo: components["schemas"]["ArchivoEvidencia"];
+        };
+        /** @description Los campos de texto van antes del archivo. */
+        EvidenciaSubida: {
+            tipo: components["schemas"]["TipoEvidencia"];
+            titulo: string;
+            /**
+             * Format: date
+             * @description El día en que ocurrió lo que la evidencia demuestra; no puede ser futuro.
+             */
+            fechaHecho: string;
+            /**
+             * Format: date
+             * @description Opcional; no anterior a la fecha del hecho.
+             */
+            vigenteHasta?: string;
+            /** Format: binary */
+            archivo: string;
+        };
+        /** @description Los campos de texto van antes del archivo. */
+        EvidenciaReemplazo: {
+            tipo?: components["schemas"]["TipoEvidencia"];
+            titulo?: string;
+            /** Format: date */
+            fechaHecho: string;
+            /** Format: date */
+            vigenteHasta?: string;
+            /** Format: binary */
+            archivo: string;
+        };
+        /** @enum {string} */
+        EstadoCobertura: "cubierta" | "evidencia_vencida" | "sin_evidencia" | "sin_control" | "no_aplica";
+        ResumenCobertura: {
+            total: number;
+            cubiertas: number;
+            evidenciaVencida: number;
+            sinEvidencia: number;
+            sinControl: number;
+            /** @description Nulo si no hay ninguna entrada a la que pedir cobertura (no es 0). */
+            porcentaje: number | null;
+        };
+        CoberturaNorma: {
+            norma: string;
+            total: number;
+            cubiertas: number;
+            evidenciaVencida: number;
+            sinEvidencia: number;
+            sinControl: number;
+            porcentaje: number | null;
+        };
+        CoberturaEntrada: {
+            libreriaCodigo: string;
+            idEstable: string;
+            /** @enum {string} */
+            tipo: "clausula" | "control";
+            capitulo: number | null;
+            grupo: string | null;
+            titulo: string;
+            normas: string[];
+            estado: components["schemas"]["EstadoCobertura"];
+            /** @description Controles vigentes que la cubren por un mapeo. */
+            controles: number;
+            /** @description Evidencias activas de esos controles (vigentes o no). */
+            evidencias: number;
+        };
+        Cobertura: {
+            /**
+             * Format: date
+             * @description La fecha de hoy en Ecuador con la que se calculó el vencimiento.
+             */
+            hoy: string;
+            entradas: components["schemas"]["CoberturaEntrada"][];
+            porNorma: components["schemas"]["CoberturaNorma"][];
+            total: components["schemas"]["ResumenCobertura"];
+            normas: string[];
+        };
     };
     responses: {
         /** @description Falta el token, está vencido, alterado o no trae empresa. */
@@ -768,6 +995,45 @@ export interface components {
                  *       "title": "Conflicto",
                  *       "status": 409,
                  *       "codigo": "conflicto"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problema"];
+            };
+        };
+        /** @description El archivo pasa de 25 MB. No se guarda nada y el rechazo queda en la bitácora. */
+        ArchivoDemasiadoGrande: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Archivo demasiado grande",
+                 *       "status": 413,
+                 *       "codigo": "archivo_demasiado_grande"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problema"];
+            };
+        };
+        /**
+         * @description El contenido del archivo no es de un tipo permitido o está dañado (PDF, PNG, JPEG, TXT, DOCX, XLSX o PPTX; sin macros, SVG ni HTML).
+         *     El tipo se decide por el contenido, no por la extensión. No se guarda nada y el rechazo queda en la bitácora.
+         */
+        TipoNoPermitido: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Tipo de archivo no permitido",
+                 *       "status": 415,
+                 *       "codigo": "tipo_no_permitido"
                  *     }
                  */
                 "application/problem+json": components["schemas"]["Problema"];
@@ -1402,6 +1668,209 @@ export interface operations {
             403: components["responses"]["SinPermiso"];
             404: components["responses"]["NoEncontrado"];
             409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarEvidencias: {
+        parameters: {
+            query?: {
+                incluirHistoricas?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las evidencias del control. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evidencia"][];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    subirEvidencia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["EvidenciaSubida"];
+            };
+        };
+        responses: {
+            /** @description La evidencia creada. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evidencia"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            413: components["responses"]["ArchivoDemasiadoGrande"];
+            415: components["responses"]["TipoNoPermitido"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    reemplazarEvidencia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["EvidenciaReemplazo"];
+            };
+        };
+        responses: {
+            /** @description La evidencia nueva. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evidencia"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            413: components["responses"]["ArchivoDemasiadoGrande"];
+            415: components["responses"]["TipoNoPermitido"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    eliminarEvidencia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La evidencia se eliminó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    descargarEvidencia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El archivo, como adjunto. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Siempre `attachment`, con el nombre normalizado y la extensión del tipo detectado. */
+                    "Content-Disposition"?: string;
+                    "X-Content-Type-Options"?: "nosniff";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "text/plain": string;
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation": string;
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerCobertura: {
+        parameters: {
+            query?: {
+                /** @description Solo las entradas que aplican a esta norma. */
+                norma?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La cobertura. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cobertura"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

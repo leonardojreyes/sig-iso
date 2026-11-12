@@ -63,12 +63,15 @@ export const crearArnes = async (opciones: {
       const payload: JWTPayload = { iss: EMISOR, aud: AUDIENCIA, azp: CLIENTE, typ: 'Bearer', sub: usuarioId, empresa_id: empresaId, iat: seg(ahora) - 5, exp: seg(ahora) + 290, ...extra };
       return new SignJWT(payload).setProtectedHeader({ alg: 'RS256', kid: 'k1' }).sign(par.privateKey);
     },
-    pedir: (ruta, token, metodo = 'GET', cuerpo) =>
-      fetch(`${base}${ruta}`, {
+    pedir: (ruta, token, metodo = 'GET', cuerpo) => {
+      const esFormulario = typeof FormData !== 'undefined' && cuerpo instanceof FormData;
+      return fetch(`${base}${ruta}`, {
         method: metodo,
-        headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(cuerpo !== undefined ? { 'content-type': 'application/json' } : {}) },
-        ...(cuerpo !== undefined ? { body: JSON.stringify(cuerpo) } : {}),
-      }),
+        headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(cuerpo !== undefined && !esFormulario ? { 'content-type': 'application/json' } : {}) },
+        // Un formulario multipart lleva su propio Content-Type (con el delimitador); lo demás va como JSON.
+        ...(cuerpo !== undefined ? { body: esFormulario ? (cuerpo as FormData) : JSON.stringify(cuerpo) } : {}),
+      });
+    },
     cerrar: () => app.close(),
   };
 };

@@ -751,6 +751,281 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /controles/{id}/evidencias:
+    get:
+      operationId: listarEvidencias
+      summary: Evidencias de un control
+      description: |
+        De la más nueva a la más antigua. Por omisión solo las activas; con `incluirHistoricas` también las reemplazadas y eliminadas.
+        Cada una indica si está vigente o vencida según la fecha de hoy en Ecuador. Orden de evaluación: 401, 403, 400, 404.
+      tags: [evidencias]
+      x-permiso: evidencias.ver
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+        - name: incluirHistoricas
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Las evidencias del control.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 100
+                items:
+                  $ref: '#/components/schemas/Evidencia'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      operationId: subirEvidencia
+      summary: Sube una evidencia con su archivo a un control vigente
+      description: |
+        `multipart/form-data` con **un solo archivo** (campo `archivo`) de hasta 25 MB. **Los campos de texto van ANTES del archivo**: la API
+        decide el permiso, los datos y el control antes de leer un solo byte del archivo. El tipo se decide por el **contenido** (PDF, PNG,
+        JPEG, TXT, DOCX, XLSX o PPTX; sin macros ni SVG ni HTML), nunca por la extensión ni por el tipo que declare el cliente: un archivo
+        de otro tipo responde 415 y uno de más de 25 MB, 413. Una petición sin archivo responde 400. Un control retirado o con 100
+        evidencias activas responde 409. Orden de evaluación: 401, 403, 400, 404, 409, 413 o 415.
+      tags: [evidencias]
+      x-permiso: evidencias.registrar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EvidenciaSubida'
+      responses:
+        '201':
+          description: La evidencia creada.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evidencia'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '413':
+          $ref: '#/components/responses/ArchivoDemasiadoGrande'
+        '415':
+          $ref: '#/components/responses/TipoNoPermitido'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /evidencias/{id}/reemplazo:
+    post:
+      operationId: reemplazarEvidencia
+      summary: Reemplaza una evidencia activa por otra con un archivo nuevo
+      description: |
+        Misma subida que `subirEvidencia` (campos antes del archivo, un archivo de hasta 25 MB, tipo por contenido). La anterior queda
+        «reemplazada», con su archivo intacto, y la nueva apunta a ella. El título y el tipo se heredan si no se envían; la fecha del
+        hecho es obligatoria. Reemplazar una evidencia que ya no está activa, o de un control retirado, responde 409. Si el archivo
+        nuevo se rechaza, la original sigue activa.
+      tags: [evidencias]
+      x-permiso: evidencias.registrar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EvidenciaReemplazo'
+      responses:
+        '201':
+          description: La evidencia nueva.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evidencia'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '413':
+          $ref: '#/components/responses/ArchivoDemasiadoGrande'
+        '415':
+          $ref: '#/components/responses/TipoNoPermitido'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /evidencias/{id}/eliminacion:
+    post:
+      operationId: eliminarEvidencia
+      summary: Elimina una evidencia activa
+      description: |
+        Cambia su estado a «eliminada» y queda el rastro; el archivo **no se borra**. Solo se elimina una evidencia activa (409 si ya no
+        lo está). Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [evidencias]
+      x-permiso: evidencias.eliminar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '204':
+          description: La evidencia se eliminó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /evidencias/{id}/archivo:
+    get:
+      operationId: descargarEvidencia
+      summary: Descarga el archivo de una evidencia
+      description: |
+        Siempre como **adjunto** (`Content-Disposition: attachment`), con el tipo que se detectó al subir, `X-Content-Type-Options: nosniff`
+        y sin caché. La extensión del nombre es la que corresponde a ese tipo. La descarga **queda en la bitácora antes** de entregar el
+        archivo y, si no se puede registrar, no se entrega. Una evidencia reemplazada se descarga (es el historial); una eliminada no
+        (404). Orden de evaluación: 401, 403, 400, 404.
+      tags: [evidencias]
+      x-permiso: evidencias.ver
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El archivo, como adjunto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+            Content-Disposition:
+              description: Siempre `attachment`, con el nombre normalizado y la extensión del tipo detectado.
+              schema:
+                type: string
+                maxLength: 300
+            X-Content-Type-Options:
+              schema:
+                type: string
+                enum: [nosniff]
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.presentationml.presentation:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /cobertura:
+    get:
+      operationId: obtenerCobertura
+      summary: Cobertura documental de las entradas de las normas adoptadas
+      description: |
+        Para cada entrada que no se evaluó como «no aplica»: cubierta (algún control vigente que la cubre tiene una evidencia activa y
+        vigente), evidencia vencida, sin evidencia o sin control. Se resume por norma. Mide la cobertura documental, no la eficacia de
+        los controles. Orden de evaluación: 401, 403, 400.
+      tags: [evidencias]
+      x-permiso: evidencias.ver
+      parameters:
+        - name: norma
+          in: query
+          required: false
+          description: Solo las entradas que aplican a esta norma.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 60
+            pattern: ^[A-Za-z0-9 :./-]+$
+      responses:
+        '200':
+          description: La cobertura.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cobertura'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearerAuth:
@@ -870,6 +1145,36 @@ components:
             title: Conflicto
             status: 409
             codigo: conflicto
+    ArchivoDemasiadoGrande:
+      description: El archivo pasa de 25 MB. No se guarda nada y el rechazo queda en la bitácora.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problema'
+          example:
+            type: about:blank
+            title: Archivo demasiado grande
+            status: 413
+            codigo: archivo_demasiado_grande
+    TipoNoPermitido:
+      description: |
+        El contenido del archivo no es de un tipo permitido o está dañado (PDF, PNG, JPEG, TXT, DOCX, XLSX o PPTX; sin macros, SVG ni HTML).
+        El tipo se decide por el contenido, no por la extensión. No se guarda nada y el rechazo queda en la bitácora.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problema'
+          example:
+            type: about:blank
+            title: Tipo de archivo no permitido
+            status: 415
+            codigo: tipo_no_permitido
     ErrorInterno:
       description: Error interno. Si falla el registro en la bitácora de una acción, la acción no se completa y se responde con este error.
       headers:
@@ -904,7 +1209,7 @@ components:
           maximum: 599
         codigo:
           type: string
-          enum: [no_autenticado, sin_permiso, no_encontrado, parametro_invalido, conflicto, limite_excedido, error_interno]
+          enum: [no_autenticado, sin_permiso, no_encontrado, parametro_invalido, conflicto, archivo_demasiado_grande, tipo_no_permitido, limite_excedido, error_interno]
     Salud:
       type: object
       required: [status, time]
@@ -1535,3 +1840,221 @@ components:
           items:
             type: string
             maxLength: 60
+    TipoEvidencia:
+      type: string
+      enum: [documento, registro]
+    EstadoEvidencia:
+      type: string
+      enum: [activa, reemplazada, eliminada]
+    TipoArchivo:
+      type: string
+      enum:
+        - application/pdf
+        - image/png
+        - image/jpeg
+        - text/plain
+        - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        - application/vnd.openxmlformats-officedocument.presentationml.presentation
+    ArchivoEvidencia:
+      type: object
+      required: [nombre, tipo, bytes, sha256]
+      additionalProperties: false
+      properties:
+        nombre:
+          type: string
+          maxLength: 120
+          description: Etiqueta normalizada (sin carpetas ni símbolos); en el almacén el archivo es un UUID del servidor.
+        tipo:
+          $ref: '#/components/schemas/TipoArchivo'
+        bytes:
+          type: integer
+          minimum: 1
+          maximum: 26214400
+        sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          maxLength: 64
+    Evidencia:
+      type: object
+      required: [id, controlId, tipo, titulo, fechaHecho, vigenteHasta, estado, reemplazaId, vigente, vencida, creadaEn, archivo]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        controlId:
+          type: string
+          format: uuid
+          maxLength: 36
+        tipo:
+          $ref: '#/components/schemas/TipoEvidencia'
+        titulo:
+          type: string
+          maxLength: 120
+        fechaHecho:
+          type: string
+          format: date
+          maxLength: 10
+        vigenteHasta:
+          type: [string, 'null']
+          format: date
+          maxLength: 10
+        estado:
+          $ref: '#/components/schemas/EstadoEvidencia'
+        reemplazaId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        vigente:
+          type: boolean
+          description: Activa y con la vigencia al día (fecha de hoy en Ecuador).
+        vencida:
+          type: boolean
+          description: Activa pero con la vigencia ya pasada.
+        creadaEn:
+          type: string
+          format: date-time
+          maxLength: 40
+        archivo:
+          $ref: '#/components/schemas/ArchivoEvidencia'
+    EvidenciaSubida:
+      type: object
+      description: Los campos de texto van antes del archivo.
+      required: [tipo, titulo, fechaHecho, archivo]
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoEvidencia'
+        titulo:
+          type: string
+          minLength: 1
+          maxLength: 120
+        fechaHecho:
+          type: string
+          format: date
+          maxLength: 10
+          description: El día en que ocurrió lo que la evidencia demuestra; no puede ser futuro.
+        vigenteHasta:
+          type: string
+          format: date
+          maxLength: 10
+          description: Opcional; no anterior a la fecha del hecho.
+        archivo:
+          type: string
+          format: binary
+    EvidenciaReemplazo:
+      type: object
+      description: Los campos de texto van antes del archivo.
+      required: [fechaHecho, archivo]
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoEvidencia'
+        titulo:
+          type: string
+          minLength: 1
+          maxLength: 120
+        fechaHecho:
+          type: string
+          format: date
+          maxLength: 10
+        vigenteHasta:
+          type: string
+          format: date
+          maxLength: 10
+        archivo:
+          type: string
+          format: binary
+    EstadoCobertura:
+      type: string
+      enum: [cubierta, evidencia_vencida, sin_evidencia, sin_control, no_aplica]
+    ResumenCobertura:
+      type: object
+      required: [total, cubiertas, evidenciaVencida, sinEvidencia, sinControl, porcentaje]
+      additionalProperties: false
+      properties:
+        total: {type: integer, minimum: 0}
+        cubiertas: {type: integer, minimum: 0}
+        evidenciaVencida: {type: integer, minimum: 0}
+        sinEvidencia: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0}
+        porcentaje:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+          description: Nulo si no hay ninguna entrada a la que pedir cobertura (no es 0).
+    CoberturaNorma:
+      type: object
+      required: [norma, total, cubiertas, evidenciaVencida, sinEvidencia, sinControl, porcentaje]
+      additionalProperties: false
+      properties:
+        norma: {type: string, maxLength: 60}
+        total: {type: integer, minimum: 0}
+        cubiertas: {type: integer, minimum: 0}
+        evidenciaVencida: {type: integer, minimum: 0}
+        sinEvidencia: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0}
+        porcentaje:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+    CoberturaEntrada:
+      type: object
+      required: [libreriaCodigo, idEstable, tipo, capitulo, grupo, titulo, normas, estado, controles, evidencias]
+      additionalProperties: false
+      properties:
+        libreriaCodigo: {type: string, maxLength: 64}
+        idEstable: {type: string, maxLength: 41}
+        tipo:
+          type: string
+          enum: [clausula, control]
+        capitulo:
+          type: [integer, 'null']
+          minimum: 4
+          maximum: 10
+        grupo:
+          type: [string, 'null']
+          maxLength: 60
+        titulo: {type: string, maxLength: 80}
+        normas:
+          type: array
+          maxItems: 20
+          items: {type: string, maxLength: 60}
+        estado:
+          $ref: '#/components/schemas/EstadoCobertura'
+        controles:
+          type: integer
+          minimum: 0
+          description: Controles vigentes que la cubren por un mapeo.
+        evidencias:
+          type: integer
+          minimum: 0
+          description: Evidencias activas de esos controles (vigentes o no).
+    Cobertura:
+      type: object
+      required: [hoy, entradas, porNorma, total, normas]
+      additionalProperties: false
+      properties:
+        hoy:
+          type: string
+          format: date
+          maxLength: 10
+          description: La fecha de hoy en Ecuador con la que se calculó el vencimiento.
+        entradas:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/CoberturaEntrada'
+        porNorma:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/CoberturaNorma'
+        total:
+          $ref: '#/components/schemas/ResumenCobertura'
+        normas:
+          type: array
+          maxItems: 20
+          items: {type: string, maxLength: 60}

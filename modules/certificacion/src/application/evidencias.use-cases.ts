@@ -16,6 +16,17 @@ import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
 
 type Unidad = UnidadDeTrabajoPort<ContextoCertificacion>;
 
+/**
+ * Una subida a medias: el archivo ya se recibió, su tipo se decidió por el contenido y su huella está calculada, pero NO se tocó la
+ * base de datos ni se confirmó el archivo. Quien la recibe debe llamar a `confirmar` (una transacción: fila, bitácora y renombrado)
+ * o a `descartar` (borra el temporal). Existe para que una petición que resulta inválida después de recibir el archivo (por
+ * ejemplo, con un segundo archivo) no deje efectos.
+ */
+export interface SubidaPendiente {
+  confirmar(): Promise<EvidenciaDto>;
+  descartar(): Promise<void>;
+}
+
 /** Tope de entradas por respuesta de cobertura (el contrato lo declara con `maxItems`). */
 export const TOPE_COBERTURA = 500;
 
@@ -154,7 +165,13 @@ export class SubirEvidenciaUseCase {
     private readonly nuevoId: NuevoId,
   ) {}
 
+  /** Atajo: recibe el archivo y confirma de una vez. */
   async ejecutar(entrada: SubirEvidenciaEntrada): Promise<EvidenciaDto> {
+    return (await this.iniciar(entrada)).confirmar();
+  }
+
+  /** Decide permiso, datos y control, recibe el archivo, decide su tipo y lo deja pendiente. No toca la base de datos. */
+  async iniciar(entrada: SubirEvidenciaEntrada): Promise<SubidaPendiente> {
     const { empresaId, usuarioId } = identificar(entrada.empresaId, entrada.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'evidencias.registrar', empresaId);
     const controlId = validarUuid(entrada.controlId, 'controlId');
@@ -163,36 +180,49 @@ export class SubirEvidenciaUseCase {
     const control = await this.unidad.ejecutar(empresaId, (c) => exigirControlVigente(c, controlId));
 
     const { temporal, tipo } = await recibirArchivo(this.almacen, this.unidad, { empresaId, usuarioId, controlCodigo: control.codigo, flujo: entrada.flujo });
-    try {
-      return await this.unidad.ejecutar(empresaId, async (c) => {
-        await exigirControlVigente(c, controlId);
-        if ((await c.evidencias.contarActivas(controlId)) >= EVIDENCIAS_ACTIVAS_POR_CONTROL_MAX) throw new ConflictoError('tope_de_evidencias');
-        const ahora = this.reloj();
-        let evidencia: Evidencia;
+    let usada = false;
+    const descartar = (): Promise<void> => this.almacen.descartar(empresaId, temporal.id).catch(() => undefined);
+    return {
+      confirmar: async () => {
+        if (usada) throw new Error('La subida ya se confirmó o se descartó');
+        usada = true;
         try {
-          evidencia = Evidencia.crear({
-            id: this.nuevoId(),
-            empresaId,
-            controlId,
-            tipo: entrada.tipo as TipoEvidencia,
-            titulo: entrada.titulo as string,
-            fechaHecho: entrada.fechaHecho as string,
-            vigenteHasta: entrada.vigenteHasta as string | null | undefined,
-            archivo: { id: this.nuevoId(), nombre: normalizarNombreArchivo(entrada.nombreOriginal), tipo, bytes: temporal.bytes, sha256: temporal.sha256 },
+          return await this.unidad.ejecutar(empresaId, async (c) => {
+            await exigirControlVigente(c, controlId);
+            if ((await c.evidencias.contarActivas(controlId)) >= EVIDENCIAS_ACTIVAS_POR_CONTROL_MAX) throw new ConflictoError('tope_de_evidencias');
+            const ahora = this.reloj();
+            let evidencia: Evidencia;
+            try {
+              evidencia = Evidencia.crear({
+                id: this.nuevoId(),
+                empresaId,
+                controlId,
+                tipo: entrada.tipo as TipoEvidencia,
+                titulo: entrada.titulo as string,
+                fechaHecho: entrada.fechaHecho as string,
+                vigenteHasta: entrada.vigenteHasta as string | null | undefined,
+                archivo: { id: this.nuevoId(), nombre: normalizarNombreArchivo(entrada.nombreOriginal), tipo, bytes: temporal.bytes, sha256: temporal.sha256 },
+              });
+            } catch (e) {
+              return traducir(e);
+            }
+            if (!(await c.evidencias.crear(evidencia, usuarioId, ahora))) throw new ConflictoError('archivo_repetido');
+            await c.bitacora.registrar({ empresaId, actor: { tipo: 'usuario', usuarioId }, accion: 'evidencia.creada', resultado: 'ok', objeto: `evidencia:${evidencia.id}`, objetoVersion: temporal.sha256 });
+            // Último paso antes de confirmar: si el renombrado falla, la fila se deshace (ADR 032).
+            await this.almacen.confirmar(empresaId, temporal.id, evidencia.archivo.id);
+            return aDto(evidencia, ahora, hoy);
           });
         } catch (e) {
-          return traducir(e);
+          await descartar();
+          throw e;
         }
-        if (!(await c.evidencias.crear(evidencia, usuarioId, ahora))) throw new ConflictoError('archivo_repetido');
-        await c.bitacora.registrar({ empresaId, actor: { tipo: 'usuario', usuarioId }, accion: 'evidencia.creada', resultado: 'ok', objeto: `evidencia:${evidencia.id}`, objetoVersion: temporal.sha256 });
-        // Último paso antes de confirmar: si el renombrado falla, la fila se deshace (ADR 032).
-        await this.almacen.confirmar(empresaId, temporal.id, evidencia.archivo.id);
-        return aDto(evidencia, ahora, hoy);
-      });
-    } catch (e) {
-      await this.almacen.descartar(empresaId, temporal.id).catch(() => undefined);
-      throw e;
-    }
+      },
+      descartar: async () => {
+        if (usada) return;
+        usada = true;
+        await descartar();
+      },
+    };
   }
 }
 
@@ -217,7 +247,13 @@ export class ReemplazarEvidenciaUseCase {
     private readonly nuevoId: NuevoId,
   ) {}
 
+  /** Atajo: recibe el archivo y confirma de una vez. */
   async ejecutar(entrada: ReemplazarEvidenciaEntrada): Promise<EvidenciaDto> {
+    return (await this.iniciar(entrada)).confirmar();
+  }
+
+  /** Decide permiso, datos y evidencia, recibe el archivo, decide su tipo y lo deja pendiente. No toca la base de datos. */
+  async iniciar(entrada: ReemplazarEvidenciaEntrada): Promise<SubidaPendiente> {
     const { empresaId, usuarioId } = identificar(entrada.empresaId, entrada.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'evidencias.registrar', empresaId);
     const id = validarUuid(entrada.id, 'id');
@@ -233,40 +269,53 @@ export class ReemplazarEvidenciaUseCase {
     validarDatos(empresaId, previa.evidencia.controlId, datos, hoy);
 
     const { temporal, tipo } = await recibirArchivo(this.almacen, this.unidad, { empresaId, usuarioId, controlCodigo: previa.control.codigo, flujo: entrada.flujo });
-    try {
-      return await this.unidad.ejecutar(empresaId, async (c) => {
-        const fila = await c.evidencias.obtener(id);
-        if (!fila) throw new EntradaNoEncontradaError();
-        await exigirControlVigente(c, fila.evidencia.controlId);
-        const ahora = this.reloj();
-        let reemplazada: Evidencia;
-        let nueva: Evidencia;
+    let usada = false;
+    const descartar = (): Promise<void> => this.almacen.descartar(empresaId, temporal.id).catch(() => undefined);
+    return {
+      confirmar: async () => {
+        if (usada) throw new Error('La subida ya se confirmó o se descartó');
+        usada = true;
         try {
-          reemplazada = fila.evidencia.marcarReemplazada();
-          nueva = Evidencia.crear({
-            id: this.nuevoId(),
-            empresaId,
-            controlId: fila.evidencia.controlId,
-            tipo: datos.tipo as TipoEvidencia,
-            titulo: datos.titulo as string,
-            fechaHecho: datos.fechaHecho as string,
-            vigenteHasta: datos.vigenteHasta as string | null | undefined,
-            reemplazaId: fila.evidencia.id,
-            archivo: { id: this.nuevoId(), nombre: normalizarNombreArchivo(entrada.nombreOriginal), tipo, bytes: temporal.bytes, sha256: temporal.sha256 },
+          return await this.unidad.ejecutar(empresaId, async (c) => {
+            const fila = await c.evidencias.obtener(id);
+            if (!fila) throw new EntradaNoEncontradaError();
+            await exigirControlVigente(c, fila.evidencia.controlId);
+            const ahora = this.reloj();
+            let reemplazada: Evidencia;
+            let nueva: Evidencia;
+            try {
+              reemplazada = fila.evidencia.marcarReemplazada();
+              nueva = Evidencia.crear({
+                id: this.nuevoId(),
+                empresaId,
+                controlId: fila.evidencia.controlId,
+                tipo: datos.tipo as TipoEvidencia,
+                titulo: datos.titulo as string,
+                fechaHecho: datos.fechaHecho as string,
+                vigenteHasta: datos.vigenteHasta as string | null | undefined,
+                reemplazaId: fila.evidencia.id,
+                archivo: { id: this.nuevoId(), nombre: normalizarNombreArchivo(entrada.nombreOriginal), tipo, bytes: temporal.bytes, sha256: temporal.sha256 },
+              });
+            } catch (e) {
+              return traducir(e);
+            }
+            if (!(await c.evidencias.cambiarEstado(reemplazada, usuarioId, ahora))) throw new ConflictoError('no_activa');
+            if (!(await c.evidencias.crear(nueva, usuarioId, ahora))) throw new ConflictoError('archivo_repetido');
+            await c.bitacora.registrar({ empresaId, actor: { tipo: 'usuario', usuarioId }, accion: 'evidencia.reemplazada', resultado: 'ok', objeto: `evidencia:${nueva.id}`, objetoVersion: temporal.sha256 });
+            await this.almacen.confirmar(empresaId, temporal.id, nueva.archivo.id);
+            return aDto(nueva, ahora, hoy);
           });
         } catch (e) {
-          return traducir(e);
+          await descartar();
+          throw e;
         }
-        if (!(await c.evidencias.cambiarEstado(reemplazada, usuarioId, ahora))) throw new ConflictoError('no_activa');
-        if (!(await c.evidencias.crear(nueva, usuarioId, ahora))) throw new ConflictoError('archivo_repetido');
-        await c.bitacora.registrar({ empresaId, actor: { tipo: 'usuario', usuarioId }, accion: 'evidencia.reemplazada', resultado: 'ok', objeto: `evidencia:${nueva.id}`, objetoVersion: temporal.sha256 });
-        await this.almacen.confirmar(empresaId, temporal.id, nueva.archivo.id);
-        return aDto(nueva, ahora, hoy);
-      });
-    } catch (e) {
-      await this.almacen.descartar(empresaId, temporal.id).catch(() => undefined);
-      throw e;
-    }
+      },
+      descartar: async () => {
+        if (usada) return;
+        usada = true;
+        await descartar();
+      },
+    };
   }
 }
 

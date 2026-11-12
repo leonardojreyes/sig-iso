@@ -1,27 +1,4 @@
-import {
-  AgregarMapeoUseCase,
-  AprobarAlcanceUseCase,
-  CambiarControlUseCase,
-  CrearControlUseCase,
-  EvaluarEntradaUseCase,
-  GuardarAlcanceUseCase,
-  ListarAlcancesUseCase,
-  ListarControlesUseCase,
-  ListarDiagnosticoUseCase,
-  QuitarMapeoUseCase,
-  RetirarControlUseCase,
-} from "@sig/certificacion";
-import {
-  A,
-  ADMIN,
-  B,
-  COLAB,
-  EstadoFalso,
-  crearAutorizacionFalsa,
-  crearCatalogoFalso,
-  crearUnidadFalsa,
-  entradas,
-} from "@sig/certificacion/prueba";
+import { A, ADMIN, B, COLAB, EstadoFalso, entradas, AlmacenFalso } from "@sig/certificacion/prueba";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   crearArnes,
@@ -30,6 +7,7 @@ import {
 } from "../autenticacion/prueba/arnes.js";
 import { erroresDeEsquema } from "../autenticacion/prueba/contrato.js";
 import { CertificacionApiModule } from "./certificacion-api.module.js";
+import { opcionesDePrueba } from "./prueba/opciones.js";
 
 // /controles y sus mapeos sobre una aplicación Nest REAL con los casos de uso reales y fakes que separan los datos por empresa.
 // Cada respuesta se valida contra los esquemas de openapi.yaml.
@@ -57,68 +35,9 @@ describe("controladores de controles y mapeos (MVP M3, paso 4)", () => {
 
   beforeAll(async () => {
     estado = new EstadoFalso();
-    const autorizacion = crearAutorizacionFalsa(estado);
-    const catalogo = crearCatalogoFalso(estado);
-    const unidad = crearUnidadFalsa(estado);
-    const reloj = () => new Date("2026-11-10T12:00:00Z");
     arnes = await crearArnes({
       hechos: bitacora.hechos,
-      modulos: [
-        CertificacionApiModule.register({
-          alcances: new ListarAlcancesUseCase(unidad, autorizacion, catalogo),
-          guardarAlcance: new GuardarAlcanceUseCase(
-            unidad,
-            autorizacion,
-            catalogo,
-            reloj,
-          ),
-          aprobarAlcance: new AprobarAlcanceUseCase(
-            unidad,
-            autorizacion,
-            catalogo,
-            reloj,
-          ),
-          diagnostico: new ListarDiagnosticoUseCase(
-            unidad,
-            autorizacion,
-            catalogo,
-          ),
-          evaluar: new EvaluarEntradaUseCase(
-            unidad,
-            autorizacion,
-            catalogo,
-            reloj,
-          ),
-          listarControles: new ListarControlesUseCase(
-            unidad,
-            autorizacion,
-            catalogo,
-          ),
-          crearControl: new CrearControlUseCase(
-            unidad,
-            autorizacion,
-            reloj,
-            () => crypto.randomUUID(),
-          ),
-          cambiarControl: new CambiarControlUseCase(
-            unidad,
-            autorizacion,
-            reloj,
-          ),
-          retirarControl: new RetirarControlUseCase(
-            unidad,
-            autorizacion,
-            reloj,
-          ),
-          agregarMapeo: new AgregarMapeoUseCase(
-            unidad,
-            autorizacion,
-            catalogo,
-            reloj,
-          ),
-          quitarMapeo: new QuitarMapeoUseCase(unidad, autorizacion),
-        }),
-      ],
+      modulos: [CertificacionApiModule.register(opcionesDePrueba({ estado, almacen: new AlmacenFalso() }))],
     });
   });
   afterAll(async () => {

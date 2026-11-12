@@ -467,3 +467,85 @@ describe('cobertura', () => {
     expect(deB.total.cubiertas).toBe(0);
   });
 });
+
+describe('subida en dos fases (iniciar y confirmar)', () => {
+  const iniciar = (m: Montaje, controlId: string, bytes: Uint8Array = pdf()) => m.subir.iniciar({ ...yo, controlId, ...datos, flujo: enTrozos(bytes) });
+
+  it('iniciar recibe y valida el archivo pero NO toca la base de datos: sin fila, sin hecho y sin archivo definitivo', async () => {
+    const { m, control } = await conControl();
+    const pendiente = await iniciar(m, control.id);
+    expect(m.almacen.temporales.size).toBe(1);
+    expect(m.almacen.archivos.size).toBe(0);
+    expect(m.estado.evidencias.size).toBe(0);
+    expect(m.estado.eventos).toEqual([]);
+    await pendiente.descartar();
+  });
+
+  it('confirmar hace la transacción: fila, hecho y archivo definitivo', async () => {
+    const { m, control } = await conControl();
+    const e = await (await iniciar(m, control.id)).confirmar();
+    expect(e.estado).toBe('activa');
+    expect(m.almacen.temporales.size).toBe(0);
+    expect(m.almacen.archivos.size).toBe(1);
+    expect(m.estado.eventos.map((x) => x.accion)).toEqual(['evidencia.creada']);
+  });
+
+  it('descartar borra el temporal y no deja ningún rastro, ni siquiera en la bitácora', async () => {
+    const { m, control } = await conControl();
+    const pendiente = await iniciar(m, control.id);
+    await pendiente.descartar();
+    expect(m.almacen.temporales.size + m.almacen.archivos.size + m.estado.evidencias.size).toBe(0);
+    expect(m.estado.eventos).toEqual([]);
+  });
+
+  it('una subida solo se usa una vez: confirmar dos veces falla, y descartar después de confirmar no borra nada', async () => {
+    const { m, control } = await conControl();
+    const pendiente = await iniciar(m, control.id);
+    await pendiente.confirmar();
+    await expect(pendiente.confirmar()).rejects.toThrow('ya se confirmó');
+    await pendiente.descartar();
+    expect(m.almacen.archivos.size).toBe(1);
+    expect(m.estado.evidencias.size).toBe(1);
+    const otra = await iniciar(m, control.id, texto('otro\n'));
+    await otra.descartar();
+    await expect(otra.confirmar()).rejects.toThrow('ya se confirmó o se descartó');
+  });
+
+  it('si confirmar falla, descarta el temporal y no deja nada', async () => {
+    const { m, control } = await conControl();
+    const pendiente = await iniciar(m, control.id);
+    m.estado.fallarBitacora = true;
+    await expect(pendiente.confirmar()).rejects.toThrow('bitácora no disponible');
+    expect(m.almacen.temporales.size + m.almacen.archivos.size + m.estado.evidencias.size).toBe(0);
+  });
+
+  it('iniciar sigue decidiendo antes de leer: sin permiso, no se lee un byte', async () => {
+    const { m, control } = await conControl();
+    await expect(m.subir.iniciar({ empresaId: A, usuarioId: SIN_PERMISOS, controlId: control.id, ...datos, flujo: flujoProhibido() })).rejects.toBeInstanceOf(SinPermisoError);
+    expect(m.almacen.fragmentosLeidos).toBe(0);
+  });
+
+  it('un archivo rechazado lanza en iniciar (y queda el rechazo), así que nunca hay nada que confirmar', async () => {
+    const { m, control } = await conControl();
+    await expect(iniciar(m, control.id, ejecutable())).rejects.toBeInstanceOf(ArchivoRechazadoError);
+    expect(m.estado.eventos.map((x) => x.accion)).toEqual(['evidencia.subida_rechazada']);
+  });
+
+  it('reemplazar también tiene dos fases: iniciar no cambia la original; confirmar sí; descartar la deja activa', async () => {
+    const { m, control } = await conControl();
+    const e = await subida(m, control.id);
+    m.estado.eventos = [];
+    const entrada = { ...yo, id: e.id, fechaHecho: '2026-11-10', flujo: enTrozos(png()) };
+    const p1 = await m.reemplazar.iniciar(entrada);
+    expect(m.estado.evidencias.get(`${A}|${e.id}`)?.evidencia.estado).toBe('activa');
+    expect(m.estado.evidencias.size).toBe(1);
+    expect(m.estado.eventos).toEqual([]);
+    await p1.descartar();
+    expect(m.almacen.temporales.size).toBe(0);
+    expect(m.estado.evidencias.get(`${A}|${e.id}`)?.evidencia.estado).toBe('activa');
+    const p2 = await m.reemplazar.iniciar({ ...entrada, flujo: enTrozos(png()) });
+    const n = await p2.confirmar();
+    expect(n.reemplazaId).toBe(e.id);
+    expect(m.estado.evidencias.get(`${A}|${e.id}`)?.evidencia.estado).toBe('reemplazada');
+  });
+});

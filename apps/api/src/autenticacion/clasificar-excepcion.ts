@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
 import { EmpresaNoEncontradaError, PersonaNoEncontradaError } from '@sig/empresas';
 import { FuncionDeshabilitadaError, LibreriaNoEncontradaError, ParametroInvalidoError, RequisitoNoEncontradoError, SinPermisoError } from '@sig/normas';
-import { ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError as ParametroInvalidoCertificacion, SinPermisoError as SinPermisoCertificacion } from '@sig/certificacion';
+import { ArchivoRechazadoError, ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError as ParametroInvalidoCertificacion, SinPermisoError as SinPermisoCertificacion } from '@sig/certificacion';
 import { AccesoCruzadoException, AccesoDenegadoException } from './excepciones-acceso.js';
 
 export type Clasificacion =
@@ -26,6 +26,8 @@ export const clasificarExcepcion = (e: unknown): Clasificacion => {
   if (e instanceof RequisitoNoEncontradoError || e instanceof LibreriaNoEncontradaError || e instanceof FuncionDeshabilitadaError) return { tipo: 'http', estado: 404 };
   if (e instanceof EmpresaNoEncontradaError || e instanceof PersonaNoEncontradaError) return { tipo: 'http', estado: 401 };
   if (e instanceof EntradaNoEncontradaError) return { tipo: 'http', estado: 404 };
+  // Un archivo que no se acepta: 413 si pasa del tamaño, 415 si su contenido no es de un tipo permitido o está dañado.
+  if (e instanceof ArchivoRechazadoError) return { tipo: 'http', estado: e.motivo === 'tamano_excedido' ? 413 : 415 };
   if (e instanceof ConflictoError) return { tipo: 'http', estado: 409 };
   if (e instanceof ParametroInvalidoError || e instanceof ParametroInvalidoCertificacion) return { tipo: 'http', estado: 400 };
   return { tipo: 'http', estado: 500 };

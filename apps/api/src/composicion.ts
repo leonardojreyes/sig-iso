@@ -4,7 +4,7 @@ import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
-import { AgregarMapeoUseCase, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
+import { AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
 import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
@@ -63,6 +63,17 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
   const catalogo = new CatalogoNormasAdapter(librerias, requisitos);
   const unidadCertificacion: UnidadDeTrabajoCertificacionPort<ContextoCertificacion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoCertificacion(obtenerPools().db('app')).ejecutar(empresaId, fn) };
   const reloj = (): Date => new Date();
+  // El almacén de evidencias se abre al usarlo por primera vez: si falta `EVIDENCIAS_DIR`, la API arranca y solo la subida y la descarga
+  // fallan (500, sin dar la ruta), nunca en silencio.
+  let almacenLocal: AlmacenArchivosLocal | undefined;
+  const obtenerAlmacen = (): AlmacenArchivosLocal => (almacenLocal ??= new AlmacenArchivosLocal(env['EVIDENCIAS_DIR'] ?? ''));
+  const almacen: AlmacenArchivosPort = {
+    guardarTemporal: (...a) => obtenerAlmacen().guardarTemporal(...a),
+    abrirLector: (...a) => obtenerAlmacen().abrirLector(...a),
+    confirmar: (...a) => obtenerAlmacen().confirmar(...a),
+    descartar: (...a) => obtenerAlmacen().descartar(...a),
+    abrir: (...a) => obtenerAlmacen().abrir(...a),
+  };
 
   return {
     hechos,
@@ -92,6 +103,12 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       retirarControl: new RetirarControlUseCase(unidadCertificacion, autorizacion, reloj),
       agregarMapeo: new AgregarMapeoUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
       quitarMapeo: new QuitarMapeoUseCase(unidadCertificacion, autorizacion),
+      listarEvidencias: new ListarEvidenciasUseCase(unidadCertificacion, autorizacion, reloj),
+      subirEvidencia: new SubirEvidenciaUseCase(unidadCertificacion, autorizacion, almacen, reloj, () => randomUUID()),
+      reemplazarEvidencia: new ReemplazarEvidenciaUseCase(unidadCertificacion, autorizacion, almacen, reloj, () => randomUUID()),
+      eliminarEvidencia: new EliminarEvidenciaUseCase(unidadCertificacion, autorizacion, reloj),
+      descargarEvidencia: new DescargarEvidenciaUseCase(unidadCertificacion, autorizacion, almacen),
+      cobertura: new ListarCoberturaUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
     },
   };
 };

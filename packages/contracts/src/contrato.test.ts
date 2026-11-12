@@ -113,7 +113,7 @@ describe('documento', () => {
 describe('operaciones del corte 0.6', () => {
   it('son exactamente las del plan', () => {
     expect(operaciones.map((o) => o.id).sort()).toEqual(
-      ['GET /health', 'GET /me', 'GET /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /librerias', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}', 'GET /alcances', 'PUT /alcances', 'POST /alcances/aprobacion', 'GET /diagnostico', 'PUT /diagnostico/evaluaciones', 'GET /controles', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion'].sort(),
+      ['GET /health', 'GET /me', 'GET /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /librerias', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}', 'GET /alcances', 'PUT /alcances', 'POST /alcances/aprobacion', 'GET /diagnostico', 'PUT /diagnostico/evaluaciones', 'GET /controles', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'GET /controles/{id}/evidencias', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo', 'POST /evidencias/{id}/eliminacion', 'GET /evidencias/{id}/archivo', 'GET /cobertura'].sort(),
     );
   });
 
@@ -164,14 +164,22 @@ describe('seguridad', () => {
       'POST /controles/{id}/retiro': ['path:id'],
       'POST /controles/{id}/mapeos': ['path:id'],
       'POST /controles/{id}/mapeos/eliminacion': ['path:id'],
+      'GET /controles/{id}/evidencias': ['path:id', 'query:incluirHistoricas'],
+      'POST /controles/{id}/evidencias': ['path:id'],
+      'POST /evidencias/{id}/reemplazo': ['path:id'],
+      'POST /evidencias/{id}/eliminacion': ['path:id'],
+      'GET /evidencias/{id}/archivo': ['path:id'],
+      'GET /cobertura': ['query:norma'],
     };
     // Solo estas tres reciben cuerpo, y su esquema es cerrado y sin campos de empresa (la empresa sale del token).
-    const conCuerpo = ['PUT /alcances', 'POST /alcances/aprobacion', 'PUT /diagnostico/evaluaciones', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion'];
+    const conCuerpo = ['PUT /alcances', 'POST /alcances/aprobacion', 'PUT /diagnostico/evaluaciones', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo'];
     for (const o of operaciones) {
       const parametros = [...((doc.paths[o.ruta]!.parameters ?? []) as Obj[]), ...((o.op.parameters ?? []) as Obj[])].map((p: any) => (p.$ref ? resolver(p.$ref)! : p));
       expect(parametros.map((p: any) => `${p.in}:${p.name}`).sort(), o.id).toEqual(esperados[o.id]);
       if (conCuerpo.includes(o.id)) {
-        const ref = o.op.requestBody?.content?.['application/json']?.schema?.$ref as string;
+        // Las dos subidas de archivos son multipart/form-data; el resto, JSON.
+        const contenido = o.op.requestBody?.content ?? {};
+        const ref = (contenido['application/json'] ?? contenido['multipart/form-data'])?.schema?.$ref as string;
         const esquema = resolver(ref)!;
         expect(esquema.additionalProperties, o.id).toBe(false);
         expect(Object.keys(esquema.properties).filter((k) => /empresa|tenant/i.test(k)), `${o.id} no lleva la empresa`).toEqual([]);
@@ -187,7 +195,7 @@ describe('seguridad', () => {
 
   it('solo las acciones restringidas declaran un permiso formal (x-permiso) y el 403', () => {
     expect(operaciones.filter((o) => o.op['x-permiso']).map((o) => [o.id, o.op['x-permiso']]).sort()).toEqual(
-      [['POST /librerias/{id}/adopcion', 'administrador_sig'], ['GET /alcances', 'alcance.ver'], ['PUT /alcances', 'alcance.gestionar'], ['POST /alcances/aprobacion', 'alcance.aprobar'], ['GET /diagnostico', 'diagnostico.ver'], ['PUT /diagnostico/evaluaciones', 'diagnostico.evaluar'], ['GET /controles', 'controles.ver'], ['POST /controles', 'controles.gestionar'], ['PUT /controles/{id}', 'controles.gestionar'], ['POST /controles/{id}/retiro', 'controles.gestionar'], ['POST /controles/{id}/mapeos', 'controles.gestionar'], ['POST /controles/{id}/mapeos/eliminacion', 'controles.gestionar']].sort(),
+      [['POST /librerias/{id}/adopcion', 'administrador_sig'], ['GET /alcances', 'alcance.ver'], ['PUT /alcances', 'alcance.gestionar'], ['POST /alcances/aprobacion', 'alcance.aprobar'], ['GET /diagnostico', 'diagnostico.ver'], ['PUT /diagnostico/evaluaciones', 'diagnostico.evaluar'], ['GET /controles', 'controles.ver'], ['POST /controles', 'controles.gestionar'], ['PUT /controles/{id}', 'controles.gestionar'], ['POST /controles/{id}/retiro', 'controles.gestionar'], ['POST /controles/{id}/mapeos', 'controles.gestionar'], ['POST /controles/{id}/mapeos/eliminacion', 'controles.gestionar'], ['GET /controles/{id}/evidencias', 'evidencias.ver'], ['POST /controles/{id}/evidencias', 'evidencias.registrar'], ['POST /evidencias/{id}/reemplazo', 'evidencias.registrar'], ['POST /evidencias/{id}/eliminacion', 'evidencias.eliminar'], ['GET /evidencias/{id}/archivo', 'evidencias.ver'], ['GET /cobertura', 'evidencias.ver']].sort(),
     );
     expect(op('POST /librerias/{id}/adopcion').responses['403']).toBeDefined();
   });
@@ -202,7 +210,7 @@ describe('seguridad', () => {
 describe('errores que no filtran datos', () => {
   it('hay una sola respuesta 404 y todas la reutilizan: «no existe», «es de otra empresa» y «librería no adoptada» son indistinguibles', () => {
     const cuatrocientoscuatro = operaciones.filter((o) => o.op.responses['404']);
-    expect(cuatrocientoscuatro.map((o) => o.id).sort()).toEqual(['GET /requisitos/{id}', 'POST /alcances/aprobacion', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/retiro', 'POST /librerias/{id}/adopcion', 'PUT /alcances', 'PUT /controles/{id}', 'PUT /diagnostico/evaluaciones']);
+    expect(cuatrocientoscuatro.map((o) => o.id).sort()).toEqual(['GET /requisitos/{id}', 'POST /alcances/aprobacion', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /controles/{id}/retiro', 'POST /evidencias/{id}/eliminacion', 'POST /evidencias/{id}/reemplazo', 'GET /controles/{id}/evidencias', 'GET /evidencias/{id}/archivo', 'POST /librerias/{id}/adopcion', 'PUT /alcances', 'PUT /controles/{id}', 'PUT /diagnostico/evaluaciones'].sort());
     for (const o of cuatrocientoscuatro) expect(o.op.responses['404'].$ref, o.id).toBe('#/components/responses/NoEncontrado');
     const r = doc.components.responses.NoEncontrado!;
     expect(r.description).toMatch(/indistinguible/i);
@@ -214,12 +222,12 @@ describe('errores que no filtran datos', () => {
     expect(p.additionalProperties).toBe(false);
     expect(Object.keys(p.properties).sort()).toEqual(['codigo', 'status', 'title', 'type']);
     expect(p.required.sort()).toEqual(['codigo', 'status', 'title', 'type']);
-    expect(p.properties.codigo.enum).toEqual(['no_autenticado', 'sin_permiso', 'no_encontrado', 'parametro_invalido', 'conflicto', 'limite_excedido', 'error_interno']);
+    expect(p.properties.codigo.enum).toEqual(['no_autenticado', 'sin_permiso', 'no_encontrado', 'parametro_invalido', 'conflicto', 'archivo_demasiado_grande', 'tipo_no_permitido', 'limite_excedido', 'error_interno']);
     expect(p.properties.type).toMatchObject({ const: 'about:blank' });
   });
 
   it('los errores usan application/problem+json y su código coincide con el estado', () => {
-    const esperado: Record<string, [number, string]> = { NoAutenticado: [401, 'no_autenticado'], SinPermiso: [403, 'sin_permiso'], NoEncontrado: [404, 'no_encontrado'], ParametrosInvalidos: [400, 'parametro_invalido'], Conflicto: [409, 'conflicto'], LimiteExcedido: [429, 'limite_excedido'], ErrorInterno: [500, 'error_interno'] };
+    const esperado: Record<string, [number, string]> = { NoAutenticado: [401, 'no_autenticado'], SinPermiso: [403, 'sin_permiso'], NoEncontrado: [404, 'no_encontrado'], ParametrosInvalidos: [400, 'parametro_invalido'], Conflicto: [409, 'conflicto'], ArchivoDemasiadoGrande: [413, 'archivo_demasiado_grande'], TipoNoPermitido: [415, 'tipo_no_permitido'], LimiteExcedido: [429, 'limite_excedido'], ErrorInterno: [500, 'error_interno'] };
     for (const [nombre, [estado, codigo]] of Object.entries(esperado)) {
       const r = doc.components.responses[nombre]!;
       expect(Object.keys(r.content), nombre).toEqual(['application/problem+json']);
@@ -387,7 +395,8 @@ describe('privacidad del contrato', () => {
 
   it('ninguna operación recibe datos personales: solo identificadores y filtros acotados', () => {
     for (const o of operaciones) {
-      const cuerpo = o.op.requestBody?.content?.['application/json']?.schema;
+      const contenido = o.op.requestBody?.content ?? {};
+      const cuerpo = (contenido['application/json'] ?? contenido['multipart/form-data'])?.schema;
       for (const clave of propiedades(cuerpo)) {
         // Excepción deliberada: el «nombre» de un control es el título de una medida de la organización, no el de una persona
         // (la interfaz pide no incluir datos personales y la bitácora nunca lo guarda).
