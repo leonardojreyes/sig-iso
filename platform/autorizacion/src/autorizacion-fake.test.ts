@@ -225,3 +225,22 @@ describe('permisos de las evidencias (MVP, M4)', () => {
     }
   });
 });
+
+describe('permisos de la declaración de aplicabilidad (MVP, M5)', () => {
+  it('el colaborador consulta y exporta, pero no aprueba', async () => {
+    const f = montar();
+    for (const p of ['declaracion.ver', 'declaracion.exportar'] as const) expect(await f.puede(COLAB, p, A), p).toBe(true);
+    expect(await f.puede(COLAB, 'declaracion.aprobar', A)).toBe(false);
+  });
+  it('el administrador SIG puede consultar, exportar y aprobar', async () => {
+    const f = montar();
+    for (const p of ['declaracion.ver', 'declaracion.exportar', 'declaracion.aprobar'] as const) expect(await f.puede(ADMIN, p, A), p).toBe(true);
+  });
+  it('sin rol o con el rol de otra empresa no puede nada', async () => {
+    const f = montar();
+    for (const p of ['declaracion.ver', 'declaracion.exportar', 'declaracion.aprobar'] as const) {
+      expect(await f.puede(OTRO, p, A), p).toBe(false);
+      expect(await f.puede(ADMIN, p, B), p).toBe(false);
+    }
+  });
+});
