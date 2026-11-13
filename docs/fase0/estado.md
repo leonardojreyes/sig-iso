@@ -14,7 +14,7 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 
 | Hito | Qué entrega | Estado |
 | --- | --- | --- |
-| **M1** | Anexo A de ISO/IEC 27001:2022 como librería propia (**93 controles** planos, con tipo y grupo, guías de SynapTech; «borrador, numeraciones sin verificar»), esquema de librerías v3 y migración `0006`; el listado de requisitos muestra tipo y grupo | **Hecho** (`5bc949b`) |
+| **M1** | Anexo A de ISO/IEC 27001:2022 como librería propia (**93 controles** planos, con tipo y grupo, guías de SynapTech; **numeración verificada el 2026-11-13** contra la NTE INEN-ISO/IEC 27001:2023, versión 1.0.0), esquema de librerías v3 y migración `0006`; el listado de requisitos muestra tipo y grupo | **Hecho** (`5bc949b`) |
 | **M2** | **Alcance** por norma (texto y aprobación con quién y cuándo) y **diagnóstico**: estado por entrada (cumple, parcial, no cumple, no aplica; «sin evaluar» = no hay fila), comentario, fecha objetivo, **madurez** por norma, capítulo y tema, y concurrencia optimista por versión | **Hecho** |
 | **M3** | **Controles de la empresa** y **mapeos** muchos a muchos con las entradas de las normas adoptadas (**marco de controles unificado**: una medida, varias normas) | **Hecho** |
 | **M4** | Evidencias con archivo (huella SHA-256, vigencia, reemplazo, descarga protegida) y cobertura derivada de los mapeos. ADR 032 (almacén de archivos) | **Hecho** |
@@ -81,7 +81,7 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 
 ## Corte 0.6 — lo que queda fuera del cierre (5 tareas)
 
-- **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` está **cargada en la base local**, marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
+- **4.4 (parcialmente cerrada, 2026-11-13):** el **Anexo A de 27001** (`iso-27001-2022-anexo-a`, ahora `1.0.0`) ya se verificó contra la NTE INEN-ISO/IEC 27001:2023: los 93 controles, su numeración y su reparto por tema coinciden (solo se comparó la numeración y el tema; los títulos y las guías son propios). **Falta** la librería de ejemplo de Estructura Armonizada (cláusulas 4 a 10) y decidir sobre los títulos (Q3). Pendiente original: verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` está **cargada en la base local**, marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
 - **9.2 y 9.3:** OpenFGA, pospuestas por el ADR 029 hasta que haya permisos por objeto. La autorización por rol funciona desde la base.
 - **11.2 y 11.3 (diferidas a la Fase 1, M5):** el worker de intentos fallidos y de eventos de administración. El código de 11.1 queda en el repositorio, probado; la bitácora acepta esos registros, pero nada los alimenta todavía, y la prueba de aislamiento no cubre el paso «intento fallido → bitácora desde Keycloak».
 

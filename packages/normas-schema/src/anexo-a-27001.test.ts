@@ -5,9 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { revisarContenido } from './contenido';
 import { validarLibreria, type Libreria } from './validar';
 
-// El ARTEFACTO REAL: la librería del Anexo A de ISO/IEC 27001:2022 (borrador, numeraciones sin verificar).
+// El ARTEFACTO REAL: la librería del Anexo A de ISO/IEC 27001:2022 (verificada contra la NTE INEN-ISO/IEC 27001:2023).
 const ruta = join(import.meta.dirname, '../../../libraries/normas/iso-27001-2022-anexo-a.yaml');
-const resultado = validarLibreria(parse(readFileSync(ruta, 'utf8')));
+const texto = readFileSync(ruta, 'utf8');
+const resultado = validarLibreria(parse(texto));
 const libreria = (resultado.ok ? resultado.libreria : undefined) as Libreria;
 const porTema = (tema: string) => libreria.entradas.filter((e) => e.grupo === tema);
 
@@ -21,7 +22,7 @@ describe('libraries/normas/iso-27001-2022-anexo-a.yaml', () => {
     expect(revisarContenido(libreria)).toEqual([]);
   });
 
-  it('tiene 93 controles en cuatro temas con el reparto previsto (por verificar con el ejemplar)', () => {
+  it('tiene 93 controles en cuatro temas con el reparto verificado contra la norma', () => {
     expect(libreria.entradas).toHaveLength(93);
     expect([37, 8, 14, 34]).toEqual([porTema('Organizacionales').length, porTema('Personas').length, porTema('Físicos').length, porTema('Tecnológicos').length]);
   });
@@ -53,9 +54,11 @@ describe('libraries/normas/iso-27001-2022-anexo-a.yaml', () => {
     }
   });
 
-  it('se rotula como borrador sin verificar y como librería de ejemplo de elaboración propia', () => {
-    expect(libreria.nombre).toMatch(/borrador/i);
-    expect(libreria.nombre).toMatch(/sin verificar/i);
+  it('está verificada (1.0.0, sin marca de borrador) y es una librería de ejemplo de elaboración propia', () => {
+    expect(libreria.version).toBe('1.0.0');
+    expect(libreria.nombre).not.toMatch(/borrador|sin verificar/i);
+    expect(texto).not.toMatch(/NUMERACIONES SIN VERIFICAR/);
+    expect(texto).toMatch(/NUMERACIÓN VERIFICADA/);
     expect(libreria.es_ejemplo).toBe(true);
     expect(libreria.fuente).toMatch(/elaboración propia/);
   });
