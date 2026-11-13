@@ -113,7 +113,7 @@ describe('documento', () => {
 describe('operaciones del corte 0.6', () => {
   it('son exactamente las del plan', () => {
     expect(operaciones.map((o) => o.id).sort()).toEqual(
-      ['GET /health', 'GET /me', 'GET /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /librerias', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}', 'GET /alcances', 'PUT /alcances', 'POST /alcances/aprobacion', 'GET /diagnostico', 'PUT /diagnostico/evaluaciones', 'GET /controles', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'GET /controles/{id}/evidencias', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo', 'POST /evidencias/{id}/eliminacion', 'GET /evidencias/{id}/archivo', 'GET /cobertura'].sort(),
+      ['GET /health', 'GET /me', 'GET /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /librerias', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}', 'GET /alcances', 'PUT /alcances', 'POST /alcances/aprobacion', 'GET /diagnostico', 'PUT /diagnostico/evaluaciones', 'GET /controles', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'GET /controles/{id}/evidencias', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo', 'POST /evidencias/{id}/eliminacion', 'GET /evidencias/{id}/archivo', 'GET /cobertura', 'GET /declaracion', 'POST /declaracion/aprobacion', 'GET /declaracion/versiones', 'GET /declaracion/versiones/{id}', 'GET /declaracion/documento', 'GET /declaracion/versiones/{id}/documento'].sort(),
     );
   });
 
@@ -170,6 +170,12 @@ describe('seguridad', () => {
       'POST /evidencias/{id}/eliminacion': ['path:id'],
       'GET /evidencias/{id}/archivo': ['path:id'],
       'GET /cobertura': ['query:norma'],
+      'GET /declaracion': [],
+      'POST /declaracion/aprobacion': [],
+      'GET /declaracion/versiones': [],
+      'GET /declaracion/versiones/{id}': ['path:id'],
+      'GET /declaracion/documento': [],
+      'GET /declaracion/versiones/{id}/documento': ['path:id'],
     };
     // Solo estas tres reciben cuerpo, y su esquema es cerrado y sin campos de empresa (la empresa sale del token).
     const conCuerpo = ['PUT /alcances', 'POST /alcances/aprobacion', 'PUT /diagnostico/evaluaciones', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo'];
@@ -195,7 +201,7 @@ describe('seguridad', () => {
 
   it('solo las acciones restringidas declaran un permiso formal (x-permiso) y el 403', () => {
     expect(operaciones.filter((o) => o.op['x-permiso']).map((o) => [o.id, o.op['x-permiso']]).sort()).toEqual(
-      [['POST /librerias/{id}/adopcion', 'administrador_sig'], ['GET /alcances', 'alcance.ver'], ['PUT /alcances', 'alcance.gestionar'], ['POST /alcances/aprobacion', 'alcance.aprobar'], ['GET /diagnostico', 'diagnostico.ver'], ['PUT /diagnostico/evaluaciones', 'diagnostico.evaluar'], ['GET /controles', 'controles.ver'], ['POST /controles', 'controles.gestionar'], ['PUT /controles/{id}', 'controles.gestionar'], ['POST /controles/{id}/retiro', 'controles.gestionar'], ['POST /controles/{id}/mapeos', 'controles.gestionar'], ['POST /controles/{id}/mapeos/eliminacion', 'controles.gestionar'], ['GET /controles/{id}/evidencias', 'evidencias.ver'], ['POST /controles/{id}/evidencias', 'evidencias.registrar'], ['POST /evidencias/{id}/reemplazo', 'evidencias.registrar'], ['POST /evidencias/{id}/eliminacion', 'evidencias.eliminar'], ['GET /evidencias/{id}/archivo', 'evidencias.ver'], ['GET /cobertura', 'evidencias.ver']].sort(),
+      [['POST /librerias/{id}/adopcion', 'administrador_sig'], ['GET /alcances', 'alcance.ver'], ['PUT /alcances', 'alcance.gestionar'], ['POST /alcances/aprobacion', 'alcance.aprobar'], ['GET /diagnostico', 'diagnostico.ver'], ['PUT /diagnostico/evaluaciones', 'diagnostico.evaluar'], ['GET /controles', 'controles.ver'], ['POST /controles', 'controles.gestionar'], ['PUT /controles/{id}', 'controles.gestionar'], ['POST /controles/{id}/retiro', 'controles.gestionar'], ['POST /controles/{id}/mapeos', 'controles.gestionar'], ['POST /controles/{id}/mapeos/eliminacion', 'controles.gestionar'], ['GET /controles/{id}/evidencias', 'evidencias.ver'], ['POST /controles/{id}/evidencias', 'evidencias.registrar'], ['POST /evidencias/{id}/reemplazo', 'evidencias.registrar'], ['POST /evidencias/{id}/eliminacion', 'evidencias.eliminar'], ['GET /evidencias/{id}/archivo', 'evidencias.ver'], ['GET /cobertura', 'evidencias.ver'], ['GET /declaracion', 'declaracion.ver'], ['POST /declaracion/aprobacion', 'declaracion.aprobar'], ['GET /declaracion/versiones', 'declaracion.ver'], ['GET /declaracion/versiones/{id}', 'declaracion.ver'], ['GET /declaracion/documento', 'declaracion.exportar'], ['GET /declaracion/versiones/{id}/documento', 'declaracion.exportar']].sort(),
     );
     expect(op('POST /librerias/{id}/adopcion').responses['403']).toBeDefined();
   });
@@ -210,7 +216,7 @@ describe('seguridad', () => {
 describe('errores que no filtran datos', () => {
   it('hay una sola respuesta 404 y todas la reutilizan: «no existe», «es de otra empresa» y «librería no adoptada» son indistinguibles', () => {
     const cuatrocientoscuatro = operaciones.filter((o) => o.op.responses['404']);
-    expect(cuatrocientoscuatro.map((o) => o.id).sort()).toEqual(['GET /requisitos/{id}', 'POST /alcances/aprobacion', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /controles/{id}/retiro', 'POST /evidencias/{id}/eliminacion', 'POST /evidencias/{id}/reemplazo', 'GET /controles/{id}/evidencias', 'GET /evidencias/{id}/archivo', 'POST /librerias/{id}/adopcion', 'PUT /alcances', 'PUT /controles/{id}', 'PUT /diagnostico/evaluaciones'].sort());
+    expect(cuatrocientoscuatro.map((o) => o.id).sort()).toEqual(['GET /requisitos/{id}', 'POST /alcances/aprobacion', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /controles/{id}/retiro', 'POST /evidencias/{id}/eliminacion', 'POST /evidencias/{id}/reemplazo', 'GET /controles/{id}/evidencias', 'GET /evidencias/{id}/archivo', 'GET /declaracion/versiones/{id}', 'GET /declaracion/versiones/{id}/documento', 'POST /librerias/{id}/adopcion', 'PUT /alcances', 'PUT /controles/{id}', 'PUT /diagnostico/evaluaciones'].sort());
     for (const o of cuatrocientoscuatro) expect(o.op.responses['404'].$ref, o.id).toBe('#/components/responses/NoEncontrado');
     const r = doc.components.responses.NoEncontrado!;
     expect(r.description).toMatch(/indistinguible/i);

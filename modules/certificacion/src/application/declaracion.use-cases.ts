@@ -17,6 +17,8 @@ type Unidad = UnidadDeTrabajoPort<ContextoCertificacion>;
 export const NORMA_DECLARACION = 'ISO/IEC 27001';
 /** Tope de filas por respuesta (el contrato lo declara con `maxItems`). */
 export const TOPE_DECLARACION = 500;
+/** Versiones que devuelve el listado: las más recientes (el contrato declara el tope). */
+export const TOPE_VERSIONES_DECLARACION = 100;
 
 export interface VersionDeclaracionDto {
   readonly id: string;
@@ -172,7 +174,7 @@ export class ListarVersionesDeclaracionUseCase {
   async ejecutar(entrada: { empresaId: string; usuarioId: string }): Promise<readonly VersionDeclaracionDto[]> {
     const { empresaId, usuarioId } = identificar(entrada.empresaId, entrada.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'declaracion.ver', empresaId);
-    return (await this.unidad.ejecutar(empresaId, (c) => c.declaraciones.listarVersiones())).map(aDtoVersion);
+    return (await this.unidad.ejecutar(empresaId, (c) => c.declaraciones.listarVersiones())).slice(0, TOPE_VERSIONES_DECLARACION).map(aDtoVersion);
   }
 }
 

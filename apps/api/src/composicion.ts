@@ -4,7 +4,7 @@ import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
-import { AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
+import { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
 import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
@@ -109,6 +109,11 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       eliminarEvidencia: new EliminarEvidenciaUseCase(unidadCertificacion, autorizacion, reloj),
       descargarEvidencia: new DescargarEvidenciaUseCase(unidadCertificacion, autorizacion, almacen),
       cobertura: new ListarCoberturaUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      declaracion: new ObtenerDeclaracionUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      aprobarDeclaracion: new AprobarDeclaracionUseCase(unidadCertificacion, autorizacion, catalogo, reloj, () => randomUUID()),
+      versionesDeclaracion: new ListarVersionesDeclaracionUseCase(unidadCertificacion, autorizacion),
+      versionDeclaracion: new ObtenerVersionDeclaracionUseCase(unidadCertificacion, autorizacion),
+      exportarDeclaracion: new ExportarDeclaracionUseCase(unidadCertificacion, autorizacion, catalogo, new GeneradorDocumentoDocx(), reloj),
     },
   };
 };

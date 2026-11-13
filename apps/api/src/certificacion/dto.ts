@@ -248,3 +248,83 @@ export class CoberturaResponse {
   @ApiProperty({ type: ResumenCoberturaResponse }) total!: ResumenCoberturaResponse;
   @ApiProperty({ type: 'array', items: { type: 'string', maxLength: 60 }, maxItems: 20 }) normas!: string[];
 }
+
+// ---- Declaración de Aplicabilidad (M5)
+const APLICABILIDAD = ['aplica', 'no_aplica', 'por_decidir'];
+const COBERTURAS = ['cubierta', 'evidencia_vencida', 'sin_evidencia', 'sin_control', 'no_aplica'];
+
+export class FilaDeclaracionResponse {
+  @ApiProperty({ type: String, maxLength: 64 }) libreriaCodigo!: string;
+  @ApiProperty({ type: String, maxLength: 41 }) idEstable!: string;
+  @ApiProperty({ type: 'integer', minimum: 0 }) orden!: number;
+  @ApiProperty({ type: String, maxLength: 200 }) titulo!: string;
+  @ApiProperty({ type: String, maxLength: 80, nullable: true }) grupo!: string | null;
+  @ApiProperty({ type: String, enum: APLICABILIDAD }) aplicabilidad!: string;
+  @ApiProperty({ type: String, maxLength: 20, nullable: true, description: 'implementado, parcial o no_implementado; nula si no aplica o está por decidir.' }) implementacion!: string | null;
+  @ApiProperty({ type: String, maxLength: 1000, nullable: true, description: 'Solo si no aplica; es la que la empresa escribió al evaluar.' }) justificacion!: string | null;
+  @ApiProperty({ type: 'array', items: { type: 'string', maxLength: 20 }, maxItems: 50, description: 'Códigos de los controles vigentes de la empresa que la cubren.' }) controles!: string[];
+  @ApiProperty({ type: String, enum: COBERTURAS }) cobertura!: string;
+}
+
+export class ResumenDeclaracionResponse {
+  @ApiProperty({ type: 'integer', minimum: 0 }) total!: number;
+  @ApiProperty({ type: 'integer', minimum: 0 }) aplican!: number;
+  @ApiProperty({ type: 'integer', minimum: 0 }) noAplican!: number;
+  @ApiProperty({ type: 'integer', minimum: 0 }) porDecidir!: number;
+  @ApiProperty({ type: 'integer', minimum: 0, description: 'Aplican y ningún control de la empresa los cubre; no impide aprobar.' }) sinControl!: number;
+  @ApiProperty({ type: 'boolean', description: 'Hay filas y ninguna está por decidir.' }) aprobable!: boolean;
+}
+
+export class VersionDeclaracionResponse {
+  @ApiProperty({ type: String, format: 'uuid', maxLength: 36 }) id!: string;
+  @ApiProperty({ type: 'integer', minimum: 1 }) numero!: number;
+  @ApiProperty({ type: 'integer', minimum: 0 }) total!: number;
+  @ApiProperty({ type: 'integer', minimum: 0 }) aplican!: number;
+  @ApiProperty({ type: 'integer', minimum: 0 }) noAplican!: number;
+  @ApiProperty({ type: 'integer', minimum: 0 }) sinControl!: number;
+  @ApiProperty({ type: String, format: 'uuid', maxLength: 36 }) aprobadaPor!: string;
+  @ApiProperty({ type: String, format: 'date-time', maxLength: 40 }) aprobadaEn!: string;
+}
+
+export class VersionDeclaracionConFilasResponse extends VersionDeclaracionResponse {
+  @ApiProperty({ type: String, maxLength: 4000, nullable: true, description: 'El alcance de la norma tal como estaba al aprobar.' }) alcance!: string | null;
+  @ApiProperty({ type: [FilaDeclaracionResponse], maxItems: 500 }) filas!: FilaDeclaracionResponse[];
+}
+
+const VERSION_EN_LINEA = {
+  id: { type: 'string', format: 'uuid', maxLength: 36 },
+  numero: { type: 'integer', minimum: 1 },
+  total: { type: 'integer', minimum: 0 },
+  aplican: { type: 'integer', minimum: 0 },
+  noAplican: { type: 'integer', minimum: 0 },
+  sinControl: { type: 'integer', minimum: 0 },
+  aprobadaPor: { type: 'string', format: 'uuid', maxLength: 36 },
+  aprobadaEn: { type: 'string', format: 'date-time', maxLength: 40 },
+} as const;
+
+export class DeclaracionResponse {
+  @ApiProperty({ type: String, maxLength: 60 }) norma!: string;
+  @ApiProperty({ type: String, format: 'date', maxLength: 10, description: 'La fecha de hoy en Ecuador con la que se calculó la cobertura.' }) hoy!: string;
+  @ApiProperty({ type: ResumenDeclaracionResponse }) resumen!: ResumenDeclaracionResponse;
+  @ApiProperty({ type: [FilaDeclaracionResponse], maxItems: 500 }) filas!: FilaDeclaracionResponse[];
+  @ApiProperty({
+    type: 'object',
+    nullable: true,
+    additionalProperties: false,
+    properties: { texto: { type: 'string', maxLength: 4000 }, aprobado: { type: 'boolean' } },
+    required: ['texto', 'aprobado'],
+    selfRequired: true,
+    description: 'El alcance de la norma tal como está hoy (aprobado o no); nulo si no se definió.',
+  })
+  alcance!: { texto: string; aprobado: boolean } | null;
+  @ApiProperty({
+    type: 'object',
+    nullable: true,
+    additionalProperties: false,
+    properties: VERSION_EN_LINEA,
+    required: Object.keys(VERSION_EN_LINEA),
+    selfRequired: true,
+    description: 'La última versión aprobada; nula si todavía no hay ninguna.',
+  })
+  ultimaVersion!: VersionDeclaracionResponse | null;
+}

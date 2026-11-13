@@ -509,6 +509,132 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/declaracion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Borrador de la Declaración de Aplicabilidad de ISO/IEC 27001
+         * @description Una fila por control del Anexo A de las librerías adoptadas, DERIVADA del diagnóstico, de los controles de la empresa y de la
+         *     cobertura de las evidencias; no se guarda nada. Trae también la última versión aprobada, si hay. Orden: 401, 403.
+         */
+        get: operations["obtenerDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprueba la declaración y congela una versión nueva
+         * @description Congela, en una sola transacción, lo que la API lee en ese momento: las filas, el alcance de 27001 y los conteos. La versión es
+         *     inmutable y su número es correlativo por empresa. Responde 409 si queda algún control por decidir (o no hay controles de la norma
+         *     adoptados) y 409 si otra persona aprobó al mismo tiempo. Un control que aplica sin control de la empresa asignado SÍ se puede
+         *     aprobar: queda señalado en el documento. Orden: 401, 403, 409.
+         */
+        post: operations["aprobarDeclaracion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/versiones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Versiones aprobadas de la declaración
+         * @description De la más nueva a la más antigua; como máximo las 100 más recientes. Orden de evaluación 401, 403.
+         */
+        get: operations["listarVersionesDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/versiones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Una versión aprobada con sus filas congeladas
+         * @description Una versión de otra empresa responde 404, igual que una inexistente. Orden de evaluación 401, 403, 400, 404.
+         */
+        get: operations["obtenerVersionDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/documento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descarga el borrador de la declaración en Word
+         * @description Siempre como **adjunto**, con el rótulo de documento preliminar. Queda en la bitácora, con la huella SHA-256 del documento,
+         *     **antes** de entregarlo; si no se puede registrar, no se entrega. Orden: 401, 403.
+         */
+        get: operations["exportarBorradorDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/versiones/{id}/documento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descarga una versión aprobada de la declaración en Word
+         * @description Siempre como **adjunto** y SIEMPRE desde la copia congelada de esa versión, no desde los datos de hoy. Queda en la bitácora con la
+         *     huella del documento antes de entregarlo. Una versión de otra empresa responde 404. Orden: 401, 403, 400, 404.
+         */
+        get: operations["exportarVersionDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -838,6 +964,91 @@ export interface components {
             vigenteHasta?: string;
             /** Format: binary */
             archivo: string;
+        };
+        /** @enum {string} */
+        AplicabilidadDeclaracion: "aplica" | "no_aplica" | "por_decidir";
+        FilaDeclaracion: {
+            libreriaCodigo: string;
+            idEstable: string;
+            orden: number;
+            titulo: string;
+            grupo: string | null;
+            aplicabilidad: components["schemas"]["AplicabilidadDeclaracion"];
+            /** @description implementado, parcial o no_implementado; nula si no aplica o está por decidir. */
+            implementacion: string | null;
+            /** @description Solo si no aplica; es la que la empresa escribió al evaluar. */
+            justificacion: string | null;
+            /** @description Códigos de los controles vigentes de la empresa que la cubren. */
+            controles: string[];
+            cobertura: components["schemas"]["EstadoCobertura"];
+        };
+        ResumenDeclaracion: {
+            total: number;
+            aplican: number;
+            noAplican: number;
+            porDecidir: number;
+            /** @description Aplican y ningún control de la empresa los cubre; no impide aprobar. */
+            sinControl: number;
+            /** @description Hay filas y ninguna está por decidir. */
+            aprobable: boolean;
+        };
+        VersionDeclaracion: {
+            /** Format: uuid */
+            id: string;
+            numero: number;
+            total: number;
+            aplican: number;
+            noAplican: number;
+            sinControl: number;
+            /** Format: uuid */
+            aprobadaPor: string;
+            /** Format: date-time */
+            aprobadaEn: string;
+        };
+        VersionDeclaracionConFilas: {
+            /** Format: uuid */
+            id: string;
+            numero: number;
+            total: number;
+            aplican: number;
+            noAplican: number;
+            sinControl: number;
+            /** Format: uuid */
+            aprobadaPor: string;
+            /** Format: date-time */
+            aprobadaEn: string;
+            /** @description El alcance de la norma tal como estaba al aprobar. */
+            alcance: string | null;
+            filas: components["schemas"]["FilaDeclaracion"][];
+        };
+        Declaracion: {
+            norma: string;
+            /**
+             * Format: date
+             * @description La fecha de hoy en Ecuador con la que se calculó la cobertura.
+             */
+            hoy: string;
+            resumen: components["schemas"]["ResumenDeclaracion"];
+            filas: components["schemas"]["FilaDeclaracion"][];
+            /** @description El alcance de la norma tal como está hoy (aprobado o no); nulo si no se definió. */
+            alcance: {
+                texto: string;
+                aprobado: boolean;
+            } | null;
+            /** @description La última versión aprobada; nula si todavía no hay ninguna. */
+            ultimaVersion: {
+                /** Format: uuid */
+                id: string;
+                numero: number;
+                total: number;
+                aplican: number;
+                noAplican: number;
+                sinControl: number;
+                /** Format: uuid */
+                aprobadaPor: string;
+                /** Format: date-time */
+                aprobadaEn: string;
+            } | null;
         };
         /** @enum {string} */
         EstadoCobertura: "cubierta" | "evidencia_vencida" | "sin_evidencia" | "sin_control" | "no_aplica";
@@ -1871,6 +2082,173 @@ export interface operations {
             400: components["responses"]["ParametrosInvalidos"];
             401: components["responses"]["NoAutenticado"];
             403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El borrador derivado con lo que hay hoy. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Declaracion"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    aprobarDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La versión aprobada. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDeclaracion"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarVersionesDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las versiones aprobadas. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDeclaracion"][];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerVersionDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La versión con sus filas. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDeclaracionConFilas"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    exportarBorradorDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El documento Word, como adjunto. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Siempre `attachment`, con un nombre fijado por el servidor. */
+                    "Content-Disposition"?: string;
+                    "X-Content-Type-Options"?: "nosniff";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    exportarVersionDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El documento Word, como adjunto. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Siempre `attachment`, con un nombre fijado por el servidor. */
+                    "Content-Disposition"?: string;
+                    "X-Content-Type-Options"?: "nosniff";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

@@ -1026,6 +1026,203 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /declaracion:
+    get:
+      operationId: obtenerDeclaracion
+      summary: Borrador de la Declaración de Aplicabilidad de ISO/IEC 27001
+      description: |
+        Una fila por control del Anexo A de las librerías adoptadas, DERIVADA del diagnóstico, de los controles de la empresa y de la
+        cobertura de las evidencias; no se guarda nada. Trae también la última versión aprobada, si hay. Orden: 401, 403.
+      tags: [declaracion]
+      x-permiso: declaracion.ver
+      responses:
+        '200':
+          description: El borrador derivado con lo que hay hoy.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Declaracion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/aprobacion:
+    post:
+      operationId: aprobarDeclaracion
+      summary: Aprueba la declaración y congela una versión nueva
+      description: |
+        Congela, en una sola transacción, lo que la API lee en ese momento: las filas, el alcance de 27001 y los conteos. La versión es
+        inmutable y su número es correlativo por empresa. Responde 409 si queda algún control por decidir (o no hay controles de la norma
+        adoptados) y 409 si otra persona aprobó al mismo tiempo. Un control que aplica sin control de la empresa asignado SÍ se puede
+        aprobar: queda señalado en el documento. Orden: 401, 403, 409.
+      tags: [declaracion]
+      x-permiso: declaracion.aprobar
+      responses:
+        '201':
+          description: La versión aprobada.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDeclaracion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/versiones:
+    get:
+      operationId: listarVersionesDeclaracion
+      summary: Versiones aprobadas de la declaración
+      description: De la más nueva a la más antigua; como máximo las 100 más recientes. Orden de evaluación 401, 403.
+      tags: [declaracion]
+      x-permiso: declaracion.ver
+      responses:
+        '200':
+          description: Las versiones aprobadas.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 100
+                items:
+                  $ref: '#/components/schemas/VersionDeclaracion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/versiones/{id}:
+    get:
+      operationId: obtenerVersionDeclaracion
+      summary: Una versión aprobada con sus filas congeladas
+      description: Una versión de otra empresa responde 404, igual que una inexistente. Orden de evaluación 401, 403, 400, 404.
+      tags: [declaracion]
+      x-permiso: declaracion.ver
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: La versión con sus filas.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDeclaracionConFilas'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/documento:
+    get:
+      operationId: exportarBorradorDeclaracion
+      summary: Descarga el borrador de la declaración en Word
+      description: |
+        Siempre como **adjunto**, con el rótulo de documento preliminar. Queda en la bitácora, con la huella SHA-256 del documento,
+        **antes** de entregarlo; si no se puede registrar, no se entrega. Orden: 401, 403.
+      tags: [declaracion]
+      x-permiso: declaracion.exportar
+      responses:
+        '200':
+          description: El documento Word, como adjunto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+            Content-Disposition:
+              description: Siempre `attachment`, con un nombre fijado por el servidor.
+              schema:
+                type: string
+                maxLength: 300
+            X-Content-Type-Options:
+              schema:
+                type: string
+                enum: [nosniff]
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/versiones/{id}/documento:
+    get:
+      operationId: exportarVersionDeclaracion
+      summary: Descarga una versión aprobada de la declaración en Word
+      description: |
+        Siempre como **adjunto** y SIEMPRE desde la copia congelada de esa versión, no desde los datos de hoy. Queda en la bitácora con la
+        huella del documento antes de entregarlo. Una versión de otra empresa responde 404. Orden: 401, 403, 400, 404.
+      tags: [declaracion]
+      x-permiso: declaracion.exportar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El documento Word, como adjunto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+            Content-Disposition:
+              description: Siempre `attachment`, con un nombre fijado por el servidor.
+              schema:
+                type: string
+                maxLength: 300
+            X-Content-Type-Options:
+              schema:
+                type: string
+                enum: [nosniff]
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearerAuth:
@@ -1967,6 +2164,122 @@ components:
         archivo:
           type: string
           format: binary
+    AplicabilidadDeclaracion:
+      type: string
+      enum: [aplica, no_aplica, por_decidir]
+    FilaDeclaracion:
+      type: object
+      required: [libreriaCodigo, idEstable, orden, titulo, grupo, aplicabilidad, implementacion, justificacion, controles, cobertura]
+      additionalProperties: false
+      properties:
+        libreriaCodigo: {type: string, maxLength: 64}
+        idEstable: {type: string, maxLength: 41}
+        orden: {type: integer, minimum: 0}
+        titulo: {type: string, maxLength: 200}
+        grupo: {type: [string, 'null'], maxLength: 80}
+        aplicabilidad:
+          $ref: '#/components/schemas/AplicabilidadDeclaracion'
+        implementacion:
+          type: [string, 'null']
+          maxLength: 20
+          description: 'implementado, parcial o no_implementado; nula si no aplica o está por decidir.'
+        justificacion:
+          type: [string, 'null']
+          maxLength: 1000
+          description: Solo si no aplica; es la que la empresa escribió al evaluar.
+        controles:
+          type: array
+          maxItems: 50
+          items: {type: string, maxLength: 20}
+          description: Códigos de los controles vigentes de la empresa que la cubren.
+        cobertura:
+          $ref: '#/components/schemas/EstadoCobertura'
+    ResumenDeclaracion:
+      type: object
+      required: [total, aplican, noAplican, porDecidir, sinControl, aprobable]
+      additionalProperties: false
+      properties:
+        total: {type: integer, minimum: 0}
+        aplican: {type: integer, minimum: 0}
+        noAplican: {type: integer, minimum: 0}
+        porDecidir: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0, description: Aplican y ningún control de la empresa los cubre; no impide aprobar.}
+        aprobable: {type: boolean, description: Hay filas y ninguna está por decidir.}
+    VersionDeclaracion:
+      type: object
+      required: [id, numero, total, aplican, noAplican, sinControl, aprobadaPor, aprobadaEn]
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid, maxLength: 36}
+        numero: {type: integer, minimum: 1}
+        total: {type: integer, minimum: 0}
+        aplican: {type: integer, minimum: 0}
+        noAplican: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0}
+        aprobadaPor: {type: string, format: uuid, maxLength: 36}
+        aprobadaEn: {type: string, format: date-time, maxLength: 40}
+    VersionDeclaracionConFilas:
+      type: object
+      required: [id, numero, total, aplican, noAplican, sinControl, aprobadaPor, aprobadaEn, alcance, filas]
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid, maxLength: 36}
+        numero: {type: integer, minimum: 1}
+        total: {type: integer, minimum: 0}
+        aplican: {type: integer, minimum: 0}
+        noAplican: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0}
+        aprobadaPor: {type: string, format: uuid, maxLength: 36}
+        aprobadaEn: {type: string, format: date-time, maxLength: 40}
+        alcance:
+          type: [string, 'null']
+          maxLength: 4000
+          description: El alcance de la norma tal como estaba al aprobar.
+        filas:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/FilaDeclaracion'
+    Declaracion:
+      type: object
+      required: [norma, hoy, resumen, filas, alcance, ultimaVersion]
+      additionalProperties: false
+      properties:
+        norma: {type: string, maxLength: 60}
+        hoy:
+          type: string
+          format: date
+          maxLength: 10
+          description: La fecha de hoy en Ecuador con la que se calculó la cobertura.
+        resumen:
+          $ref: '#/components/schemas/ResumenDeclaracion'
+        filas:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/FilaDeclaracion'
+        alcance:
+          type: [object, 'null']
+          required: [texto, aprobado]
+          additionalProperties: false
+          description: El alcance de la norma tal como está hoy (aprobado o no); nulo si no se definió.
+          properties:
+            texto: {type: string, maxLength: 4000}
+            aprobado: {type: boolean}
+        ultimaVersion:
+          type: [object, 'null']
+          required: [id, numero, total, aplican, noAplican, sinControl, aprobadaPor, aprobadaEn]
+          additionalProperties: false
+          description: La última versión aprobada; nula si todavía no hay ninguna.
+          properties:
+            id: {type: string, format: uuid, maxLength: 36}
+            numero: {type: integer, minimum: 1}
+            total: {type: integer, minimum: 0}
+            aplican: {type: integer, minimum: 0}
+            noAplican: {type: integer, minimum: 0}
+            sinControl: {type: integer, minimum: 0}
+            aprobadaPor: {type: string, format: uuid, maxLength: 36}
+            aprobadaEn: {type: string, format: date-time, maxLength: 40}
     EstadoCobertura:
       type: string
       enum: [cubierta, evidencia_vencida, sin_evidencia, sin_control, no_aplica]

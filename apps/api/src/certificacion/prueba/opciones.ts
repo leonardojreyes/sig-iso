@@ -1,6 +1,6 @@
 // Casos de uso reales armados con los fakes que separan los datos por empresa, para las pruebas de la API de certificación.
 import {
-  AgregarMapeoUseCase, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, EvaluarEntradaUseCase, GuardarAlcanceUseCase,
+  AgregarMapeoUseCase, AprobarAlcanceUseCase, AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, CambiarControlUseCase, CrearControlUseCase, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, EvaluarEntradaUseCase, GuardarAlcanceUseCase,
   ListarAlcancesUseCase, ListarControlesUseCase, ListarCoberturaUseCase, ListarDiagnosticoUseCase, ListarEvidenciasUseCase, QuitarMapeoUseCase, ReemplazarEvidenciaUseCase, RetirarControlUseCase,
   SubirEvidenciaUseCase, type AlmacenArchivosPort,
 } from '@sig/certificacion';
@@ -31,5 +31,11 @@ export const opcionesDePrueba = (p: { estado: EstadoFalso; almacen: AlmacenArchi
     eliminarEvidencia: new EliminarEvidenciaUseCase(unidad, autorizacion, reloj),
     descargarEvidencia: new DescargarEvidenciaUseCase(unidad, autorizacion, p.almacen),
     cobertura: new ListarCoberturaUseCase(unidad, autorizacion, catalogo, reloj),
+    declaracion: new ObtenerDeclaracionUseCase(unidad, autorizacion, catalogo, reloj),
+    aprobarDeclaracion: new AprobarDeclaracionUseCase(unidad, autorizacion, catalogo, reloj, nuevoId),
+    versionesDeclaracion: new ListarVersionesDeclaracionUseCase(unidad, autorizacion),
+    versionDeclaracion: new ObtenerVersionDeclaracionUseCase(unidad, autorizacion),
+    // El generador es el real (en memoria): así las pruebas de la API comprueban un Word de verdad.
+    exportarDeclaracion: new ExportarDeclaracionUseCase(unidad, autorizacion, catalogo, new GeneradorDocumentoDocx(), reloj),
   };
 };
