@@ -1,6 +1,6 @@
 // La respuesta de la API se trata como un dato externo: forma EXACTA (sin campos de más ni de menos), tipos, patrones y topes del
 // contrato. Lo que no cumple se rechaza entero (nunca se corrige ni se muestra a medias).
-import type { Alcance, Cobertura, CoberturaEntrada, Evidencia, ResumenCobertura, TipoArchivo, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol } from './tipos';
+import type { Alcance, Cobertura, CoberturaEntrada, Evidencia, ResumenCobertura, TipoArchivo, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol, Declaracion, FilaDeclaracion, VersionDeclaracion, VersionDeclaracionConFilas } from './tipos';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLES: readonly string[] = [
@@ -342,4 +342,92 @@ export const validarCobertura = (cuerpo: unknown): Cobertura | null => {
     entradas.push(e as unknown as CoberturaEntrada);
   }
   return { hoy: o.hoy, entradas, porNorma, total: total as unknown as ResumenCobertura, normas: o.normas as string[] };
+};
+
+// ---- Declaración de Aplicabilidad (M5)
+const IMPLEMENTACIONES: readonly string[] = ['implementado', 'parcial', 'no_implementado'];
+const CONTROL_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/;
+
+const validarFilasDeclaracion = (filas: unknown): FilaDeclaracion[] | null => {
+  if (!Array.isArray(filas) || filas.length > 500) return null;
+  const salida: FilaDeclaracion[] = [];
+  const vistas = new Set<string>();
+  for (const item of filas) {
+    const f = objeto(item);
+    if (!f || !claves(f, ['libreriaCodigo', 'idEstable', 'orden', 'titulo', 'grupo', 'aplicabilidad', 'implementacion', 'justificacion', 'controles', 'cobertura'])) return null;
+    if (!texto(f.libreriaCodigo, 64, /^[a-z0-9][a-z0-9-]*$/, 1) || !texto(f.idEstable, 41, /^[a-z0-9][a-z0-9.-]{0,40}$/) || !entero(f.orden) || !texto(f.titulo, 200, undefined, 1)) return null;
+    if (f.grupo !== null && !texto(f.grupo, 80, undefined, 1)) return null;
+    if (f.aplicabilidad !== 'aplica' && f.aplicabilidad !== 'no_aplica' && f.aplicabilidad !== 'por_decidir') return null;
+    if (f.implementacion !== null && (typeof f.implementacion !== 'string' || !IMPLEMENTACIONES.includes(f.implementacion))) return null;
+    if (f.justificacion !== null && !texto(f.justificacion, 1000, undefined, 1)) return null;
+    if (!Array.isArray(f.controles) || f.controles.length > 50 || !f.controles.every((c) => texto(c, 20, CONTROL_RE))) return null;
+    if (typeof f.cobertura !== 'string' || !ESTADOS_COBERTURA.includes(f.cobertura)) return null;
+    // Coherencia: lo que aplica trae su implementación; lo que no aplica, su justificación; lo que está por decidir, nada de las dos.
+    if (f.aplicabilidad === 'aplica' && (f.implementacion === null || f.justificacion !== null)) return null;
+    if (f.aplicabilidad === 'no_aplica' && (f.implementacion !== null || f.justificacion === null || f.cobertura !== 'no_aplica')) return null;
+    if (f.aplicabilidad === 'por_decidir' && (f.implementacion !== null || f.justificacion !== null)) return null;
+    const k = `${f.libreriaCodigo}|${f.idEstable}`;
+    if (vistas.has(k)) return null;
+    vistas.add(k);
+    salida.push(f as unknown as FilaDeclaracion);
+  }
+  return salida;
+};
+
+const CAMPOS_VERSION = ['id', 'numero', 'total', 'aplican', 'noAplican', 'sinControl', 'aprobadaPor', 'aprobadaEn'] as const;
+const versionValida = (v: Record<string, unknown>): boolean =>
+  texto(v.id, 36, UUID) && entero(v.numero, 1) && entero(v.total) && entero(v.aplican) && entero(v.noAplican) && entero(v.sinControl) && texto(v.aprobadaPor, 36, UUID) && texto(v.aprobadaEn, 40, FECHA_HORA) &&
+  (v.aplican as number) + (v.noAplican as number) === v.total && (v.sinControl as number) <= (v.aplican as number);
+
+export const validarVersionDeclaracion = (cuerpo: unknown): VersionDeclaracion | null => {
+  const v = objeto(cuerpo);
+  return v && claves(v, CAMPOS_VERSION) && versionValida(v) ? (v as unknown as VersionDeclaracion) : null;
+};
+
+export const validarVersionesDeclaracion = (cuerpo: unknown): VersionDeclaracion[] | null => {
+  if (!Array.isArray(cuerpo) || cuerpo.length > 100) return null;
+  const salida: VersionDeclaracion[] = [];
+  for (const item of cuerpo) {
+    const v = validarVersionDeclaracion(item);
+    // De la más nueva a la más antigua, sin repetir números.
+    if (!v || (salida.length > 0 && v.numero >= (salida[salida.length - 1] as VersionDeclaracion).numero)) return null;
+    salida.push(v);
+  }
+  return salida;
+};
+
+export const validarVersionDeclaracionConFilas = (cuerpo: unknown): VersionDeclaracionConFilas | null => {
+  const v = objeto(cuerpo);
+  if (!v || !claves(v, [...CAMPOS_VERSION, 'alcance', 'filas']) || !versionValida(v)) return null;
+  if (v.alcance !== null && !texto(v.alcance, 4000, undefined, 1)) return null;
+  const filas = validarFilasDeclaracion(v.filas);
+  if (!filas || filas.length !== v.total || filas.some((f) => f.aplicabilidad === 'por_decidir')) return null;
+  if (filas.filter((f) => f.aplicabilidad === 'aplica').length !== v.aplican) return null;
+  return { ...(v as unknown as VersionDeclaracion), alcance: v.alcance as string | null, filas };
+};
+
+export const validarDeclaracion = (cuerpo: unknown): Declaracion | null => {
+  const o = objeto(cuerpo);
+  if (!o || !claves(o, ['norma', 'hoy', 'resumen', 'filas', 'alcance', 'ultimaVersion'])) return null;
+  if (!texto(o.norma, 60, undefined, 1) || !texto(o.hoy, 10, FECHA)) return null;
+  const filas = validarFilasDeclaracion(o.filas);
+  const r = objeto(o.resumen);
+  if (!filas || !r || !claves(r, ['total', 'aplican', 'noAplican', 'porDecidir', 'sinControl', 'aprobable'])) return null;
+  for (const k of ['total', 'aplican', 'noAplican', 'porDecidir', 'sinControl'] as const) if (!entero(r[k])) return null;
+  // El resumen tiene que decir lo mismo que las filas: si no, no se muestra nada a medias.
+  const cuenta = (a: string) => filas.filter((f) => f.aplicabilidad === a).length;
+  if (r.total !== filas.length || r.aplican !== cuenta('aplica') || r.noAplican !== cuenta('no_aplica') || r.porDecidir !== cuenta('por_decidir')) return null;
+  if ((r.sinControl as number) > (r.aplican as number) || r.aprobable !== (filas.length > 0 && r.porDecidir === 0)) return null;
+  let alcance: Declaracion['alcance'] = null;
+  if (o.alcance !== null) {
+    const a = objeto(o.alcance);
+    if (!a || !claves(a, ['texto', 'aprobado']) || !texto(a.texto, 4000, undefined, 1) || typeof a.aprobado !== 'boolean') return null;
+    alcance = { texto: a.texto, aprobado: a.aprobado };
+  }
+  let ultimaVersion: VersionDeclaracion | null = null;
+  if (o.ultimaVersion !== null) {
+    ultimaVersion = validarVersionDeclaracion(o.ultimaVersion);
+    if (!ultimaVersion) return null;
+  }
+  return { norma: o.norma, hoy: o.hoy, resumen: r as unknown as Declaracion['resumen'], filas, alcance, ultimaVersion };
 };

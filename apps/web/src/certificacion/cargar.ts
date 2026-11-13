@@ -1,8 +1,8 @@
 // Datos de alcance y diagnóstico de la empresa de la sesión. Todo sale de la API con el token de la sesión; la empresa nunca es
 // un parámetro. Si algo falla no se muestra nada a medias.
 import { consultarApi } from '../api/cliente';
-import type { Alcance, Cobertura, Diagnostico, Evidencia, MarcoControles } from '../api/tipos';
-import { validarAlcances, validarCobertura, validarDiagnostico, validarEvidencias, validarMarcoControles } from '../api/validadores';
+import type { Alcance, Cobertura, Declaracion, Diagnostico, Evidencia, MarcoControles, VersionDeclaracion, VersionDeclaracionConFilas } from '../api/tipos';
+import { validarAlcances, validarCobertura, validarDeclaracion, validarDiagnostico, validarEvidencias, validarMarcoControles, validarVersionDeclaracionConFilas, validarVersionesDeclaracion } from '../api/validadores';
 import { construirConsulta, type FiltrosDiagnostico } from './filtros';
 import { construirConsultaControles, type FiltrosControles } from './filtros-controles';
 
@@ -53,5 +53,30 @@ export const cargarCobertura = async (p: Base & { norma?: string }): Promise<Res
   const r = await consultarApi({ acceso: p.acceso, apiUrl: p.apiUrl, fetchFn: p.fetchFn, ruta: `/cobertura${consulta}` });
   if (!r.ok) return r.motivo === 'no_autenticado' ? { tipo: 'ingresar' } : r.motivo === 'sin_permiso' ? { tipo: 'sin_permiso' } : { tipo: 'no_disponible' };
   const datos = validarCobertura(r.json);
+  return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
+};
+
+/** El borrador de la declaración (derivado hoy) y su última versión aprobada. */
+export const cargarDeclaracion = async (p: Base): Promise<ResultadoCarga<Declaracion>> => {
+  const r = await consultarApi({ ...p, ruta: '/declaracion' });
+  if (!r.ok) return r.motivo === 'no_autenticado' ? { tipo: 'ingresar' } : r.motivo === 'sin_permiso' ? { tipo: 'sin_permiso' } : { tipo: 'no_disponible' };
+  const datos = validarDeclaracion(r.json);
+  return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
+};
+
+/** Las versiones aprobadas, de la más nueva a la más antigua. */
+export const cargarVersionesDeclaracion = async (p: Base): Promise<ResultadoCarga<VersionDeclaracion[]>> => {
+  const r = await consultarApi({ ...p, ruta: '/declaracion/versiones' });
+  if (!r.ok) return r.motivo === 'no_autenticado' ? { tipo: 'ingresar' } : r.motivo === 'sin_permiso' ? { tipo: 'sin_permiso' } : { tipo: 'no_disponible' };
+  const datos = validarVersionesDeclaracion(r.json);
+  return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
+};
+
+/** Una versión aprobada con sus filas congeladas (404 si no existe o es de otra empresa). El identificador se valida antes de armar la ruta. */
+export const cargarVersionDeclaracion = async (p: Base & { id: string }): Promise<{ readonly tipo: 'ok'; readonly datos: VersionDeclaracionConFilas } | Fallo> => {
+  if (!UUID.test(p.id)) return { tipo: 'no_encontrado' };
+  const r = await consultarApi({ acceso: p.acceso, apiUrl: p.apiUrl, fetchFn: p.fetchFn, ruta: `/declaracion/versiones/${p.id.toLowerCase()}` });
+  if (!r.ok) return r.motivo === 'no_autenticado' ? { tipo: 'ingresar' } : r.motivo === 'sin_permiso' ? { tipo: 'sin_permiso' } : r.motivo === 'no_encontrado' ? { tipo: 'no_encontrado' } : { tipo: 'no_disponible' };
+  const datos = validarVersionDeclaracionConFilas(r.json);
   return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
 };

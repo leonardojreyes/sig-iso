@@ -191,3 +191,54 @@ export interface Cobertura {
   readonly total: ResumenCobertura;
   readonly normas: readonly string[];
 }
+
+// ---- Declaración de Aplicabilidad (M5)
+export type Aplicabilidad = 'aplica' | 'no_aplica' | 'por_decidir';
+export type Implementacion = 'implementado' | 'parcial' | 'no_implementado';
+
+export interface FilaDeclaracion {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  readonly orden: number;
+  readonly titulo: string;
+  readonly grupo: string | null;
+  readonly aplicabilidad: Aplicabilidad;
+  readonly implementacion: Implementacion | null;
+  readonly justificacion: string | null;
+  readonly controles: readonly string[];
+  readonly cobertura: EstadoCobertura;
+}
+
+export interface ResumenDeclaracion {
+  readonly total: number;
+  readonly aplican: number;
+  readonly noAplican: number;
+  readonly porDecidir: number;
+  readonly sinControl: number;
+  readonly aprobable: boolean;
+}
+
+export interface VersionDeclaracion {
+  readonly id: string;
+  readonly numero: number;
+  readonly total: number;
+  readonly aplican: number;
+  readonly noAplican: number;
+  readonly sinControl: number;
+  readonly aprobadaPor: string;
+  readonly aprobadaEn: string;
+}
+
+export interface VersionDeclaracionConFilas extends VersionDeclaracion {
+  readonly alcance: string | null;
+  readonly filas: readonly FilaDeclaracion[];
+}
+
+export interface Declaracion {
+  readonly norma: string;
+  readonly hoy: string;
+  readonly resumen: ResumenDeclaracion;
+  readonly filas: readonly FilaDeclaracion[];
+  readonly alcance: { readonly texto: string; readonly aprobado: boolean } | null;
+  readonly ultimaVersion: VersionDeclaracion | null;
+}

@@ -7,8 +7,8 @@ import { crearServicioSesion, origenValido } from '../auth/sesion';
 
 const SIN_CACHE = { 'Cache-Control': 'no-store' };
 
-export type AvisoEscritura = 'guardado' | 'aprobado' | 'evaluado' | 'creado' | 'retirado' | 'mapeado' | 'desmapeado' | 'evidencia_subida' | 'evidencia_reemplazada' | 'evidencia_eliminada' | 'sin_cambios' | 'sin_permiso' | 'no_valido' | 'archivo_grande' | 'tipo_no_permitido' | 'no_encontrado' | 'conflicto' | 'no_disponible';
-const AVISOS: readonly string[] = ['guardado', 'aprobado', 'evaluado', 'creado', 'retirado', 'mapeado', 'desmapeado', 'evidencia_subida', 'evidencia_reemplazada', 'evidencia_eliminada', 'sin_cambios', 'sin_permiso', 'no_valido', 'archivo_grande', 'tipo_no_permitido', 'no_encontrado', 'conflicto', 'no_disponible'];
+export type AvisoEscritura = 'guardado' | 'aprobado' | 'evaluado' | 'creado' | 'retirado' | 'mapeado' | 'desmapeado' | 'evidencia_subida' | 'evidencia_reemplazada' | 'evidencia_eliminada' | 'declaracion_aprobada' | 'declaracion_no_aprobada' | 'sin_cambios' | 'sin_permiso' | 'no_valido' | 'archivo_grande' | 'tipo_no_permitido' | 'no_encontrado' | 'conflicto' | 'no_disponible';
+const AVISOS: readonly string[] = ['guardado', 'aprobado', 'evaluado', 'creado', 'retirado', 'mapeado', 'desmapeado', 'evidencia_subida', 'evidencia_reemplazada', 'evidencia_eliminada', 'declaracion_aprobada', 'declaracion_no_aprobada', 'sin_cambios', 'sin_permiso', 'no_valido', 'archivo_grande', 'tipo_no_permitido', 'no_encontrado', 'conflicto', 'no_disponible'];
 
 /** Aviso que viaja en la dirección (`?aviso=`); lo desconocido se ignora. */
 export const leerAvisoEscritura = (sp: Readonly<Record<string, string | readonly string[] | undefined>>): AvisoEscritura | null =>
@@ -30,7 +30,7 @@ const SIN_CUERPO = Symbol('sin_cuerpo');
 type Cuerpo = Record<string, unknown> | FormData | typeof SIN_CUERPO | 'archivo_grande' | null;
 interface Operacion {
   /** Pantalla a la que se vuelve (`/e/<empresa>/<pantalla>`). */
-  readonly pantalla: 'alcance' | 'diagnostico' | 'controles';
+  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion';
   /** Ruta (tras `/e/<empresa>/`) a la que se vuelve si no es `pantalla`; recibe el formulario (si se pudo leer) y el recurso de la dirección. */
   readonly volverA?: (f: FormData | null, id: string | null) => string;
   readonly metodoApi: 'PUT' | 'POST';
@@ -49,6 +49,10 @@ interface Operacion {
   readonly tiempoMs?: number;
   /** Aviso cuando la API responde 200, 201 o 204 (puede depender de cuál). */
   readonly exito: AvisoEscritura | ((estado: number) => AvisoEscritura);
+  /** La operación no usa ningún dato del formulario: no se lee el cuerpo (un POST vacío, sin tipo de contenido, también vale). */
+  readonly sinFormulario?: boolean;
+  /** Aviso cuando la API responde 409, si la operación tiene uno propio (por omisión, «conflicto»). */
+  readonly conflicto?: AvisoEscritura;
   /** Se conserva en la dirección al volver (filtros de la pantalla), ya validado. */
   readonly conservar?: (f: FormData) => string;
 }
@@ -87,10 +91,13 @@ const reenviar = async (peticion: Request, entrada: Entrada, op: Operacion): Pro
   const declarado = Number(peticion.headers.get('content-length'));
   if (op.limiteCuerpo !== undefined && Number.isFinite(declarado) && declarado > op.limiteCuerpo) return redirigir(`${config.origen}/e/${slug}/${destino(null)}?aviso=archivo_grande`, []);
   let formulario: FormData;
-  try {
-    formulario = await peticion.formData();
-  } catch {
-    return redirigir(`${config.origen}/e/${slug}/${destino(null)}?aviso=no_valido`, []);
+  if (op.sinFormulario) formulario = new FormData();
+  else {
+    try {
+      formulario = await peticion.formData();
+    } catch {
+      return redirigir(`${config.origen}/e/${slug}/${destino(null)}?aviso=no_valido`, []);
+    }
   }
   const volver = (aviso: AvisoEscritura, cookies: readonly string[]): Response => {
     const conservado = new URLSearchParams(op.conservar?.(formulario) ?? '');
@@ -132,7 +139,7 @@ const reenviar = async (peticion: Request, entrada: Entrada, op: Operacion): Pro
   if (estado === 400) return volver('no_valido', cookies);
   if (estado === 403) return volver('sin_permiso', cookies);
   if (estado === 404) return volver('no_encontrado', cookies);
-  if (estado === 409) return volver('conflicto', cookies);
+  if (estado === 409) return volver(op.conflicto ?? 'conflicto', cookies);
   if (estado === 413) return volver('archivo_grande', cookies);
   if (estado === 415) return volver('tipo_no_permitido', cookies);
   return volver('no_disponible', cookies);
@@ -417,25 +424,40 @@ const TIPOS_DESCARGA: readonly string[] = [
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ];
 
+interface ParametrosDescarga {
+  /** La dirección debe traer un UUID (`entrada.id`); si no, 404. */
+  readonly conId: boolean;
+  /** Ruta de la API; recibe el UUID ya validado (o nulo si no se exige). */
+  readonly rutaApi: (id: string | null) => string;
+  /** Pantalla (tras `/e/<empresa>/`) a la que se vuelve con un aviso si algo falla. */
+  readonly pantalla: string;
+  readonly tipos: readonly string[];
+  /** Nombre del adjunto si la API mandara una disposición que no cumple la forma esperada. */
+  readonly nombreGenerico: string;
+}
+
 /**
- * Descarga de una evidencia: la web NO deja pasar el token al navegador; pide el archivo a la API con el token de la sesión y se lo
+ * Descarga de un archivo: la web NO deja pasar el token al navegador; pide el archivo a la API con el token de la sesión y se lo
  * entrega a la persona, siempre como adjunto. Del archivo solo se reenvían cabeceras de una lista cerrada y ya validadas: el tipo
- * debe ser uno de los siete permitidos y la disposición siempre es de adjunto, pase lo que pase con lo que diga la API.
+ * debe ser uno de los permitidos para esa descarga y la disposición siempre es de adjunto, pase lo que pase con lo que diga la API.
  */
-export const descargarEvidencia = async (peticion: Request, entrada: Entrada): Promise<Response> => {
+const descargar = async (peticion: Request, entrada: Entrada, p: ParametrosDescarga): Promise<Response> => {
   const { config } = entrada.deps;
   if (peticion.method !== 'GET') return new Response('Método no permitido', { status: 405, headers: { Allow: 'GET', ...SIN_CACHE } });
   if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion) return new Response(null, { status: 404, headers: SIN_CACHE });
-  if (!entrada.id || !UUID_DIRECCION.test(entrada.id)) return new Response(null, { status: 404, headers: SIN_CACHE });
+  let id: string | null = null;
+  if (p.conId) {
+    if (!entrada.id || !UUID_DIRECCION.test(entrada.id)) return new Response(null, { status: 404, headers: SIN_CACHE });
+    id = entrada.id.toLowerCase();
+  }
   const slug = entrada.slugVerificado;
-  const id = entrada.id.toLowerCase();
   const redirigir = (ubicacion: string, cookies: readonly string[]): Response => {
     const cabeceras = new Headers({ Location: ubicacion, ...SIN_CACHE });
     for (const c of cookies) cabeceras.append('Set-Cookie', c);
     return new Response(null, { status: 303, headers: cabeceras });
   };
-  const aIngresar = (cookies: readonly string[]): Response => redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/controles`)}`, cookies);
-  const aviso = (a: AvisoEscritura, cookies: readonly string[]): Response => redirigir(`${config.origen}/e/${slug}/controles?aviso=${a}`, cookies);
+  const aIngresar = (cookies: readonly string[]): Response => redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/${p.pantalla}`)}`, cookies);
+  const aviso = (a: AvisoEscritura, cookies: readonly string[]): Response => redirigir(`${config.origen}/e/${slug}/${p.pantalla}?aviso=${a}`, cookies);
 
   const servicio = crearServicioSesion(entrada.deps);
   const sesion = await servicio.leer(peticion);
@@ -446,7 +468,7 @@ export const descargarEvidencia = async (peticion: Request, entrada: Entrada): P
 
   let r: Response;
   try {
-    r = await entrada.deps.fetchFn(`${config.apiUrl}/evidencias/${id}/archivo`, {
+    r = await entrada.deps.fetchFn(`${config.apiUrl}${p.rutaApi(id)}`, {
       headers: { authorization: `Bearer ${acceso.acceso}`, accept: '*/*' },
       signal: AbortSignal.timeout(120_000),
       redirect: 'error',
@@ -462,14 +484,40 @@ export const descargarEvidencia = async (peticion: Request, entrada: Entrada): P
   if (r.status === 403) return aviso('sin_permiso', cookies);
   if (r.status === 404) return aviso('no_encontrado', cookies);
   const tipo = r.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
-  if (r.status !== 200 || !r.body || !TIPOS_DESCARGA.includes(tipo)) return aviso('no_disponible', cookies);
+  if (r.status !== 200 || !r.body || !p.tipos.includes(tipo)) return aviso('no_disponible', cookies);
 
   const cabeceras = new Headers({ 'Content-Type': tipo, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; sandbox" });
   // Siempre adjunto: si la API mandara otra cosa, se entrega con un nombre genérico.
   const disposicion = r.headers.get('content-disposition') ?? '';
-  cabeceras.set('Content-Disposition', /^attachment; filename="[^"\r\n]{1,200}"(; filename\*=UTF-8''[A-Za-z0-9%._~!-]{1,600})?$/.test(disposicion) ? disposicion : 'attachment; filename="archivo"');
+  cabeceras.set('Content-Disposition', /^attachment; filename="[^"\r\n]{1,200}"(; filename\*=UTF-8''[A-Za-z0-9%._~!-]{1,600})?$/.test(disposicion) ? disposicion : `attachment; filename="${p.nombreGenerico}"`);
   const largo = r.headers.get('content-length');
   if (largo && /^\d{1,9}$/.test(largo)) cabeceras.set('Content-Length', largo);
   for (const c of cookies) cabeceras.append('Set-Cookie', c);
   return new Response(r.body, { status: 200, headers: cabeceras });
 };
+
+/** Descarga de una evidencia: siempre adjunto, con uno de los siete tipos permitidos. */
+export const descargarEvidencia = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  descargar(peticion, entrada, { conId: true, rutaApi: (id) => `/evidencias/${id}/archivo`, pantalla: 'controles', tipos: TIPOS_DESCARGA, nombreGenerico: 'archivo' });
+
+const TIPO_WORD = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+/** Descarga del borrador de la declaración en Word (sin identificador): siempre adjunto y solo del tipo Word. */
+export const descargarBorradorDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  descargar(peticion, entrada, { conId: false, rutaApi: () => '/declaracion/documento', pantalla: 'declaracion', tipos: [TIPO_WORD], nombreGenerico: 'declaracion.docx' });
+
+/** Descarga de una versión aprobada de la declaración en Word (el identificador de la versión va en la dirección). */
+export const descargarVersionDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  descargar(peticion, entrada, { conId: true, rutaApi: (id) => `/declaracion/versiones/${id}/documento`, pantalla: 'declaracion', tipos: [TIPO_WORD], nombreGenerico: 'declaracion.docx' });
+
+/** Aprueba la declaración: la API congela la versión (no lleva cuerpo; la empresa y la persona salen del token). */
+export const aprobarDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'declaracion',
+    metodoApi: 'POST',
+    rutaApi: '/declaracion/aprobacion',
+    exito: 'declaracion_aprobada',
+    conflicto: 'declaracion_no_aprobada',
+    sinFormulario: true,
+    cuerpo: () => SIN_CUERPO,
+  });

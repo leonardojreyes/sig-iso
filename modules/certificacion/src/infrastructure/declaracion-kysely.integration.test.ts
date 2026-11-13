@@ -37,7 +37,7 @@ describe.skipIf(!hayBase)('declaración de aplicabilidad sobre PostgreSQL real',
   const reloj = () => new Date(Date.UTC(2026, 10, 12, 15, 0, t++));
   let n = 0;
   const nuevoId = () => `dc000000-0000-4000-8000-${String(Date.now() % 1e6).padStart(6, '0')}${String(++n).padStart(6, '0')}`;
-  const evaluar = new EvaluarEntradaUseCase(unidad(), permitir, catalogo, reloj);
+  const evaluar = () => new EvaluarEntradaUseCase(unidad(), permitir, catalogo, reloj);
   const aprobar = () => new AprobarDeclaracionUseCase(unidad(), permitir, catalogo, reloj, nuevoId);
   const borrador = () => new ObtenerDeclaracionUseCase(unidad(), permitir, catalogo, reloj);
   const versiones = () => new ListarVersionesDeclaracionUseCase(unidad(), permitir);
@@ -45,8 +45,8 @@ describe.skipIf(!hayBase)('declaración de aplicabilidad sobre PostgreSQL real',
   const exportar = () => new ExportarDeclaracionUseCase(unidad(), permitir, catalogo, new GeneradorDocumentoDocx(), reloj);
   const yo = { empresaId: A, usuarioId: UA };
   const completar = async (empresa: typeof A, usuario: string) => {
-    await evaluar.ejecutar({ empresaId: empresa, usuarioId: usuario, libreriaCodigo: CODIGO, idEstable: 'a27-5-1', estado: 'cumple', comentario: 'COMENTARIO-PRIVADO' });
-    await evaluar.ejecutar({ empresaId: empresa, usuarioId: usuario, libreriaCodigo: CODIGO, idEstable: 'a27-5-2', estado: 'no_aplica', comentario: 'No hay personal propio' });
+    await evaluar().ejecutar({ empresaId: empresa, usuarioId: usuario, libreriaCodigo: CODIGO, idEstable: 'a27-5-1', estado: 'cumple', comentario: 'COMENTARIO-PRIVADO' });
+    await evaluar().ejecutar({ empresaId: empresa, usuarioId: usuario, libreriaCodigo: CODIGO, idEstable: 'a27-5-2', estado: 'no_aplica', comentario: 'No hay personal propio' });
   };
 
   const limpiar = async (id: typeof A) => {
@@ -113,7 +113,7 @@ describe.skipIf(!hayBase)('declaración de aplicabilidad sobre PostgreSQL real',
   });
 
   it('una segunda aprobación crea la versión 2 y la 1 no cambia aunque el diagnóstico cambie', async () => {
-    await evaluar.ejecutar({ empresaId: A, usuarioId: UA, libreriaCodigo: CODIGO, idEstable: 'a27-5-2', estado: 'parcial', versionEsperada: 1 });
+    await evaluar().ejecutar({ empresaId: A, usuarioId: UA, libreriaCodigo: CODIGO, idEstable: 'a27-5-2', estado: 'parcial', versionEsperada: 1 });
     const v2 = await aprobar().ejecutar(yo);
     expect(v2.numero).toBe(2);
     const lista = await versiones().ejecutar(yo);
