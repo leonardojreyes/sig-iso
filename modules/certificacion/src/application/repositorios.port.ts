@@ -2,6 +2,7 @@ import type { Alcance } from '../domain/alcance.js';
 import type { Control } from '../domain/control.js';
 import type { Evaluacion } from '../domain/evaluacion.js';
 import type { Evidencia } from '../domain/evidencia.js';
+import type { FilaDeclaracion } from '../domain/declaracion.js';
 import type { MapeoControl } from '../domain/mapeo-control.js';
 
 /** Repositorio de evaluaciones, ligado a la empresa y la transacción de la unidad de trabajo. */
@@ -63,4 +64,30 @@ export interface EvidenciaRepositoryPort {
   crear(evidencia: Evidencia, usuarioId: string, ahora: Date): Promise<boolean>;
   /** Guarda el estado nuevo, solo si la evidencia seguía activa. Falso si otra persona la cambió antes. */
   cambiarEstado(evidencia: Evidencia, usuarioId: string, ahora: Date): Promise<boolean>;
+}
+
+/** Una versión aprobada (congelada) de la Declaración de Aplicabilidad. Los conteos son los de ese momento. */
+export interface VersionDeclaracion {
+  readonly id: string;
+  /** Correlativo por empresa: 1, 2, 3… */
+  readonly numero: number;
+  /** El alcance de la norma tal como estaba al aprobar (nulo si no había). */
+  readonly alcanceTexto: string | null;
+  readonly total: number;
+  readonly aplican: number;
+  readonly noAplican: number;
+  readonly sinControl: number;
+  readonly aprobadaPor: string;
+  readonly aprobadaEn: Date;
+}
+
+/** Repositorio de versiones aprobadas de la declaración, ligado a la empresa y la transacción. Inmutable: solo se agrega. */
+export interface DeclaracionRepositoryPort {
+  /** El mayor número de versión de la empresa (0 si no hay ninguna). */
+  ultimoNumero(): Promise<number>;
+  /** Guarda la versión con todas sus filas. Falso si ese número ya existe (otra persona aprobó entre la lectura y la escritura). */
+  crear(version: VersionDeclaracion, filas: readonly FilaDeclaracion[]): Promise<boolean>;
+  /** De la más nueva a la más antigua. */
+  listarVersiones(): Promise<readonly VersionDeclaracion[]>;
+  obtener(id: string): Promise<{ readonly version: VersionDeclaracion; readonly filas: readonly FilaDeclaracion[] } | null>;
 }

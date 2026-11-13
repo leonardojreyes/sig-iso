@@ -4,13 +4,15 @@ import type { Alcance } from '../../domain/alcance.js';
 import type { Control } from '../../domain/control.js';
 import type { LectorBytes } from '../../domain/deteccion-archivo.js';
 import { sha256Hex } from './archivos.js';
+import type { FilaDeclaracion } from '../../domain/declaracion.js';
 import type { MapeoControl } from '../../domain/mapeo-control.js';
 import type { Evaluacion } from '../../domain/evaluacion.js';
 import type { AlmacenArchivosPort, ResultadoGuardado } from '../almacen-archivos.port.js';
 import type { AutorizacionPort, Permiso } from '../autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from '../catalogo-lectura.port.js';
 import type { ContextoCertificacion } from '../contexto.js';
-import type { AlcanceRepositoryPort, ControlRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, MapeoRepositoryPort } from '../repositorios.port.js';
+import type { DocumentoDeclaracion, DocumentoGenerado, GeneradorDocumentoPort } from '../generador-documento.port.js';
+import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, MapeoRepositoryPort, VersionDeclaracion } from '../repositorios.port.js';
 import type { UnidadDeTrabajoPort } from '../unidad-de-trabajo.port.js';
 
 export const A: EmpresaId = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000f1');
@@ -33,6 +35,8 @@ export class EstadoFalso {
   controles = new Map<string, Control>();
   mapeos = new Map<string, MapeoControl>();
   evidencias = new Map<string, FilaEvidencia>();
+  /** Versiones aprobadas de la declaración, por `empresa|id`. */
+  declaraciones = new Map<string, { empresaId: EmpresaId; version: VersionDeclaracion; filas: readonly FilaDeclaracion[] }>();
   eventos: EventoBitacora[] = [];
   /** Entradas adoptadas por empresa. */
   catalogoPorEmpresa = new Map<EmpresaId, readonly EntradaCatalogo[]>();
@@ -59,7 +63,7 @@ export const crearCatalogoFalso = (estado: EstadoFalso): CatalogoLecturaPort => 
 export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<ContextoCertificacion> => ({
   ejecutar: async (empresaId, fn) => {
     const clave = (c: string) => `${empresaId}|${c}`;
-    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), evi: new Map(estado.evidencias), ex: [...estado.eventos] };
+    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), evi: new Map(estado.evidencias), de: new Map(estado.declaraciones), ex: [...estado.eventos] };
     const evaluaciones: EvaluacionRepositoryPort = {
       listar: async () => [...estado.evaluaciones.entries()].filter(([k]) => k.startsWith(`${empresaId}|`)).map(([, v]) => v),
       obtener: async (codigo, id) => estado.evaluaciones.get(clave(`${codigo}|${id}`)) ?? null,
@@ -127,7 +131,22 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
         return true;
       },
     };
+    const propiasDecl = () => [...estado.declaraciones.values()].filter((d) => d.empresaId === empresaId);
+    const declaraciones: DeclaracionRepositoryPort = {
+      ultimoNumero: async () => Math.max(0, ...propiasDecl().map((d) => d.version.numero)),
+      crear: async (version, filas) => {
+        if (estado.carrera || propiasDecl().some((d) => d.version.numero === version.numero)) return false;
+        estado.declaraciones.set(`${empresaId}|${version.id}`, { empresaId, version, filas });
+        return true;
+      },
+      listarVersiones: async () => propiasDecl().map((d) => d.version).sort((a, b) => b.numero - a.numero),
+      obtener: async (id) => {
+        const d = estado.declaraciones.get(`${empresaId}|${id}`);
+        return d ? { version: d.version, filas: d.filas } : null;
+      },
+    };
     const contexto: ContextoCertificacion = {
+      declaraciones,
       evidencias,
       evaluaciones,
       alcances,
@@ -149,6 +168,7 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       estado.controles = copia.co;
       estado.mapeos = copia.ma;
       estado.evidencias = copia.evi;
+      estado.declaraciones = copia.de;
       estado.eventos = copia.ex;
       throw e;
     }
@@ -212,5 +232,17 @@ export class AlmacenFalso implements AlmacenArchivosPort {
     return (async function* () {
       yield b;
     })();
+  }
+}
+
+/** Generador de documentos de prueba: «escribe» un texto con lo que recibió y deja las llamadas a la vista. */
+export class GeneradorFalso implements GeneradorDocumentoPort {
+  llamadas: DocumentoDeclaracion[] = [];
+  fallar = false;
+  async generarDeclaracion(documento: DocumentoDeclaracion): Promise<DocumentoGenerado> {
+    if (this.fallar) throw new Error('generador no disponible');
+    this.llamadas.push(documento);
+    const bytes = new TextEncoder().encode(JSON.stringify(documento));
+    return { bytes, sha256: sha256Hex(bytes) };
   }
 }

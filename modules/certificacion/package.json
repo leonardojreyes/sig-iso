@@ -25,9 +25,10 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
-    "@sig/tenancy": "workspace:*",
     "@sig/auditoria": "workspace:*",
     "@sig/db": "workspace:*",
+    "@sig/tenancy": "workspace:*",
+    "docx": "9.15.3",
     "kysely": "^0.29.8"
   },
   "devDependencies": {
