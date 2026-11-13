@@ -77,9 +77,23 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 | M3  | Controles de la empresa y mapeos                                                                                          | Marco de controles unificado                          |
 | M4  | Evidencias con archivos (almacén local) y cobertura                                                                       | Subir una evidencia y verla respaldar varias entradas |
 | M5  | Declaración de Aplicabilidad: derivada, aprobación, versión congelada, exportación Word                                   | El documento descargable                              |
+| M6a | **Cargar normas desde la interfaz** (añadido el 2026-11-13): cada empresa sube sus librerías de normas desde la web, sin comandos | Una persona de la empresa carga una librería y la adopta, sin terminal |
 | M6  | Cierre: `/review`, STRIDE ampliado (subida, descarga, exportación), `estado.md`, guía                                     | MVP usable por SynapTech                              |
 
-**Hitos de PR:** H1 = M1; H2 = M2 + M3; H3 = M4 + M5 + M6.
+**Hitos de PR:** H1 = M1; H2 = M2 + M3; H3 = M4 + M5 + M6a + M6.
+
+## M6a — Cargar normas desde la interfaz (requisito añadido, entra al MVP)
+
+**Pedido del responsable (2026-11-13):** hoy una librería se carga con un comando (`pnpm libraries:load`), que no es amigable. Cada empresa debe poder **subir sus normas desde la interfaz**, indicando dónde está el archivo, y después adoptarlas. Debe estar dentro de este MVP, antes del cierre (M6). No se diseña todavía: primero hay que cerrar las decisiones de abajo y escribir un ADR.
+
+**Decisiones abiertas (a resolver antes de implementar):**
+1. **Qué se sube.** Lo previsto por el ADR 026 es la **librería en YAML** (esquema v3, sin texto de la norma), que el sistema ya sabe validar. Subir el **PDF de la norma** es otra cosa: es texto licenciado (la regla 3 prohíbe llevarlo al repositorio y la licencia de INEN es de usuario único) y habría que decidir si el sistema lo lee o solo lo guarda. Se propone empezar por el YAML.
+2. **«Especificando el directorio».** Un servidor web no puede leer una carpeta del computador de la persona: lo usual es un selector de archivos o carpeta del navegador, que sube los archivos. Si se quiere una ruta de carpeta del servidor, solo sirve en instalaciones de una sola máquina y exige una lista permitida de carpetas. Confirmar cuál se quiere.
+3. **Alcance.** El ADR 026 hoy tiene un catálogo **global e inmutable** que se carga con permisos propios (`sigiso_catalogo`) y cada empresa lo adopta. Subir desde la web obliga a decidir si la librería es **propia de la empresa** (con `empresa_id` y RLS, como prevé el ADR 020) o va al catálogo global (solo un administrador de la plataforma).
+4. **Seguridad de la subida.** Lista cerrada de tipo (YAML), tamaño máximo, validación completa con el esquema y las reglas de contenido **antes** de guardar, rechazo si trae texto de norma, y registro en la bitácora (qué librería, versión y huella; nunca el contenido). Mismo cuidado que las evidencias (ADR 032).
+5. **Permisos.** Probablemente solo el administrador SIG de la empresa (permiso nuevo), no el colaborador.
+
+**Esperado al terminar:** pantalla «Normas» con subir, ver el resultado de la validación (errores en palabras claras), adoptar y ver versiones; un ADR nuevo; migración con RLS si la librería es por empresa; pruebas de aislamiento; `web:verify-normas`.
 
 ## Diseño de M3 — controles de la empresa y mapeos
 
