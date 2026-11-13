@@ -2,7 +2,7 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** **MVP de certificación** (plan ágil, `docs/specs/mvp-certificacion/plan.md`): **M1 a M4 hechos**; siguen M5 y M6. Ver la sección «MVP de certificación — qué está hecho». El **0.7 (puerto de IA)** quedó en preparación (spec aprobado en el PR #13, cimientos en el #14) y el plan lo deja **fuera del MVP**.
+- **Paso actual:** **MVP de certificación** (plan ágil, `docs/specs/mvp-certificacion/plan.md`): **M1 a M5 hechos**; sigue M6. Ver la sección «MVP de certificación — qué está hecho». El **0.7 (puerto de IA)** quedó en preparación (spec aprobado en el PR #13, cimientos en el #14) y el plan lo deja **fuera del MVP**.
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (#1 y #3), 0.5 (#4) y **0.6 (cerrado el 2026-11-09; PR #5 a #11)**. Siguen fuera del MVP: el resto del 0.7, el 0.8 y el 0.9.
 - **PR (2026-11-11):** `main` incluye los PR #1, #3 a #12, #15 (cierre formal del 0.6), #18 (spec del modelo de dominio v2), #19 (**MVP M1**, Anexo A de 27001) y #20 (**MVP M2 + M3**, alcance, diagnóstico, controles y mapeos). El #2 se cerró a propósito (PR de prueba que viola las reglas). **Abiertos:** #13 (spec, plan y tareas del 0.7), #14 (cimientos del puerto de IA), #16 y #17 (documentos). La protección de `main` exige los **7 checks**, incluido `integracion`, y que la rama esté al día. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
 - **Rama del MVP:** los hitos H1 y H2 (M1, M2 y M3) **ya están integrados en `main`** (#19 y #20). El trabajo de **M4** (evidencias con archivo) está terminado en `feature/mvp-m4-evidencias` (5 commits locales, sin subir); el PR del hito H3 se abre al cerrar M5 y M6. La antigua `feature/mvp-m2-diagnostico` de GitHub quedó obsoleta y se puede borrar.
@@ -18,7 +18,7 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 | **M2** | **Alcance** por norma (texto y aprobación con quién y cuándo) y **diagnóstico**: estado por entrada (cumple, parcial, no cumple, no aplica; «sin evaluar» = no hay fila), comentario, fecha objetivo, **madurez** por norma, capítulo y tema, y concurrencia optimista por versión | **Hecho** |
 | **M3** | **Controles de la empresa** y **mapeos** muchos a muchos con las entradas de las normas adoptadas (**marco de controles unificado**: una medida, varias normas) | **Hecho** |
 | **M4** | Evidencias con archivo (huella SHA-256, vigencia, reemplazo, descarga protegida) y cobertura derivada de los mapeos. ADR 032 (almacén de archivos) | **Hecho** |
-| M5 | Declaración de Aplicabilidad de 27001 derivada del diagnóstico y los controles, aprobación con versión congelada y exportación a Word. Requiere el ADR 033 | Pendiente |
+| **M5** | Declaración de Aplicabilidad de 27001 derivada del diagnóstico, los controles y las evidencias; aprobación con versión congelada e inmutable; exportación a Word. ADR 033 (`docx` MIT detrás de `GeneradorDocumentoPort`) | **Hecho** |
 | M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
 
 **M2 y M3 en detalle** (para no tener que releer el código):
@@ -41,6 +41,17 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 - **Web:** `/e/<empresa>/controles/<id>` (subir, reemplazar, eliminar, descargar, historial) y `/e/<empresa>/cobertura`; `proxyClientMaxBodySize: '27mb'` en Next. `pnpm web:verify-evidencias` (~75 comprobaciones con todo real, incluida una subida de 11 MB y disfraces).
 - **Nota:** un formulario con archivo de la empresa B hacia una ruta de A recibe 409 de Next («Server Action unavailable») en vez de 404; no entrega ni guarda nada.
 - **Fuera de M4:** cuota por empresa, antivirus, conciliación de huérfanos, verificar la huella al descargar, vencimiento como hecho del _worker_ y vista previa.
+
+**M5 en detalle:**
+
+- **Tablas** (`0010`): `declaracion_version` y `declaracion_fila`, con `empresa_id`, RLS forzada y claves foráneas compuestas; la aplicación solo lee e inserta (**inmutables**). Solo se guarda lo aprobado: el borrador se deriva cada vez.
+- **Derivación** (función pura `derivarDeclaracion`): una fila por control del Anexo A de las librerías adoptadas. Cumple, parcial o no cumple → «aplica» (implementado, parcial o no implementado); «no aplica» usa como justificación el comentario de la evaluación; sin evaluar (o «no aplica» sin justificación) → «por decidir». Cada fila trae los códigos de los controles vigentes que la cubren y su cobertura de M4.
+- **Aprobar** (solo administrador SIG): 409 si queda algo por decidir, si no hay controles de 27001 adoptados o si otra persona aprobó a la vez. Un control que aplica sin control asignado **sí** se puede aprobar: queda señalado. Congela filas, alcance de 27001 y conteos en una sola transacción; el número es correlativo por empresa.
+- **API** (+6 operaciones): `GET /declaracion`, `POST /declaracion/aprobacion`, `GET /declaracion/versiones`, `GET /declaracion/versiones/{id}`, `GET /declaracion/documento` y `GET /declaracion/versiones/{id}/documento`. Permisos `declaracion.ver|exportar|aprobar` (el colaborador no aprueba).
+- **Word:** `GeneradorDocumentoDocx` escribe solo texto plano (sin campos, enlaces ni macros); el borrador lleva el rótulo de preliminar y una versión sale **siempre de su copia congelada**. Cada exportación queda en la bitácora con la huella SHA-256 del documento, **antes** de entregarlo (falla cerrada).
+- **Bitácora:** `declaracion.aprobada` (versión y cuatro conteos) y `declaracion.exportada` (huella). Nunca texto.
+- **Web:** `/e/<empresa>/declaracion` (resumen, alcance, borrador, aprobar, historial, descarga) y `/declaracion/versiones/<id>` (versión congelada). `pnpm web:verify-declaracion` (~45 comprobaciones con todo real; **escribe** en la base local: evalúa como «Parcial» lo que falte del Anexo A y crea versiones aprobadas).
+- **Fuera de M5:** el nombre de la empresa en el documento (no hay un puerto para leerlo), firma electrónica, comparar versiones, plantillas propias, PDF, y declaración para 9001 o 42001.
 
 **Límites conocidos del MVP** (decisiones ya tomadas; no son defectos pendientes de corregir):
 
@@ -89,8 +100,8 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 
 ## Próximos pasos técnicos
 
-1. **M5 — Declaración de Aplicabilidad** (abajo) y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
-2. **M5 — Declaración de Aplicabilidad de 27001** (siguiente). ADR 033 (`docx` detrás de `GeneradorDocumentoPort`, licencias comprobadas con `scripts/check-licenses.mjs`), derivada del diagnóstico y los controles, marcada preliminar, aprobación con versión congelada e inmutable y exportación a Word.
+1. **M6 — cierre del MVP** (abajo) y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
+2. **M5 — Declaración de Aplicabilidad de 27001** (hecha; detalle arriba). ADR 033 (`docx` detrás de `GeneradorDocumentoPort`, licencias comprobadas con `scripts/check-licenses.mjs`), derivada del diagnóstico y los controles, marcada preliminar, aprobación con versión congelada e inmutable y exportación a Word.
 3. **M6 — cierre del MVP:** un solo `/review` completo (arquitecto, multiempresa, seguridad y cumplimiento), STRIDE ampliado, este archivo y `docs/fase0/guia-de-ejecucion.md`.
 4. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
 
@@ -137,7 +148,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M4 hechos; M5 y M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
+0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5 hechos; M6 pendiente)** → resto del 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 
