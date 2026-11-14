@@ -44,6 +44,7 @@ export const ejemplos: Record<AccionBitacora, EventoBitacora> = {
   'evidencia.subida_rechazada': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'evidencia.subida_rechazada', resultado: 'rechazado', motivo: 'firma_invalida', objeto: 'control:C-001' },
   'declaracion.aprobada': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'declaracion.aprobada', resultado: 'ok', objeto: 'declaracion:v1', despues: { total: 93, aplican: 80, no_aplican: 13, sin_control: 4 } },
   'declaracion.exportada': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'declaracion.exportada', resultado: 'ok', objeto: 'declaracion:v1', objetoVersion: 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90' },
+  'libreria.cargada': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'libreria.cargada', resultado: 'ok', objeto: 'libreria:propia-mi-norma', objetoVersion: HUELLA, despues: { entradas: 12 } },
   'acceso.denegado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'acceso.denegado', resultado: 'rechazado', motivo: 'sin_permiso', objeto: 'accion:adoptar_libreria' },
   'acceso.cruzado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'acceso.cruzado', resultado: 'rechazado', motivo: 'empresa_distinta', objeto: 'libreria:otra' },
   'token.invalido': { empresaId: null, actor: { tipo: 'sistema' }, accion: 'token.invalido', resultado: 'rechazado', motivo: 'token_vencido' },

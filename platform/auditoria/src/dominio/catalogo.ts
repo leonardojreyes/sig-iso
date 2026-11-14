@@ -8,6 +8,7 @@ export const ACCIONES = [
   'logout',
   'sesion.expirada',
   'libreria.adoptada',
+  'libreria.cargada',
   'evaluacion.cambiada',
   'alcance.cambiado',
   'alcance.aprobado',
@@ -66,6 +67,8 @@ export const MOTIVOS = [
   'tipo_no_permitido',
   'tamano_excedido',
   'firma_invalida',
+  'codigo_no_permitido',
+  'ya_cargada',
 ] as const;
 export type MotivoBitacora = (typeof MOTIVOS)[number];
 
@@ -117,6 +120,18 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
     despues: { adoptada: 'booleano', entradas: 'entero' },
   },
   // Diagnóstico y alcance (MVP, M2). Solo estados y banderas: el comentario y el texto del alcance NUNCA van a la bitácora.
+  // Librería propia subida desde la web (MVP, M6a). Solo código, versión, huella y conteos: nunca el contenido ni el texto de los errores.
+  'libreria.cargada': {
+    ...nada,
+    actores: ['usuario'],
+    empresa: 'obligatoria',
+    resultados: ['ok', 'rechazado'],
+    motivo: 'opcional',
+    motivos: ['tipo_no_permitido', 'tamano_excedido', 'formato_invalido', 'contenido_no_permitido', 'codigo_no_permitido', 'hash_distinto', 'ya_cargada'],
+    objeto: 'obligatorio',
+    objetoVersion: 'obligatorio',
+    despues: { entradas: 'entero' },
+  },
   'evaluacion.cambiada': {
     ...nada,
     actores: ['usuario'],
