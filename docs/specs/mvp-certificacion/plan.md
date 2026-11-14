@@ -78,9 +78,10 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 | M4  | Evidencias con archivos (almacén local) y cobertura                                                                       | Subir una evidencia y verla respaldar varias entradas |
 | M5  | Declaración de Aplicabilidad: derivada, aprobación, versión congelada, exportación Word                                   | El documento descargable                              |
 | M6a | **Cargar normas desde la interfaz** (añadido el 2026-11-13): cada empresa sube sus librerías de normas desde la web, sin comandos | Una persona de la empresa carga una librería y la adopta, sin terminal |
+| M6b | **Multiempresa completo** (añadido el 2026-11-13): recupera lo de la Fase 0 que el recorte dejó fuera: consultor con varias empresas (cambio explícito de empresa, sin acceso cruzado por defecto), configuración por empresa (normas activas, módulos activos, logo y colores editables) y catálogo global de solo lectura más librerías propias (este último ya cubierto por M6a) | Un consultor entra, elige entre sus empresas y cambia; el administrador de cada empresa configura su marca y sus normas |
 | M6  | Cierre: `/review`, STRIDE ampliado (subida, descarga, exportación), `estado.md`, guía                                     | MVP usable por SynapTech                              |
 
-**Hitos de PR:** H1 = M1; H2 = M2 + M3; H3 = M4 + M5 + M6a + M6.
+**Hitos de PR:** H1 = M1; H2 = M2 + M3; H3 = M4 + M5 + M6a + M6b + M6.
 
 ## M6a — Cargar normas desde la interfaz (requisito añadido, entra al MVP)
 
@@ -94,6 +95,12 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 5. **Permisos.** Probablemente solo el administrador SIG de la empresa (permiso nuevo), no el colaborador.
 
 **Esperado al terminar:** pantalla «Normas» con subir, ver el resultado de la validación (errores en palabras claras), adoptar y ver versiones; un ADR nuevo; migración con RLS si la librería es por empresa; pruebas de aislamiento; `web:verify-normas`.
+
+## M6b — Multiempresa completo (requisito añadido el 2026-11-13, después de M6a)
+
+**Pedido del responsable:** el MVP debe ser multiempresa como lo mostraba la Fase 0 (`FASE0.md` 5.4), que el recorte medio dejó en «una empresa = un proyecto». El aislamiento por RLS ya existe; falta lo que se ve y se usa. Entra: **consultor con varias empresas** (cambio explícito, sin acceso cruzado por defecto), **configuración por empresa** (normas activas, módulos activos, logo y colores editables por su administrador, con la verificación de contraste WCAG) y **catálogo global + librerías propias** (con M6a). Queda fuera: base dedicada y despliegue dedicado, SSO propio por empresa, modelos de IA por empresa.
+
+**Por diseñar (con un ADR corto antes de implementar):** cómo se modela la pertenencia de un usuario a varias empresas (hoy `usuario` lleva un solo `empresa_id` y la empresa sale del token); cómo se cambia de empresa sin que el token autorice cruces (nuevo token por empresa vs. selección verificada en el servidor); permisos del consultor por empresa; bitácora del cambio de empresa; pruebas de aislamiento y de que un cambio no filtra datos de la anterior.
 
 ## Diseño de M3 — controles de la empresa y mapeos
 

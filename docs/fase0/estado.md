@@ -20,6 +20,7 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 | **M4** | Evidencias con archivo (huella SHA-256, vigencia, reemplazo, descarga protegida) y cobertura derivada de los mapeos. ADR 032 (almacén de archivos) | **Hecho** |
 | **M5** | Declaración de Aplicabilidad de 27001 derivada del diagnóstico, los controles y las evidencias; aprobación con versión congelada e inmutable; exportación a Word. ADR 033 (`docx` MIT detrás de `GeneradorDocumentoPort`) | **Hecho** |
 | **M6a** | **Cargar normas desde la interfaz** (requisito añadido el 2026-11-13, dentro del MVP): subir las librerías desde la web, sin comandos. Requiere un ADR y resolver las decisiones abiertas de `plan.md` («M6a») | Pendiente |
+| **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a): consultor con varias empresas, configuración por empresa (normas, módulos, marca) y catálogo global + librerías propias. Requiere un ADR (pertenencia a varias empresas y cambio de empresa). | Pendiente |
 | M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
 
 **M2 y M3 en detalle** (para no tener que releer el código):
@@ -149,7 +150,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5 hechos; M6a y M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
+0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5 hechos; M6a, M6b y M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 
