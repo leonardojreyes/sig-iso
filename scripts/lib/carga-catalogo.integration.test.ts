@@ -345,6 +345,6 @@ describe.skipIf(!hayBase)('cargarCatalogo (PostgreSQL real)', () => {
       sql`insert into libreria (codigo, nombre, version, hash, es_ejemplo, fuente) values ('x', 'x', '1.0.0', ${'0'.repeat(64)}, true, 'x')`.execute(
         pools.db('app'),
       ),
-    ).rejects.toThrow(/permission denied|permiso denegado/i);
+    ).rejects.toThrow(/app\.tenant_id|row-level security|permission denied|permiso denegado/i); // desde 0011 la API inserta solo librerías PROPIAS, con empresa
   });
 });

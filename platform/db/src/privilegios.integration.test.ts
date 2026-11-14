@@ -33,9 +33,9 @@ const PRIVILEGIOS = [
 const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   empresa: { app: ["SELECT"] },
   usuario: { app: ["SELECT"] }, // INSERT y UPDATE solo por columnas, sin `rol` (migración 0005)
-  libreria: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
-  libreria_entrada: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
-  libreria_entrada_norma: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
+  libreria: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
+  libreria_entrada: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
+  libreria_entrada_norma: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
   empresa_libreria: { app: ["SELECT", "INSERT"] },
   alcance: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: nada se borra (migración 0007)
   evaluacion: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE (migración 0007)
@@ -312,7 +312,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
@@ -325,6 +325,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         "empresa_libreria",
         "evaluacion",
         "evidencia",
+        "libreria",
         "libreria_entrada",
         "libreria_entrada_norma",
         "usuario",
