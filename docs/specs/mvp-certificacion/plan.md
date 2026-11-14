@@ -84,7 +84,7 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 
 ## M6a — Cargar normas desde la interfaz (requisito añadido, entra al MVP)
 
-**Pedido del responsable (2026-11-13):** hoy una librería se carga con un comando (`pnpm libraries:load`), que no es amigable. Cada empresa debe poder **subir sus normas desde la interfaz**, indicando dónde está el archivo, y después adoptarlas. Debe estar dentro de este MVP, antes del cierre (M6). No se diseña todavía: primero hay que cerrar las decisiones de abajo y escribir un ADR.
+**Pedido del responsable (2026-11-13):** hoy una librería se carga con un comando (`pnpm libraries:load`), que no es amigable. Cada empresa debe poder **subir sus normas desde la interfaz**, indicando dónde está el archivo, y después adoptarlas. Debe estar dentro de este MVP, antes del cierre (M6). **Decisiones cerradas el 2026-11-13 y registradas en el ADR 034:** se sube el YAML (no el PDF); selector de archivo o carpeta del navegador; la librería es propia de cada empresa (con RLS); solo el administrador SIG carga; plantilla descargable. Las notas de abajo son el análisis previo.
 
 **Decisiones abiertas (a resolver antes de implementar):**
 1. **Qué se sube.** Lo previsto por el ADR 026 es la **librería en YAML** (esquema v3, sin texto de la norma), que el sistema ya sabe validar. Subir el **PDF de la norma** es otra cosa: es texto licenciado (la regla 3 prohíbe llevarlo al repositorio y la licencia de INEN es de usuario único) y habría que decidir si el sistema lo lee o solo lo guarda. Se propone empezar por el YAML.
