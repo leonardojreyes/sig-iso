@@ -100,7 +100,9 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 
 **Pedido del responsable:** el MVP debe ser multiempresa como lo mostraba la Fase 0 (`FASE0.md` 5.4), que el recorte medio dejó en «una empresa = un proyecto». El aislamiento por RLS ya existe; falta lo que se ve y se usa. Entra: **consultor con varias empresas** (cambio explícito, sin acceso cruzado por defecto), **configuración por empresa** (normas activas, módulos activos, logo y colores editables por su administrador, con la verificación de contraste WCAG) y **catálogo global + librerías propias** (con M6a). Queda fuera: base dedicada y despliegue dedicado, SSO propio por empresa, modelos de IA por empresa.
 
-**Por diseñar (con un ADR corto antes de implementar):** cómo se modela la pertenencia de un usuario a varias empresas (hoy `usuario` lleva un solo `empresa_id` y la empresa sale del token); cómo se cambia de empresa sin que el token autorice cruces (nuevo token por empresa vs. selección verificada en el servidor); permisos del consultor por empresa; bitácora del cambio de empresa; pruebas de aislamiento y de que un cambio no filtra datos de la anterior.
+**Decisiones cerradas el 2026-11-15 (ADR 035):** el consultor usa **una sola cuenta** y cambia de empresa con una operación única (`POST /sesion/empresa`) que valida su pertenencia y guarda la **empresa activa de su sesión** en la base. De «configuración por empresa» entra solo la **marca editable** (color y logo, con verificación de contraste); módulos activos y nombre editable quedan fuera del MVP.
+
+**Rebanadas:** **M6b-1** (pertenencia a varias empresas y cambio de empresa: migración, guardia, API, selector en la web, `web:verify-multiempresa`) y **M6b-2** (marca editable: API, pantalla, contraste, `web:verify-marca`).
 
 ## Diseño de M3 — controles de la empresa y mapeos
 
