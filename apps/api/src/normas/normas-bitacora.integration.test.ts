@@ -92,20 +92,24 @@ describe.skipIf(!hayBase)('normas (API + PostgreSQL real)', () => {
 
   afterAll(async () => {
     await arnes?.cerrar();
-    if (cerrados) return;
-    for (const e of [A, B]) await conTenant(owner(), e, (trx) => sql`delete from empresa_libreria where empresa_id = ${e}`.execute(trx));
+    // El último caso cierra el pool a propósito (simula la base caída): la limpieza usa SIEMPRE una conexión nueva. Antes salía sin
+    // limpiar y cada corrida dejaba 2 librerías, las empresas y las personas de prueba (llegaron a 200 librerías, el tope del catálogo).
+    const limpieza = cerrados ? new GestorPools(leerUrls(process.env, ROLES_BD, { prueba: true }), { max: 2 }) : pools;
+    const dueno = () => limpieza.db('owner');
+    for (const e of [A, B]) await conTenant(dueno(), e, (trx) => sql`delete from empresa_libreria where empresa_id = ${e}`.execute(trx));
     for (const [e, personas] of [[A, [ADMIN_A, COLAB_A]], [B, [ADMIN_B]]] as const) {
-      await conTenant(owner(), e, async (trx) => {
+      await conTenant(dueno(), e, async (trx) => {
         for (const p of personas) await sql`delete from usuario where id = ${p}`.execute(trx);
         await sql`delete from empresa where id = ${e}`.execute(trx);
       });
     }
     for (const id of librerias) {
-      await sql`delete from libreria_entrada_norma where libreria_id = ${id}`.execute(owner());
-      await sql`delete from libreria_entrada where libreria_id = ${id}`.execute(owner());
-      await sql`delete from libreria where id = ${id}`.execute(owner());
+      await sql`delete from libreria_entrada_norma where libreria_id = ${id}`.execute(dueno());
+      await sql`delete from libreria_entrada where libreria_id = ${id}`.execute(dueno());
+      await sql`delete from libreria where id = ${id}`.execute(dueno());
     }
-    await pools.cerrar();
+    // Si el caso final ya cerró `pools`, no hay nada más que cerrar; si no, `limpieza` ES `pools`.
+    await limpieza.cerrar();
   });
 
   it('antes de adoptar: A y B ven el catálogo sin nada adoptado y ninguna entrada, ni por listado ni por id', async () => {
