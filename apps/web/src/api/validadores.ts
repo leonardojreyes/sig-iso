@@ -1,6 +1,6 @@
 // La respuesta de la API se trata como un dato externo: forma EXACTA (sin campos de más ni de menos), tipos, patrones y topes del
 // contrato. Lo que no cumple se rechaza entero (nunca se corrige ni se muestra a medias).
-import type { Alcance, Cobertura, CoberturaEntrada, Evidencia, ResumenCobertura, TipoArchivo, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol, Declaracion, FilaDeclaracion, VersionDeclaracion, VersionDeclaracionConFilas } from './tipos';
+import type { Alcance, CargaLibreria, ErrorCargaLibreria, Cobertura, CoberturaEntrada, Evidencia, ResumenCobertura, TipoArchivo, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol, Declaracion, FilaDeclaracion, VersionDeclaracion, VersionDeclaracionConFilas } from './tipos';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLES: readonly string[] = [
@@ -431,4 +431,34 @@ export const validarDeclaracion = (cuerpo: unknown): Declaracion | null => {
     if (!ultimaVersion) return null;
   }
   return { norma: o.norma, hoy: o.hoy, resumen: r as unknown as Declaracion['resumen'], filas, alcance, ultimaVersion };
+};
+
+const ESTADOS_CARGA = ['cargada', 'ya_cargada', 'rechazada'] as const;
+const MOTIVOS_CARGA = ['tipo_no_permitido', 'tamano_excedido', 'formato_invalido', 'contenido_no_permitido', 'codigo_no_permitido', 'hash_distinto'] as const;
+
+/** Respuesta de `POST /librerias/carga`. Estricta: coherencia entre estado y motivo, y límites del contrato. */
+export const validarCargaLibreria = (cuerpo: unknown): CargaLibreria | null => {
+  const o = objeto(cuerpo);
+  if (!o || !claves(o, ['estado', 'motivo', 'codigo', 'version', 'entradas', 'huella', 'errores'])) return null;
+  const estado = ESTADOS_CARGA.find((e) => e === o.estado);
+  if (!estado) return null;
+  const motivo = o.motivo === null ? null : (MOTIVOS_CARGA.find((m) => m === o.motivo) ?? undefined);
+  if (motivo === undefined) return null;
+  if ((estado === 'rechazada') !== (motivo !== null)) return null;
+  if (o.codigo !== null && !texto(o.codigo, 64, /^[a-z0-9-]+$/, 1)) return null;
+  if (o.version !== null && !texto(o.version, 20, /^[0-9]+\.[0-9]+\.[0-9]+$/)) return null;
+  if (o.entradas !== null && !(typeof o.entradas === 'number' && Number.isInteger(o.entradas) && o.entradas >= 0 && o.entradas <= 1000)) return null;
+  if (estado !== 'rechazada' && (o.codigo === null || o.version === null || o.entradas === null)) return null;
+  if (!texto(o.huella, 64, /^[0-9a-f]{64}$/)) return null;
+  if (!Array.isArray(o.errores) || o.errores.length > 200 || (estado !== 'rechazada' && o.errores.length > 0)) return null;
+  const errores: ErrorCargaLibreria[] = [];
+  for (const item of o.errores) {
+    const e = objeto(item);
+    if (!e || !claves(e, ['entrada', 'indice', 'ruta', 'codigo'])) return null;
+    if (e.entrada !== null && !texto(e.entrada, 41)) return null;
+    if (e.indice !== null && !(typeof e.indice === 'number' && Number.isInteger(e.indice) && e.indice >= 0 && e.indice <= 999)) return null;
+    if (!texto(e.ruta, 200) || !texto(e.codigo, 60, undefined, 1)) return null;
+    errores.push({ entrada: e.entrada as string | null, indice: e.indice as number | null, ruta: e.ruta, codigo: e.codigo });
+  }
+  return { estado, motivo, codigo: o.codigo as string | null, version: o.version as string | null, entradas: o.entradas as number | null, huella: o.huella, errores };
 };

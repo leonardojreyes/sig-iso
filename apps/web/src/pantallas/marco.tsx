@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ClipboardCheck, FileCheck2, FileSignature, FileText, LayoutDashboard, ListChecks, ShieldCheck } from 'lucide-react';
+import { BookMarked, ClipboardCheck, FileCheck2, FileSignature, FileText, LayoutDashboard, ListChecks, ShieldCheck } from 'lucide-react';
 import { Avatar } from '@sig/ui';
 import type { Empresa } from '../empresas';
 import { es } from '../i18n/es-EC';
@@ -26,7 +26,7 @@ const enlace = 'flex min-h-[var(--sig-density-target-min)] items-center gap-3 ro
 
 /** Marco de aplicación: cabecera, navegación lateral y contenido principal. */
 /** `persona` es el nombre de quien tiene sesión; solo las pantallas de demostración usan el valor por omisión. */
-export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: { empresa: Empresa; activo: 'panel' | 'requisitos' | 'diagnostico' | 'alcance' | 'controles' | 'cobertura' | 'declaracion'; persona?: string; children: ReactNode }) => (
+export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: { empresa: Empresa; activo: 'panel' | 'requisitos' | 'diagnostico' | 'alcance' | 'controles' | 'cobertura' | 'declaracion' | 'normas'; persona?: string; children: ReactNode }) => (
   <div className="min-h-screen bg-bg">
     <a href="#contenido" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2">
       {es.app.saltar}
@@ -81,6 +81,12 @@ export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: 
             <a className={enlace} href={`/e/${empresa.id}/declaracion`} aria-current={activo === 'declaracion' ? 'page' : undefined}>
               <FileSignature aria-hidden="true" className="size-5" />
               {es.nav.declaracion}
+            </a>
+          </li>
+          <li>
+            <a className={enlace} href={`/e/${empresa.id}/normas`} aria-current={activo === 'normas' ? 'page' : undefined}>
+              <BookMarked aria-hidden="true" className="size-5" />
+              {es.nav.normas}
             </a>
           </li>
         </ul>

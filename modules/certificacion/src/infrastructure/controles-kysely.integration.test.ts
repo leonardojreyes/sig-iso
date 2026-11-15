@@ -69,9 +69,9 @@ describe.skipIf(!hayBase)("controles y mapeos sobre PostgreSQL real", () => {
   };
   let t = 0;
   const reloj = () => new Date(Date.UTC(2026, 10, 10, 12, 0, t++));
-  let n = 0;
-  const nuevoId = () =>
-    `ec000000-0000-4000-8000-${String(Date.now() % 1e6).padStart(6, "0")}${String(++n).padStart(6, "0")}`;
+  // Un UUID aleatorio: un generador con reloj y contador chocaba entre archivos de integración que corren en paralelo
+  // (misma clave primaria global de `control`, mismo milisegundo, mismo contador).
+  const nuevoId = () => crypto.randomUUID();
   const crear = () =>
     new CrearControlUseCase(unidad(), permitir, reloj, nuevoId);
   const cambiar = () => new CambiarControlUseCase(unidad(), permitir, reloj);

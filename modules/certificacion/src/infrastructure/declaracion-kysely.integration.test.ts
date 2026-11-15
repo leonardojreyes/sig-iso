@@ -35,8 +35,9 @@ describe.skipIf(!hayBase)('declaración de aplicabilidad sobre PostgreSQL real',
   const catalogo: CatalogoLecturaPort = { listarEntradasVigentes: async () => [entrada('a27-5-1', 1), entrada('a27-5-2', 2)] };
   let t = 0;
   const reloj = () => new Date(Date.UTC(2026, 10, 12, 15, 0, t++));
-  let n = 0;
-  const nuevoId = () => `dc000000-0000-4000-8000-${String(Date.now() % 1e6).padStart(6, '0')}${String(++n).padStart(6, '0')}`;
+  // Un UUID aleatorio: un generador con reloj y contador chocaba entre archivos de integración que corren en paralelo
+  // (misma clave primaria global de `control`, mismo milisegundo, mismo contador).
+  const nuevoId = () => crypto.randomUUID();
   const evaluar = () => new EvaluarEntradaUseCase(unidad(), permitir, catalogo, reloj);
   const aprobar = () => new AprobarDeclaracionUseCase(unidad(), permitir, catalogo, reloj, nuevoId);
   const borrador = () => new ObtenerDeclaracionUseCase(unidad(), permitir, catalogo, reloj);

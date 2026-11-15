@@ -244,3 +244,24 @@ export interface Declaracion {
   readonly alcance: { readonly texto: string; readonly aprobado: boolean } | null;
   readonly ultimaVersion: VersionDeclaracion | null;
 }
+
+export type EstadoCargaLibreria = 'cargada' | 'ya_cargada' | 'rechazada';
+export type MotivoCargaLibreria = 'tipo_no_permitido' | 'tamano_excedido' | 'formato_invalido' | 'contenido_no_permitido' | 'codigo_no_permitido' | 'hash_distinto';
+
+/** Qué falló y dónde; nunca el contenido del archivo. */
+export interface ErrorCargaLibreria {
+  readonly entrada: string | null;
+  readonly indice: number | null;
+  readonly ruta: string;
+  readonly codigo: string;
+}
+
+export interface CargaLibreria {
+  readonly estado: EstadoCargaLibreria;
+  readonly motivo: MotivoCargaLibreria | null;
+  readonly codigo: string | null;
+  readonly version: string | null;
+  readonly entradas: number | null;
+  readonly huella: string;
+  readonly errores: readonly ErrorCargaLibreria[];
+}
