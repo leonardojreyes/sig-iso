@@ -5,7 +5,7 @@ import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
 import { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
-import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
+import { CambiarEmpresaUseCase, EmpresaActivaKysely, EmpresaKysely, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase, ResolverEmpresaActivaUseCase, type EmpresaActivaPort, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, CargarLibreriaUseCase, crearUnidadDeTrabajoCarga, LectorLibreriaYaml, type ContextoCarga, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
 import { leerConfiguracionAuth, leerConfiguracionLimites, type Entorno } from './autenticacion/configuracion.js';
@@ -55,6 +55,14 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
     puede: async (usuarioId, permiso, empresaId) => new AutorizacionPostgres(obtenerPools().db('app')).puede(usuarioId, permiso, empresaId),
     rolesDe: async (usuarioId, empresaId) => new AutorizacionPostgres(obtenerPools().db('app')).rolesDe(usuarioId, empresaId),
   };
+  // ADR 035: la empresa activa de la sesión y las pertenencias de la persona viven fuera de la empresa de la petición (se consultan
+  // ANTES de conocerla), por eso las atiende el rol de PLATAFORMA con permisos mínimos y no el de la aplicación.
+  const empresaActiva: EmpresaActivaPort = {
+    activaDe: async (...a) => new EmpresaActivaKysely(obtenerPools().db('plataforma')).activaDe(...a),
+    empresasDe: async (...a) => new EmpresaActivaKysely(obtenerPools().db('plataforma')).empresasDe(...a),
+    fijar: async (...a) => new EmpresaActivaKysely(obtenerPools().db('plataforma')).fijar(...a),
+    limpiar: async (...a) => new EmpresaActivaKysely(obtenerPools().db('plataforma')).limpiar(...a),
+  };
   // Una unidad de trabajo por ejecución sobre el pool del rol de la aplicación (con la RLS aplicada).
   const unidad: UnidadDeTrabajoPort<ContextoAdopcion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoNormas(obtenerPools().db('app')).ejecutar(empresaId, fn) };
 
@@ -85,8 +93,16 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       verificador: new TokenVerifierJose({ emisor: config.emisor, audiencia: config.audiencia, clienteAutorizado: config.clienteAutorizado, claves: crearJwksRemoto(config.jwksUrl) }),
       hechos,
       limites,
+      empresaActiva: new ResolverEmpresaActivaUseCase(empresaActiva),
     },
-    negocio: { identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos },
+    negocio: {
+      identidades: new ObtenerIdentidadUseCase(repo, autorizacion),
+      marcas: new ObtenerMarcaUseCase(repo),
+      hechos,
+      listarEmpresas: new ListarMisEmpresasUseCase(empresaActiva),
+      cambiarEmpresa: new CambiarEmpresaUseCase(empresaActiva, hechos),
+      olvidarEmpresa: new OlvidarEmpresaActivaUseCase(empresaActiva),
+    },
     normas: {
       adoptar: new AdoptarLibreriaUseCase(unidad, autorizacion, () => new Date(), flags),
       cargar: new CargarLibreriaUseCase(unidadCarga, autorizacion, new LectorLibreriaYaml()),

@@ -1,17 +1,20 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import type { TokenVerifierPort } from '@sig/autenticacion';
+import type { ResolverEmpresaActivaUseCase } from '@sig/empresas';
 import { AutenticacionGuard } from './autenticacion.guard.js';
 import { ContextoEmpresaInterceptor } from './contexto-empresa.interceptor.js';
 import { FiltroProblemas } from './filtro-problemas.js';
 import { LimiteFrecuencia } from './limite-frecuencia.js';
 import { LimitadorPorVentana } from './limitador-por-ventana.js';
 import { RegistradorTokenInvalido, type RegistradorHechos } from './registrador-token-invalido.js';
-import { HECHOS, LIMITE, REGISTRADOR_TOKEN_INVALIDO, VERIFICADOR } from './tokens.js';
+import { HECHOS, LIMITE, REGISTRADOR_TOKEN_INVALIDO, RESOLVER_EMPRESA, VERIFICADOR } from './tokens.js';
 
 export interface OpcionesAutenticacion {
   readonly verificador: TokenVerifierPort;
   readonly hechos: RegistradorHechos;
+  /** Decide la empresa de cada petición: la activa de la sesión si vale, y si no, la del token (ADR 035). Sin esto, manda el token. */
+  readonly empresaActiva?: ResolverEmpresaActivaUseCase;
   /** Reloj en milisegundos (pruebas). */
   readonly ahora?: () => number;
   /** Solicitudes por minuto de cada persona y de cada empresa. Por defecto 120 y 600. */
@@ -32,6 +35,7 @@ export class AutenticacionModule {
       providers: [
         { provide: VERIFICADOR, useValue: opciones.verificador },
         { provide: HECHOS, useValue: opciones.hechos },
+        { provide: RESOLVER_EMPRESA, useValue: opciones.empresaActiva ?? null },
         { provide: LIMITE, useValue: limite },
         { provide: REGISTRADOR_TOKEN_INVALIDO, useValue: new RegistradorTokenInvalido(opciones.hechos, limitador) },
         { provide: APP_GUARD, useClass: AutenticacionGuard },

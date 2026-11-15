@@ -38,6 +38,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sesion/empresas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las empresas a las que pertenece quien consulta
+         * @description Una persona puede pertenecer a varias empresas (un consultor), cada una con su propio rol (ADR 035). Solo se listan las suyas,
+         *     con el nombre y el slug (el de la URL `/e/<slug>`), por nombre; `activa` marca la de esta sesión. Quien pertenece a una sola
+         *     empresa recibe una lista de un elemento.
+         */
+        get: operations["listarMisEmpresas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sesion/empresa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cambia la empresa activa de la sesión
+         * @description ÚNICA operación que nombra una empresa (ADR 035). La API toma la persona y la sesión del token verificado y comprueba en la base
+         *     que la persona **pertenece** a la empresa pedida con un rol; si no, responde 404 (igual que una empresa que no existe) y deja un
+         *     `acceso.cruzado`. Si pertenece, registra `empresa.cambiada` en la empresa destino y recién entonces guarda la empresa activa de
+         *     ESA sesión (vence con la sesión máxima, 8 h). Desde la siguiente petición, todo se evalúa con esa empresa y con el rol que la
+         *     persona tiene allí. Ninguna otra operación acepta una empresa del cliente.
+         *
+         *     Orden de evaluación: 401, 400 (slug mal formado) y 404 (no pertenece).
+         */
+        post: operations["cambiarEmpresa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/empresa/marca": {
         parameters: {
             query?: never;
@@ -681,6 +729,19 @@ export interface components {
             status: "ok";
             /** Format: date-time */
             time: string;
+        };
+        EmpresaDePersona: {
+            slug: string;
+            nombre: string;
+            /** @description Es la empresa de esta sesión ahora. */
+            activa: boolean;
+        };
+        EmpresaElegida: {
+            slug: string;
+        };
+        EmpresaActual: {
+            slug: string;
+            nombre: string;
         };
         /** @description La persona que consulta, tomada del token verificado. */
         Identidad: {
@@ -1402,6 +1463,60 @@ export interface operations {
                 };
             };
             401: components["responses"]["NoAutenticado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarMisEmpresas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las empresas de la persona. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpresaDePersona"][];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmpresaElegida"];
+            };
+        };
+        responses: {
+            /** @description La empresa activa de la sesión es ahora la pedida. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpresaActual"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            404: components["responses"]["NoEncontrado"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { EmpresaNoEncontradaError, PersonaNoEncontradaError } from '@sig/empresas';
+import { EmpresaAjenaError, EmpresaNoEncontradaError, EmpresaPedidaInvalidaError, PersonaNoEncontradaError } from '@sig/empresas';
 import { FuncionDeshabilitadaError, LibreriaNoEncontradaError, ParametroInvalidoError, RequisitoNoEncontradoError, SinPermisoError } from '@sig/normas';
 import { ArchivoRechazadoError, ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError as ParametroInvalidoCertificacion, SinPermisoError as SinPermisoCertificacion } from '@sig/certificacion';
 import { AccesoCruzadoException, AccesoDenegadoException } from './excepciones-acceso.js';
@@ -20,6 +20,8 @@ export const clasificarExcepcion = (e: unknown): Clasificacion => {
   if (e instanceof AccesoDenegadoException) return { tipo: 'denegado', objeto: e.objeto ?? null };
   if (e instanceof SinPermisoError) return { tipo: 'denegado', objeto: `accion:${e.permiso}` };
   if (e instanceof SinPermisoCertificacion) return { tipo: 'denegado', objeto: `accion:${e.permiso}` };
+  // Pedir una empresa a la que la persona no pertenece: 404 indistinguible de una que no existe, y queda `acceso.cruzado` (ADR 035).
+  if (e instanceof EmpresaAjenaError) return { tipo: 'cruzado', objeto: `empresa:${e.slug}` };
   if (e instanceof AccesoCruzadoException) return { tipo: 'cruzado', objeto: e.objeto ?? null };
   if (e instanceof HttpException) return e.getStatus() === 403 ? { tipo: 'denegado', objeto: null } : { tipo: 'http', estado: e.getStatus() };
   // Una función apagada por flag se presenta como inexistente: no revela que existe.
@@ -29,6 +31,7 @@ export const clasificarExcepcion = (e: unknown): Clasificacion => {
   // Un archivo que no se acepta: 413 si pasa del tamaño, 415 si su contenido no es de un tipo permitido o está dañado.
   if (e instanceof ArchivoRechazadoError) return { tipo: 'http', estado: e.motivo === 'tamano_excedido' ? 413 : 415 };
   if (e instanceof ConflictoError) return { tipo: 'http', estado: 409 };
+  if (e instanceof EmpresaPedidaInvalidaError) return { tipo: 'http', estado: 400 };
   if (e instanceof ParametroInvalidoError || e instanceof ParametroInvalidoCertificacion) return { tipo: 'http', estado: 400 };
   return { tipo: 'http', estado: 500 };
 };

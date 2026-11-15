@@ -1,19 +1,23 @@
 import { DynamicModule, Module } from '@nestjs/common';
-import type { ObtenerIdentidadUseCase, ObtenerMarcaUseCase } from '@sig/empresas';
+import type { CambiarEmpresaUseCase, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase } from '@sig/empresas';
 import type { RegistradorHechos } from '../autenticacion/registrador-token-invalido.js';
 import { SesionController } from '../sesion/sesion.controller.js';
 import { SesionService } from '../sesion/sesion.service.js';
 import { EmpresasController } from './empresas.controller.js';
 import { IDENTIDADES, MARCAS } from './tokens.js';
-import { SESION } from './tokens-sesion.js';
+import { CAMBIAR_EMPRESA, LISTAR_EMPRESAS, SESION } from './tokens-sesion.js';
 
 export interface OpcionesEmpresaSesion {
   readonly identidades: ObtenerIdentidadUseCase;
   readonly marcas: ObtenerMarcaUseCase;
   readonly hechos: RegistradorHechos;
+  /** Una persona en varias empresas (ADR 035). */
+  readonly listarEmpresas: ListarMisEmpresasUseCase;
+  readonly cambiarEmpresa: CambiarEmpresaUseCase;
+  readonly olvidarEmpresa: OlvidarEmpresaActivaUseCase;
 }
 
-/** Controladores de `/me`, `/empresa/marca` y `/sesion/*`. Los casos de uso llegan ya armados por la composición. */
+/** Controladores de `/me`, `/empresa/marca` y `/sesion/*` (inicio, cierre, empresas y cambio de empresa). Los casos de uso llegan ya armados por la composición. */
 @Module({})
 export class EmpresaSesionModule {
   static register(opciones: OpcionesEmpresaSesion): DynamicModule {
@@ -23,7 +27,9 @@ export class EmpresaSesionModule {
       providers: [
         { provide: IDENTIDADES, useValue: opciones.identidades },
         { provide: MARCAS, useValue: opciones.marcas },
-        { provide: SESION, useValue: new SesionService(opciones.identidades, opciones.hechos) },
+        { provide: SESION, useValue: new SesionService(opciones.identidades, opciones.hechos, opciones.olvidarEmpresa) },
+        { provide: LISTAR_EMPRESAS, useValue: opciones.listarEmpresas },
+        { provide: CAMBIAR_EMPRESA, useValue: opciones.cambiarEmpresa },
       ],
     };
   }

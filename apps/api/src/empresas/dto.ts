@@ -21,3 +21,18 @@ export class MarcaResponse {
   @ApiProperty({ type: Boolean }) ajustadoPorContraste!: boolean;
   @ApiProperty({ type: String, nullable: true, maxLength: 2048, pattern: '^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\\s@]*|/[^/\\\\\\s][^\\s@]*)$' }) logoUrl!: string | null;
 }
+
+export class EmpresaDePersonaResponse {
+  @ApiProperty({ type: String, pattern: '^[a-z0-9-]+$', maxLength: 32 }) slug!: string;
+  @ApiProperty({ type: String, maxLength: 120 }) nombre!: string;
+  @ApiProperty({ type: Boolean, description: 'Es la empresa de esta sesión ahora.' }) activa!: boolean;
+}
+
+export class EmpresaElegidaRequest {
+  @ApiProperty({ type: String, pattern: '^[a-z0-9-]+$', minLength: 1, maxLength: 32 }) slug!: string;
+}
+
+export class EmpresaActualResponse {
+  @ApiProperty({ type: String, pattern: '^[a-z0-9-]+$', maxLength: 32 }) slug!: string;
+  @ApiProperty({ type: String, maxLength: 120 }) nombre!: string;
+}

@@ -1,6 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import type { IdentidadVerificada } from '@sig/autenticacion';
-import type { ObtenerIdentidadUseCase } from '@sig/empresas';
+import type { ObtenerIdentidadUseCase, OlvidarEmpresaActivaUseCase } from '@sig/empresas';
 import type { RegistradorHechos } from '../autenticacion/registrador-token-invalido.js';
 
 /**
@@ -11,6 +11,7 @@ export class SesionService {
   constructor(
     private readonly identidades: ObtenerIdentidadUseCase,
     private readonly hechos: RegistradorHechos,
+    private readonly olvidarEmpresa: OlvidarEmpresaActivaUseCase,
   ) {}
 
   async registrarInicio(identidad: IdentidadVerificada): Promise<void> {
@@ -36,6 +37,8 @@ export class SesionService {
       resultado: 'ok',
       origenId: `logout:${sid}`,
     });
+    // La empresa activa de la sesión se olvida: quien vuelva a entrar empieza en la de su token (ADR 035).
+    await this.olvidarEmpresa.ejecutar(sid);
   }
 
   /** Sin identificador de sesión no hay idempotencia posible: el token no sirve para estas operaciones. */

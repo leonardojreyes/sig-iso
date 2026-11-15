@@ -1,3 +1,4 @@
+import type { ResolverEmpresaActivaUseCase } from '@sig/empresas';
 // Arnés de pruebas de la API: aplicación Nest REAL en un puerto local, tokens firmados con claves generadas al vuelo.
 import { Controller, Get, ForbiddenException, Module, NotFoundException, type DynamicModule, type INestApplication, type Type } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -34,6 +35,8 @@ export const crearArnes = async (opciones: {
   ahora?: () => number;
   /** Si se indica, las solicitudes se trazan con este trazador (como en `main.ts`). */
   trazador?: Tracer;
+  /** Decide la empresa de cada petición (ADR 035). Sin esto, manda el token. */
+  empresaActiva?: ResolverEmpresaActivaUseCase;
 }): Promise<Arnes> => {
   const par = await generateKeyPair('RS256');
   const claves = createLocalJWKSet({ keys: [{ ...(await exportJWK(par.publicKey)), kid: 'k1', alg: 'RS256', use: 'sig' }] });
@@ -44,7 +47,7 @@ export const crearArnes = async (opciones: {
 
   const modulo = await Test.createTestingModule({
     imports: [
-      AutenticacionModule.register({ verificador, hechos: opciones.hechos, limites: opciones.limites ?? { persona: 100_000, empresa: 100_000 }, ...(opciones.ahora ? { ahora: opciones.ahora } : {}) }),
+      AutenticacionModule.register({ verificador, hechos: opciones.hechos, limites: opciones.limites ?? { persona: 100_000, empresa: 100_000 }, ...(opciones.ahora ? { ahora: opciones.ahora } : {}), ...(opciones.empresaActiva ? { empresaActiva: opciones.empresaActiva } : {}) }),
       PruebaModule,
       ...(opciones.modulos ?? []),
     ],

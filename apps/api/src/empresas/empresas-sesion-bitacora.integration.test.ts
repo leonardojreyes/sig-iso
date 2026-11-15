@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { crearArnes, type Arnes } from '../autenticacion/prueba/arnes.js';
 import { erroresDeEsquema } from '../autenticacion/prueba/contrato.js';
 import { EmpresaSesionModule } from './empresa-sesion.module.js';
+import { empresaActivaDePrueba } from './prueba/empresa-activa.js';
 
 // API + PostgreSQL REAL con los adaptadores de producción: la identidad y la marca salen de la base (con RLS), y el inicio y el
 // cierre de sesión quedan en la bitácora inmutable, una sola vez por sesión. Cada ejecución usa empresas y personas propias.
@@ -47,7 +48,7 @@ describe.skipIf(!hayBase)('empresa y sesión (API + PostgreSQL real)', () => {
     const hechos = { registrar: (e: Parameters<Bitacora['registrar']>[0]) => bitacora.registrar(e), registrarUnaVez: (e: Parameters<Bitacora['registrarUnaVez']>[0]) => bitacora.registrarUnaVez(e) };
     arnes = await crearArnes({
       hechos,
-      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos })],
+      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos, ...empresaActivaDePrueba(hechos) })],
     });
   });
 

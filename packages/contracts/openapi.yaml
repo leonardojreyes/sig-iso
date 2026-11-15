@@ -72,6 +72,73 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /sesion/empresas:
+    get:
+      operationId: listarMisEmpresas
+      summary: Las empresas a las que pertenece quien consulta
+      description: |
+        Una persona puede pertenecer a varias empresas (un consultor), cada una con su propio rol (ADR 035). Solo se listan las suyas,
+        con el nombre y el slug (el de la URL `/e/<slug>`), por nombre; `activa` marca la de esta sesión. Quien pertenece a una sola
+        empresa recibe una lista de un elemento.
+      tags: [sesion]
+      responses:
+        '200':
+          description: Las empresas de la persona.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/EmpresaDePersona'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /sesion/empresa:
+    post:
+      operationId: cambiarEmpresa
+      summary: Cambia la empresa activa de la sesión
+      description: |
+        ÚNICA operación que nombra una empresa (ADR 035). La API toma la persona y la sesión del token verificado y comprueba en la base
+        que la persona **pertenece** a la empresa pedida con un rol; si no, responde 404 (igual que una empresa que no existe) y deja un
+        `acceso.cruzado`. Si pertenece, registra `empresa.cambiada` en la empresa destino y recién entonces guarda la empresa activa de
+        ESA sesión (vence con la sesión máxima, 8 h). Desde la siguiente petición, todo se evalúa con esa empresa y con el rol que la
+        persona tiene allí. Ninguna otra operación acepta una empresa del cliente.
+
+        Orden de evaluación: 401, 400 (slug mal formado) y 404 (no pertenece).
+      tags: [sesion]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmpresaElegida'
+      responses:
+        '200':
+          description: La empresa activa de la sesión es ahora la pedida.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmpresaActual'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
   /empresa/marca:
     get:
       operationId: obtenerMarcaEmpresa
@@ -1486,6 +1553,43 @@ components:
           type: string
           format: date-time
           maxLength: 40
+    EmpresaDePersona:
+      type: object
+      required: [slug, nombre, activa]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          maxLength: 32
+        nombre:
+          type: string
+          maxLength: 120
+        activa:
+          type: boolean
+          description: Es la empresa de esta sesión ahora.
+    EmpresaElegida:
+      type: object
+      required: [slug]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          minLength: 1
+          maxLength: 32
+    EmpresaActual:
+      type: object
+      required: [slug, nombre]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          maxLength: 32
+        nombre:
+          type: string
+          maxLength: 120
     Identidad:
       type: object
       description: La persona que consulta, tomada del token verificado.
