@@ -1,7 +1,7 @@
 // Textos de la interfaz en español de Ecuador. Ningún texto visible se escribe dentro de las pantallas.
 export const es = {
   app: { nombre: 'sig-iso', lema: 'Sistema de Gestión Integrado ISO', saltar: 'Saltar al contenido' },
-  nav: { panel: 'Panel', requisitos: 'Requisitos', diagnostico: 'Diagnóstico', alcance: 'Alcance', controles: 'Controles', cobertura: 'Cobertura', declaracion: 'Declaración', normas: 'Normas', principal: 'Navegación principal' },
+  nav: { panel: 'Panel', requisitos: 'Requisitos', diagnostico: 'Diagnóstico', alcance: 'Alcance', controles: 'Controles', cobertura: 'Cobertura', declaracion: 'Declaración', normas: 'Normas', marca: 'Marca', principal: 'Navegación principal' },
   tema: { etiqueta: 'Tema', sistema: 'Sistema', claro: 'Claro', oscuro: 'Oscuro' },
   inicio: {
     titulo: 'Bienvenido',
@@ -249,6 +249,30 @@ export const es = {
     sinEvidenciasTitulo: 'Este control todavía no tiene evidencias',
     sinEvidenciasAdmin: 'Suba el primer archivo que demuestre que el control opera.',
     sinEvidenciasOtros: 'Cuando se suba una evidencia, aparecerá aquí.',
+  },
+  marcaEdicion: {
+    titulo: 'Marca de la empresa',
+    ayuda: 'El color y el logo que se ven en toda la aplicación para las personas de su empresa. Los cambios se aplican de inmediato.',
+    vistaTitulo: 'Cómo se ve ahora',
+    logoActual: 'Logo actual',
+    sinLogo: 'Sin logo: se muestra el monograma de la empresa.',
+    colorAplicado: 'Color que se aplica',
+    colorElegido: 'Color elegido',
+    ajustado: (elegido: string, aplicado: string) => `Su color ${elegido} no tiene suficiente contraste con el texto blanco (nivel AA). Para que todos puedan leer, la aplicación usa ${aplicado}.`,
+    sinAjuste: 'Cumple el contraste mínimo (AA): se aplica tal cual.',
+    editarTitulo: 'Cambiar la marca',
+    colorEtiqueta: 'Color de la empresa',
+    colorAyuda: 'Elija el color; si no cumple el contraste mínimo, se ajusta solo y se le avisa.',
+    logoEtiqueta: 'Dirección del logo',
+    logoAyuda: 'Una dirección que empiece por https:// (sin usuario ni contraseña) o una ruta propia. Déjela vacía para usar el monograma.',
+    guardar: 'Guardar la marca',
+    soloAdmin: 'Solo la persona con rol de administrador SIG puede cambiar la marca. Usted puede verla.',
+    avisos: {
+      guardada: { tono: 'success', titulo: 'Marca guardada', detalle: 'Los cambios ya se ven en toda la aplicación.' },
+      sin_permiso: { tono: 'danger', titulo: 'No tiene permiso para cambiar la marca', detalle: 'Solo la persona con rol de administrador SIG puede hacerlo.' },
+      no_valido: { tono: 'danger', titulo: 'La marca no es válida', detalle: 'Use un color con el formato #RRGGBB y un logo que empiece por https:// (sin usuario ni contraseña) o una ruta propia.' },
+      no_disponible: { tono: 'danger', titulo: 'El servicio no está disponible en este momento', detalle: 'Intente de nuevo en unos minutos.' },
+    },
   },
   empresas: {
     etiqueta: 'Empresa',
