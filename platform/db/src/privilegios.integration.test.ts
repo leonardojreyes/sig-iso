@@ -310,11 +310,17 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
       expect(await col("sigiso_app", "usuario", "correo")).toBe(true);
       for (const c of ["id", "empresa_id", "creada_en"])
         expect(await col("sigiso_app", "usuario", c)).toBe(false);
+      // empresa (0013): la aplicación cambia SOLO el color y el logo de su empresa; ni el nombre, ni el slug, ni el identificador.
+      for (const c of ["color_primario", "logo_url"])
+        expect(await col("sigiso_app", "empresa", c)).toBe(true);
+      for (const c of ["id", "slug", "nombre", "creada_en"])
+        expect(await col("sigiso_app", "empresa", c)).toBe(false);
       // alcance, evaluacion y control se actualizan a propósito (versión y texto vigentes); su RLS forzada se comprueba abajo.
       for (const t of Object.keys(ESPERADO).filter(
         (x) =>
           ![
             "usuario",
+            "empresa",
             "alcance",
             "evaluacion",
             "control",

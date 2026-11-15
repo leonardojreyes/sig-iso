@@ -10,6 +10,7 @@ export const ACCIONES = [
   'libreria.adoptada',
   'libreria.cargada',
   'empresa.cambiada',
+  'marca.cambiada',
   'evaluacion.cambiada',
   'alcance.cambiado',
   'alcance.aprobado',
@@ -124,6 +125,8 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   // Librería propia subida desde la web (MVP, M6a). Solo código, versión, huella y conteos: nunca el contenido ni el texto de los errores.
   // Una persona que pertenece a varias empresas cambia la empresa activa de su sesión (ADR 035). Se registra en la empresa DESTINO.
   'empresa.cambiada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // La empresa edita su marca (ADR 035, M6b-2). Solo QUÉ cambió (banderas), nunca el color ni la dirección del logo.
+  'marca.cambiada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', despues: { color_cambiado: 'booleano', logo_cambiado: 'booleano' } },
   'libreria.cargada': {
     ...nada,
     actores: ['usuario'],
