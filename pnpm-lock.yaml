@@ -415,6 +415,9 @@ importers:
 
   modules/empresas:
     dependencies:
+      '@sig/auditoria':
+        specifier: workspace:*
+        version: link:../../platform/auditoria
       '@sig/autorizacion':
         specifier: workspace:*
         version: link:../../platform/autorizacion

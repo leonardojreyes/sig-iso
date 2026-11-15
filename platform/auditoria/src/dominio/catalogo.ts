@@ -9,6 +9,7 @@ export const ACCIONES = [
   'sesion.expirada',
   'libreria.adoptada',
   'libreria.cargada',
+  'empresa.cambiada',
   'evaluacion.cambiada',
   'alcance.cambiado',
   'alcance.aprobado',
@@ -121,6 +122,8 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   },
   // Diagnóstico y alcance (MVP, M2). Solo estados y banderas: el comentario y el texto del alcance NUNCA van a la bitácora.
   // Librería propia subida desde la web (MVP, M6a). Solo código, versión, huella y conteos: nunca el contenido ni el texto de los errores.
+  // Una persona que pertenece a varias empresas cambia la empresa activa de su sesión (ADR 035). Se registra en la empresa DESTINO.
+  'empresa.cambiada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'libreria.cargada': {
     ...nada,
     actores: ['usuario'],
