@@ -20,7 +20,7 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 | **M4** | Evidencias con archivo (huella SHA-256, vigencia, reemplazo, descarga protegida) y cobertura derivada de los mapeos. ADR 032 (almacén de archivos) | **Hecho** |
 | **M5** | Declaración de Aplicabilidad de 27001 derivada del diagnóstico, los controles y las evidencias; aprobación con versión congelada e inmutable; exportación a Word. ADR 033 (`docx` MIT detrás de `GeneradorDocumentoPort`) | **Hecho** |
 | **M6a** | **Cargar normas desde la interfaz** (requisito añadido el 2026-11-13, dentro del MVP): subir las librerías desde la web, sin comandos (ADR 034). Archivos o carpeta del navegador, librería propia de la empresa con RLS, plantilla descargable, errores en palabras, adopción | **Hecho (2026-11-14)** |
-| **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a), ADR 035. **M6b-1** (una persona en varias empresas y cambio de empresa) **hecho 2026-11-15**; **M6b-2** (marca editable: color y logo con verificación de contraste) pendiente. Módulos activos y nombre editable quedan fuera del MVP. | M6b-1 hecho; M6b-2 pendiente |
+| **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a), ADR 035. **M6b-1** (una persona en varias empresas y cambio de empresa) **hecho 2026-11-15**; **M6b-2** (marca editable: color y logo con verificación de contraste) **hecho 2026-11-15**. Módulos activos y nombre editable quedan fuera del MVP. | **Hecho** |
 | M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
 
 **M2 y M3 en detalle** (para no tener que releer el código):
@@ -75,6 +75,15 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 - **Verificación:** `pnpm web:verify-multiempresa` (39 comprobaciones con todo real): selector solo para quien tiene varias; cambiar a B y recibir el rol de colaborador; A deja de responder en esa sesión; otra sesión de la misma cuenta no se entera; una empresa ajena o inexistente da el mismo «no encontrada»; Origin, método y sesión; B ve exactamente lo que ve su administrador.
 - **Límites conocidos:** el cambio de empresa agrega una consulta por petición en la guardia (sin caché); abrir otra pestaña con la empresa anterior da 404 (la sesión ya está en la otra); no hay pantalla para dar de alta personas ni roles (se hace con la siembra); `web:verify-listado` espera 21 entradas y A tiene 114 desde que adoptó el Anexo A (el script está desactualizado desde entonces).
 
+### M6b-2 — Marca editable: color y logo (hecho 2026-11-15)
+
+- **Qué hace:** el administrador SIG cambia el **color** y el **logo** de su empresa desde `/e/<empresa>/marca`; se ve de inmediato en toda la aplicación para toda la empresa. El nombre y el slug **no** se editan (quedan fuera del MVP, igual que los módulos activos por empresa).
+- **Base (migración `0013`):** la aplicación puede actualizar **solo** `color_primario` y `logo_url` de **su** empresa (política por empresa + permiso por columnas); las reglas de forma ya estaban en la tabla. Prueba de aislamiento (`aislamiento-marca`, 15 casos) y matriz de privilegios actualizada.
+- **Dominio y casos de uso:** permiso nuevo `marca.editar` (solo administrador SIG); `ActualizarMarcaUseCase` (permiso 403 → validación 400 → cambio atómico + bitácora). Al **editar**, un logo no permitido se **rechaza** (al leer, como siempre, se descarta en silencio). El color elegido se guarda tal cual y, si no cumple el contraste AA, la marca que se **aplica** se ajusta y se avisa.
+- **Bitácora:** `marca.cambiada` registra solo **qué** cambió (color, logo), nunca el color ni la dirección del logo; si no cambia nada, no registra nada.
+- **API:** `PUT /empresa/marca` (cuerpo cerrado: solo `colorPrimario` y `logoUrl`; la empresa sale del token). **Web:** pantalla «Marca» (cómo se ve ahora, aviso de contraste, formulario solo para el administrador) y `pnpm web:verify-marca` (30 comprobaciones con todo real; **restaura** la marca de A al terminar).
+- **Límites conocidos:** el logo es una **dirección** (`https` o ruta propia), no se sube un archivo: el navegador la carga desde ese sitio (con `referrerpolicy="no-referrer"`) y quien aloja la imagen ve las visitas; subir el archivo a un almacén propio queda para después. No hay vista previa del color antes de guardar.
+
 **Límites conocidos del MVP** (decisiones ya tomadas; no son defectos pendientes de corregir):
 
 - Las pantallas **no asignan responsable** (ni en el diagnóstico ni en los controles), aunque la API lo admite. Hoy nada lo asigna; cuando se agregue, reevaluar una entrada debe conservar el responsable.
@@ -122,7 +131,7 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 
 ## Próximos pasos técnicos
 
-1. **M6b-2 — marca editable** (color y logo de la empresa, con contraste WCAG; ver `plan.md`) y luego **M6 — cierre del MVP** (abajo); y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
+1. **M6 — cierre del MVP** (abajo); y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
 2. **M5 — Declaración de Aplicabilidad de 27001** (hecha; detalle arriba). ADR 033 (`docx` detrás de `GeneradorDocumentoPort`, licencias comprobadas con `scripts/check-licenses.mjs`), derivada del diagnóstico y los controles, marcada preliminar, aprobación con versión congelada e inmutable y exportación a Word.
 3. **M6 — cierre del MVP:** un solo `/review` completo (arquitecto, multiempresa, seguridad y cumplimiento), STRIDE ampliado, este archivo y `docs/fase0/guia-de-ejecucion.md`.
 4. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
@@ -170,7 +179,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5, M6a y M6b-1 hechos; M6b-2 y M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
+0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5, M6a y M6b hechos; M6 pendiente)** → resto del 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 
