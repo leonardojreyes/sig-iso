@@ -40,6 +40,8 @@ Se ingresa por `http://localhost:3000/e/empresa-a/ingreso` (Empresa A) o `/e/emp
 | `colab-b`   | B                 | colaborador                                             |
 | `consultor` | A                 | **administrador SIG en A y colaborador en B** (ADR 035) |
 
+**Entrar y salir:** al ingresar, el consultor ve una pantalla «¿Con qué empresa va a trabajar?» y elige; las demás cuentas entran directo a su empresa. En la cabecera de cada pantalla hay un botón **«Cerrar sesión»** (si la cuenta tiene varias empresas, también el selector para cambiar). Para cambiar de cuenta, cierra sesión y vuelve a ingresar.
+
 El consultor es **una sola cuenta** que pertenece a las dos empresas y cambia entre ellas con el selector de la cabecera. En cada empresa manda **su** rol: en B no puede subir librerías ni aprobar la declaración. Si el consultor aún no existe en tu Keycloak, créalo **sin borrar nada**: `pnpm keycloak:realm`, `pnpm keycloak:cuentas` y `pnpm db:seed`. (`pnpm keycloak:reset` borra la base de Keycloak: solo si de verdad quieres empezar de cero.)
 
 ## Qué hay en cada pantalla (`/e/<empresa>/…`)

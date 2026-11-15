@@ -61,6 +61,12 @@ export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: 
         <SelectorEmpresa empresa={empresa} />
         <SelectorTema />
         <Avatar nombre={persona} />
+        {/* Cerrar sesión cambia estado: es un POST (con verificación de Origin), nunca un enlace. */}
+        <form method="post" action="/auth/logout">
+          <Button type="submit" variante="secondary">
+            {es.sesion.cerrar}
+          </Button>
+        </form>
       </div>
     </header>
     <div className="grid grid-cols-1 md:grid-cols-[14rem_1fr]">

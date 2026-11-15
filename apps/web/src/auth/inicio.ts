@@ -1,7 +1,8 @@
-// La portada lleva a quien YA tiene sesión directo al listado de su empresa. La empresa sale de la API con el token (`/me`),
-// nunca de una dirección ni de datos de demostración. Ante cualquier duda devuelve null y se muestra la portada de ingreso.
+// La portada lleva a quien YA tiene sesión directo al listado de su empresa, o a elegir la empresa si pertenece a varias (ADR 035).
+// La empresa sale de la API con el token (`/me` y `/sesion/empresas`), nunca de una dirección ni de datos de demostración. Ante
+// cualquier duda devuelve null y se muestra la portada de ingreso.
 import { consultarApi } from '../api/cliente';
-import { validarIdentidad } from '../api/validadores';
+import { validarEmpresasDePersona, validarIdentidad } from '../api/validadores';
 import type { DependenciasSesion } from './sesion';
 import { crearServicioSesion } from './sesion';
 
@@ -20,5 +21,11 @@ export const rutaDeInicio = async (cookie: string | null, deps: DependenciasSesi
   });
   if (!me.ok) return null;
   const identidad = validarIdentidad(me.json);
-  return identidad ? `/e/${identidad.empresa.slug}/requisitos` : null;
+  if (!identidad) return null;
+  // Quien pertenece a varias empresas elige con cuál va a trabajar. Si esta consulta falla o no cumple el contrato, se sigue como
+  // siempre (a la empresa de la sesión): no se bloquea la entrada por algo que solo ayuda a elegir.
+  const empresas = await consultarApi({ ruta: '/sesion/empresas', acceso: acceso.acceso, apiUrl: deps.config.apiUrl, fetchFn: deps.fetchFn });
+  const lista = empresas.ok ? validarEmpresasDePersona(empresas.json) : null;
+  if (lista && lista.length > 1) return '/empresas';
+  return `/e/${identidad.empresa.slug}/requisitos`;
 };

@@ -5,7 +5,8 @@ import { esIdEmpresa } from '../../../../src/marca/tipos';
 import { PantallaIngreso } from '../../../../src/pantallas/ingreso';
 
 // Sin sesión no se conoce la marca de ninguna empresa (y no se revela cuáles existen): pantalla genérica del producto. Tras ingresar,
-// la persona vuelve al listado de la empresa de la dirección (el proxy comprueba que sea la suya).
+// la persona vuelve a la portada, que decide: si pertenece a varias empresas elige con cuál va a trabajar, y si pertenece a una entra
+// directo a ella. (La empresa de la dirección ya no decide adónde se vuelve: una persona de varias empresas daría 404 en las demás.)
 export default async function Page({
   params,
   searchParams,
@@ -18,7 +19,7 @@ export default async function Page({
   return (
     <PantallaIngreso
       empresa={MARCA_GENERICA}
-      retorno={`/e/${slug}/requisitos`}
+      retorno="/"
       error={leerErrorIngreso(await searchParams)}
     />
   );

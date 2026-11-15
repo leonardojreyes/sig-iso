@@ -40,7 +40,8 @@ describe('PantallaMarca', () => {
 
   it('el colaborador ve la marca pero NO el formulario', () => {
     const { container, getByText } = render(<PantallaMarca empresa={empresa} persona={colaborador} marca={marca()} />);
-    expect(container.querySelector('form')).toBeNull();
+    // El único formulario permitido para un colaborador es el de cerrar sesión (de la cabecera).
+    expect(container.querySelector('form:not([action="/auth/logout"])')).toBeNull();
     expect(getByText(t.soloAdmin)).toBeTruthy();
   });
 

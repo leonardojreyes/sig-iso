@@ -2,6 +2,13 @@
 export const es = {
   app: { nombre: 'sig-iso', lema: 'Sistema de Gestión Integrado ISO', saltar: 'Saltar al contenido' },
   nav: { panel: 'Panel', requisitos: 'Requisitos', diagnostico: 'Diagnóstico', alcance: 'Alcance', controles: 'Controles', cobertura: 'Cobertura', declaracion: 'Declaración', normas: 'Normas', marca: 'Marca', principal: 'Navegación principal' },
+  sesion: { cerrar: 'Cerrar sesión' },
+  eleccion: {
+    titulo: '¿Con qué empresa va a trabajar?',
+    ayuda: 'Su cuenta pertenece a varias empresas. Elija una para entrar. Más adelante podrá cambiar de empresa desde la cabecera.',
+    entrar: (nombre: string) => `Entrar a ${nombre}`,
+    lista: 'Sus empresas',
+  },
   tema: { etiqueta: 'Tema', sistema: 'Sistema', claro: 'Claro', oscuro: 'Oscuro' },
   inicio: {
     titulo: 'Bienvenido',

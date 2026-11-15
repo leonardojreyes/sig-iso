@@ -55,7 +55,7 @@ describe('PantallaDeclaracion', () => {
   it('con controles por decidir, «Aprobar» queda deshabilitado y se explica por qué', () => {
     const d = declaracion({ filas: [fila({ aplicabilidad: 'por_decidir', implementacion: null }), fila({ idEstable: 'a27-5-2', aplicabilidad: 'por_decidir', implementacion: null })], resumen: { total: 2, aplican: 0, noAplican: 0, porDecidir: 2, sinControl: 0, aprobable: false } });
     const { container } = render(<PantallaDeclaracion {...base} declaracion={d} />);
-    expect((within(container.querySelector('form')!).getByRole('button', { name: 'Aprobar la declaración' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(container.querySelector('form[action$="/declaracion/aprobar"]')!).getByRole('button', { name: 'Aprobar la declaración' }) as HTMLButtonElement).disabled).toBe(true);
     expect(container.textContent).toContain('Quedan 2 controles por decidir');
   });
 

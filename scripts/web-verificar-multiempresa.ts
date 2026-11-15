@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  descargarWeb,
   enviarWeb,
   iniciarSesionWeb,
   paginaWeb,
@@ -39,6 +40,8 @@ const comprobar = (descripcion: string, ok: boolean, detalle = "") => {
 
 const A = "/e/empresa-a";
 const B = "/e/empresa-b";
+/** El valor del campo oculto `empresa` de un formulario. */
+const valorOculto = (html: string): string => /<input[^>]*name="empresa"[^>]*>/.exec(html)?.[0].match(/value="([^"]*)"/)?.[1] ?? "";
 const SOLO_ADMIN =
   "Solo la persona con rol de administrador SIG puede subir librerías";
 /** El formulario de cambio de empresa de `actual`: por POST y hacia su ruta, sin depender del orden de los atributos. */
@@ -57,6 +60,7 @@ try {
   const s = {
     consultor: await iniciarSesionWeb(entorno, "consultor", `${A}/panel`),
     consultor2: await iniciarSesionWeb(entorno, "consultor", `${A}/panel`),
+    consultor3: await iniciarSesionWeb(entorno, "consultor", "/"),
     adminA: await iniciarSesionWeb(entorno, "admin-a", `${A}/panel`),
     adminB: await iniciarSesionWeb(entorno, "admin-b", `${B}/panel`),
   };
@@ -303,6 +307,70 @@ try {
     "puede volver a cambiar a B cuantas veces quiera",
     c3.estado === 303 && c3.destino === `${B}/panel`,
   );
+  // ---- Elegir la empresa AL ENTRAR (quien pertenece a varias no entra a una y luego cambia)
+  const bajar = (quien: Quien, ruta: string) => descargarWeb(entorno, ruta, s[quien]);
+  const portadaConsultor = await bajar("consultor3", "/");
+  comprobar(
+    "al entrar, la portada lleva al consultor (varias empresas) a ELEGIR con cuál trabaja",
+    (portadaConsultor.estado === 307 || portadaConsultor.estado === 303) && portadaConsultor.destino === "/empresas",
+    `${portadaConsultor.estado} ${portadaConsultor.destino}`,
+  );
+  const portadaAdmin = await bajar("adminA", "/");
+  comprobar(
+    "…y a una persona de UNA sola empresa la lleva directo a ella, como siempre",
+    (portadaAdmin.estado === 307 || portadaAdmin.estado === 303) && portadaAdmin.destino === `${A}/requisitos`,
+    `${portadaAdmin.estado} ${portadaAdmin.destino}`,
+  );
+  const elegirPagina = await ver("consultor3", "/empresas");
+  const formsElegir = [...elegirPagina.texto.matchAll(/<form[^>]*action="\/empresas\/elegir"[^>]*>([\s\S]*?)<\/form>/g)];
+  const eleccionesOfrecidas = formsElegir.map((m) => valorOculto(m[1]!)).sort();
+  comprobar(
+    "la pantalla «¿Con qué empresa va a trabajar?» ofrece las dos empresas del consultor, cada una con su formulario POST de un solo dato",
+    elegirPagina.estado === 200 &&
+      elegirPagina.texto.includes("¿Con qué empresa va a trabajar?") &&
+      JSON.stringify(eleccionesOfrecidas) === JSON.stringify(["empresa-a", "empresa-b"]) &&
+      !/name="(empresaId|empresa_id|tenant)"/i.test(elegirPagina.texto),
+    `${elegirPagina.estado} ${eleccionesOfrecidas.join(",")}`,
+  );
+  comprobar(
+    "la pantalla ofrece «Cerrar sesión» (POST a /auth/logout) y no muestra el menú de ninguna empresa",
+    /<form[^>]*action="\/auth\/logout"/.test(elegirPagina.texto) && elegirPagina.texto.includes("Cerrar sesión") && !elegirPagina.texto.includes("Declaración"),
+  );
+  const elegirAdmin = await bajar("adminA", "/empresas");
+  comprobar(
+    "una persona de una sola empresa que abre esa pantalla va directo a su empresa (no hay nada que elegir)",
+    (elegirAdmin.estado === 307 || elegirAdmin.estado === 303) && elegirAdmin.destino === `${A}/requisitos`,
+    `${elegirAdmin.estado} ${elegirAdmin.destino}`,
+  );
+  const sinSesionElegir = await descargarWeb(entorno, "/empresas", new Map());
+  comprobar(
+    "sin sesión, la pantalla de elección lleva a ingresar",
+    (sinSesionElegir.estado === 307 || sinSesionElegir.estado === 303) && (sinSesionElegir.destino ?? "").startsWith("/auth/login"),
+  );
+  const eligeB = await enviarWeb(entorno, "/empresas/elegir", s.consultor3, { cuerpo: { empresa: "empresa-b" } });
+  comprobar("elegir Empresa B al entrar: lo lleva al listado de requisitos de B", eligeB.estado === 303 && eligeB.destino === `${B}/requisitos`, eligeB.destino ?? "");
+  const enB = await ver("consultor3", `${B}/requisitos`);
+  comprobar(
+    "en B manda su rol de colaborador y la empresa A ya no responde en esa sesión",
+    enB.estado === 200 && (await ver("consultor3", `${B}/normas`)).texto.includes(SOLO_ADMIN) && (await ver("consultor3", `${A}/panel`)).estado === 404,
+  );
+  const eligeA = await enviarWeb(entorno, "/empresas/elegir", s.consultor3, { cuerpo: { empresa: "empresa-a" } });
+  comprobar("elegir Empresa A: vuelve a ser administrador", eligeA.estado === 303 && eligeA.destino === `${A}/requisitos` && (await ver("consultor3", `${A}/normas`)).texto.includes("/normas/subir"));
+  const ajena = await enviarWeb(entorno, "/empresas/elegir", s.adminA, { cuerpo: { empresa: "empresa-b" } });
+  comprobar("quien NO pertenece a la empresa elegida recibe «no_encontrada» (la API lo decide)", ajena.estado === 303 && ajena.destino === "/empresas?cambio=no_encontrada", ajena.destino ?? "");
+  for (const malo of ["EMPRESA-B", "../b", ""]) {
+    const r = await enviarWeb(entorno, "/empresas/elegir", s.consultor3, { cuerpo: { empresa: malo } });
+    comprobar(`un slug mal formado (${JSON.stringify(malo)}) vuelve con «no_valido»`, r.estado === 303 && r.destino === "/empresas?cambio=no_valido");
+  }
+  for (const [origen, nombre] of [[null, "sin Origin"], ["null", "con Origin «null»"], ["https://evil.example", "con Origin de otro sitio"]] as const) {
+    comprobar(`elegir empresa ${nombre}: 403`, (await enviarWeb(entorno, "/empresas/elegir", s.consultor3, { origen, cuerpo: { empresa: "empresa-b" } })).estado === 403);
+  }
+  comprobar("un GET a la ruta de elegir no hace nada (405)", (await enviarWeb(entorno, "/empresas/elegir", s.consultor3, { metodo: "GET" })).estado === 405);
+  const sinSesionPost = await enviarWeb(entorno, "/empresas/elegir", new Map(), { cuerpo: { empresa: "empresa-b" } });
+  comprobar("sin sesión, elegir lleva a ingresar", sinSesionPost.estado === 303 && (sinSesionPost.destino ?? "").startsWith("/auth/login"));
+  const conMenu = await ver("consultor3", `${A}/panel`);
+  comprobar("toda pantalla con menú ofrece «Cerrar sesión» como un POST a /auth/logout", /<form[^>]*action="\/auth\/logout"/.test(conMenu.texto) && conMenu.texto.includes("Cerrar sesión"));
+
   // Se deja la sesión del consultor en su empresa de origen.
   await cambiar("consultor", B, "empresa-a");
 } catch (error) {
