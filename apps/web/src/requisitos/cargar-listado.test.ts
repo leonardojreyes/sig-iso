@@ -10,6 +10,7 @@ const libreria = (cambios: Record<string, unknown> = {}) => ({
   version: '0.1.0',
   esEjemplo: true,
   fuente: 'elaboración propia SynapTech',
+  propia: false,
   adoptada: true,
   ...cambios,
 });

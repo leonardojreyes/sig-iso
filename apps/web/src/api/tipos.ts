@@ -10,6 +10,8 @@ export interface LibreriaResumen {
   readonly version: string;
   readonly esEjemplo: boolean;
   readonly fuente: string;
+  /** Subida por la empresa (ADR 034); si no, es del catálogo global. */
+  readonly propia: boolean;
   readonly adoptada: boolean;
 }
 

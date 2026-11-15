@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import { AutorizacionFake } from '@sig/autorizacion';
 import { conTenant, GestorPools, leerUrls, ROLES_BD } from '@sig/db';
-import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, ListarRequisitosUseCase, ObtenerRequisitoUseCase } from '@sig/normas';
+import { AdoptarLibreriaUseCase, CargarLibreriaUseCase, crearUnidadDeTrabajoCarga, crearUnidadDeTrabajoNormas, LectorLibreriaYaml, ListarLibreriasUseCase, ListarRequisitosUseCase, ObtenerRequisitoUseCase } from '@sig/normas';
 import { crearEmpresaId } from '@sig/tenancy';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -81,6 +81,7 @@ describe.skipIf(!hayBase)('normas (API + PostgreSQL real)', () => {
       modulos: [
         NormasApiModule.register({
           adoptar: new AdoptarLibreriaUseCase(unidad, autorizacion),
+          cargar: new CargarLibreriaUseCase(crearUnidadDeTrabajoCarga(pools.db('app')), autorizacion, new LectorLibreriaYaml()),
           librerias: new ListarLibreriasUseCase(unidad),
           requisitos: new ListarRequisitosUseCase(unidad),
           requisito: new ObtenerRequisitoUseCase(unidad),

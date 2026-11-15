@@ -74,10 +74,20 @@ export class CargarLibreriaUseCase {
     private readonly lector: LectorLibreriaPort,
   ) {}
 
+  /**
+   * Decide el permiso SIN mirar el archivo: la API lo llama antes de leer un solo byte (orden 401, 403, 400, 413) y `ejecutar` lo
+   * vuelve a decidir (no se confía en que quien llama lo haya hecho).
+   */
+  async comprobarPermiso(empresa: EmpresaId, usuario: string): Promise<void> {
+    const empresaId = crearEmpresaId(empresa);
+    const usuarioId = exigirUuid('usuarioId', usuario);
+    if (!(await this.autorizacion.puede(usuarioId, 'normas.cargar', empresaId))) throw new SinPermisoError('normas.cargar');
+  }
+
   async ejecutar(entrada: CargarLibreriaEntrada): Promise<ResultadoCargaLibreria> {
+    await this.comprobarPermiso(entrada.empresaId, entrada.usuarioId);
     const empresaId = crearEmpresaId(entrada.empresaId);
     const usuarioId = exigirUuid('usuarioId', entrada.usuarioId);
-    if (!(await this.autorizacion.puede(usuarioId, 'normas.cargar', empresaId))) throw new SinPermisoError('normas.cargar');
 
     const huellaBytes = this.lector.huellaDe(entrada.contenido);
     const evaluado = this.evaluar(entrada.contenido, huellaBytes);

@@ -111,13 +111,41 @@ export interface paths {
         };
         /**
          * Librerías del catálogo
-         * @description Todas las librerías del catálogo GLOBAL con sus metadatos, e indica cuáles adoptó la empresa. Las entradas solo se ven si
-         *     se adoptó. El catálogo es acotado por diseño y de solo lectura; una librería privada de una empresa exigiría su propia
-         *     tabla con `empresa_id` y RLS, y no aparecería aquí.
+         * @description Las librerías del catálogo GLOBAL (de solo lectura) y las PROPIAS de la empresa de quien consulta (ADR 034), con sus
+         *     metadatos, e indica cuáles adoptó la empresa. Las entradas solo se ven si se adoptó. Una librería propia de otra empresa
+         *     nunca aparece. Cada versión es una fila.
          */
         get: operations["listarLibrerias"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/librerias/carga": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sube una librería de norma propia de la empresa (archivo YAML)
+         * @description Solo la persona con rol de administrador SIG (`normas.cargar`). `multipart/form-data` con **un solo archivo** (campo `archivo`)
+         *     YAML de hasta 1 MB, sin alias ni anclas, con el esquema v3 de las librerías (sin texto de la norma). El código debe empezar con
+         *     `propia-` y la librería no puede ser de ejemplo. La librería queda **propia de la empresa del token** y nunca es visible para
+         *     otra; cada versión es inmutable (la misma versión con otro contenido se rechaza).
+         *
+         *     Un archivo que no pasa la validación **no es un error HTTP**: responde 200 con `estado: rechazada`, el motivo y la lista de
+         *     errores por ruta (nunca el contenido), y el rechazo queda en la bitácora. 201 si se cargó ahora; 200 si ya estaba cargada
+         *     (mismo contenido) o si se rechazó. 413 si declara más de 1 MB (sin leerlo) y 400 si no llega el archivo.
+         *     Orden de evaluación: 401, 403, 400, 413, y después la validación del contenido.
+         */
+        post: operations["cargarLibreria"];
         delete?: never;
         options?: never;
         head?: never;
@@ -689,8 +717,40 @@ export interface components {
             /** @description Una librería de ejemplo se muestra rotulada como tal. */
             esEjemplo: boolean;
             fuente: string;
+            /** @description Verdadero si la subió la empresa de quien consulta (ADR 034); falso si es del catálogo global. */
+            propia: boolean;
             /** @description Si la empresa de quien consulta ya la adoptó. */
             adoptada: boolean;
+        };
+        LibreriaSubida: {
+            /**
+             * Format: binary
+             * @description El YAML de la librería (hasta 1 MB).
+             */
+            archivo: string;
+        };
+        /** @description Qué falló y dónde. Nunca repite el contenido del archivo. */
+        ErrorCargaLibreria: {
+            /** @description Identificador de la entrada afectada, si aplica. */
+            entrada: string | null;
+            indice: number | null;
+            ruta: string;
+            codigo: string;
+        };
+        CargaLibreria: {
+            /** @enum {string} */
+            estado: "cargada" | "ya_cargada" | "rechazada";
+            /**
+             * @description Solo si el estado es `rechazada`.
+             * @enum {string|null}
+             */
+            motivo: "tipo_no_permitido" | "tamano_excedido" | "formato_invalido" | "contenido_no_permitido" | "codigo_no_permitido" | "hash_distinto" | null;
+            codigo: string | null;
+            version: string | null;
+            entradas: number | null;
+            /** @description SHA-256 del contenido canónico (si es válida) o de los bytes del archivo (si no). */
+            huella: string;
+            errores: components["schemas"]["ErrorCargaLibreria"][];
         };
         Adopcion: {
             /** Format: uuid */
@@ -1229,6 +1289,24 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problema"];
             };
         };
+        /** @description El archivo de la librería pasa de 1 MB. No se lee ni se guarda nada. */
+        LibreriaDemasiadoGrande: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Archivo demasiado grande",
+                 *       "status": 413,
+                 *       "codigo": "archivo_demasiado_grande"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problema"];
+            };
+        };
         /**
          * @description El contenido del archivo no es de un tipo permitido o está dañado (PDF, PNG, JPEG, TXT, DOCX, XLSX o PPTX; sin macros, SVG ni HTML).
          *     El tipo se decide por el contenido, no por la extensión. No se guarda nada y el rechazo queda en la bitácora.
@@ -1416,6 +1494,47 @@ export interface operations {
                 };
             };
             401: components["responses"]["NoAutenticado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cargarLibreria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["LibreriaSubida"];
+            };
+        };
+        responses: {
+            /** @description Ya estaba cargada (mismo contenido) o el archivo se rechazó; ver `estado`. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CargaLibreria"];
+                };
+            };
+            /** @description La librería se cargó ahora. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CargaLibreria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            413: components["responses"]["LibreriaDemasiadoGrande"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

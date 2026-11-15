@@ -18,8 +18,8 @@ describe('ListarLibrerias', () => {
   it('lista todo el catálogo con la forma del contrato y adoptada=false si no adoptó ninguna', async () => {
     const { caso } = montar();
     expect(await caso.ejecutar(A)).toEqual([
-      { id: LIB2, codigo: 'ejemplo-dos', nombre: 'Ejemplo dos', version: '2.1.0', esEjemplo: false, fuente: 'propia', adoptada: false },
-      { id: LIB1, codigo: 'ejemplo-uno', nombre: 'Ejemplo uno', version: '1.0.0', esEjemplo: true, fuente: 'propia', adoptada: false },
+      { id: LIB2, codigo: 'ejemplo-dos', nombre: 'Ejemplo dos', version: '2.1.0', esEjemplo: false, fuente: 'propia', propia: false, adoptada: false },
+      { id: LIB1, codigo: 'ejemplo-uno', nombre: 'Ejemplo uno', version: '1.0.0', esEjemplo: true, fuente: 'propia', propia: false, adoptada: false },
     ]);
   });
 
@@ -43,7 +43,13 @@ describe('ListarLibrerias', () => {
   it('no expone campos fuera del contrato (hash, orden, etc.)', async () => {
     const { caso } = montar();
     const [primera] = await caso.ejecutar(A);
-    expect(Object.keys(primera!).sort()).toEqual(['adoptada', 'codigo', 'esEjemplo', 'fuente', 'id', 'nombre', 'version']);
+    expect(Object.keys(primera!).sort()).toEqual(['adoptada', 'codigo', 'esEjemplo', 'fuente', 'id', 'nombre', 'propia', 'version']);
+  });
+
+  it('distingue la librería propia de la empresa del catálogo global', async () => {
+    const propia = Libreria.crear({ id: '77777777-7777-4777-8777-777777777777', codigo: 'propia-mi-norma', nombre: 'Mi norma', version: '1.0.0', esEjemplo: false, fuente: 'elaboración propia', propia: true });
+    const { caso } = montar([libreria1, propia]);
+    expect((await caso.ejecutar(A)).map((l) => [l.codigo, l.propia])).toEqual([['ejemplo-uno', false], ['propia-mi-norma', true]]);
   });
 
   it('un catálogo vacío da lista vacía', async () => {

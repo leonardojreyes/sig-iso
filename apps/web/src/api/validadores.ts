@@ -24,11 +24,11 @@ export const validarLibrerias = (cuerpo: unknown): LibreriaResumen[] | null => {
   const salida: LibreriaResumen[] = [];
   for (const item of cuerpo) {
     const o = objeto(item);
-    if (!o || !claves(o, ['id', 'codigo', 'nombre', 'version', 'esEjemplo', 'fuente', 'adoptada'])) return null;
+    if (!o || !claves(o, ['id', 'codigo', 'nombre', 'version', 'esEjemplo', 'fuente', 'propia', 'adoptada'])) return null;
     if (!texto(o.id, 36, UUID) || !texto(o.codigo, 64, /^[a-z0-9-]+$/, 1) || !texto(o.nombre, 120, undefined, 1))
       return null;
     if (!texto(o.version, 20, /^[0-9]+\.[0-9]+\.[0-9]+$/) || !texto(o.fuente, 200)) return null;
-    if (typeof o.esEjemplo !== 'boolean' || typeof o.adoptada !== 'boolean') return null;
+    if (typeof o.esEjemplo !== 'boolean' || typeof o.propia !== 'boolean' || typeof o.adoptada !== 'boolean') return null;
     salida.push({
       id: o.id,
       codigo: o.codigo,
@@ -36,6 +36,7 @@ export const validarLibrerias = (cuerpo: unknown): LibreriaResumen[] | null => {
       version: o.version,
       esEjemplo: o.esEjemplo,
       fuente: o.fuente,
+      propia: o.propia,
       adoptada: o.adoptada,
     });
   }

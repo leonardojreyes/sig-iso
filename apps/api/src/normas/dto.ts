@@ -9,6 +9,7 @@ export class LibreriaResumenResponse {
   @ApiProperty({ type: String, pattern: '^[0-9]+\\.[0-9]+\\.[0-9]+$', maxLength: 20 }) version!: string;
   @ApiProperty({ type: Boolean }) esEjemplo!: boolean;
   @ApiProperty({ type: String, maxLength: 200 }) fuente!: string;
+  @ApiProperty({ type: Boolean, description: 'Verdadero si la subió la empresa de quien consulta (ADR 034); falso si es del catálogo global.' }) propia!: boolean;
   @ApiProperty({ type: Boolean, description: 'Si la empresa de quien consulta ya la adoptó.' }) adoptada!: boolean;
 }
 
@@ -38,4 +39,25 @@ export class EntradaLibreriaResponse {
   @ApiProperty({ type: String, enum: ['comun', 'parcial', 'especifico'] }) alcanceComun!: string;
   @ApiProperty({ type: [CorrespondenciaNormaResponse], minItems: 1, maxItems: 20 }) aplicaA!: CorrespondenciaNormaResponse[];
   @ApiProperty({ type: Boolean }) esEjemplo!: boolean;
+}
+
+export class LibreriaSubidaRequest {
+  @ApiProperty({ type: String, format: 'binary', description: 'El YAML de la librería (hasta 1 MB).' }) archivo!: string;
+}
+
+export class ErrorCargaLibreriaResponse {
+  @ApiProperty({ type: String, maxLength: 41, nullable: true, description: 'Identificador de la entrada afectada, si aplica.' }) entrada!: string | null;
+  @ApiProperty({ type: 'integer', minimum: 0, maximum: 999, nullable: true }) indice!: number | null;
+  @ApiProperty({ type: String, maxLength: 200 }) ruta!: string;
+  @ApiProperty({ type: String, maxLength: 60 }) codigo!: string;
+}
+
+export class CargaLibreriaResponse {
+  @ApiProperty({ type: String, enum: ['cargada', 'ya_cargada', 'rechazada'] }) estado!: string;
+  @ApiProperty({ type: String, enum: ['tipo_no_permitido', 'tamano_excedido', 'formato_invalido', 'contenido_no_permitido', 'codigo_no_permitido', 'hash_distinto'], nullable: true, description: 'Solo si el estado es `rechazada`.' }) motivo!: string | null;
+  @ApiProperty({ type: String, pattern: '^[a-z0-9-]+$', maxLength: 64, nullable: true }) codigo!: string | null;
+  @ApiProperty({ type: String, pattern: '^[0-9]+\\.[0-9]+\\.[0-9]+$', maxLength: 20, nullable: true }) version!: string | null;
+  @ApiProperty({ type: 'integer', minimum: 0, maximum: 1000, nullable: true }) entradas!: number | null;
+  @ApiProperty({ type: String, pattern: '^[0-9a-f]{64}$', maxLength: 64, description: 'SHA-256 del contenido canónico (si es válida) o de los bytes del archivo (si no).' }) huella!: string;
+  @ApiProperty({ type: [ErrorCargaLibreriaResponse], maxItems: 200 }) errores!: ErrorCargaLibreriaResponse[];
 }

@@ -141,9 +141,9 @@ paths:
       operationId: listarLibrerias
       summary: Librerías del catálogo
       description: |
-        Todas las librerías del catálogo GLOBAL con sus metadatos, e indica cuáles adoptó la empresa. Las entradas solo se ven si
-        se adoptó. El catálogo es acotado por diseño y de solo lectura; una librería privada de una empresa exigiría su propia
-        tabla con `empresa_id` y RLS, y no aparecería aquí.
+        Las librerías del catálogo GLOBAL (de solo lectura) y las PROPIAS de la empresa de quien consulta (ADR 034), con sus
+        metadatos, e indica cuáles adoptó la empresa. Las entradas solo se ven si se adoptó. Una librería propia de otra empresa
+        nunca aparece. Cada versión es una fila.
       tags: [librerias]
       responses:
         '200':
@@ -160,6 +160,59 @@ paths:
                   $ref: '#/components/schemas/LibreriaResumen'
         '401':
           $ref: '#/components/responses/NoAutenticado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /librerias/carga:
+    post:
+      operationId: cargarLibreria
+      summary: Sube una librería de norma propia de la empresa (archivo YAML)
+      description: |
+        Solo la persona con rol de administrador SIG (`normas.cargar`). `multipart/form-data` con **un solo archivo** (campo `archivo`)
+        YAML de hasta 1 MB, sin alias ni anclas, con el esquema v3 de las librerías (sin texto de la norma). El código debe empezar con
+        `propia-` y la librería no puede ser de ejemplo. La librería queda **propia de la empresa del token** y nunca es visible para
+        otra; cada versión es inmutable (la misma versión con otro contenido se rechaza).
+
+        Un archivo que no pasa la validación **no es un error HTTP**: responde 200 con `estado: rechazada`, el motivo y la lista de
+        errores por ruta (nunca el contenido), y el rechazo queda en la bitácora. 201 si se cargó ahora; 200 si ya estaba cargada
+        (mismo contenido) o si se rechazó. 413 si declara más de 1 MB (sin leerlo) y 400 si no llega el archivo.
+        Orden de evaluación: 401, 403, 400, 413, y después la validación del contenido.
+      tags: [librerias]
+      x-permiso: normas.cargar
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LibreriaSubida'
+      responses:
+        '201':
+          description: La librería se cargó ahora.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CargaLibreria'
+        '200':
+          description: Ya estaba cargada (mismo contenido) o el archivo se rechazó; ver `estado`.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CargaLibreria'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '413':
+          $ref: '#/components/responses/LibreriaDemasiadoGrande'
         '429':
           $ref: '#/components/responses/LimiteExcedido'
         '500':
@@ -1356,6 +1409,20 @@ components:
             title: Archivo demasiado grande
             status: 413
             codigo: archivo_demasiado_grande
+    LibreriaDemasiadoGrande:
+      description: El archivo de la librería pasa de 1 MB. No se lee ni se guarda nada.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problema'
+          example:
+            type: about:blank
+            title: Archivo demasiado grande
+            status: 413
+            codigo: archivo_demasiado_grande
     TipoNoPermitido:
       description: |
         El contenido del archivo no es de un tipo permitido o está dañado (PDF, PNG, JPEG, TXT, DOCX, XLSX o PPTX; sin macros, SVG ni HTML).
@@ -1482,7 +1549,7 @@ components:
           description: Solo `https` sin credenciales en la URL, o una ruta propia (nunca `//host`). Si no es válido se devuelve nulo y se muestra el monograma.
     LibreriaResumen:
       type: object
-      required: [id, codigo, nombre, version, esEjemplo, fuente, adoptada]
+      required: [id, codigo, nombre, version, esEjemplo, fuente, propia, adoptada]
       additionalProperties: false
       properties:
         id:
@@ -1506,9 +1573,75 @@ components:
         fuente:
           type: string
           maxLength: 200
+        propia:
+          type: boolean
+          description: Verdadero si la subió la empresa de quien consulta (ADR 034); falso si es del catálogo global.
         adoptada:
           type: boolean
           description: Si la empresa de quien consulta ya la adoptó.
+    LibreriaSubida:
+      type: object
+      required: [archivo]
+      additionalProperties: false
+      properties:
+        archivo:
+          type: string
+          format: binary
+          description: El YAML de la librería (hasta 1 MB).
+    ErrorCargaLibreria:
+      type: object
+      description: Qué falló y dónde. Nunca repite el contenido del archivo.
+      required: [entrada, indice, ruta, codigo]
+      additionalProperties: false
+      properties:
+        entrada:
+          type: [string, 'null']
+          maxLength: 41
+          description: Identificador de la entrada afectada, si aplica.
+        indice:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 999
+        ruta:
+          type: string
+          maxLength: 200
+        codigo:
+          type: string
+          maxLength: 60
+    CargaLibreria:
+      type: object
+      required: [estado, motivo, codigo, version, entradas, huella, errores]
+      additionalProperties: false
+      properties:
+        estado:
+          type: string
+          enum: [cargada, ya_cargada, rechazada]
+        motivo:
+          type: [string, 'null']
+          enum: [tipo_no_permitido, tamano_excedido, formato_invalido, contenido_no_permitido, codigo_no_permitido, hash_distinto, null]
+          description: Solo si el estado es `rechazada`.
+        codigo:
+          type: [string, 'null']
+          pattern: ^[a-z0-9-]+$
+          maxLength: 64
+        version:
+          type: [string, 'null']
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+          maxLength: 20
+        entradas:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 1000
+        huella:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          maxLength: 64
+          description: SHA-256 del contenido canónico (si es válida) o de los bytes del archivo (si no).
+        errores:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/ErrorCargaLibreria'
     Adopcion:
       type: object
       required: [libreriaId, entradas, yaAdoptada, adoptadaEn]

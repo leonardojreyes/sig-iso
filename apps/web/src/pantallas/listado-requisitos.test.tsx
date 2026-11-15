@@ -16,6 +16,7 @@ const libreria = (c: Partial<LibreriaResumen> = {}): LibreriaResumen => ({
   version: '0.1.0',
   esEjemplo: true,
   fuente: 'elaboración propia SynapTech',
+  propia: false,
   adoptada: true,
   ...c,
 });

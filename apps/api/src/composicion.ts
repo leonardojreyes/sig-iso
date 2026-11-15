@@ -6,7 +6,7 @@ import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
 import { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
 import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
-import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
+import { AdoptarLibreriaUseCase, CargarLibreriaUseCase, crearUnidadDeTrabajoCarga, LectorLibreriaYaml, type ContextoCarga, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
 import { leerConfiguracionAuth, leerConfiguracionLimites, type Entorno } from './autenticacion/configuracion.js';
 import type { RegistradorHechos } from './autenticacion/registrador-token-invalido.js';
@@ -58,6 +58,8 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
   // Una unidad de trabajo por ejecución sobre el pool del rol de la aplicación (con la RLS aplicada).
   const unidad: UnidadDeTrabajoPort<ContextoAdopcion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoNormas(obtenerPools().db('app')).ejecutar(empresaId, fn) };
 
+  const unidadCarga: UnidadDeTrabajoPort<ContextoCarga> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoCarga(obtenerPools().db('app')).ejecutar(empresaId, fn) };
+
   const librerias = new ListarLibreriasUseCase(unidad);
   const requisitos = new ListarRequisitosUseCase(unidad);
   const catalogo = new CatalogoNormasAdapter(librerias, requisitos);
@@ -87,6 +89,7 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
     negocio: { identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos },
     normas: {
       adoptar: new AdoptarLibreriaUseCase(unidad, autorizacion, () => new Date(), flags),
+      cargar: new CargarLibreriaUseCase(unidadCarga, autorizacion, new LectorLibreriaYaml()),
       librerias,
       requisitos,
       requisito: new ObtenerRequisitoUseCase(unidad),

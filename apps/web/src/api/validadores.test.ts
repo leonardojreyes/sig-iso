@@ -10,6 +10,7 @@ const libreria = () => ({
   version: '0.1.0',
   esEjemplo: true,
   fuente: 'elaboración propia SynapTech',
+  propia: false,
   adoptada: false,
 });
 const entrada = () => ({
@@ -48,6 +49,8 @@ describe('validarLibrerias', () => {
     ['nombre largo', [{ ...libreria(), nombre: 'a'.repeat(121) }]],
     ['versión inválida', [{ ...libreria(), version: '1.0' }]],
     ['esEjemplo no booleano', [{ ...libreria(), esEjemplo: 'si' }]],
+    ['propia no booleano', [{ ...libreria(), propia: 'no' }]],
+    ['sin el campo propia', [Object.fromEntries(Object.entries(libreria()).filter(([k]) => k !== 'propia'))]],
     ['fuente larga', [{ ...libreria(), fuente: 'a'.repeat(201) }]],
     ['adoptada no booleano', [{ ...libreria(), adoptada: 1 }]],
     ['un elemento que no es objeto', [null]],
