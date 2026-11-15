@@ -28,7 +28,7 @@ const identidad = {
 };
 
 const montar = (
-  opciones: { marca?: () => Response; me?: () => Response; keycloak?: 'ok' | 'invalid_grant' | 'caido' } = {},
+  opciones: { marca?: () => Response; me?: () => Response; empresas?: () => Response; keycloak?: 'ok' | 'invalid_grant' | 'caido' } = {},
 ) => {
   const llamadas: string[] = [];
   const fetchFn = (async (url: string) => {
@@ -37,6 +37,8 @@ const montar = (
       return (opciones.marca ?? (() => new Response(JSON.stringify(marca), { status: 200 })))();
     if (url === `${config.apiUrl}/me`)
       return (opciones.me ?? (() => new Response(JSON.stringify(identidad), { status: 200 })))();
+    if (url === `${config.apiUrl}/sesion/empresas`)
+      return (opciones.empresas ?? (() => new Response(JSON.stringify([{ slug: 'empresa-a', nombre: 'Empresa A (prueba)', activa: true }]), { status: 200 })))();
     if (url.startsWith(config.apiUrl)) return new Response(null, { status: 204 });
     if (url.endsWith('/token')) {
       if (opciones.keycloak === 'caido') throw new Error('ECONNREFUSED');
@@ -87,7 +89,7 @@ describe('cargarEmpresaActual (marca de la sesión para las pantallas internas)'
       persona: { nombre: 'Persona de prueba', roles: ['administrador_sig'] },
       acceso: 'acceso-inicial',
     });
-    expect([...llamadas].sort()).toEqual(['API/empresa/marca', 'API/me']);
+    expect([...llamadas].sort()).toEqual(['API/empresa/marca', 'API/me', 'API/sesion/empresas']);
   });
 
   it('si la dirección no es la empresa verificada (o el proxy no verificó nada) es 404 y NO llama a la API', async () => {
@@ -192,5 +194,38 @@ describe('cargarEmpresaActual (marca de la sesión para las pantallas internas)'
         ),
       ).toEqual({ tipo: 'no_disponible' });
     }
+  });
+});
+
+describe('cargarEmpresaActual: otras empresas de la persona (selector de empresa, ADR 035)', () => {
+  const dos = [
+    { slug: 'empresa-a', nombre: 'Empresa A (prueba)', activa: true },
+    { slug: 'empresa-b', nombre: 'Empresa B (prueba)', activa: false },
+  ];
+  const cargar = async (empresas: () => Response) => {
+    const { deps, cookie } = await entorno({ empresas });
+    return cargarEmpresaActual({ slugDeLaDireccion: 'empresa-a', slugVerificado: 'empresa-a', cookie }, deps);
+  };
+
+  it('un consultor recibe las OTRAS empresas (sin la actual) para el selector', async () => {
+    const r = await cargar(() => new Response(JSON.stringify(dos), { status: 200 }));
+    expect(r.tipo === 'ok' && r.empresa.otrasEmpresas).toEqual([{ slug: 'empresa-b', nombre: 'Empresa B (prueba)' }]);
+  });
+
+  it('quien pertenece a una sola empresa no recibe selector (la marca queda sin el campo)', async () => {
+    const r = await cargar(() => new Response(JSON.stringify([dos[0]]), { status: 200 }));
+    expect(r.tipo === 'ok' && 'otrasEmpresas' in r.empresa).toBe(false);
+  });
+
+  it.each([
+    ['la API falla (500)', () => new Response(null, { status: 500 })],
+    ['la API no responde un JSON válido', () => new Response('no es json', { status: 200 })],
+    ['una forma que no cumple el contrato', () => new Response(JSON.stringify([{ slug: 'empresa-b', nombre: 'B', activa: false, extra: 1 }]), { status: 200 })],
+    ['dos empresas activas', () => new Response(JSON.stringify([{ ...dos[0], activa: true }, { ...dos[1], activa: true }]), { status: 200 })],
+    ['un slug repetido', () => new Response(JSON.stringify([dos[0], dos[0]]), { status: 200 })],
+  ])('si %s, la pantalla se muestra igual y sin selector', async (_n, empresas) => {
+    const r = await cargar(empresas);
+    expect(r.tipo).toBe('ok');
+    expect(r.tipo === 'ok' && 'otrasEmpresas' in r.empresa).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { BookMarked, ClipboardCheck, FileCheck2, FileSignature, FileText, LayoutDashboard, ListChecks, ShieldCheck } from 'lucide-react';
-import { Avatar } from '@sig/ui';
+import { Avatar, Button, Select } from '@sig/ui';
 import type { Empresa } from '../empresas';
 import { es } from '../i18n/es-EC';
 import { SelectorTema } from './selector-tema';
@@ -24,6 +24,30 @@ export const LogoEmpresa = ({ empresa }: { empresa: Empresa }) =>
 
 const enlace = 'flex min-h-[var(--sig-density-target-min)] items-center gap-3 rounded-md px-3 text-sm font-medium text-fg hover:bg-surface-muted aria-[current=page]:bg-primary-subtle aria-[current=page]:text-on-primary-subtle';
 
+/**
+ * Selector de empresa para quien pertenece a varias (un consultor, ADR 035). Es un formulario de la web: no lleva identificadores,
+ * solo el slug elegido, y la API decide si la persona pertenece a esa empresa. No se muestra a quien tiene una sola.
+ */
+export const SelectorEmpresa = ({ empresa }: { empresa: Empresa }) => {
+  const otras = empresa.otrasEmpresas ?? [];
+  if (otras.length === 0) return null;
+  return (
+    <form method="post" action={`/e/${empresa.id}/empresa/cambiar`} className="flex items-center gap-2">
+      <label htmlFor="selector-empresa" className="sr-only">
+        {es.empresas.etiqueta}
+      </label>
+      <Select id="selector-empresa" name="empresa" defaultValue={otras[0]!.slug} aria-label={es.empresas.cambiarAria}>
+        {otras.map((o) => (
+          <option key={o.slug} value={o.slug}>
+            {o.nombre}
+          </option>
+        ))}
+      </Select>
+      <Button type="submit">{es.empresas.cambiar}</Button>
+    </form>
+  );
+};
+
 /** Marco de aplicación: cabecera, navegación lateral y contenido principal. */
 /** `persona` es el nombre de quien tiene sesión; solo las pantallas de demostración usan el valor por omisión. */
 export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: { empresa: Empresa; activo: 'panel' | 'requisitos' | 'diagnostico' | 'alcance' | 'controles' | 'cobertura' | 'declaracion' | 'normas'; persona?: string; children: ReactNode }) => (
@@ -34,6 +58,7 @@ export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: 
     <header className="flex items-center justify-between border-b border-line bg-surface px-6 py-3">
       <LogoEmpresa empresa={empresa} />
       <div className="flex items-center gap-4">
+        <SelectorEmpresa empresa={empresa} />
         <SelectorTema />
         <Avatar nombre={persona} />
       </div>

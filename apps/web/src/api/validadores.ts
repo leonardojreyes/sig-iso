@@ -1,6 +1,6 @@
 // La respuesta de la API se trata como un dato externo: forma EXACTA (sin campos de más ni de menos), tipos, patrones y topes del
 // contrato. Lo que no cumple se rechaza entero (nunca se corrige ni se muestra a medias).
-import type { Alcance, CargaLibreria, ErrorCargaLibreria, Cobertura, CoberturaEntrada, Evidencia, ResumenCobertura, TipoArchivo, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol, Declaracion, FilaDeclaracion, VersionDeclaracion, VersionDeclaracionConFilas } from './tipos';
+import type { Alcance, EmpresaDePersona, CargaLibreria, ErrorCargaLibreria, Cobertura, CoberturaEntrada, Evidencia, ResumenCobertura, TipoArchivo, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol, Declaracion, FilaDeclaracion, VersionDeclaracion, VersionDeclaracionConFilas } from './tipos';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLES: readonly string[] = [
@@ -461,4 +461,18 @@ export const validarCargaLibreria = (cuerpo: unknown): CargaLibreria | null => {
     errores.push({ entrada: e.entrada as string | null, indice: e.indice as number | null, ruta: e.ruta, codigo: e.codigo });
   }
   return { estado, motivo, codigo: o.codigo as string | null, version: o.version as string | null, entradas: o.entradas as number | null, huella: o.huella, errores };
+};
+
+/** Respuesta de `GET /sesion/empresas`: a lo sumo 50, con un slug válido, y exactamente una activa como máximo. */
+export const validarEmpresasDePersona = (cuerpo: unknown): EmpresaDePersona[] | null => {
+  if (!Array.isArray(cuerpo) || cuerpo.length > 50) return null;
+  const salida: EmpresaDePersona[] = [];
+  for (const item of cuerpo) {
+    const o = objeto(item);
+    if (!o || !claves(o, ['slug', 'nombre', 'activa'])) return null;
+    if (!texto(o.slug, 32, /^[a-z0-9-]+$/, 1) || !texto(o.nombre, 120, undefined, 1) || typeof o.activa !== 'boolean') return null;
+    salida.push({ slug: o.slug, nombre: o.nombre, activa: o.activa });
+  }
+  if (salida.filter((e) => e.activa).length > 1 || new Set(salida.map((e) => e.slug)).size !== salida.length) return null;
+  return salida;
 };

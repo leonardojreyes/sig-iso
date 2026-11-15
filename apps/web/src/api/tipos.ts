@@ -265,3 +265,11 @@ export interface CargaLibreria {
   readonly huella: string;
   readonly errores: readonly ErrorCargaLibreria[];
 }
+
+/** Una empresa a la que pertenece la persona de la sesión (ADR 035). */
+export interface EmpresaDePersona {
+  readonly slug: string;
+  readonly nombre: string;
+  /** Es la empresa de esta sesión ahora. */
+  readonly activa: boolean;
+}

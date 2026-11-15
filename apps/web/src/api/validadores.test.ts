@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { validarCargaLibreria, validarEntradas, validarIdentidad, validarLibrerias } from './validadores';
+import { validarCargaLibreria, validarEmpresasDePersona, validarEntradas, validarIdentidad, validarLibrerias } from './validadores';
 
 const UUID = '5eed0001-0000-4000-8000-0000000000a1';
 const libreria = () => ({
@@ -171,4 +171,25 @@ describe('validarCargaLibreria', () => {
     ['error sin código', { ...rechazada, errores: [{ ...rechazada.errores[0], codigo: '' }] }],
     ['índice fuera de rango', { ...rechazada, errores: [{ ...rechazada.errores[0], indice: 1000 }] }],
   ])('rechaza %s', (_n, cuerpo) => expect(validarCargaLibreria(cuerpo)).toBeNull());
+});
+
+describe('validarEmpresasDePersona', () => {
+  const a = { slug: 'empresa-a', nombre: 'Empresa A', activa: true };
+  const b = { slug: 'empresa-b', nombre: 'Empresa B', activa: false };
+  it('acepta una lista de empresas de la persona', () => {
+    expect(validarEmpresasDePersona([a, b])).toEqual([a, b]);
+    expect(validarEmpresasDePersona([])).toEqual([]);
+  });
+  it.each([
+    ['no es una lista', null],
+    ['un elemento con campo de más', [{ ...a, extra: 1 }]],
+    ['sin el campo activa', [{ slug: 'empresa-a', nombre: 'A' }]],
+    ['activa que no es booleano', [{ ...a, activa: 'si' }]],
+    ['slug con mayúsculas', [{ ...a, slug: 'EMPRESA-A' }]],
+    ['slug vacío', [{ ...a, slug: '' }]],
+    ['nombre vacío', [{ ...a, nombre: '' }]],
+    ['dos empresas activas', [a, { ...b, activa: true }]],
+    ['un slug repetido', [a, { ...b, slug: 'empresa-a' }]],
+    ['más de 50 empresas', Array.from({ length: 51 }, (_, i) => ({ slug: `e-${i}`, nombre: 'E', activa: false }))],
+  ])('rechaza %s', (_n, cuerpo) => expect(validarEmpresasDePersona(cuerpo)).toBeNull());
 });

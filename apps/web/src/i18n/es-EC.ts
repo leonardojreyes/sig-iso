@@ -250,6 +250,16 @@ export const es = {
     sinEvidenciasAdmin: 'Suba el primer archivo que demuestre que el control opera.',
     sinEvidenciasOtros: 'Cuando se suba una evidencia, aparecerá aquí.',
   },
+  empresas: {
+    etiqueta: 'Empresa',
+    cambiar: 'Cambiar',
+    cambiarAria: 'Cambiar de empresa',
+    avisos: {
+      no_encontrada: { tono: 'danger', titulo: 'No pudo cambiar de empresa', detalle: 'Esa empresa no está entre las suyas.' },
+      no_valido: { tono: 'danger', titulo: 'No pudo cambiar de empresa', detalle: 'Elija una de las empresas de la lista e intente de nuevo.' },
+      no_disponible: { tono: 'danger', titulo: 'No pudo cambiar de empresa', detalle: 'El servicio no está disponible en este momento. Intente de nuevo en unos minutos.' },
+    },
+  },
   normas: {
     titulo: 'Normas',
     ayuda: 'Las librerías de normas de su empresa. Suba su propia librería en un archivo YAML con identificadores, títulos breves y guías redactadas con sus palabras: no copie el texto de la norma. Cada versión es inmutable; para corregirla, suba una versión nueva.',
