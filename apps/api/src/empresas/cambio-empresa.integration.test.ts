@@ -6,6 +6,7 @@ import { crearArnes, hechosEnMemoria, type Arnes } from '../autenticacion/prueba
 import { erroresDeEsquema } from '../autenticacion/prueba/contrato.js';
 import { EmpresaSesionModule } from './empresa-sesion.module.js';
 import { empresaActivaDePrueba } from './prueba/empresa-activa.js';
+import { marcaDePrueba } from './prueba/marca.js';
 
 // Una persona en varias empresas (ADR 035) sobre una aplicación Nest REAL: la guardia decide la empresa de cada petición con la
 // empresa activa de la sesión. Cada respuesta se valida contra los esquemas de openapi.yaml.
@@ -44,7 +45,7 @@ describe('cambio de empresa de una persona en varias empresas (ADR 035)', () => 
     arnes = await crearArnes({
       hechos,
       empresaActiva: activa.resolver,
-      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos, listarEmpresas: activa.listarEmpresas, cambiarEmpresa: activa.cambiarEmpresa, olvidarEmpresa: activa.olvidarEmpresa })],
+      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos, actualizarMarca: marcaDePrueba(empresas, autorizacion).caso, listarEmpresas: activa.listarEmpresas, cambiarEmpresa: activa.cambiarEmpresa, olvidarEmpresa: activa.olvidarEmpresa })],
     });
   });
   afterAll(async () => {

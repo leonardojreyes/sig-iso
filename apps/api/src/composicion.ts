@@ -5,7 +5,7 @@ import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
 import { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
-import { CambiarEmpresaUseCase, EmpresaActivaKysely, EmpresaKysely, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase, ResolverEmpresaActivaUseCase, type EmpresaActivaPort, type EmpresaRepositoryPort } from '@sig/empresas';
+import { ActualizarMarcaUseCase, crearUnidadDeTrabajoMarca, CambiarEmpresaUseCase, EmpresaActivaKysely, EmpresaKysely, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase, ResolverEmpresaActivaUseCase, type EmpresaActivaPort, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, CargarLibreriaUseCase, crearUnidadDeTrabajoCarga, LectorLibreriaYaml, type ContextoCarga, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
 import { leerConfiguracionAuth, leerConfiguracionLimites, type Entorno } from './autenticacion/configuracion.js';
@@ -98,6 +98,7 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
     negocio: {
       identidades: new ObtenerIdentidadUseCase(repo, autorizacion),
       marcas: new ObtenerMarcaUseCase(repo),
+      actualizarMarca: new ActualizarMarcaUseCase({ ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoMarca(obtenerPools().db('app')).ejecutar(empresaId, fn) }, autorizacion),
       hechos,
       listarEmpresas: new ListarMisEmpresasUseCase(empresaActiva),
       cambiarEmpresa: new CambiarEmpresaUseCase(empresaActiva, hechos),

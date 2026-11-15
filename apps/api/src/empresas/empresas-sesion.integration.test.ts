@@ -6,6 +6,7 @@ import { crearArnes, hechosEnMemoria, type Arnes } from '../autenticacion/prueba
 import { erroresDeEsquema } from '../autenticacion/prueba/contrato.js';
 import { EmpresaSesionModule } from './empresa-sesion.module.js';
 import { empresaActivaDePrueba } from './prueba/empresa-activa.js';
+import { marcaDePrueba } from './prueba/marca.js';
 
 // /me, /empresa/marca, /sesion/inicio y /sesion/cierre sobre una aplicación Nest REAL, con repositorios en memoria que
 // respetan el aislamiento por empresa. Cada respuesta se valida contra los esquemas de openapi.yaml.
@@ -45,7 +46,7 @@ describe('/me, /empresa/marca y /sesion/* (tareas 6.5; H1.1, H3.1–H3.3, H6.1, 
     };
     arnes = await crearArnes({
       hechos,
-      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos, ...empresaActivaDePrueba(hechos) })],
+      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos, actualizarMarca: marcaDePrueba(empresas, autorizacion).caso, ...empresaActivaDePrueba(hechos) })],
     });
   });
   afterAll(async () => { await arnes.cerrar(); });

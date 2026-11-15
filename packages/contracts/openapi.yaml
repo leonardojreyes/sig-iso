@@ -164,6 +164,44 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: actualizarMarcaEmpresa
+      summary: Edita el color y el logo de la empresa de quien consulta
+      description: |
+        Solo la persona con rol de administrador SIG (`marca.editar`). La empresa y la persona salen del token; el cuerpo solo trae el
+        color y el logo. El color elegido se guarda tal cual: si no cumple el contraste mínimo (AA), la marca que se APLICA se ajusta y
+        la respuesta lo dice (`ajustadoPorContraste`). El logo es una dirección `https` sin credenciales, una ruta propia o nulo (vuelve
+        el monograma); uno no permitido se RECHAZA con 400 (no se descarta en silencio). No cambia el nombre ni el slug. Si no cambia
+        nada, responde la marca vigente y no registra nada; si cambia algo, la bitácora guarda solo QUÉ cambió (color, logo), nunca los
+        valores. Orden de evaluación: 401, 403, 400.
+      tags: [empresa]
+      x-permiso: marca.editar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarcaEdicion'
+      responses:
+        '200':
+          description: La marca vigente después del cambio.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Marca'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
   /sesion/inicio:
     post:
       operationId: registrarInicioSesion
@@ -1651,6 +1689,21 @@ components:
           pattern: ^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\s@]*|/[^/\\\s][^\s@]*)$
           maxLength: 2048
           description: Solo `https` sin credenciales en la URL, o una ruta propia (nunca `//host`). Si no es válido se devuelve nulo y se muestra el monograma.
+    MarcaEdicion:
+      type: object
+      description: Lo que la empresa elige. La empresa nunca viaja aquí, sale del token.
+      required: [colorPrimario, logoUrl]
+      additionalProperties: false
+      properties:
+        colorPrimario:
+          type: string
+          pattern: ^#[0-9A-Fa-f]{6}$
+          maxLength: 7
+        logoUrl:
+          type: [string, 'null']
+          pattern: ^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\s@]*|/[^/\\\s][^\s@]*)$
+          maxLength: 2048
+          description: Solo `https` sin credenciales, una ruta propia (nunca `//host`) o nulo para quitarlo.
     LibreriaResumen:
       type: object
       required: [id, codigo, nombre, version, esEjemplo, fuente, propia, adoptada]

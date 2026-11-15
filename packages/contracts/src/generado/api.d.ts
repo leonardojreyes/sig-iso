@@ -100,7 +100,16 @@ export interface paths {
          *     el navegador la carga con `referrerpolicy="no-referrer"` y una política de contenido restrictiva.
          */
         get: operations["obtenerMarcaEmpresa"];
-        put?: never;
+        /**
+         * Edita el color y el logo de la empresa de quien consulta
+         * @description Solo la persona con rol de administrador SIG (`marca.editar`). La empresa y la persona salen del token; el cuerpo solo trae el
+         *     color y el logo. El color elegido se guarda tal cual: si no cumple el contraste mínimo (AA), la marca que se APLICA se ajusta y
+         *     la respuesta lo dice (`ajustadoPorContraste`). El logo es una dirección `https` sin credenciales, una ruta propia o nulo (vuelve
+         *     el monograma); uno no permitido se RECHAZA con 400 (no se descarta en silencio). No cambia el nombre ni el slug. Si no cambia
+         *     nada, responde la marca vigente y no registra nada; si cambia algo, la bitácora guarda solo QUÉ cambió (color, logo), nunca los
+         *     valores. Orden de evaluación: 401, 403, 400.
+         */
+        put: operations["actualizarMarcaEmpresa"];
         post?: never;
         delete?: never;
         options?: never;
@@ -767,6 +776,12 @@ export interface components {
             /** @description Verdadero si el color original se ajustó para cumplir el contraste mínimo; el administrador SIG ve un aviso. */
             ajustadoPorContraste: boolean;
             /** @description Solo `https` sin credenciales en la URL, o una ruta propia (nunca `//host`). Si no es válido se devuelve nulo y se muestra el monograma. */
+            logoUrl: string | null;
+        };
+        /** @description Lo que la empresa elige. La empresa nunca viaja aquí, sale del token. */
+        MarcaEdicion: {
+            colorPrimario: string;
+            /** @description Solo `https` sin credenciales, una ruta propia (nunca `//host`) o nulo para quitarlo. */
             logoUrl: string | null;
         };
         LibreriaResumen: {
@@ -1541,6 +1556,36 @@ export interface operations {
                 };
             };
             401: components["responses"]["NoAutenticado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    actualizarMarcaEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarcaEdicion"];
+            };
+        };
+        responses: {
+            /** @description La marca vigente después del cambio. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Marca"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

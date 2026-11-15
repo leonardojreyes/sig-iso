@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import { AutorizacionFake } from '@sig/autorizacion';
 import { conTenant, GestorPools, leerUrls, ROLES_BD } from '@sig/db';
-import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase } from '@sig/empresas';
+import { ActualizarMarcaUseCase, crearUnidadDeTrabajoMarca, EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase } from '@sig/empresas';
 import { crearEmpresaId } from '@sig/tenancy';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -48,7 +48,7 @@ describe.skipIf(!hayBase)('empresa y sesión (API + PostgreSQL real)', () => {
     const hechos = { registrar: (e: Parameters<Bitacora['registrar']>[0]) => bitacora.registrar(e), registrarUnaVez: (e: Parameters<Bitacora['registrarUnaVez']>[0]) => bitacora.registrarUnaVez(e) };
     arnes = await crearArnes({
       hechos,
-      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos, ...empresaActivaDePrueba(hechos) })],
+      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos, actualizarMarca: new ActualizarMarcaUseCase(crearUnidadDeTrabajoMarca(pools.db('app')), autorizacion), ...empresaActivaDePrueba(hechos) })],
     });
   });
 

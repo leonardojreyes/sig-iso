@@ -113,7 +113,7 @@ describe('documento', () => {
 describe('operaciones del corte 0.6', () => {
   it('son exactamente las del plan', () => {
     expect(operaciones.map((o) => o.id).sort()).toEqual(
-      ['GET /health', 'GET /me', 'GET /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /sesion/empresas', 'POST /sesion/empresa', 'GET /librerias', 'POST /librerias/carga', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}', 'GET /alcances', 'PUT /alcances', 'POST /alcances/aprobacion', 'GET /diagnostico', 'PUT /diagnostico/evaluaciones', 'GET /controles', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'GET /controles/{id}/evidencias', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo', 'POST /evidencias/{id}/eliminacion', 'GET /evidencias/{id}/archivo', 'GET /cobertura', 'GET /declaracion', 'POST /declaracion/aprobacion', 'GET /declaracion/versiones', 'GET /declaracion/versiones/{id}', 'GET /declaracion/documento', 'GET /declaracion/versiones/{id}/documento'].sort(),
+      ['GET /health', 'GET /me', 'GET /empresa/marca', 'PUT /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /sesion/empresas', 'POST /sesion/empresa', 'GET /librerias', 'POST /librerias/carga', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}', 'GET /alcances', 'PUT /alcances', 'POST /alcances/aprobacion', 'GET /diagnostico', 'PUT /diagnostico/evaluaciones', 'GET /controles', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'GET /controles/{id}/evidencias', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo', 'POST /evidencias/{id}/eliminacion', 'GET /evidencias/{id}/archivo', 'GET /cobertura', 'GET /declaracion', 'POST /declaracion/aprobacion', 'GET /declaracion/versiones', 'GET /declaracion/versiones/{id}', 'GET /declaracion/documento', 'GET /declaracion/versiones/{id}/documento'].sort(),
     );
   });
 
@@ -147,6 +147,7 @@ describe('seguridad', () => {
       'GET /health': [],
       'GET /me': [],
       'GET /empresa/marca': [],
+      'PUT /empresa/marca': [],
       'POST /sesion/inicio': [],
       'POST /sesion/cierre': [],
       'GET /sesion/empresas': [],
@@ -182,7 +183,7 @@ describe('seguridad', () => {
       'GET /declaracion/versiones/{id}/documento': ['path:id'],
     };
     // Solo estas tres reciben cuerpo, y su esquema es cerrado y sin campos de empresa (la empresa sale del token).
-    const conCuerpo = ['POST /sesion/empresa', 'POST /librerias/carga', 'PUT /alcances', 'POST /alcances/aprobacion', 'PUT /diagnostico/evaluaciones', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo'];
+    const conCuerpo = ['PUT /empresa/marca', 'POST /sesion/empresa', 'POST /librerias/carga', 'PUT /alcances', 'POST /alcances/aprobacion', 'PUT /diagnostico/evaluaciones', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo'];
     for (const o of operaciones) {
       const parametros = [...((doc.paths[o.ruta]!.parameters ?? []) as Obj[]), ...((o.op.parameters ?? []) as Obj[])].map((p: any) => (p.$ref ? resolver(p.$ref)! : p));
       expect(parametros.map((p: any) => `${p.in}:${p.name}`).sort(), o.id).toEqual(esperados[o.id]);
@@ -205,7 +206,7 @@ describe('seguridad', () => {
 
   it('solo las acciones restringidas declaran un permiso formal (x-permiso) y el 403', () => {
     expect(operaciones.filter((o) => o.op['x-permiso']).map((o) => [o.id, o.op['x-permiso']]).sort()).toEqual(
-      [['POST /librerias/carga', 'normas.cargar'], ['POST /librerias/{id}/adopcion', 'administrador_sig'], ['GET /alcances', 'alcance.ver'], ['PUT /alcances', 'alcance.gestionar'], ['POST /alcances/aprobacion', 'alcance.aprobar'], ['GET /diagnostico', 'diagnostico.ver'], ['PUT /diagnostico/evaluaciones', 'diagnostico.evaluar'], ['GET /controles', 'controles.ver'], ['POST /controles', 'controles.gestionar'], ['PUT /controles/{id}', 'controles.gestionar'], ['POST /controles/{id}/retiro', 'controles.gestionar'], ['POST /controles/{id}/mapeos', 'controles.gestionar'], ['POST /controles/{id}/mapeos/eliminacion', 'controles.gestionar'], ['GET /controles/{id}/evidencias', 'evidencias.ver'], ['POST /controles/{id}/evidencias', 'evidencias.registrar'], ['POST /evidencias/{id}/reemplazo', 'evidencias.registrar'], ['POST /evidencias/{id}/eliminacion', 'evidencias.eliminar'], ['GET /evidencias/{id}/archivo', 'evidencias.ver'], ['GET /cobertura', 'evidencias.ver'], ['GET /declaracion', 'declaracion.ver'], ['POST /declaracion/aprobacion', 'declaracion.aprobar'], ['GET /declaracion/versiones', 'declaracion.ver'], ['GET /declaracion/versiones/{id}', 'declaracion.ver'], ['GET /declaracion/documento', 'declaracion.exportar'], ['GET /declaracion/versiones/{id}/documento', 'declaracion.exportar']].sort(),
+      [['POST /librerias/carga', 'normas.cargar'], ['PUT /empresa/marca', 'marca.editar'], ['POST /librerias/{id}/adopcion', 'administrador_sig'], ['GET /alcances', 'alcance.ver'], ['PUT /alcances', 'alcance.gestionar'], ['POST /alcances/aprobacion', 'alcance.aprobar'], ['GET /diagnostico', 'diagnostico.ver'], ['PUT /diagnostico/evaluaciones', 'diagnostico.evaluar'], ['GET /controles', 'controles.ver'], ['POST /controles', 'controles.gestionar'], ['PUT /controles/{id}', 'controles.gestionar'], ['POST /controles/{id}/retiro', 'controles.gestionar'], ['POST /controles/{id}/mapeos', 'controles.gestionar'], ['POST /controles/{id}/mapeos/eliminacion', 'controles.gestionar'], ['GET /controles/{id}/evidencias', 'evidencias.ver'], ['POST /controles/{id}/evidencias', 'evidencias.registrar'], ['POST /evidencias/{id}/reemplazo', 'evidencias.registrar'], ['POST /evidencias/{id}/eliminacion', 'evidencias.eliminar'], ['GET /evidencias/{id}/archivo', 'evidencias.ver'], ['GET /cobertura', 'evidencias.ver'], ['GET /declaracion', 'declaracion.ver'], ['POST /declaracion/aprobacion', 'declaracion.aprobar'], ['GET /declaracion/versiones', 'declaracion.ver'], ['GET /declaracion/versiones/{id}', 'declaracion.ver'], ['GET /declaracion/documento', 'declaracion.exportar'], ['GET /declaracion/versiones/{id}/documento', 'declaracion.exportar']].sort(),
     );
     expect(op('POST /librerias/{id}/adopcion').responses['403']).toBeDefined();
   });

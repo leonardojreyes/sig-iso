@@ -36,3 +36,8 @@ export class EmpresaActualResponse {
   @ApiProperty({ type: String, pattern: '^[a-z0-9-]+$', maxLength: 32 }) slug!: string;
   @ApiProperty({ type: String, maxLength: 120 }) nombre!: string;
 }
+
+export class MarcaEdicionRequest {
+  @ApiProperty({ type: String, pattern: '^#[0-9A-Fa-f]{6}$', maxLength: 7 }) colorPrimario!: string;
+  @ApiProperty({ type: String, nullable: true, maxLength: 2048, pattern: '^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\\s@]*|/[^/\\\\\\s][^\\s@]*)$', description: 'Solo `https` sin credenciales, una ruta propia (nunca `//host`) o nulo para quitarlo.' }) logoUrl!: string | null;
+}
