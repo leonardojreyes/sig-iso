@@ -5,7 +5,7 @@ import { AlmacenAcceso } from '../auth/almacen-acceso';
 import { leerConfiguracion } from '../auth/configuracion';
 import type { ResultadoCallback } from '../auth/flujo';
 import { crearServicioSesion } from '../auth/sesion';
-import { cambiarEmpresa, leerAvisoCambio } from './cambiar';
+import { cambiarEmpresa, elegirEmpresa, leerAvisoCambio } from './cambiar';
 
 const config = leerConfiguracion({ OIDC_CLIENT_SECRET: randomBytes(18).toString('base64url'), SESSION_SEALING_KEY: randomBytes(32).toString('base64url') });
 const AHORA = new Date('2026-11-15T10:00:00Z');
@@ -48,7 +48,7 @@ const montar = async (api: { respuesta?: () => Response | 'lanza' } = {}) => {
     });
     return cambiarEmpresa(peticion, { slugDeLaDireccion: slug, slugVerificado: verificado }, deps);
   };
-  return { llamadas, enviar, almacen, cookie };
+  return { llamadas, enviar, almacen, cookie, deps };
 };
 
 const destino = (r: Response): URL => new URL(r.headers.get('location')!);
@@ -142,5 +142,66 @@ describe('leerAvisoCambio', () => {
     expect(leerAvisoCambio({ cambio: '<b>x</b>' })).toBeNull();
     expect(leerAvisoCambio({ cambio: ['no_valido'] })).toBeNull();
     expect(leerAvisoCambio({})).toBeNull();
+  });
+});
+
+describe('elegirEmpresa (al entrar, antes de ver nada)', () => {
+  const elegir = (deps: Awaited<ReturnType<typeof montar>>['deps'], campos: Record<string, string> | null, o: { metodo?: string; origen?: string | null; cookie?: string | null } = {}) => {
+    const { metodo = 'POST', origen = config.origen, cookie } = o;
+    return elegirEmpresa(
+      new Request(`${config.origen}/empresas/elegir`, {
+        method: metodo,
+        headers: { ...(origen === null ? {} : { origin: origen }), ...(cookie ? { cookie } : {}), ...(campos ? { 'content-type': 'application/x-www-form-urlencoded' } : {}) },
+        ...(metodo === 'GET' || campos === null ? {} : { body: new URLSearchParams(campos).toString() }),
+      }),
+      deps,
+    );
+  };
+
+  it('manda el slug a la API con el token, recuerda la empresa para el proxy y entra a SU listado de requisitos', async () => {
+    const { deps, cookie, llamadas, almacen } = await montar();
+    const r = await elegir(deps, { empresa: 'empresa-b' }, { cookie });
+    expect(r.status).toBe(303);
+    expect(destino(r).pathname).toBe('/e/empresa-b/requisitos');
+    expect(llamadas).toEqual([{ ruta: '/sesion/empresa', metodo: 'POST', autorizacion: 'Bearer acceso-inicial', cuerpo: { slug: 'empresa-b' } }]);
+    expect(almacen.empresaDe('sesion-kc-1', AHORA.getTime())).toBe('empresa-b');
+  });
+
+  it.each([
+    [404, 'no_encontrada'],
+    [400, 'no_valido'],
+    [429, 'no_disponible'],
+    [500, 'no_disponible'],
+  ])('la API responde %i: vuelve a la elección con el aviso «%s» y no cambia nada', async (estado, aviso) => {
+    const { deps, cookie, almacen } = await montar({ respuesta: () => new Response(null, { status: estado }) });
+    const r = await elegir(deps, { empresa: 'empresa-b' }, { cookie });
+    expect(destino(r).pathname).toBe('/empresas');
+    expect(destino(r).searchParams.get('cambio')).toBe(aviso);
+    expect(almacen.empresaDe('sesion-kc-1', AHORA.getTime())).toBeUndefined();
+  });
+
+  it('401 de la API: manda a ingresar (volviendo a la elección) y borra la sesión', async () => {
+    const { deps, cookie, almacen } = await montar({ respuesta: () => new Response(null, { status: 401 }) });
+    const r = await elegir(deps, { empresa: 'empresa-b' }, { cookie });
+    expect(destino(r).pathname).toBe('/auth/login');
+    expect(destino(r).searchParams.get('retorno')).toBe('/empresas');
+    expect(almacen.obtener('sesion-kc-1')).toBeUndefined();
+  });
+
+  it.each([[undefined], [''], ['EMPRESA-B'], ['../b'], ['a'.repeat(33)]])('un slug mal formado (%j) vuelve con «no_valido» sin llamar a la API', async (empresa) => {
+    const { deps, cookie, llamadas } = await montar();
+    const r = await elegir(deps, empresa === undefined ? {} : { empresa }, { cookie });
+    expect(destino(r).searchParams.get('cambio')).toBe('no_valido');
+    expect(llamadas).toEqual([]);
+  });
+
+  it('solo POST (405), con Origin propio (403) y con sesión (si no, a ingresar sin leer el cuerpo)', async () => {
+    const { deps, cookie, llamadas } = await montar();
+    expect((await elegir(deps, null, { metodo: 'GET', cookie })).status).toBe(405);
+    for (const origen of [null, 'https://otro.example', 'null']) expect((await elegir(deps, { empresa: 'empresa-b' }, { origen, cookie })).status).toBe(403);
+    const sinSesion = await elegir(deps, { empresa: 'empresa-b' }, {});
+    expect(destino(sinSesion).pathname).toBe('/auth/login');
+    expect(destino(sinSesion).searchParams.get('retorno')).toBe('/empresas');
+    expect(llamadas).toEqual([]);
   });
 });

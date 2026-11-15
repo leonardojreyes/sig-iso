@@ -266,8 +266,8 @@ try {
   );
   const ingresoEmpresa = (await (await pagina('/e/empresa-a/ingreso', new Map())).text()).replaceAll('<!-- -->', '');
   comprobar(
-    '10.8 la pantalla de ingreso de una empresa tiene el enlace que vuelve a su listado y NINGÚN campo de correo ni contraseña',
-    ingresoEmpresa.includes('href="/auth/login?retorno=%2Fe%2Fempresa-a%2Frequisitos"') &&
+    '10.8 la pantalla de ingreso de una empresa tiene el enlace que vuelve a la portada (que decide: elegir empresa o entrar directo) y NINGÚN campo de correo ni contraseña',
+    ingresoEmpresa.includes('href="/auth/login?retorno=%2F"') &&
       !/<input|type="password"|<form/.test(ingresoEmpresa),
   );
 

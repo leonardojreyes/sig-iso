@@ -19,14 +19,18 @@ const identidad = (slug = 'empresa-a') => ({
   empresa: { slug, nombre: 'Empresa' },
 });
 
+const empresasDe = (...slugs: string[]) => slugs.map((s, i) => ({ slug: s, nombre: `Empresa ${s}`, activa: i === 0 }));
+
 const montar = (
   me: () => Response | Promise<Response> = () => new Response(JSON.stringify(identidad()), { status: 200 }),
   keycloak: 'ok' | 'invalid_grant' | 'caido' = 'ok',
+  empresas: () => Response = () => new Response(JSON.stringify(empresasDe('empresa-a')), { status: 200 }),
 ) => {
   const llamadas: string[] = [];
   const fetchFn = (async (url: string) => {
     llamadas.push(url.replace(config.apiUrl, 'API').replace(config.emisor, 'KC'));
     if (url === `${config.apiUrl}/me`) return me();
+    if (url === `${config.apiUrl}/sesion/empresas`) return empresas();
     if (url.startsWith(config.apiUrl)) return new Response(null, { status: 204 });
     if (url.endsWith('/token')) {
       if (keycloak === 'caido') throw new Error('ECONNREFUSED');
@@ -59,8 +63,9 @@ const entorno = async (
   me?: Parameters<typeof montar>[0],
   keycloak?: Parameters<typeof montar>[1],
   reloj = { t: AHORA },
+  empresas?: Parameters<typeof montar>[2],
 ) => {
-  const { llamadas, fetchFn } = montar(me, keycloak);
+  const { llamadas, fetchFn } = montar(me, keycloak, empresas);
   const deps = { config, ahora: () => reloj.t, fetchFn, almacen: new AlmacenAcceso() };
   const r = await crearServicioSesion(deps).iniciar(callbackOk());
   const cookie = r.headers
@@ -75,7 +80,7 @@ describe('rutaDeInicio (la portada lleva a su empresa a quien ya tiene sesión)'
   it('con sesión válida devuelve el listado de SU empresa, tomada de /me (no de datos de demostración)', async () => {
     const { deps, cookie, llamadas } = await entorno();
     expect(await rutaDeInicio(cookie, deps)).toBe('/e/empresa-a/requisitos');
-    expect(llamadas).toEqual(['API/me']);
+    expect(llamadas).toEqual(['API/me', 'API/sesion/empresas']);
   });
 
   it('otra persona de otra empresa va a la suya', async () => {
@@ -116,5 +121,24 @@ describe('rutaDeInicio (la portada lleva a su empresa a quien ya tiene sesión)'
     const { deps, cookie } = await entorno(undefined, 'caido', reloj);
     reloj.t = new Date(AHORA.getTime() + 290_000);
     expect(await rutaDeInicio(cookie, deps)).toBeNull();
+  });
+
+  describe('personas con varias empresas (ADR 035)', () => {
+    it('quien pertenece a VARIAS empresas va a elegir con cuál trabaja, no directo a una', async () => {
+      const { deps, cookie } = await entorno(undefined, undefined, undefined, () => new Response(JSON.stringify(empresasDe('empresa-a', 'empresa-b')), { status: 200 }));
+      expect(await rutaDeInicio(cookie, deps)).toBe('/empresas');
+    });
+    it('quien pertenece a UNA sola entra directo, como siempre', async () => {
+      const { deps, cookie } = await entorno();
+      expect(await rutaDeInicio(cookie, deps)).toBe('/e/empresa-a/requisitos');
+    });
+    it.each([
+      ['la API falla', () => new Response(null, { status: 500 })],
+      ['la respuesta no cumple el contrato', () => new Response(JSON.stringify([{ slug: 'x' }]), { status: 200 })],
+      ['la respuesta no es JSON', () => new Response('no es json', { status: 200 })],
+    ])('si %s, no se bloquea la entrada: va a la empresa de la sesión', async (_n, empresas) => {
+      const { deps, cookie } = await entorno(undefined, undefined, undefined, empresas);
+      expect(await rutaDeInicio(cookie, deps)).toBe('/e/empresa-a/requisitos');
+    });
   });
 });

@@ -63,7 +63,8 @@ describe('PantallaNormas', () => {
   it('el colaborador ve las librerías pero no el formulario ni el botón de adoptar', () => {
     const { container, queryByLabelText, getByText } = render(<PantallaNormas {...base} persona={colaborador} />);
     expect(queryByLabelText(es.normas.archivosEtiqueta)).toBeNull();
-    expect(container.querySelector('form')).toBeNull();
+    // El único formulario permitido para un colaborador es el de cerrar sesión (de la cabecera).
+    expect(container.querySelector('form:not([action="/auth/logout"])')).toBeNull();
     expect(getByText(es.normas.soloAdmin)).toBeTruthy();
     expect(getByText('Mi norma')).toBeTruthy();
   });

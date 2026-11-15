@@ -42,6 +42,19 @@ describe('SelectorEmpresa (ADR 035)', () => {
   });
 });
 
+describe('cerrar sesión en la cabecera', () => {
+  it('toda pantalla con marco ofrece «Cerrar sesión» como un POST a /auth/logout (nunca un enlace)', () => {
+    for (const e of [una, varias]) {
+      const { container, getByRole, unmount } = render(<MarcoApp empresa={e} activo="panel">x</MarcoApp>);
+      const form = container.querySelector('form[action="/auth/logout"]')!;
+      expect(form.getAttribute('method')).toBe('post');
+      expect(getByRole('button', { name: es.sesion.cerrar })).toBeTruthy();
+      expect(container.querySelector('a[href*="logout"]')).toBeNull();
+      unmount();
+    }
+  });
+});
+
 describe('aviso de cambio de empresa en el panel', () => {
   it.each(Object.keys(es.empresas.avisos) as (keyof typeof es.empresas.avisos)[])('el aviso «%s» muestra su título y detalle', (a) => {
     const { getByText } = render(<PantallaPanelPendiente empresa={una} persona="Persona" aviso={a} />);

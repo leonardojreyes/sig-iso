@@ -248,7 +248,7 @@ describe('PantallaListadoRequisitos — adoptar (H4.6, H4.9)', () => {
     });
     const botones = getAllByRole('button', { name: /Adoptar/ });
     expect(botones).toHaveLength(2);
-    const formularios = [...container.querySelectorAll('form[method="post"]')] as HTMLFormElement[];
+    const formularios = [...container.querySelectorAll('form[method="post"]:not([action="/auth/logout"])')] as HTMLFormElement[];
     expect(formularios.map((f) => f.getAttribute('action'))).toEqual([
       '/e/empresa-a/librerias/' + UUID + '/adopcion',
       '/e/empresa-a/librerias/5eed0009-0000-4000-8000-0000000000a9/adopcion',
@@ -262,7 +262,7 @@ describe('PantallaListadoRequisitos — adoptar (H4.6, H4.9)', () => {
   it('H4.6 el colaborador NO ve el botón ni ningún formulario de adopción', async () => {
     const { container, queryAllByRole } = pantalla({ ...sinAdopcion, persona: colaborador });
     expect(queryAllByRole('button', { name: /Adoptar/ })).toHaveLength(0);
-    expect(container.querySelectorAll('form[method="post"]')).toHaveLength(0);
+    expect(container.querySelectorAll('form[method="post"]:not([action="/auth/logout"])')).toHaveLength(0);
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -272,11 +272,11 @@ describe('PantallaListadoRequisitos — adoptar (H4.6, H4.9)', () => {
     expect(botones).toHaveLength(1);
     expect(botones[0]!.getAttribute('aria-label')).toBe('Adoptar Otra librería');
     expect(getByText('Librerías disponibles para adoptar')).toBeTruthy();
-    expect(container.querySelectorAll('form[method="post"]')).toHaveLength(1);
+    expect(container.querySelectorAll('form[method="post"]:not([action="/auth/logout"])')).toHaveLength(1);
   });
 
   it('con todo adoptado, o para un colaborador, no aparece la sección de adopción dentro del listado', () => {
-    expect(pantalla().container.querySelectorAll('form[method="post"]')).toHaveLength(0);
+    expect(pantalla().container.querySelectorAll('form[method="post"]:not([action="/auth/logout"])')).toHaveLength(0);
     expect(
       pantalla({ librerias: [libreria(), otraLibreria], persona: colaborador }).container.textContent,
     ).not.toContain('Librerías disponibles para adoptar');

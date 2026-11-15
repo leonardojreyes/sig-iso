@@ -112,6 +112,14 @@ Un solo `/review` con seis revisores en paralelo sobre los 316 archivos del hito
 - Rendimiento: la empresa activa agrega una consulta por petición sin caché; el almacén de resultados de carga tiene un tope global de 200 y un reinicio lo borra.
 - Antes de producción: `Strict-Transport-Security` y CSP con nonce en la web; verificar la huella al descargar una evidencia; retención, borrado físico y marca de «contiene datos personales» en las evidencias (ADR 028).
 
+### Elegir la empresa al entrar y cerrar sesión (2026-11-15, después del PR #21)
+
+Al probarlo, el responsable señaló dos carencias reales: no había forma de **cerrar sesión** desde la interfaz (la ruta existía, ninguna pantalla la ofrecía) y quien pertenece a varias empresas **entraba a una y solo después podía cambiar**. Corregido:
+
+- **Elegir al entrar:** la portada lleva a quien pertenece a varias empresas a `/empresas` («¿Con qué empresa va a trabajar?», una tarjeta por empresa); quien pertenece a una entra directo. Elegir es `POST /empresas/elegir` (mismo núcleo que el selector de la cabecera; la API sigue decidiendo la pertenencia y dejando el hecho en la bitácora). La página de ingreso por empresa vuelve ahora a la portada (antes volvía a `/e/<empresa>/requisitos` y una persona de varias empresas daba 404 en las demás).
+- **Cerrar sesión:** botón en la cabecera de toda pantalla con menú y en la pantalla de elección (`POST /auth/logout`).
+- Verificado con todo real en `web:verify-multiempresa` (ahora con el flujo de elección) y `web:verify-login`.
+
 **Límites conocidos del MVP** (decisiones ya tomadas; no son defectos pendientes de corregir):
 
 - Las pantallas **no asignan responsable** (ni en el diagnóstico ni en los controles), aunque la API lo admite. Hoy nada lo asigna; cuando se agregue, reevaluar una entrada debe conservar el responsable.
