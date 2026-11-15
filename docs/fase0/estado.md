@@ -19,7 +19,7 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 | **M3** | **Controles de la empresa** y **mapeos** muchos a muchos con las entradas de las normas adoptadas (**marco de controles unificado**: una medida, varias normas) | **Hecho** |
 | **M4** | Evidencias con archivo (huella SHA-256, vigencia, reemplazo, descarga protegida) y cobertura derivada de los mapeos. ADR 032 (almacén de archivos) | **Hecho** |
 | **M5** | Declaración de Aplicabilidad de 27001 derivada del diagnóstico, los controles y las evidencias; aprobación con versión congelada e inmutable; exportación a Word. ADR 033 (`docx` MIT detrás de `GeneradorDocumentoPort`) | **Hecho** |
-| **M6a** | **Cargar normas desde la interfaz** (requisito añadido el 2026-11-13, dentro del MVP): subir las librerías desde la web, sin comandos. Requiere un ADR y resolver las decisiones abiertas de `plan.md` («M6a») | Pendiente |
+| **M6a** | **Cargar normas desde la interfaz** (requisito añadido el 2026-11-13, dentro del MVP): subir las librerías desde la web, sin comandos (ADR 034). Archivos o carpeta del navegador, librería propia de la empresa con RLS, plantilla descargable, errores en palabras, adopción | **Hecho (2026-11-14)** |
 | **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a): consultor con varias empresas, configuración por empresa (normas, módulos, marca) y catálogo global + librerías propias. Requiere un ADR (pertenencia a varias empresas y cambio de empresa). | Pendiente |
 | M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
 
@@ -54,6 +54,16 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 - **Bitácora:** `declaracion.aprobada` (versión y cuatro conteos) y `declaracion.exportada` (huella). Nunca texto.
 - **Web:** `/e/<empresa>/declaracion` (resumen, alcance, borrador, aprobar, historial, descarga) y `/declaracion/versiones/<id>` (versión congelada). `pnpm web:verify-declaracion` (~45 comprobaciones con todo real; **escribe** en la base local: evalúa como «Parcial» lo que falte del Anexo A y crea versiones aprobadas).
 - **Fuera de M5:** el nombre de la empresa en el documento (no hay un puerto para leerlo), firma electrónica, comparar versiones, plantillas propias, PDF, y declaración para 9001 o 42001.
+
+### M6a — Cargar normas desde la interfaz (hecho 2026-11-14)
+
+- **ADR 034** (Aprobado): se sube el **YAML** (no el PDF); selector de archivo o carpeta del navegador; la librería es **propia de la empresa**; solo el administrador SIG (`normas.cargar`).
+- **Base (migración `0011`):** `libreria.empresa_id` (nulo = catálogo global), código propio con el prefijo reservado `propia-` (los globales no pueden usarlo), RLS en `libreria`, la aplicación solo **inserta** librerías propias (versión inmutable), adopción limitada al catálogo global o a lo propio. Prueba de aislamiento (`aislamiento-libreria-propia`) y matriz de privilegios actualizada.
+- **Caso de uso `CargarLibreriaUseCase`:** permiso → 1 MB y texto UTF-8 → YAML **sin alias ni claves repetidas** → esquema v3 → reglas de contenido (sin texto de norma) → prefijo `propia-` y no ejemplo → guardar todo o nada con la huella → bitácora `libreria.cargada` (código, versión, huella y conteos; nunca el contenido ni el texto de los errores; el rechazo también se registra). Misma versión y mismo contenido = «ya cargada»; otro contenido = rechazo.
+- **API:** `POST /librerias/carga` (multipart, un archivo; 201 cargada, 200 ya cargada o rechazada con sus errores; 403 antes de leer el cuerpo; 413 sobre 1 MB) y `GET /librerias` con `propia`.
+- **Web:** pantalla `/e/<empresa>/normas` (archivos o carpeta, hasta 20 por tanda, un archivo por petición; plantilla descargable; errores explicados por archivo en palabras claras; lista con adopción) y `pnpm web:verify-normas` (57 comprobaciones con todo real; la plantilla descargable pasa la validación tal cual). El resultado de la subida vive en la memoria del servidor y se muestra una vez.
+- **Corregido de paso:** el fallo intermitente de `@sig/certificacion` era de las pruebas (ids de control con reloj y contador que chocaban entre archivos en paralelo); ahora usan UUID aleatorio (9 de 9 corridas completas en verde).
+- **Límites conocidos:** un 413 (más de 1 MB declarado) no queda en la bitácora porque se corta antes del caso de uso; el resultado de la subida no se comparte entre varios servidores (igual que las sesiones); la librería subida no se puede borrar ni editar (se sube una versión nueva); adoptar sigue llevando a la pantalla de requisitos.
 
 **Límites conocidos del MVP** (decisiones ya tomadas; no son defectos pendientes de corregir):
 
@@ -102,7 +112,7 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 
 ## Próximos pasos técnicos
 
-1. **M6a — cargar normas desde la interfaz** (nuevo, antes del cierre; ver `plan.md`) y luego **M6 — cierre del MVP** (abajo); y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
+1. **M6b — multiempresa completo** (ADR de pertenencia a varias empresas y cambio de empresa; ver `plan.md`) y luego **M6 — cierre del MVP** (abajo); y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
 2. **M5 — Declaración de Aplicabilidad de 27001** (hecha; detalle arriba). ADR 033 (`docx` detrás de `GeneradorDocumentoPort`, licencias comprobadas con `scripts/check-licenses.mjs`), derivada del diagnóstico y los controles, marcada preliminar, aprobación con versión congelada e inmutable y exportación a Word.
 3. **M6 — cierre del MVP:** un solo `/review` completo (arquitecto, multiempresa, seguridad y cumplimiento), STRIDE ampliado, este archivo y `docs/fase0/guia-de-ejecucion.md`.
 4. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
@@ -150,7 +160,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5 hechos; M6a, M6b y M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
+0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5 y M6a hechos; M6b y M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 
