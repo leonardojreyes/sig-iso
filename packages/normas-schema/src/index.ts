@@ -20,3 +20,4 @@ export {
   type EntradaTextual,
   type HallazgoContenido,
 } from './contenido';
+export { huellaCanonica } from './huella';

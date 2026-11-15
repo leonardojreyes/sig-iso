@@ -38,6 +38,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sesion/empresas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las empresas a las que pertenece quien consulta
+         * @description Una persona puede pertenecer a varias empresas (un consultor), cada una con su propio rol (ADR 035). Solo se listan las suyas,
+         *     con el nombre y el slug (el de la URL `/e/<slug>`), por nombre; `activa` marca la de esta sesión. Quien pertenece a una sola
+         *     empresa recibe una lista de un elemento.
+         */
+        get: operations["listarMisEmpresas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sesion/empresa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cambia la empresa activa de la sesión
+         * @description ÚNICA operación que nombra una empresa (ADR 035). La API toma la persona y la sesión del token verificado y comprueba en la base
+         *     que la persona **pertenece** a la empresa pedida con un rol; si no, responde 404 (igual que una empresa que no existe) y deja un
+         *     `acceso.cruzado`. Si pertenece, registra `empresa.cambiada` en la empresa destino y recién entonces guarda la empresa activa de
+         *     ESA sesión (vence con la sesión máxima, 8 h). Desde la siguiente petición, todo se evalúa con esa empresa y con el rol que la
+         *     persona tiene allí. Ninguna otra operación acepta una empresa del cliente.
+         *
+         *     Orden de evaluación: 401, 400 (slug mal formado) y 404 (no pertenece).
+         */
+        post: operations["cambiarEmpresa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/empresa/marca": {
         parameters: {
             query?: never;
@@ -52,7 +100,16 @@ export interface paths {
          *     el navegador la carga con `referrerpolicy="no-referrer"` y una política de contenido restrictiva.
          */
         get: operations["obtenerMarcaEmpresa"];
-        put?: never;
+        /**
+         * Edita el color y el logo de la empresa de quien consulta
+         * @description Solo la persona con rol de administrador SIG (`marca.editar`). La empresa y la persona salen del token; el cuerpo solo trae el
+         *     color y el logo. El color elegido se guarda tal cual: si no cumple el contraste mínimo (AA), la marca que se APLICA se ajusta y
+         *     la respuesta lo dice (`ajustadoPorContraste`). El logo es una dirección `https` sin credenciales, una ruta propia o nulo (vuelve
+         *     el monograma); uno no permitido se RECHAZA con 400 (no se descarta en silencio). No cambia el nombre ni el slug. Si no cambia
+         *     nada, responde la marca vigente y no registra nada; si cambia algo, la bitácora guarda solo QUÉ cambió (color, logo), nunca los
+         *     valores. Orden de evaluación: 401, 403, 400.
+         */
+        put: operations["actualizarMarcaEmpresa"];
         post?: never;
         delete?: never;
         options?: never;
@@ -111,13 +168,41 @@ export interface paths {
         };
         /**
          * Librerías del catálogo
-         * @description Todas las librerías del catálogo GLOBAL con sus metadatos, e indica cuáles adoptó la empresa. Las entradas solo se ven si
-         *     se adoptó. El catálogo es acotado por diseño y de solo lectura; una librería privada de una empresa exigiría su propia
-         *     tabla con `empresa_id` y RLS, y no aparecería aquí.
+         * @description Las librerías del catálogo GLOBAL (de solo lectura) y las PROPIAS de la empresa de quien consulta (ADR 034), con sus
+         *     metadatos, e indica cuáles adoptó la empresa. Las entradas solo se ven si se adoptó. Una librería propia de otra empresa
+         *     nunca aparece. Cada versión es una fila.
          */
         get: operations["listarLibrerias"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/librerias/carga": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sube una librería de norma propia de la empresa (archivo YAML)
+         * @description Solo la persona con rol de administrador SIG (`normas.cargar`). `multipart/form-data` con **un solo archivo** (campo `archivo`)
+         *     YAML de hasta 1 MB, sin alias ni anclas, con el esquema v3 de las librerías (sin texto de la norma). El código debe empezar con
+         *     `propia-` y la librería no puede ser de ejemplo. La librería queda **propia de la empresa del token** y nunca es visible para
+         *     otra; cada versión es inmutable (la misma versión con otro contenido se rechaza).
+         *
+         *     Un archivo que no pasa la validación **no es un error HTTP**: responde 200 con `estado: rechazada`, el motivo y la lista de
+         *     errores por ruta (nunca el contenido), y el rechazo queda en la bitácora. 201 si se cargó ahora; 200 si ya estaba cargada
+         *     (mismo contenido) o si se rechazó. 413 si declara más de 1 MB (sin leerlo) y 400 si no llega el archivo.
+         *     Orden de evaluación: 401, 403, 400, 413, y después la validación del contenido.
+         */
+        post: operations["cargarLibreria"];
         delete?: never;
         options?: never;
         head?: never;
@@ -391,6 +476,250 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/controles/{id}/evidencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evidencias de un control
+         * @description De la más nueva a la más antigua. Por omisión solo las activas; con `incluirHistoricas` también las reemplazadas y eliminadas.
+         *     Cada una indica si está vigente o vencida según la fecha de hoy en Ecuador. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["listarEvidencias"];
+        put?: never;
+        /**
+         * Sube una evidencia con su archivo a un control vigente
+         * @description `multipart/form-data` con **un solo archivo** (campo `archivo`) de hasta 25 MB. **Los campos de texto van ANTES del archivo**: la API
+         *     decide el permiso, los datos y el control antes de leer un solo byte del archivo. El tipo se decide por el **contenido** (PDF, PNG,
+         *     JPEG, TXT, DOCX, XLSX o PPTX; sin macros ni SVG ni HTML), nunca por la extensión ni por el tipo que declare el cliente: un archivo
+         *     de otro tipo responde 415 y uno de más de 25 MB, 413. Una petición sin archivo responde 400. Un control retirado o con 100
+         *     evidencias activas responde 409. Orden de evaluación: 401, 403, 400, 404, 409, 413 o 415.
+         */
+        post: operations["subirEvidencia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidencias/{id}/reemplazo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reemplaza una evidencia activa por otra con un archivo nuevo
+         * @description Misma subida que `subirEvidencia` (campos antes del archivo, un archivo de hasta 25 MB, tipo por contenido). La anterior queda
+         *     «reemplazada», con su archivo intacto, y la nueva apunta a ella. El título y el tipo se heredan si no se envían; la fecha del
+         *     hecho es obligatoria. Reemplazar una evidencia que ya no está activa, o de un control retirado, responde 409. Si el archivo
+         *     nuevo se rechaza, la original sigue activa.
+         */
+        post: operations["reemplazarEvidencia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidencias/{id}/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Elimina una evidencia activa
+         * @description Cambia su estado a «eliminada» y queda el rastro; el archivo **no se borra**. Solo se elimina una evidencia activa (409 si ya no
+         *     lo está). Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["eliminarEvidencia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/evidencias/{id}/archivo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descarga el archivo de una evidencia
+         * @description Siempre como **adjunto** (`Content-Disposition: attachment`), con el tipo que se detectó al subir, `X-Content-Type-Options: nosniff`
+         *     y sin caché. La extensión del nombre es la que corresponde a ese tipo. La descarga **queda en la bitácora antes** de entregar el
+         *     archivo y, si no se puede registrar, no se entrega. Una evidencia reemplazada se descarga (es el historial); una eliminada no
+         *     (404). Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["descargarEvidencia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cobertura": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cobertura documental de las entradas de las normas adoptadas
+         * @description Para cada entrada que no se evaluó como «no aplica»: cubierta (algún control vigente que la cubre tiene una evidencia activa y
+         *     vigente), evidencia vencida, sin evidencia o sin control. Se resume por norma. Mide la cobertura documental, no la eficacia de
+         *     los controles. Orden de evaluación: 401, 403, 400.
+         */
+        get: operations["obtenerCobertura"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Borrador de la Declaración de Aplicabilidad de ISO/IEC 27001
+         * @description Una fila por control del Anexo A de las librerías adoptadas, DERIVADA del diagnóstico, de los controles de la empresa y de la
+         *     cobertura de las evidencias; no se guarda nada. Trae también la última versión aprobada, si hay. Orden: 401, 403.
+         */
+        get: operations["obtenerDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprueba la declaración y congela una versión nueva
+         * @description Congela, en una sola transacción, lo que la API lee en ese momento: las filas, el alcance de 27001 y los conteos. La versión es
+         *     inmutable y su número es correlativo por empresa. Responde 409 si queda algún control por decidir (o no hay controles de la norma
+         *     adoptados) y 409 si otra persona aprobó al mismo tiempo. Un control que aplica sin control de la empresa asignado SÍ se puede
+         *     aprobar: queda señalado en el documento. Orden: 401, 403, 409.
+         */
+        post: operations["aprobarDeclaracion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/versiones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Versiones aprobadas de la declaración
+         * @description De la más nueva a la más antigua; como máximo las 100 más recientes. Orden de evaluación 401, 403.
+         */
+        get: operations["listarVersionesDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/versiones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Una versión aprobada con sus filas congeladas
+         * @description Una versión de otra empresa responde 404, igual que una inexistente. Orden de evaluación 401, 403, 400, 404.
+         */
+        get: operations["obtenerVersionDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/documento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descarga el borrador de la declaración en Word
+         * @description Siempre como **adjunto**, con el rótulo de documento preliminar. Queda en la bitácora, con la huella SHA-256 del documento,
+         *     **antes** de entregarlo; si no se puede registrar, no se entrega. Orden: 401, 403.
+         */
+        get: operations["exportarBorradorDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/versiones/{id}/documento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descarga una versión aprobada de la declaración en Word
+         * @description Siempre como **adjunto** y SIEMPRE desde la copia congelada de esa versión, no desde los datos de hoy. Queda en la bitácora con la
+         *     huella del documento antes de entregarlo. Una versión de otra empresa responde 404. Orden: 401, 403, 400, 404.
+         */
+        get: operations["exportarVersionDeclaracion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -402,13 +731,26 @@ export interface components {
             title: string;
             status: number;
             /** @enum {string} */
-            codigo: "no_autenticado" | "sin_permiso" | "no_encontrado" | "parametro_invalido" | "conflicto" | "limite_excedido" | "error_interno";
+            codigo: "no_autenticado" | "sin_permiso" | "no_encontrado" | "parametro_invalido" | "conflicto" | "archivo_demasiado_grande" | "tipo_no_permitido" | "limite_excedido" | "error_interno";
         };
         Salud: {
             /** @constant */
             status: "ok";
             /** Format: date-time */
             time: string;
+        };
+        EmpresaDePersona: {
+            slug: string;
+            nombre: string;
+            /** @description Es la empresa de esta sesión ahora. */
+            activa: boolean;
+        };
+        EmpresaElegida: {
+            slug: string;
+        };
+        EmpresaActual: {
+            slug: string;
+            nombre: string;
         };
         /** @description La persona que consulta, tomada del token verificado. */
         Identidad: {
@@ -433,7 +775,13 @@ export interface components {
             colorOriginal: string;
             /** @description Verdadero si el color original se ajustó para cumplir el contraste mínimo; el administrador SIG ve un aviso. */
             ajustadoPorContraste: boolean;
-            /** @description Solo `https` sin credenciales en la URL, o una ruta propia (nunca `//host`). Si no es válido se devuelve nulo y se muestra el monograma. */
+            /** @description Solo `https` sin credenciales en la URL, o un archivo de imagen bajo `/logos/` (nunca otra ruta del sitio). Si no es válido se devuelve nulo y se muestra el monograma. */
+            logoUrl: string | null;
+        };
+        /** @description Lo que la empresa elige. La empresa nunca viaja aquí, sale del token. */
+        MarcaEdicion: {
+            colorPrimario: string;
+            /** @description Solo `https` sin credenciales, un archivo de imagen bajo `/logos/` o nulo para quitarlo. */
             logoUrl: string | null;
         };
         LibreriaResumen: {
@@ -445,8 +793,40 @@ export interface components {
             /** @description Una librería de ejemplo se muestra rotulada como tal. */
             esEjemplo: boolean;
             fuente: string;
+            /** @description Verdadero si la subió la empresa de quien consulta (ADR 034); falso si es del catálogo global. */
+            propia: boolean;
             /** @description Si la empresa de quien consulta ya la adoptó. */
             adoptada: boolean;
+        };
+        LibreriaSubida: {
+            /**
+             * Format: binary
+             * @description El YAML de la librería (hasta 1 MB).
+             */
+            archivo: string;
+        };
+        /** @description Qué falló y dónde. Nunca repite el contenido del archivo. */
+        ErrorCargaLibreria: {
+            /** @description Identificador de la entrada afectada, si aplica. */
+            entrada: string | null;
+            indice: number | null;
+            ruta: string;
+            codigo: string;
+        };
+        CargaLibreria: {
+            /** @enum {string} */
+            estado: "cargada" | "ya_cargada" | "rechazada";
+            /**
+             * @description Solo si el estado es `rechazada`.
+             * @enum {string|null}
+             */
+            motivo: "tipo_no_permitido" | "tamano_excedido" | "formato_invalido" | "contenido_no_permitido" | "codigo_no_permitido" | "hash_distinto" | null;
+            codigo: string | null;
+            version: string | null;
+            entradas: number | null;
+            /** @description SHA-256 del contenido canónico (si es válida) o de los bytes del archivo (si no). */
+            huella: string;
+            errores: components["schemas"]["ErrorCargaLibreria"][];
         };
         Adopcion: {
             /** Format: uuid */
@@ -658,6 +1038,200 @@ export interface components {
             controles: components["schemas"]["ControlMarco"][];
             normas: string[];
         };
+        /** @enum {string} */
+        TipoEvidencia: "documento" | "registro";
+        /** @enum {string} */
+        EstadoEvidencia: "activa" | "reemplazada" | "eliminada";
+        /** @enum {string} */
+        TipoArchivo: "application/pdf" | "image/png" | "image/jpeg" | "text/plain" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document" | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" | "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        ArchivoEvidencia: {
+            /** @description Etiqueta normalizada (sin carpetas ni símbolos); en el almacén el archivo es un UUID del servidor. */
+            nombre: string;
+            tipo: components["schemas"]["TipoArchivo"];
+            bytes: number;
+            sha256: string;
+        };
+        Evidencia: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            controlId: string;
+            tipo: components["schemas"]["TipoEvidencia"];
+            titulo: string;
+            /** Format: date */
+            fechaHecho: string;
+            /** Format: date */
+            vigenteHasta: string | null;
+            estado: components["schemas"]["EstadoEvidencia"];
+            /** Format: uuid */
+            reemplazaId: string | null;
+            /** @description Activa y con la vigencia al día (fecha de hoy en Ecuador). */
+            vigente: boolean;
+            /** @description Activa pero con la vigencia ya pasada. */
+            vencida: boolean;
+            /** Format: date-time */
+            creadaEn: string;
+            archivo: components["schemas"]["ArchivoEvidencia"];
+        };
+        /** @description Los campos de texto van antes del archivo. */
+        EvidenciaSubida: {
+            tipo: components["schemas"]["TipoEvidencia"];
+            titulo: string;
+            /**
+             * Format: date
+             * @description El día en que ocurrió lo que la evidencia demuestra; no puede ser futuro.
+             */
+            fechaHecho: string;
+            /**
+             * Format: date
+             * @description Opcional; no anterior a la fecha del hecho.
+             */
+            vigenteHasta?: string;
+            /** Format: binary */
+            archivo: string;
+        };
+        /** @description Los campos de texto van antes del archivo. */
+        EvidenciaReemplazo: {
+            tipo?: components["schemas"]["TipoEvidencia"];
+            titulo?: string;
+            /** Format: date */
+            fechaHecho: string;
+            /** Format: date */
+            vigenteHasta?: string;
+            /** Format: binary */
+            archivo: string;
+        };
+        /** @enum {string} */
+        AplicabilidadDeclaracion: "aplica" | "no_aplica" | "por_decidir";
+        FilaDeclaracion: {
+            libreriaCodigo: string;
+            idEstable: string;
+            orden: number;
+            titulo: string;
+            grupo: string | null;
+            aplicabilidad: components["schemas"]["AplicabilidadDeclaracion"];
+            /** @description implementado, parcial o no_implementado; nula si no aplica o está por decidir. */
+            implementacion: string | null;
+            /** @description Solo si no aplica; es la que la empresa escribió al evaluar. */
+            justificacion: string | null;
+            /** @description Códigos de los controles vigentes de la empresa que la cubren. */
+            controles: string[];
+            cobertura: components["schemas"]["EstadoCobertura"];
+        };
+        ResumenDeclaracion: {
+            total: number;
+            aplican: number;
+            noAplican: number;
+            porDecidir: number;
+            /** @description Aplican y ningún control de la empresa los cubre; no impide aprobar. */
+            sinControl: number;
+            /** @description Hay filas y ninguna está por decidir. */
+            aprobable: boolean;
+        };
+        VersionDeclaracion: {
+            /** Format: uuid */
+            id: string;
+            numero: number;
+            total: number;
+            aplican: number;
+            noAplican: number;
+            sinControl: number;
+            /** Format: uuid */
+            aprobadaPor: string;
+            /** Format: date-time */
+            aprobadaEn: string;
+        };
+        VersionDeclaracionConFilas: {
+            /** Format: uuid */
+            id: string;
+            numero: number;
+            total: number;
+            aplican: number;
+            noAplican: number;
+            sinControl: number;
+            /** Format: uuid */
+            aprobadaPor: string;
+            /** Format: date-time */
+            aprobadaEn: string;
+            /** @description El alcance de la norma tal como estaba al aprobar. */
+            alcance: string | null;
+            filas: components["schemas"]["FilaDeclaracion"][];
+        };
+        Declaracion: {
+            norma: string;
+            /**
+             * Format: date
+             * @description La fecha de hoy en Ecuador con la que se calculó la cobertura.
+             */
+            hoy: string;
+            resumen: components["schemas"]["ResumenDeclaracion"];
+            filas: components["schemas"]["FilaDeclaracion"][];
+            /** @description El alcance de la norma tal como está hoy (aprobado o no); nulo si no se definió. */
+            alcance: {
+                texto: string;
+                aprobado: boolean;
+            } | null;
+            /** @description La última versión aprobada; nula si todavía no hay ninguna. */
+            ultimaVersion: {
+                /** Format: uuid */
+                id: string;
+                numero: number;
+                total: number;
+                aplican: number;
+                noAplican: number;
+                sinControl: number;
+                /** Format: uuid */
+                aprobadaPor: string;
+                /** Format: date-time */
+                aprobadaEn: string;
+            } | null;
+        };
+        /** @enum {string} */
+        EstadoCobertura: "cubierta" | "evidencia_vencida" | "sin_evidencia" | "sin_control" | "no_aplica";
+        ResumenCobertura: {
+            total: number;
+            cubiertas: number;
+            evidenciaVencida: number;
+            sinEvidencia: number;
+            sinControl: number;
+            /** @description Nulo si no hay ninguna entrada a la que pedir cobertura (no es 0). */
+            porcentaje: number | null;
+        };
+        CoberturaNorma: {
+            norma: string;
+            total: number;
+            cubiertas: number;
+            evidenciaVencida: number;
+            sinEvidencia: number;
+            sinControl: number;
+            porcentaje: number | null;
+        };
+        CoberturaEntrada: {
+            libreriaCodigo: string;
+            idEstable: string;
+            /** @enum {string} */
+            tipo: "clausula" | "control";
+            capitulo: number | null;
+            grupo: string | null;
+            titulo: string;
+            normas: string[];
+            estado: components["schemas"]["EstadoCobertura"];
+            /** @description Controles vigentes que la cubren por un mapeo. */
+            controles: number;
+            /** @description Evidencias activas de esos controles (vigentes o no). */
+            evidencias: number;
+        };
+        Cobertura: {
+            /**
+             * Format: date
+             * @description La fecha de hoy en Ecuador con la que se calculó el vencimiento.
+             */
+            hoy: string;
+            entradas: components["schemas"]["CoberturaEntrada"][];
+            porNorma: components["schemas"]["CoberturaNorma"][];
+            total: components["schemas"]["ResumenCobertura"];
+            normas: string[];
+        };
     };
     responses: {
         /** @description Falta el token, está vencido, alterado o no trae empresa. */
@@ -773,6 +1347,63 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problema"];
             };
         };
+        /** @description El archivo pasa de 25 MB. No se guarda nada y el rechazo queda en la bitácora. */
+        ArchivoDemasiadoGrande: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Archivo demasiado grande",
+                 *       "status": 413,
+                 *       "codigo": "archivo_demasiado_grande"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problema"];
+            };
+        };
+        /** @description El archivo de la librería pasa de 1 MB. No se lee ni se guarda nada. */
+        LibreriaDemasiadoGrande: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Archivo demasiado grande",
+                 *       "status": 413,
+                 *       "codigo": "archivo_demasiado_grande"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problema"];
+            };
+        };
+        /**
+         * @description El contenido del archivo no es de un tipo permitido o está dañado (PDF, PNG, JPEG, TXT, DOCX, XLSX o PPTX; sin macros, SVG ni HTML).
+         *     El tipo se decide por el contenido, no por la extensión. No se guarda nada y el rechazo queda en la bitácora.
+         */
+        TipoNoPermitido: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Tipo de archivo no permitido",
+                 *       "status": 415,
+                 *       "codigo": "tipo_no_permitido"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problema"];
+            };
+        };
         /** @description Error interno. Si falla el registro en la bitácora de una acción, la acción no se completa y se responde con este error. */
         ErrorInterno: {
             headers: {
@@ -851,6 +1482,60 @@ export interface operations {
             500: components["responses"]["ErrorInterno"];
         };
     };
+    listarMisEmpresas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las empresas de la persona. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpresaDePersona"][];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmpresaElegida"];
+            };
+        };
+        responses: {
+            /** @description La empresa activa de la sesión es ahora la pedida. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmpresaActual"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
     obtenerMarcaEmpresa: {
         parameters: {
             query?: never;
@@ -871,6 +1556,36 @@ export interface operations {
                 };
             };
             401: components["responses"]["NoAutenticado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    actualizarMarcaEmpresa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarcaEdicion"];
+            };
+        };
+        responses: {
+            /** @description La marca vigente después del cambio. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Marca"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };
@@ -939,6 +1654,47 @@ export interface operations {
                 };
             };
             401: components["responses"]["NoAutenticado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cargarLibreria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["LibreriaSubida"];
+            };
+        };
+        responses: {
+            /** @description Ya estaba cargada (mismo contenido) o el archivo se rechazó; ver `estado`. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CargaLibreria"];
+                };
+            };
+            /** @description La librería se cargó ahora. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CargaLibreria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            413: components["responses"]["LibreriaDemasiadoGrande"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };
@@ -1402,6 +2158,376 @@ export interface operations {
             403: components["responses"]["SinPermiso"];
             404: components["responses"]["NoEncontrado"];
             409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarEvidencias: {
+        parameters: {
+            query?: {
+                incluirHistoricas?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las evidencias del control. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evidencia"][];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    subirEvidencia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["EvidenciaSubida"];
+            };
+        };
+        responses: {
+            /** @description La evidencia creada. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evidencia"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            413: components["responses"]["ArchivoDemasiadoGrande"];
+            415: components["responses"]["TipoNoPermitido"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    reemplazarEvidencia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["EvidenciaReemplazo"];
+            };
+        };
+        responses: {
+            /** @description La evidencia nueva. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Evidencia"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            413: components["responses"]["ArchivoDemasiadoGrande"];
+            415: components["responses"]["TipoNoPermitido"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    eliminarEvidencia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La evidencia se eliminó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    descargarEvidencia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El archivo, como adjunto. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Siempre `attachment`, con el nombre normalizado y la extensión del tipo detectado. */
+                    "Content-Disposition"?: string;
+                    "X-Content-Type-Options"?: "nosniff";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "text/plain": string;
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation": string;
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerCobertura: {
+        parameters: {
+            query?: {
+                /** @description Solo las entradas que aplican a esta norma. */
+                norma?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La cobertura. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cobertura"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El borrador derivado con lo que hay hoy. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Declaracion"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    aprobarDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La versión aprobada. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDeclaracion"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarVersionesDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las versiones aprobadas. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDeclaracion"][];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerVersionDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La versión con sus filas. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDeclaracionConFilas"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    exportarBorradorDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El documento Word, como adjunto. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Siempre `attachment`, con un nombre fijado por el servidor. */
+                    "Content-Disposition"?: string;
+                    "X-Content-Type-Options"?: "nosniff";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    exportarVersionDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El documento Word, como adjunto. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Siempre `attachment`, con un nombre fijado por el servidor. */
+                    "Content-Disposition"?: string;
+                    "X-Content-Type-Options"?: "nosniff";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

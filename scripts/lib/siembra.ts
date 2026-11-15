@@ -38,11 +38,23 @@ export const sembrar = async (destinos: DestinosSiembra, datos: DatosSiembra, or
       for (const u of datos.usuarios.filter((x) => x.empresaId === empresa.id)) {
         const r = await sql`insert into usuario (id, empresa_id, nombre, correo, rol)
           values (${u.id}, ${u.empresaId}, ${u.nombre}, ${u.correo}, ${u.rol})
-          on conflict (id) do nothing returning 1`.execute(trx);
+          on conflict (empresa_id, id) do nothing returning 1`.execute(trx);
         usuariosNuevos += r.rows.length;
         // Cuentas que ya existían sin rol (anteriores a la migración 0005): se completa, sin pisar un rol cambiado a mano.
-        await sql`update usuario set rol = ${u.rol} where id = ${u.id} and rol is null`.execute(trx);
+        await sql`update usuario set rol = ${u.rol} where empresa_id = ${u.empresaId} and id = ${u.id} and rol is null`.execute(trx);
       }
+    });
+  }
+
+  // Pertenencias adicionales (consultor, ADR 035): la misma cuenta con otra fila `usuario` y su propio rol en la otra empresa.
+  for (const m of datos.membresias) {
+    const cuenta = datos.usuarios.find((u) => u.alias === m.alias)!;
+    await conTenant(destinos.owner, crearEmpresaId(m.empresaId), async (trx) => {
+      const r = await sql`insert into usuario (id, empresa_id, nombre, correo, rol)
+        values (${cuenta.id}, ${m.empresaId}, ${cuenta.nombre}, ${cuenta.correo}, ${m.rol})
+        on conflict (empresa_id, id) do nothing returning 1`.execute(trx);
+      usuariosNuevos += r.rows.length;
+      await sql`update usuario set rol = ${m.rol} where empresa_id = ${m.empresaId} and id = ${cuenta.id} and rol is null`.execute(trx);
     });
   }
 

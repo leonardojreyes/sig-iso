@@ -72,6 +72,73 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /sesion/empresas:
+    get:
+      operationId: listarMisEmpresas
+      summary: Las empresas a las que pertenece quien consulta
+      description: |
+        Una persona puede pertenecer a varias empresas (un consultor), cada una con su propio rol (ADR 035). Solo se listan las suyas,
+        con el nombre y el slug (el de la URL `/e/<slug>`), por nombre; `activa` marca la de esta sesión. Quien pertenece a una sola
+        empresa recibe una lista de un elemento.
+      tags: [sesion]
+      responses:
+        '200':
+          description: Las empresas de la persona.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/EmpresaDePersona'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /sesion/empresa:
+    post:
+      operationId: cambiarEmpresa
+      summary: Cambia la empresa activa de la sesión
+      description: |
+        ÚNICA operación que nombra una empresa (ADR 035). La API toma la persona y la sesión del token verificado y comprueba en la base
+        que la persona **pertenece** a la empresa pedida con un rol; si no, responde 404 (igual que una empresa que no existe) y deja un
+        `acceso.cruzado`. Si pertenece, registra `empresa.cambiada` en la empresa destino y recién entonces guarda la empresa activa de
+        ESA sesión (vence con la sesión máxima, 8 h). Desde la siguiente petición, todo se evalúa con esa empresa y con el rol que la
+        persona tiene allí. Ninguna otra operación acepta una empresa del cliente.
+
+        Orden de evaluación: 401, 400 (slug mal formado) y 404 (no pertenece).
+      tags: [sesion]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmpresaElegida'
+      responses:
+        '200':
+          description: La empresa activa de la sesión es ahora la pedida.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmpresaActual'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
   /empresa/marca:
     get:
       operationId: obtenerMarcaEmpresa
@@ -93,6 +160,44 @@ paths:
                 $ref: '#/components/schemas/Marca'
         '401':
           $ref: '#/components/responses/NoAutenticado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: actualizarMarcaEmpresa
+      summary: Edita el color y el logo de la empresa de quien consulta
+      description: |
+        Solo la persona con rol de administrador SIG (`marca.editar`). La empresa y la persona salen del token; el cuerpo solo trae el
+        color y el logo. El color elegido se guarda tal cual: si no cumple el contraste mínimo (AA), la marca que se APLICA se ajusta y
+        la respuesta lo dice (`ajustadoPorContraste`). El logo es una dirección `https` sin credenciales, una ruta propia o nulo (vuelve
+        el monograma); uno no permitido se RECHAZA con 400 (no se descarta en silencio). No cambia el nombre ni el slug. Si no cambia
+        nada, responde la marca vigente y no registra nada; si cambia algo, la bitácora guarda solo QUÉ cambió (color, logo), nunca los
+        valores. Orden de evaluación: 401, 403, 400.
+      tags: [empresa]
+      x-permiso: marca.editar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarcaEdicion'
+      responses:
+        '200':
+          description: La marca vigente después del cambio.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Marca'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
         '429':
           $ref: '#/components/responses/LimiteExcedido'
         '500':
@@ -141,9 +246,9 @@ paths:
       operationId: listarLibrerias
       summary: Librerías del catálogo
       description: |
-        Todas las librerías del catálogo GLOBAL con sus metadatos, e indica cuáles adoptó la empresa. Las entradas solo se ven si
-        se adoptó. El catálogo es acotado por diseño y de solo lectura; una librería privada de una empresa exigiría su propia
-        tabla con `empresa_id` y RLS, y no aparecería aquí.
+        Las librerías del catálogo GLOBAL (de solo lectura) y las PROPIAS de la empresa de quien consulta (ADR 034), con sus
+        metadatos, e indica cuáles adoptó la empresa. Las entradas solo se ven si se adoptó. Una librería propia de otra empresa
+        nunca aparece. Cada versión es una fila.
       tags: [librerias]
       responses:
         '200':
@@ -160,6 +265,59 @@ paths:
                   $ref: '#/components/schemas/LibreriaResumen'
         '401':
           $ref: '#/components/responses/NoAutenticado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /librerias/carga:
+    post:
+      operationId: cargarLibreria
+      summary: Sube una librería de norma propia de la empresa (archivo YAML)
+      description: |
+        Solo la persona con rol de administrador SIG (`normas.cargar`). `multipart/form-data` con **un solo archivo** (campo `archivo`)
+        YAML de hasta 1 MB, sin alias ni anclas, con el esquema v3 de las librerías (sin texto de la norma). El código debe empezar con
+        `propia-` y la librería no puede ser de ejemplo. La librería queda **propia de la empresa del token** y nunca es visible para
+        otra; cada versión es inmutable (la misma versión con otro contenido se rechaza).
+
+        Un archivo que no pasa la validación **no es un error HTTP**: responde 200 con `estado: rechazada`, el motivo y la lista de
+        errores por ruta (nunca el contenido), y el rechazo queda en la bitácora. 201 si se cargó ahora; 200 si ya estaba cargada
+        (mismo contenido) o si se rechazó. 413 si declara más de 1 MB (sin leerlo) y 400 si no llega el archivo.
+        Orden de evaluación: 401, 403, 400, 413, y después la validación del contenido.
+      tags: [librerias]
+      x-permiso: normas.cargar
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LibreriaSubida'
+      responses:
+        '201':
+          description: La librería se cargó ahora.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CargaLibreria'
+        '200':
+          description: Ya estaba cargada (mismo contenido) o el archivo se rechazó; ver `estado`.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CargaLibreria'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '413':
+          $ref: '#/components/responses/LibreriaDemasiadoGrande'
         '429':
           $ref: '#/components/responses/LimiteExcedido'
         '500':
@@ -751,6 +909,478 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /controles/{id}/evidencias:
+    get:
+      operationId: listarEvidencias
+      summary: Evidencias de un control
+      description: |
+        De la más nueva a la más antigua. Por omisión solo las activas; con `incluirHistoricas` también las reemplazadas y eliminadas.
+        Cada una indica si está vigente o vencida según la fecha de hoy en Ecuador. Orden de evaluación: 401, 403, 400, 404.
+      tags: [evidencias]
+      x-permiso: evidencias.ver
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+        - name: incluirHistoricas
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Las evidencias del control.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 100
+                items:
+                  $ref: '#/components/schemas/Evidencia'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      operationId: subirEvidencia
+      summary: Sube una evidencia con su archivo a un control vigente
+      description: |
+        `multipart/form-data` con **un solo archivo** (campo `archivo`) de hasta 25 MB. **Los campos de texto van ANTES del archivo**: la API
+        decide el permiso, los datos y el control antes de leer un solo byte del archivo. El tipo se decide por el **contenido** (PDF, PNG,
+        JPEG, TXT, DOCX, XLSX o PPTX; sin macros ni SVG ni HTML), nunca por la extensión ni por el tipo que declare el cliente: un archivo
+        de otro tipo responde 415 y uno de más de 25 MB, 413. Una petición sin archivo responde 400. Un control retirado o con 100
+        evidencias activas responde 409. Orden de evaluación: 401, 403, 400, 404, 409, 413 o 415.
+      tags: [evidencias]
+      x-permiso: evidencias.registrar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EvidenciaSubida'
+      responses:
+        '201':
+          description: La evidencia creada.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evidencia'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '413':
+          $ref: '#/components/responses/ArchivoDemasiadoGrande'
+        '415':
+          $ref: '#/components/responses/TipoNoPermitido'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /evidencias/{id}/reemplazo:
+    post:
+      operationId: reemplazarEvidencia
+      summary: Reemplaza una evidencia activa por otra con un archivo nuevo
+      description: |
+        Misma subida que `subirEvidencia` (campos antes del archivo, un archivo de hasta 25 MB, tipo por contenido). La anterior queda
+        «reemplazada», con su archivo intacto, y la nueva apunta a ella. El título y el tipo se heredan si no se envían; la fecha del
+        hecho es obligatoria. Reemplazar una evidencia que ya no está activa, o de un control retirado, responde 409. Si el archivo
+        nuevo se rechaza, la original sigue activa.
+      tags: [evidencias]
+      x-permiso: evidencias.registrar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EvidenciaReemplazo'
+      responses:
+        '201':
+          description: La evidencia nueva.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evidencia'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '413':
+          $ref: '#/components/responses/ArchivoDemasiadoGrande'
+        '415':
+          $ref: '#/components/responses/TipoNoPermitido'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /evidencias/{id}/eliminacion:
+    post:
+      operationId: eliminarEvidencia
+      summary: Elimina una evidencia activa
+      description: |
+        Cambia su estado a «eliminada» y queda el rastro; el archivo **no se borra**. Solo se elimina una evidencia activa (409 si ya no
+        lo está). Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [evidencias]
+      x-permiso: evidencias.eliminar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '204':
+          description: La evidencia se eliminó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /evidencias/{id}/archivo:
+    get:
+      operationId: descargarEvidencia
+      summary: Descarga el archivo de una evidencia
+      description: |
+        Siempre como **adjunto** (`Content-Disposition: attachment`), con el tipo que se detectó al subir, `X-Content-Type-Options: nosniff`
+        y sin caché. La extensión del nombre es la que corresponde a ese tipo. La descarga **queda en la bitácora antes** de entregar el
+        archivo y, si no se puede registrar, no se entrega. Una evidencia reemplazada se descarga (es el historial); una eliminada no
+        (404). Orden de evaluación: 401, 403, 400, 404.
+      tags: [evidencias]
+      x-permiso: evidencias.ver
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El archivo, como adjunto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+            Content-Disposition:
+              description: Siempre `attachment`, con el nombre normalizado y la extensión del tipo detectado.
+              schema:
+                type: string
+                maxLength: 300
+            X-Content-Type-Options:
+              schema:
+                type: string
+                enum: [nosniff]
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.presentationml.presentation:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /cobertura:
+    get:
+      operationId: obtenerCobertura
+      summary: Cobertura documental de las entradas de las normas adoptadas
+      description: |
+        Para cada entrada que no se evaluó como «no aplica»: cubierta (algún control vigente que la cubre tiene una evidencia activa y
+        vigente), evidencia vencida, sin evidencia o sin control. Se resume por norma. Mide la cobertura documental, no la eficacia de
+        los controles. Orden de evaluación: 401, 403, 400.
+      tags: [evidencias]
+      x-permiso: evidencias.ver
+      parameters:
+        - name: norma
+          in: query
+          required: false
+          description: Solo las entradas que aplican a esta norma.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 60
+            pattern: ^[A-Za-z0-9 :./-]+$
+      responses:
+        '200':
+          description: La cobertura.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cobertura'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion:
+    get:
+      operationId: obtenerDeclaracion
+      summary: Borrador de la Declaración de Aplicabilidad de ISO/IEC 27001
+      description: |
+        Una fila por control del Anexo A de las librerías adoptadas, DERIVADA del diagnóstico, de los controles de la empresa y de la
+        cobertura de las evidencias; no se guarda nada. Trae también la última versión aprobada, si hay. Orden: 401, 403.
+      tags: [declaracion]
+      x-permiso: declaracion.ver
+      responses:
+        '200':
+          description: El borrador derivado con lo que hay hoy.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Declaracion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/aprobacion:
+    post:
+      operationId: aprobarDeclaracion
+      summary: Aprueba la declaración y congela una versión nueva
+      description: |
+        Congela, en una sola transacción, lo que la API lee en ese momento: las filas, el alcance de 27001 y los conteos. La versión es
+        inmutable y su número es correlativo por empresa. Responde 409 si queda algún control por decidir (o no hay controles de la norma
+        adoptados) y 409 si otra persona aprobó al mismo tiempo. Un control que aplica sin control de la empresa asignado SÍ se puede
+        aprobar: queda señalado en el documento. Orden: 401, 403, 409.
+      tags: [declaracion]
+      x-permiso: declaracion.aprobar
+      responses:
+        '201':
+          description: La versión aprobada.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDeclaracion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/versiones:
+    get:
+      operationId: listarVersionesDeclaracion
+      summary: Versiones aprobadas de la declaración
+      description: De la más nueva a la más antigua; como máximo las 100 más recientes. Orden de evaluación 401, 403.
+      tags: [declaracion]
+      x-permiso: declaracion.ver
+      responses:
+        '200':
+          description: Las versiones aprobadas.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 100
+                items:
+                  $ref: '#/components/schemas/VersionDeclaracion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/versiones/{id}:
+    get:
+      operationId: obtenerVersionDeclaracion
+      summary: Una versión aprobada con sus filas congeladas
+      description: Una versión de otra empresa responde 404, igual que una inexistente. Orden de evaluación 401, 403, 400, 404.
+      tags: [declaracion]
+      x-permiso: declaracion.ver
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: La versión con sus filas.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDeclaracionConFilas'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/documento:
+    get:
+      operationId: exportarBorradorDeclaracion
+      summary: Descarga el borrador de la declaración en Word
+      description: |
+        Siempre como **adjunto**, con el rótulo de documento preliminar. Queda en la bitácora, con la huella SHA-256 del documento,
+        **antes** de entregarlo; si no se puede registrar, no se entrega. Orden: 401, 403.
+      tags: [declaracion]
+      x-permiso: declaracion.exportar
+      responses:
+        '200':
+          description: El documento Word, como adjunto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+            Content-Disposition:
+              description: Siempre `attachment`, con un nombre fijado por el servidor.
+              schema:
+                type: string
+                maxLength: 300
+            X-Content-Type-Options:
+              schema:
+                type: string
+                enum: [nosniff]
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/versiones/{id}/documento:
+    get:
+      operationId: exportarVersionDeclaracion
+      summary: Descarga una versión aprobada de la declaración en Word
+      description: |
+        Siempre como **adjunto** y SIEMPRE desde la copia congelada de esa versión, no desde los datos de hoy. Queda en la bitácora con la
+        huella del documento antes de entregarlo. Una versión de otra empresa responde 404. Orden: 401, 403, 400, 404.
+      tags: [declaracion]
+      x-permiso: declaracion.exportar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El documento Word, como adjunto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+            Content-Disposition:
+              description: Siempre `attachment`, con un nombre fijado por el servidor.
+              schema:
+                type: string
+                maxLength: 300
+            X-Content-Type-Options:
+              schema:
+                type: string
+                enum: [nosniff]
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearerAuth:
@@ -870,6 +1500,50 @@ components:
             title: Conflicto
             status: 409
             codigo: conflicto
+    ArchivoDemasiadoGrande:
+      description: El archivo pasa de 25 MB. No se guarda nada y el rechazo queda en la bitácora.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problema'
+          example:
+            type: about:blank
+            title: Archivo demasiado grande
+            status: 413
+            codigo: archivo_demasiado_grande
+    LibreriaDemasiadoGrande:
+      description: El archivo de la librería pasa de 1 MB. No se lee ni se guarda nada.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problema'
+          example:
+            type: about:blank
+            title: Archivo demasiado grande
+            status: 413
+            codigo: archivo_demasiado_grande
+    TipoNoPermitido:
+      description: |
+        El contenido del archivo no es de un tipo permitido o está dañado (PDF, PNG, JPEG, TXT, DOCX, XLSX o PPTX; sin macros, SVG ni HTML).
+        El tipo se decide por el contenido, no por la extensión. No se guarda nada y el rechazo queda en la bitácora.
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problema'
+          example:
+            type: about:blank
+            title: Tipo de archivo no permitido
+            status: 415
+            codigo: tipo_no_permitido
     ErrorInterno:
       description: Error interno. Si falla el registro en la bitácora de una acción, la acción no se completa y se responde con este error.
       headers:
@@ -904,7 +1578,7 @@ components:
           maximum: 599
         codigo:
           type: string
-          enum: [no_autenticado, sin_permiso, no_encontrado, parametro_invalido, conflicto, limite_excedido, error_interno]
+          enum: [no_autenticado, sin_permiso, no_encontrado, parametro_invalido, conflicto, archivo_demasiado_grande, tipo_no_permitido, limite_excedido, error_interno]
     Salud:
       type: object
       required: [status, time]
@@ -917,6 +1591,43 @@ components:
           type: string
           format: date-time
           maxLength: 40
+    EmpresaDePersona:
+      type: object
+      required: [slug, nombre, activa]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          maxLength: 32
+        nombre:
+          type: string
+          maxLength: 120
+        activa:
+          type: boolean
+          description: Es la empresa de esta sesión ahora.
+    EmpresaElegida:
+      type: object
+      required: [slug]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          minLength: 1
+          maxLength: 32
+    EmpresaActual:
+      type: object
+      required: [slug, nombre]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          maxLength: 32
+        nombre:
+          type: string
+          maxLength: 120
     Identidad:
       type: object
       description: La persona que consulta, tomada del token verificado.
@@ -975,12 +1686,27 @@ components:
           description: Verdadero si el color original se ajustó para cumplir el contraste mínimo; el administrador SIG ve un aviso.
         logoUrl:
           type: [string, 'null']
-          pattern: ^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\s@]*|/[^/\\\s][^\s@]*)$
+          pattern: ^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\s@]*|/logos/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp))$
           maxLength: 2048
-          description: Solo `https` sin credenciales en la URL, o una ruta propia (nunca `//host`). Si no es válido se devuelve nulo y se muestra el monograma.
+          description: Solo `https` sin credenciales en la URL, o un archivo de imagen bajo `/logos/` (nunca otra ruta del sitio). Si no es válido se devuelve nulo y se muestra el monograma.
+    MarcaEdicion:
+      type: object
+      description: Lo que la empresa elige. La empresa nunca viaja aquí, sale del token.
+      required: [colorPrimario, logoUrl]
+      additionalProperties: false
+      properties:
+        colorPrimario:
+          type: string
+          pattern: ^#[0-9A-Fa-f]{6}$
+          maxLength: 7
+        logoUrl:
+          type: [string, 'null']
+          pattern: ^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\s@]*|/logos/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp))$
+          maxLength: 2048
+          description: Solo `https` sin credenciales, un archivo de imagen bajo `/logos/` o nulo para quitarlo.
     LibreriaResumen:
       type: object
-      required: [id, codigo, nombre, version, esEjemplo, fuente, adoptada]
+      required: [id, codigo, nombre, version, esEjemplo, fuente, propia, adoptada]
       additionalProperties: false
       properties:
         id:
@@ -1004,9 +1730,75 @@ components:
         fuente:
           type: string
           maxLength: 200
+        propia:
+          type: boolean
+          description: Verdadero si la subió la empresa de quien consulta (ADR 034); falso si es del catálogo global.
         adoptada:
           type: boolean
           description: Si la empresa de quien consulta ya la adoptó.
+    LibreriaSubida:
+      type: object
+      required: [archivo]
+      additionalProperties: false
+      properties:
+        archivo:
+          type: string
+          format: binary
+          description: El YAML de la librería (hasta 1 MB).
+    ErrorCargaLibreria:
+      type: object
+      description: Qué falló y dónde. Nunca repite el contenido del archivo.
+      required: [entrada, indice, ruta, codigo]
+      additionalProperties: false
+      properties:
+        entrada:
+          type: [string, 'null']
+          maxLength: 41
+          description: Identificador de la entrada afectada, si aplica.
+        indice:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 999
+        ruta:
+          type: string
+          maxLength: 200
+        codigo:
+          type: string
+          maxLength: 60
+    CargaLibreria:
+      type: object
+      required: [estado, motivo, codigo, version, entradas, huella, errores]
+      additionalProperties: false
+      properties:
+        estado:
+          type: string
+          enum: [cargada, ya_cargada, rechazada]
+        motivo:
+          type: [string, 'null']
+          enum: [tipo_no_permitido, tamano_excedido, formato_invalido, contenido_no_permitido, codigo_no_permitido, hash_distinto, null]
+          description: Solo si el estado es `rechazada`.
+        codigo:
+          type: [string, 'null']
+          pattern: ^[a-z0-9-]+$
+          maxLength: 64
+        version:
+          type: [string, 'null']
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+          maxLength: 20
+        entradas:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 1000
+        huella:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          maxLength: 64
+          description: SHA-256 del contenido canónico (si es válida) o de los bytes del archivo (si no).
+        errores:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/ErrorCargaLibreria'
     Adopcion:
       type: object
       required: [libreriaId, entradas, yaAdoptada, adoptadaEn]
@@ -1535,3 +2327,337 @@ components:
           items:
             type: string
             maxLength: 60
+    TipoEvidencia:
+      type: string
+      enum: [documento, registro]
+    EstadoEvidencia:
+      type: string
+      enum: [activa, reemplazada, eliminada]
+    TipoArchivo:
+      type: string
+      enum:
+        - application/pdf
+        - image/png
+        - image/jpeg
+        - text/plain
+        - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        - application/vnd.openxmlformats-officedocument.presentationml.presentation
+    ArchivoEvidencia:
+      type: object
+      required: [nombre, tipo, bytes, sha256]
+      additionalProperties: false
+      properties:
+        nombre:
+          type: string
+          maxLength: 120
+          description: Etiqueta normalizada (sin carpetas ni símbolos); en el almacén el archivo es un UUID del servidor.
+        tipo:
+          $ref: '#/components/schemas/TipoArchivo'
+        bytes:
+          type: integer
+          minimum: 1
+          maximum: 26214400
+        sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          maxLength: 64
+    Evidencia:
+      type: object
+      required: [id, controlId, tipo, titulo, fechaHecho, vigenteHasta, estado, reemplazaId, vigente, vencida, creadaEn, archivo]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        controlId:
+          type: string
+          format: uuid
+          maxLength: 36
+        tipo:
+          $ref: '#/components/schemas/TipoEvidencia'
+        titulo:
+          type: string
+          maxLength: 120
+        fechaHecho:
+          type: string
+          format: date
+          maxLength: 10
+        vigenteHasta:
+          type: [string, 'null']
+          format: date
+          maxLength: 10
+        estado:
+          $ref: '#/components/schemas/EstadoEvidencia'
+        reemplazaId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        vigente:
+          type: boolean
+          description: Activa y con la vigencia al día (fecha de hoy en Ecuador).
+        vencida:
+          type: boolean
+          description: Activa pero con la vigencia ya pasada.
+        creadaEn:
+          type: string
+          format: date-time
+          maxLength: 40
+        archivo:
+          $ref: '#/components/schemas/ArchivoEvidencia'
+    EvidenciaSubida:
+      type: object
+      description: Los campos de texto van antes del archivo.
+      required: [tipo, titulo, fechaHecho, archivo]
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoEvidencia'
+        titulo:
+          type: string
+          minLength: 1
+          maxLength: 120
+        fechaHecho:
+          type: string
+          format: date
+          maxLength: 10
+          description: El día en que ocurrió lo que la evidencia demuestra; no puede ser futuro.
+        vigenteHasta:
+          type: string
+          format: date
+          maxLength: 10
+          description: Opcional; no anterior a la fecha del hecho.
+        archivo:
+          type: string
+          format: binary
+    EvidenciaReemplazo:
+      type: object
+      description: Los campos de texto van antes del archivo.
+      required: [fechaHecho, archivo]
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoEvidencia'
+        titulo:
+          type: string
+          minLength: 1
+          maxLength: 120
+        fechaHecho:
+          type: string
+          format: date
+          maxLength: 10
+        vigenteHasta:
+          type: string
+          format: date
+          maxLength: 10
+        archivo:
+          type: string
+          format: binary
+    AplicabilidadDeclaracion:
+      type: string
+      enum: [aplica, no_aplica, por_decidir]
+    FilaDeclaracion:
+      type: object
+      required: [libreriaCodigo, idEstable, orden, titulo, grupo, aplicabilidad, implementacion, justificacion, controles, cobertura]
+      additionalProperties: false
+      properties:
+        libreriaCodigo: {type: string, maxLength: 64}
+        idEstable: {type: string, maxLength: 41}
+        orden: {type: integer, minimum: 0}
+        titulo: {type: string, maxLength: 200}
+        grupo: {type: [string, 'null'], maxLength: 80}
+        aplicabilidad:
+          $ref: '#/components/schemas/AplicabilidadDeclaracion'
+        implementacion:
+          type: [string, 'null']
+          maxLength: 20
+          description: 'implementado, parcial o no_implementado; nula si no aplica o está por decidir.'
+        justificacion:
+          type: [string, 'null']
+          maxLength: 1000
+          description: Solo si no aplica; es la que la empresa escribió al evaluar.
+        controles:
+          type: array
+          maxItems: 50
+          items: {type: string, maxLength: 20}
+          description: Códigos de los controles vigentes de la empresa que la cubren.
+        cobertura:
+          $ref: '#/components/schemas/EstadoCobertura'
+    ResumenDeclaracion:
+      type: object
+      required: [total, aplican, noAplican, porDecidir, sinControl, aprobable]
+      additionalProperties: false
+      properties:
+        total: {type: integer, minimum: 0}
+        aplican: {type: integer, minimum: 0}
+        noAplican: {type: integer, minimum: 0}
+        porDecidir: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0, description: Aplican y ningún control de la empresa los cubre; no impide aprobar.}
+        aprobable: {type: boolean, description: Hay filas y ninguna está por decidir.}
+    VersionDeclaracion:
+      type: object
+      required: [id, numero, total, aplican, noAplican, sinControl, aprobadaPor, aprobadaEn]
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid, maxLength: 36}
+        numero: {type: integer, minimum: 1}
+        total: {type: integer, minimum: 0}
+        aplican: {type: integer, minimum: 0}
+        noAplican: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0}
+        aprobadaPor: {type: string, format: uuid, maxLength: 36}
+        aprobadaEn: {type: string, format: date-time, maxLength: 40}
+    VersionDeclaracionConFilas:
+      type: object
+      required: [id, numero, total, aplican, noAplican, sinControl, aprobadaPor, aprobadaEn, alcance, filas]
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid, maxLength: 36}
+        numero: {type: integer, minimum: 1}
+        total: {type: integer, minimum: 0}
+        aplican: {type: integer, minimum: 0}
+        noAplican: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0}
+        aprobadaPor: {type: string, format: uuid, maxLength: 36}
+        aprobadaEn: {type: string, format: date-time, maxLength: 40}
+        alcance:
+          type: [string, 'null']
+          maxLength: 4000
+          description: El alcance de la norma tal como estaba al aprobar.
+        filas:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/FilaDeclaracion'
+    Declaracion:
+      type: object
+      required: [norma, hoy, resumen, filas, alcance, ultimaVersion]
+      additionalProperties: false
+      properties:
+        norma: {type: string, maxLength: 60}
+        hoy:
+          type: string
+          format: date
+          maxLength: 10
+          description: La fecha de hoy en Ecuador con la que se calculó la cobertura.
+        resumen:
+          $ref: '#/components/schemas/ResumenDeclaracion'
+        filas:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/FilaDeclaracion'
+        alcance:
+          type: [object, 'null']
+          required: [texto, aprobado]
+          additionalProperties: false
+          description: El alcance de la norma tal como está hoy (aprobado o no); nulo si no se definió.
+          properties:
+            texto: {type: string, maxLength: 4000}
+            aprobado: {type: boolean}
+        ultimaVersion:
+          type: [object, 'null']
+          required: [id, numero, total, aplican, noAplican, sinControl, aprobadaPor, aprobadaEn]
+          additionalProperties: false
+          description: La última versión aprobada; nula si todavía no hay ninguna.
+          properties:
+            id: {type: string, format: uuid, maxLength: 36}
+            numero: {type: integer, minimum: 1}
+            total: {type: integer, minimum: 0}
+            aplican: {type: integer, minimum: 0}
+            noAplican: {type: integer, minimum: 0}
+            sinControl: {type: integer, minimum: 0}
+            aprobadaPor: {type: string, format: uuid, maxLength: 36}
+            aprobadaEn: {type: string, format: date-time, maxLength: 40}
+    EstadoCobertura:
+      type: string
+      enum: [cubierta, evidencia_vencida, sin_evidencia, sin_control, no_aplica]
+    ResumenCobertura:
+      type: object
+      required: [total, cubiertas, evidenciaVencida, sinEvidencia, sinControl, porcentaje]
+      additionalProperties: false
+      properties:
+        total: {type: integer, minimum: 0}
+        cubiertas: {type: integer, minimum: 0}
+        evidenciaVencida: {type: integer, minimum: 0}
+        sinEvidencia: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0}
+        porcentaje:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+          description: Nulo si no hay ninguna entrada a la que pedir cobertura (no es 0).
+    CoberturaNorma:
+      type: object
+      required: [norma, total, cubiertas, evidenciaVencida, sinEvidencia, sinControl, porcentaje]
+      additionalProperties: false
+      properties:
+        norma: {type: string, maxLength: 60}
+        total: {type: integer, minimum: 0}
+        cubiertas: {type: integer, minimum: 0}
+        evidenciaVencida: {type: integer, minimum: 0}
+        sinEvidencia: {type: integer, minimum: 0}
+        sinControl: {type: integer, minimum: 0}
+        porcentaje:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
+    CoberturaEntrada:
+      type: object
+      required: [libreriaCodigo, idEstable, tipo, capitulo, grupo, titulo, normas, estado, controles, evidencias]
+      additionalProperties: false
+      properties:
+        libreriaCodigo: {type: string, maxLength: 64}
+        idEstable: {type: string, maxLength: 41}
+        tipo:
+          type: string
+          enum: [clausula, control]
+        capitulo:
+          type: [integer, 'null']
+          minimum: 4
+          maximum: 10
+        grupo:
+          type: [string, 'null']
+          maxLength: 60
+        titulo: {type: string, maxLength: 80}
+        normas:
+          type: array
+          maxItems: 20
+          items: {type: string, maxLength: 60}
+        estado:
+          $ref: '#/components/schemas/EstadoCobertura'
+        controles:
+          type: integer
+          minimum: 0
+          description: Controles vigentes que la cubren por un mapeo.
+        evidencias:
+          type: integer
+          minimum: 0
+          description: Evidencias activas de esos controles (vigentes o no).
+    Cobertura:
+      type: object
+      required: [hoy, entradas, porNorma, total, normas]
+      additionalProperties: false
+      properties:
+        hoy:
+          type: string
+          format: date
+          maxLength: 10
+          description: La fecha de hoy en Ecuador con la que se calculó el vencimiento.
+        entradas:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/CoberturaEntrada'
+        porNorma:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/CoberturaNorma'
+        total:
+          $ref: '#/components/schemas/ResumenCobertura'
+        normas:
+          type: array
+          maxItems: 20
+          items: {type: string, maxLength: 60}

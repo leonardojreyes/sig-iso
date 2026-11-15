@@ -33,13 +33,17 @@ const PRIVILEGIOS = [
 const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   empresa: { app: ["SELECT"] },
   usuario: { app: ["SELECT"] }, // INSERT y UPDATE solo por columnas, sin `rol` (migración 0005)
-  libreria: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
-  libreria_entrada: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
-  libreria_entrada_norma: { app: ["SELECT"], catalogo: ["SELECT", "INSERT"] },
+  libreria: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
+  libreria_entrada: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
+  libreria_entrada_norma: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
   empresa_libreria: { app: ["SELECT", "INSERT"] },
+  empresa_activa: { plataforma: ["SELECT", "INSERT", "DELETE"] }, // UPDATE solo por columnas; la aplicación no la toca (migración 0012)
   alcance: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: nada se borra (migración 0007)
   evaluacion: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE (migración 0007)
   control: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: un control se retira (migración 0008)
+  evidencia: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas (estado y quién y cuándo), sin DELETE (migración 0009)
+  declaracion_version: { app: ["SELECT", "INSERT"] }, // inmutable: ni UPDATE ni DELETE (migración 0010)
+  declaracion_fila: { app: ["SELECT", "INSERT"] }, // inmutable (migración 0010)
   control_mapeo: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro, nunca se actualiza (migración 0008)
   bitacora: { app: ["SELECT"] }, // INSERT solo por columna (app y plataforma); ver la prueba de columnas de la bitácora
   bitacora_ancla: {}, // solo el dueño lee y añade; nadie modifica ni borra
@@ -271,6 +275,28 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
       expect(catalogo.rows[0]?.ok).toBe(false);
     });
 
+    it("la plataforma lee de usuario y empresa solo lo necesario para saber a qué empresas pertenece una persona (0012)", async () => {
+      const col = async (tabla: string, columna: string, p: string) =>
+        (
+          await sql<{
+            ok: boolean;
+          }>`select has_column_privilege('sigiso_plataforma', ${"public." + tabla}, ${columna}, ${p}) as ok`.execute(
+            owner(),
+          )
+        ).rows[0]?.ok;
+      for (const c of ["id", "empresa_id", "rol"]) expect(await col("usuario", c, "SELECT")).toBe(true);
+      for (const c of ["nombre", "correo", "creada_en"]) expect(await col("usuario", c, "SELECT")).toBe(false);
+      for (const c of ["id", "slug", "nombre"]) expect(await col("empresa", c, "SELECT")).toBe(true);
+      for (const c of ["color_primario", "logo_url", "creada_en"]) expect(await col("empresa", c, "SELECT")).toBe(false);
+      for (const t of ["usuario", "empresa"])
+        for (const c of ["id", "empresa_id", "rol", "slug", "nombre"].filter((x) => x !== "empresa_id" || t === "usuario"))
+          for (const p of ["INSERT", "UPDATE", "REFERENCES"])
+            if (!(t === "usuario" && c === "slug") && !(t === "empresa" && (c === "empresa_id" || c === "rol"))) expect({ t, c, p, ok: await col(t, c, p) }).toEqual({ t, c, p, ok: false });
+      // empresa_activa: solo se actualizan tres columnas (no la persona ni el identificador de sesión).
+      for (const c of ["empresa_id", "cambiada_en", "expira_en"]) expect(await col("empresa_activa", c, "UPDATE")).toBe(true);
+      for (const c of ["sid", "usuario_id"]) expect(await col("empresa_activa", c, "UPDATE")).toBe(false);
+    });
+
     it("la aplicación solo actualiza nombre y correo de usuario; ninguna otra columna ni tabla", async () => {
       const col = async (rol: string, tabla: string, columna: string) =>
         (
@@ -284,9 +310,22 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
       expect(await col("sigiso_app", "usuario", "correo")).toBe(true);
       for (const c of ["id", "empresa_id", "creada_en"])
         expect(await col("sigiso_app", "usuario", c)).toBe(false);
+      // empresa (0013): la aplicación cambia SOLO el color y el logo de su empresa; ni el nombre, ni el slug, ni el identificador.
+      for (const c of ["color_primario", "logo_url"])
+        expect(await col("sigiso_app", "empresa", c)).toBe(true);
+      for (const c of ["id", "slug", "nombre", "creada_en"])
+        expect(await col("sigiso_app", "empresa", c)).toBe(false);
       // alcance, evaluacion y control se actualizan a propósito (versión y texto vigentes); su RLS forzada se comprueba abajo.
       for (const t of Object.keys(ESPERADO).filter(
-        (x) => !["usuario", "alcance", "evaluacion", "control"].includes(x),
+        (x) =>
+          ![
+            "usuario",
+            "empresa",
+            "alcance",
+            "evaluacion",
+            "control",
+            "evidencia",
+          ].includes(x),
       )) {
         const r = await sql<{
           ok: boolean;
@@ -302,16 +341,21 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'empresa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
         "alcance",
         "control",
         "control_mapeo",
+        "declaracion_fila",
+        "declaracion_version",
         "empresa",
+        "empresa_activa",
         "empresa_libreria",
         "evaluacion",
+        "evidencia",
+        "libreria",
         "libreria_entrada",
         "libreria_entrada_norma",
         "usuario",

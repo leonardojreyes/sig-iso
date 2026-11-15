@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { homedir } from 'node:os';
+import { isAbsolute } from 'node:path';
 import { entornoDeServicio, SERVICIOS } from './dev-env.mjs';
 
 const archivo = [
@@ -55,6 +57,22 @@ describe('entornoDeServicio: cada servicio recibe solo lo que necesita', () => {
     ]) {
       expect(e[k], k).toBeUndefined();
     }
+  });
+
+  it('la API recibe EVIDENCIAS_DIR (la carpeta de los archivos de evidencias) y la web nunca', () => {
+    const conCarpeta = entornoDeServicio('api', archivo + '\nEVIDENCIAS_DIR=/datos/evidencias\n', {});
+    expect(conCarpeta.EVIDENCIAS_DIR).toBe('/datos/evidencias');
+    expect(entornoDeServicio('api', archivo, { EVIDENCIAS_DIR: '/desde/la/terminal' }).EVIDENCIAS_DIR).toBe('/desde/la/terminal');
+    expect(entornoDeServicio('web', archivo + '\nEVIDENCIAS_DIR=/datos/evidencias\n', {}).EVIDENCIAS_DIR).toBeUndefined();
+    expect(SERVICIOS.web).not.toContain('EVIDENCIAS_DIR');
+  });
+
+  it('sin EVIDENCIAS_DIR, la API usa una carpeta absoluta en el directorio personal, nunca dentro del repositorio', () => {
+    const e = entornoDeServicio('api', archivo, {});
+    expect(isAbsolute(e.EVIDENCIAS_DIR)).toBe(true);
+    expect(e.EVIDENCIAS_DIR.startsWith(homedir())).toBe(true);
+    expect(e.EVIDENCIAS_DIR).toMatch(/sigiso/);
+    expect(entornoDeServicio('web', archivo, {}).EVIDENCIAS_DIR).toBeUndefined();
   });
 
   it('lo que ya está en el entorno de la terminal manda sobre el archivo', () => {

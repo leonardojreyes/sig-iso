@@ -1,8 +1,11 @@
 import { DynamicModule, Module } from '@nestjs/common';
-import type { AgregarMapeoUseCase, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarControlesUseCase, ListarDiagnosticoUseCase, QuitarMapeoUseCase, RetirarControlUseCase } from '@sig/certificacion';
+import type { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarControlesUseCase, ListarDiagnosticoUseCase, QuitarMapeoUseCase, RetirarControlUseCase } from '@sig/certificacion';
 import { CertificacionController } from './certificacion.controller.js';
 import { ControlesController } from './controles.controller.js';
-import { AGREGAR_MAPEO, APROBAR_ALCANCE, CAMBIAR_CONTROL, CREAR_CONTROL, DIAGNOSTICO, EVALUAR_ENTRADA, GUARDAR_ALCANCE, LISTAR_ALCANCES, LISTAR_CONTROLES, QUITAR_MAPEO, RETIRAR_CONTROL } from './tokens.js';
+import { DeclaracionController } from './declaracion.controller.js';
+import { EvidenciasController, PrepararReemplazarEvidencia, PrepararSubirEvidencia } from './evidencias.controller.js';
+import { LimitarTamanoSubida } from './subida.js';
+import { APROBAR_DECLARACION, EXPORTAR_DECLARACION, LISTAR_VERSIONES_DECLARACION, OBTENER_DECLARACION, OBTENER_VERSION_DECLARACION, AGREGAR_MAPEO, APROBAR_ALCANCE, COBERTURA, DESCARGAR_EVIDENCIA, ELIMINAR_EVIDENCIA, LISTAR_EVIDENCIAS, REEMPLAZAR_EVIDENCIA, SUBIR_EVIDENCIA, CAMBIAR_CONTROL, CREAR_CONTROL, DIAGNOSTICO, EVALUAR_ENTRADA, GUARDAR_ALCANCE, LISTAR_ALCANCES, LISTAR_CONTROLES, QUITAR_MAPEO, RETIRAR_CONTROL } from './tokens.js';
 
 export interface OpcionesCertificacionApi {
   readonly alcances: ListarAlcancesUseCase;
@@ -16,6 +19,17 @@ export interface OpcionesCertificacionApi {
   readonly retirarControl: RetirarControlUseCase;
   readonly agregarMapeo: AgregarMapeoUseCase;
   readonly quitarMapeo: QuitarMapeoUseCase;
+  readonly listarEvidencias: ListarEvidenciasUseCase;
+  readonly subirEvidencia: SubirEvidenciaUseCase;
+  readonly reemplazarEvidencia: ReemplazarEvidenciaUseCase;
+  readonly eliminarEvidencia: EliminarEvidenciaUseCase;
+  readonly descargarEvidencia: DescargarEvidenciaUseCase;
+  readonly cobertura: ListarCoberturaUseCase;
+  readonly declaracion: ObtenerDeclaracionUseCase;
+  readonly aprobarDeclaracion: AprobarDeclaracionUseCase;
+  readonly versionesDeclaracion: ListarVersionesDeclaracionUseCase;
+  readonly versionDeclaracion: ObtenerVersionDeclaracionUseCase;
+  readonly exportarDeclaracion: ExportarDeclaracionUseCase;
 }
 
 /** Controladores de `/alcances` y `/diagnostico`. Los casos de uso llegan ya armados por la composición. */
@@ -24,7 +38,7 @@ export class CertificacionApiModule {
   static register(opciones: OpcionesCertificacionApi): DynamicModule {
     return {
       module: CertificacionApiModule,
-      controllers: [CertificacionController, ControlesController],
+      controllers: [CertificacionController, ControlesController, EvidenciasController, DeclaracionController],
       providers: [
         { provide: LISTAR_ALCANCES, useValue: opciones.alcances },
         { provide: GUARDAR_ALCANCE, useValue: opciones.guardarAlcance },
@@ -37,6 +51,20 @@ export class CertificacionApiModule {
         { provide: RETIRAR_CONTROL, useValue: opciones.retirarControl },
         { provide: AGREGAR_MAPEO, useValue: opciones.agregarMapeo },
         { provide: QUITAR_MAPEO, useValue: opciones.quitarMapeo },
+        { provide: LISTAR_EVIDENCIAS, useValue: opciones.listarEvidencias },
+        { provide: SUBIR_EVIDENCIA, useValue: opciones.subirEvidencia },
+        { provide: REEMPLAZAR_EVIDENCIA, useValue: opciones.reemplazarEvidencia },
+        { provide: ELIMINAR_EVIDENCIA, useValue: opciones.eliminarEvidencia },
+        { provide: DESCARGAR_EVIDENCIA, useValue: opciones.descargarEvidencia },
+        { provide: COBERTURA, useValue: opciones.cobertura },
+        { provide: OBTENER_DECLARACION, useValue: opciones.declaracion },
+        { provide: APROBAR_DECLARACION, useValue: opciones.aprobarDeclaracion },
+        { provide: LISTAR_VERSIONES_DECLARACION, useValue: opciones.versionesDeclaracion },
+        { provide: OBTENER_VERSION_DECLARACION, useValue: opciones.versionDeclaracion },
+        { provide: EXPORTAR_DECLARACION, useValue: opciones.exportarDeclaracion },
+        PrepararSubirEvidencia,
+        PrepararReemplazarEvidencia,
+        LimitarTamanoSubida,
       ],
     };
   }

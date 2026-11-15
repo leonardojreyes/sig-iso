@@ -10,6 +10,8 @@ export interface LibreriaResumen {
   readonly version: string;
   readonly esEjemplo: boolean;
   readonly fuente: string;
+  /** Subida por la empresa (ADR 034); si no, es del catálogo global. */
+  readonly propia: boolean;
   readonly adoptada: boolean;
 }
 
@@ -128,4 +130,146 @@ export interface ControlMarco {
 export interface MarcoControles {
   readonly controles: readonly ControlMarco[];
   readonly normas: readonly string[];
+}
+
+export type TipoArchivo =
+  | 'application/pdf'
+  | 'image/png'
+  | 'image/jpeg'
+  | 'text/plain'
+  | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  | 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+export type TipoEvidencia = 'documento' | 'registro';
+export type EstadoEvidencia = 'activa' | 'reemplazada' | 'eliminada';
+
+export interface Evidencia {
+  readonly id: string;
+  readonly controlId: string;
+  readonly tipo: TipoEvidencia;
+  readonly titulo: string;
+  readonly fechaHecho: string;
+  readonly vigenteHasta: string | null;
+  readonly estado: EstadoEvidencia;
+  /** La evidencia a la que reemplazó, si es un reemplazo. */
+  readonly reemplazaId: string | null;
+  /** Activa y con la vigencia al día (fecha de hoy en Ecuador). */
+  readonly vigente: boolean;
+  /** Activa pero con la vigencia ya pasada. */
+  readonly vencida: boolean;
+  readonly creadaEn: string;
+  readonly archivo: { readonly nombre: string; readonly tipo: TipoArchivo; readonly bytes: number; readonly sha256: string };
+}
+
+export type EstadoCobertura = 'cubierta' | 'evidencia_vencida' | 'sin_evidencia' | 'sin_control' | 'no_aplica';
+
+export interface ResumenCobertura {
+  readonly total: number;
+  readonly cubiertas: number;
+  readonly evidenciaVencida: number;
+  readonly sinEvidencia: number;
+  readonly sinControl: number;
+  /** Nulo si no hay ninguna entrada a la que pedir cobertura (no es 0). */
+  readonly porcentaje: number | null;
+}
+
+export interface CoberturaEntrada {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  readonly tipo: 'clausula' | 'control';
+  readonly capitulo: number | null;
+  readonly grupo: string | null;
+  readonly titulo: string;
+  readonly normas: readonly string[];
+  readonly estado: EstadoCobertura;
+  readonly controles: number;
+  readonly evidencias: number;
+}
+
+export interface Cobertura {
+  readonly hoy: string;
+  readonly entradas: readonly CoberturaEntrada[];
+  readonly porNorma: readonly (ResumenCobertura & { readonly norma: string })[];
+  readonly total: ResumenCobertura;
+  readonly normas: readonly string[];
+}
+
+// ---- Declaración de Aplicabilidad (M5)
+export type Aplicabilidad = 'aplica' | 'no_aplica' | 'por_decidir';
+export type Implementacion = 'implementado' | 'parcial' | 'no_implementado';
+
+export interface FilaDeclaracion {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  readonly orden: number;
+  readonly titulo: string;
+  readonly grupo: string | null;
+  readonly aplicabilidad: Aplicabilidad;
+  readonly implementacion: Implementacion | null;
+  readonly justificacion: string | null;
+  readonly controles: readonly string[];
+  readonly cobertura: EstadoCobertura;
+}
+
+export interface ResumenDeclaracion {
+  readonly total: number;
+  readonly aplican: number;
+  readonly noAplican: number;
+  readonly porDecidir: number;
+  readonly sinControl: number;
+  readonly aprobable: boolean;
+}
+
+export interface VersionDeclaracion {
+  readonly id: string;
+  readonly numero: number;
+  readonly total: number;
+  readonly aplican: number;
+  readonly noAplican: number;
+  readonly sinControl: number;
+  readonly aprobadaPor: string;
+  readonly aprobadaEn: string;
+}
+
+export interface VersionDeclaracionConFilas extends VersionDeclaracion {
+  readonly alcance: string | null;
+  readonly filas: readonly FilaDeclaracion[];
+}
+
+export interface Declaracion {
+  readonly norma: string;
+  readonly hoy: string;
+  readonly resumen: ResumenDeclaracion;
+  readonly filas: readonly FilaDeclaracion[];
+  readonly alcance: { readonly texto: string; readonly aprobado: boolean } | null;
+  readonly ultimaVersion: VersionDeclaracion | null;
+}
+
+export type EstadoCargaLibreria = 'cargada' | 'ya_cargada' | 'rechazada';
+export type MotivoCargaLibreria = 'tipo_no_permitido' | 'tamano_excedido' | 'formato_invalido' | 'contenido_no_permitido' | 'codigo_no_permitido' | 'hash_distinto';
+
+/** Qué falló y dónde; nunca el contenido del archivo. */
+export interface ErrorCargaLibreria {
+  readonly entrada: string | null;
+  readonly indice: number | null;
+  readonly ruta: string;
+  readonly codigo: string;
+}
+
+export interface CargaLibreria {
+  readonly estado: EstadoCargaLibreria;
+  readonly motivo: MotivoCargaLibreria | null;
+  readonly codigo: string | null;
+  readonly version: string | null;
+  readonly entradas: number | null;
+  readonly huella: string;
+  readonly errores: readonly ErrorCargaLibreria[];
+}
+
+/** Una empresa a la que pertenece la persona de la sesión (ADR 035). */
+export interface EmpresaDePersona {
+  readonly slug: string;
+  readonly nombre: string;
+  /** Es la empresa de esta sesión ahora. */
+  readonly activa: boolean;
 }

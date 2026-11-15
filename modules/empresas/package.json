@@ -25,6 +25,7 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
+    "@sig/auditoria": "workspace:*",
     "@sig/autorizacion": "workspace:*",
     "@sig/db": "workspace:*",
     "@sig/tenancy": "workspace:*",

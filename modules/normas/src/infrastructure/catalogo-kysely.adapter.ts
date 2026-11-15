@@ -12,6 +12,7 @@ interface FilaLibreria {
   version: string;
   es_ejemplo: boolean;
   fuente: string;
+  propia: boolean;
 }
 
 interface FilaEntrada {
@@ -31,7 +32,7 @@ interface FilaEntrada {
 }
 
 const aLibreria = (f: FilaLibreria): Libreria =>
-  Libreria.crear({ id: f.id, codigo: f.codigo, nombre: f.nombre, version: f.version, esEjemplo: f.es_ejemplo, fuente: f.fuente });
+  Libreria.crear({ id: f.id, codigo: f.codigo, nombre: f.nombre, version: f.version, esEjemplo: f.es_ejemplo, fuente: f.fuente, propia: f.propia });
 
 const aEntrada = (f: FilaEntrada): EntradaLibreria =>
   EntradaLibreria.crear({
@@ -62,12 +63,12 @@ export class CatalogoKysely implements CatalogoRepositoryPort {
   constructor(private readonly db: Kysely<unknown>) {}
 
   async obtenerLibreria(libreriaId: string): Promise<Libreria | null> {
-    const { rows } = await sql<FilaLibreria>`select id, codigo, nombre, version, es_ejemplo, fuente from libreria where id = ${libreriaId}`.execute(this.db);
+    const { rows } = await sql<FilaLibreria>`select id, codigo, nombre, version, es_ejemplo, fuente, (empresa_id is not null) as propia from libreria where id = ${libreriaId}`.execute(this.db);
     return rows[0] ? aLibreria(rows[0]) : null;
   }
 
   async listarLibrerias(): Promise<Libreria[]> {
-    const { rows } = await sql<FilaLibreria>`select id, codigo, nombre, version, es_ejemplo, fuente from libreria order by codigo, publicada_en`.execute(this.db);
+    const { rows } = await sql<FilaLibreria>`select id, codigo, nombre, version, es_ejemplo, fuente, (empresa_id is not null) as propia from libreria order by codigo, publicada_en`.execute(this.db);
     return rows.map(aLibreria);
   }
 

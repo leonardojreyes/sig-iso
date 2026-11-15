@@ -253,6 +253,13 @@ export const PantallaControles = ({ empresa, persona, marco, opciones, filtros, 
                           <span className="font-mono text-fg-muted">{c.codigo}</span> · {c.nombre}
                         </p>
                         {c.descripcion && <p className="mt-1 max-w-xl text-sm text-fg-muted">{c.descripcion}</p>}
+                        <a
+                          className="mt-1 inline-flex min-h-[var(--sig-density-target-min)] items-center text-sm font-medium text-primary underline"
+                          href={`/e/${empresa.id}/controles/${c.id}`}
+                          aria-label={t.evidenciasAria(c.codigo)}
+                        >
+                          {t.evidencias}
+                        </a>
                         <DetalleControl empresa={empresa} control={c} indice={i} opciones={opciones} puedeGestionar={puedeGestionar} filtros={filtros} />
                       </Td>
                       <Td>

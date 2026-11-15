@@ -10,6 +10,8 @@ export interface LibreriaResumenDto {
   readonly version: string;
   readonly esEjemplo: boolean;
   readonly fuente: string;
+  /** Subida por la empresa (ADR 034); si no, es del catálogo global. */
+  readonly propia: boolean;
   readonly adoptada: boolean;
 }
 
@@ -23,7 +25,7 @@ const compararVersion = (a: string, b: string): number => {
   return 0;
 };
 
-/** Librerías del catálogo global, con `adoptada` según LA empresa del contexto (H4.8). */
+/** Librerías del catálogo global y las propias de la empresa, con `adoptada` según LA empresa del contexto (H4.8). */
 export class ListarLibreriasUseCase {
   constructor(private readonly unidad: UnidadDeTrabajoPort<ContextoConsulta>) {}
 
@@ -35,7 +37,7 @@ export class ListarLibreriasUseCase {
       const propias = new Set(adoptadas);
       return [...librerias]
         .sort((a, b) => a.codigo.localeCompare(b.codigo) || compararVersion(a.version, b.version))
-        .map((l) => ({ id: l.id, codigo: l.codigo, nombre: l.nombre, version: l.version, esEjemplo: l.esEjemplo, fuente: l.fuente, adoptada: propias.has(l.id) }));
+        .map((l) => ({ id: l.id, codigo: l.codigo, nombre: l.nombre, version: l.version, esEjemplo: l.esEjemplo, fuente: l.fuente, propia: l.propia, adoptada: propias.has(l.id) }));
     });
   }
 }

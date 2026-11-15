@@ -4,9 +4,8 @@
 // - La carga de cada librería es todo o nada (una transacción).
 // - Cada carga aceptada o rechazada deja un hecho de plataforma `catalogo.cargado` (sin empresa), una sola vez por contenido,
 //   con códigos y nunca con el contenido del archivo.
-import { createHash } from 'node:crypto';
 import type { Bitacora } from '@sig/auditoria';
-import type { Libreria } from '@sig/normas-schema';
+import { huellaCanonica, type Libreria } from '@sig/normas-schema';
 import type { Kysely } from 'kysely';
 import { archivosYaml, evaluarArchivo } from './validar-librerias.mjs';
 
@@ -75,21 +74,7 @@ export interface ResultadoCarga {
   readonly errores: readonly ErrorArchivo[];
 }
 
-const canonico = (v: unknown): string => {
-  if (Array.isArray(v)) return `[${v.map(canonico).join(',')}]`;
-  if (v !== null && typeof v === 'object') {
-    const o = v as Record<string, unknown>;
-    return `{${Object.keys(o)
-      .sort()
-      .map((k) => `${JSON.stringify(k)}:${canonico(o[k])}`)
-      .join(',')}}`;
-  }
-  return JSON.stringify(v);
-};
-
-/** SHA-256 del contenido canónico: no depende del formato del archivo ni del orden de las claves, pero sí del de las entradas. */
-export const huellaCanonica = (libreria: unknown): string =>
-  createHash('sha256').update(canonico(libreria)).digest('hex');
+export { huellaCanonica };
 
 export const evaluarCarpeta = (dir: string): EvaluacionArchivo[] =>
   (archivosYaml(dir) as string[]).map((a) => evaluarArchivo(a) as EvaluacionArchivo);

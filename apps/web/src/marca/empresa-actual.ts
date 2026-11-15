@@ -4,7 +4,7 @@
 // nunca debe pasar a un componente del navegador.
 import { consultarApi } from '../api/cliente';
 import type { Rol } from '../api/tipos';
-import { validarIdentidad } from '../api/validadores';
+import { validarEmpresasDePersona, validarIdentidad } from '../api/validadores';
 import type { DependenciasSesion } from '../auth/sesion';
 import { crearServicioSesion } from '../auth/sesion';
 import { cargarMarca } from './marca';
@@ -36,7 +36,7 @@ export const cargarEmpresaActual = async (
   const acceso = await servicio.obtenerAcceso(sesion);
   if (!acceso.ok) return acceso.motivo === 'expirada' ? { tipo: 'ingresar' } : { tipo: 'no_disponible' };
 
-  const [marca, me] = await Promise.all([
+  const [marca, me, empresas] = await Promise.all([
     cargarMarca({
       slug: entrada.slugVerificado,
       acceso: acceso.acceso,
@@ -44,6 +44,8 @@ export const cargarEmpresaActual = async (
       fetchFn: deps.fetchFn,
     }),
     consultarApi({ ruta: '/me', acceso: acceso.acceso, apiUrl: deps.config.apiUrl, fetchFn: deps.fetchFn }),
+    // Las empresas de la persona solo alimentan el selector: si falla o no cumple el contrato, no hay selector y nada más se rompe.
+    consultarApi({ ruta: '/sesion/empresas', acceso: acceso.acceso, apiUrl: deps.config.apiUrl, fetchFn: deps.fetchFn }),
   ]);
   const rechazada =
     (marca.ok === false && marca.motivo === 'no_autenticado') || (me.ok === false && me.motivo === 'no_autenticado');
@@ -56,9 +58,11 @@ export const cargarEmpresaActual = async (
   if (!identidad) return { tipo: 'no_disponible' };
   // La API debe confirmar la MISMA empresa que verificó el proxy; si no, nada se muestra.
   if (identidad.empresa.slug !== entrada.slugVerificado) return { tipo: 'no_encontrado' };
+  const todas = empresas.ok ? validarEmpresasDePersona(empresas.json) : null;
+  const otras = (todas ?? []).filter((e) => !e.activa).map((e) => ({ slug: e.slug, nombre: e.nombre }));
   return {
     tipo: 'ok',
-    empresa: marca.empresa,
+    empresa: otras.length > 0 ? { ...marca.empresa, otrasEmpresas: otras } : marca.empresa,
     persona: { nombre: identidad.nombre, roles: identidad.roles },
     acceso: acceso.acceso,
   };

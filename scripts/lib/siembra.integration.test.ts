@@ -20,6 +20,7 @@ describe.skipIf(!hayBase)('sembrar (PostgreSQL real)', () => {
   const datos: DatosSiembra = {
     empresas: DATOS_SIEMBRA.empresas.map((e) => ({ ...e, id: nuevo(e.id), slug: `${e.slug}-${sufijo}` })),
     usuarios: DATOS_SIEMBRA.usuarios.map((u) => ({ ...u, id: nuevo(u.id), empresaId: nuevo(u.empresaId) })),
+    membresias: DATOS_SIEMBRA.membresias.map((m) => ({ ...m, empresaId: nuevo(m.empresaId) })),
   };
   const A = datos.empresas[0]!.id;
   const B = datos.empresas[1]!.id;
@@ -46,13 +47,13 @@ describe.skipIf(!hayBase)('sembrar (PostgreSQL real)', () => {
     await pools.cerrar();
   });
 
-  it('la primera corrida crea las dos empresas y las cuatro personas y registra UN hecho de plataforma', async () => {
+  it('la primera corrida crea las dos empresas, las cinco cuentas y la pertenencia del consultor a B, y registra UN hecho de plataforma', async () => {
     const r = await sembrar(destinos(), datos, origenId);
-    expect(r).toEqual({ empresasNuevas: 2, usuariosNuevos: 4, evento: 'registrado' });
+    expect(r).toEqual({ empresasNuevas: 2, usuariosNuevos: 6, evento: 'registrado' }); // 5 cuentas + el consultor en B
     expect((await empresaDe(A))[0]).toMatchObject({ id: A, nombre: 'Empresa A (prueba)', color_primario: datos.empresas[0]!.colorPrimario });
-    expect((await personasDe(A)).map((p) => p.correo)).toEqual(['admin-a@example.test', 'colab-a@example.test']);
-    expect((await personasDe(B)).map((p) => p.correo)).toEqual(['admin-b@example.test', 'colab-b@example.test']);
-    expect(await eventos()).toEqual([{ accion: 'datos_iniciales.cargados', empresa_id: null, actor_tipo: 'plataforma', motivo: 'carga_inicial', despues: { empresas: 2, usuarios: 4 }, resultado: 'ok' }]);
+    expect((await personasDe(A)).map((p) => p.correo)).toEqual(['admin-a@example.test', 'colab-a@example.test', 'consultor@example.test']);
+    expect((await personasDe(B)).map((p) => p.correo)).toEqual(['admin-b@example.test', 'colab-b@example.test', 'consultor@example.test']);
+    expect(await eventos()).toEqual([{ accion: 'datos_iniciales.cargados', empresa_id: null, actor_tipo: 'plataforma', motivo: 'carga_inicial', despues: { empresas: 2, usuarios: 5 }, resultado: 'ok' }]);
   });
 
   const rolesDe = (empresa: string) =>
@@ -62,11 +63,22 @@ describe.skipIf(!hayBase)('sembrar (PostgreSQL real)', () => {
     expect(await rolesDe(A)).toEqual([
       { correo: 'admin-a@example.test', rol: 'administrador_sig' },
       { correo: 'colab-a@example.test', rol: 'colaborador' },
+      { correo: 'consultor@example.test', rol: 'administrador_sig' },
     ]);
     expect(await rolesDe(B)).toEqual([
       { correo: 'admin-b@example.test', rol: 'administrador_sig' },
       { correo: 'colab-b@example.test', rol: 'colaborador' },
+      { correo: 'consultor@example.test', rol: 'colaborador' },
     ]);
+  });
+
+  it('el consultor es la MISMA cuenta en las dos empresas, con un rol distinto en cada una', async () => {
+    const id = datos.usuarios.find((u) => u.alias === 'consultor')!.id;
+    const enA = (await personasDe(A)).find((p) => p.correo === 'consultor@example.test');
+    const enB = (await personasDe(B)).find((p) => p.correo === 'consultor@example.test');
+    expect([enA?.id, enB?.id]).toEqual([id, id]);
+    expect((await rolesDe(A)).find((p) => p.correo === 'consultor@example.test')?.rol).toBe('administrador_sig');
+    expect((await rolesDe(B)).find((p) => p.correo === 'consultor@example.test')?.rol).toBe('colaborador');
   });
 
   it('asigna el rol a cuentas que ya existían sin rol, y NO pisa un rol cambiado a mano', async () => {
@@ -81,6 +93,7 @@ describe.skipIf(!hayBase)('sembrar (PostgreSQL real)', () => {
     expect(await rolesDe(A)).toEqual([
       { correo: 'admin-a@example.test', rol: 'administrador_sig' },
       { correo: 'colab-a@example.test', rol: 'auditor_interno' },
+      { correo: 'consultor@example.test', rol: 'administrador_sig' },
     ]);
     await conTenant(pools.db('owner'), A as never, (trx) => sql`update usuario set rol = 'colaborador' where id = ${colab.id}`.execute(trx));
   });
@@ -98,7 +111,7 @@ describe.skipIf(!hayBase)('sembrar (PostgreSQL real)', () => {
     await conTenant(pools.db('owner'), A as never, (trx) => sql`delete from usuario where id = ${quitada.id}`.execute(trx));
     const r = await sembrar(destinos(), datos, origenId);
     expect(r).toMatchObject({ empresasNuevas: 0, usuariosNuevos: 1, evento: 'ya_existia' });
-    expect((await personasDe(A)).map((p) => p.correo)).toEqual(['admin-a@example.test', 'colab-a@example.test']);
+    expect((await personasDe(A)).map((p) => p.correo)).toEqual(['admin-a@example.test', 'colab-a@example.test', 'consultor@example.test']);
     expect(await eventos()).toHaveLength(1);
   });
 
@@ -111,8 +124,9 @@ describe.skipIf(!hayBase)('sembrar (PostgreSQL real)', () => {
   it('A y B quedan aisladas: con el rol de la aplicación cada una ve solo lo suyo', async () => {
     const deA = await conTenant(pools.db('app'), A as never, async (trx) => (await sql<{ correo: string }>`select correo from usuario order by correo`.execute(trx)).rows.map((f) => f.correo));
     const deB = await conTenant(pools.db('app'), B as never, async (trx) => (await sql<{ correo: string }>`select correo from usuario order by correo`.execute(trx)).rows.map((f) => f.correo));
-    expect(deA).toEqual(['admin-a@example.test', 'colab-a@example.test']);
-    expect(deB).toEqual(['admin-b@example.test', 'colab-b@example.test']);
+    // El consultor figura en las dos (una fila por empresa); cada empresa ve solo SU fila.
+    expect(deA).toEqual(['admin-a@example.test', 'colab-a@example.test', 'consultor@example.test']);
+    expect(deB).toEqual(['admin-b@example.test', 'colab-b@example.test', 'consultor@example.test']);
   });
 
   it('un conflicto real (mismo correo con otro identificador) falla y no deja esa empresa a medias', async () => {
@@ -124,6 +138,7 @@ describe.skipIf(!hayBase)('sembrar (PostgreSQL real)', () => {
         { alias: 'u1', id: randomUUID(), empresaId: idEmpresa, nombre: 'Uno', correo: 'mismo@example.test', rol: 'colaborador' },
         { alias: 'u2', id: randomUUID(), empresaId: idEmpresa, nombre: 'Dos', correo: 'mismo@example.test', rol: 'colaborador' },
       ],
+      membresias: [],
     };
     // La validación ya lo rechaza antes de tocar la base…
     await expect(sembrar(destinos(), conflictivo, `siembra:prueba:${sufijo2}`)).rejects.toThrow(/repetid/i);
@@ -137,6 +152,7 @@ describe.skipIf(!hayBase)('sembrar (PostgreSQL real)', () => {
     const base = (idUsuario: string): DatosSiembra => ({
       empresas: [{ id: idEmpresa, slug: `choque-${sufijo3}`, nombre: 'Choque', colorPrimario: '#0b5fff', logoUrl: null }],
       usuarios: [{ alias: 'x', id: idUsuario, empresaId: idEmpresa, nombre: 'Equis', correo: 'x@example.test', rol: 'colaborador' }],
+      membresias: [],
     });
     const origen = `siembra:prueba:${sufijo3}`;
     try {

@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
-import { ClipboardCheck, FileText, LayoutDashboard, ListChecks, ShieldCheck } from 'lucide-react';
-import { Avatar } from '@sig/ui';
+import { BookMarked, ClipboardCheck, Palette, FileCheck2, FileSignature, FileText, LayoutDashboard, ListChecks, ShieldCheck } from 'lucide-react';
+import { Avatar, Button, Select } from '@sig/ui';
 import type { Empresa } from '../empresas';
 import { es } from '../i18n/es-EC';
 import { SelectorTema } from './selector-tema';
 
 /** Logo de la empresa: imagen si existe, monograma si no (el logo real llega con la configuración por empresa). */
-/** Solo rutas propias o `https:`; cualquier otra cosa se descarta y se muestra el monograma. */
+/** Solo un archivo de imagen bajo `/logos/` o una dirección `https:`; cualquier otra cosa se descarta y se muestra el monograma. */
 export const logoSeguro = (url: string | undefined): string | undefined =>
-  url && (/^\/(?!\/)/.test(url) || /^https:\/\//i.test(url)) ? url : undefined;
+  url && (/^\/logos\/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp)$/.test(url) || /^https:\/\//i.test(url)) ? url : undefined;
 
 export const LogoEmpresa = ({ empresa }: { empresa: Empresa }) =>
   logoSeguro(empresa.logoUrl) ? (
@@ -24,9 +24,33 @@ export const LogoEmpresa = ({ empresa }: { empresa: Empresa }) =>
 
 const enlace = 'flex min-h-[var(--sig-density-target-min)] items-center gap-3 rounded-md px-3 text-sm font-medium text-fg hover:bg-surface-muted aria-[current=page]:bg-primary-subtle aria-[current=page]:text-on-primary-subtle';
 
+/**
+ * Selector de empresa para quien pertenece a varias (un consultor, ADR 035). Es un formulario de la web: no lleva identificadores,
+ * solo el slug elegido, y la API decide si la persona pertenece a esa empresa. No se muestra a quien tiene una sola.
+ */
+export const SelectorEmpresa = ({ empresa }: { empresa: Empresa }) => {
+  const otras = empresa.otrasEmpresas ?? [];
+  if (otras.length === 0) return null;
+  return (
+    <form method="post" action={`/e/${empresa.id}/empresa/cambiar`} className="flex items-center gap-2">
+      <label htmlFor="selector-empresa" className="sr-only">
+        {es.empresas.cambiarAria}
+      </label>
+      <Select id="selector-empresa" name="empresa" defaultValue={otras[0]!.slug}>
+        {otras.map((o) => (
+          <option key={o.slug} value={o.slug}>
+            {o.nombre}
+          </option>
+        ))}
+      </Select>
+      <Button type="submit">{es.empresas.cambiar}</Button>
+    </form>
+  );
+};
+
 /** Marco de aplicación: cabecera, navegación lateral y contenido principal. */
 /** `persona` es el nombre de quien tiene sesión; solo las pantallas de demostración usan el valor por omisión. */
-export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: { empresa: Empresa; activo: 'panel' | 'requisitos' | 'diagnostico' | 'alcance' | 'controles'; persona?: string; children: ReactNode }) => (
+export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: { empresa: Empresa; activo: 'panel' | 'requisitos' | 'diagnostico' | 'alcance' | 'controles' | 'cobertura' | 'declaracion' | 'normas' | 'marca'; persona?: string; children: ReactNode }) => (
   <div className="min-h-screen bg-bg">
     <a href="#contenido" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2">
       {es.app.saltar}
@@ -34,13 +58,14 @@ export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: 
     <header className="flex items-center justify-between border-b border-line bg-surface px-6 py-3">
       <LogoEmpresa empresa={empresa} />
       <div className="flex items-center gap-4">
+        <SelectorEmpresa empresa={empresa} />
         <SelectorTema />
         <Avatar nombre={persona} />
       </div>
     </header>
     <div className="grid grid-cols-1 md:grid-cols-[14rem_1fr]">
       <nav aria-label={es.nav.principal} className="border-b border-line bg-surface p-3 md:min-h-[calc(100vh-4rem)] md:border-b-0 md:border-r">
-        <ul className="flex gap-1 md:flex-col">
+        <ul className="flex flex-wrap gap-1 md:flex-col">
           <li>
             <a className={enlace} href={`/e/${empresa.id}/panel`} aria-current={activo === 'panel' ? 'page' : undefined}>
               <LayoutDashboard aria-hidden="true" className="size-5" />
@@ -69,6 +94,30 @@ export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: 
             <a className={enlace} href={`/e/${empresa.id}/controles`} aria-current={activo === 'controles' ? 'page' : undefined}>
               <ShieldCheck aria-hidden="true" className="size-5" />
               {es.nav.controles}
+            </a>
+          </li>
+          <li>
+            <a className={enlace} href={`/e/${empresa.id}/cobertura`} aria-current={activo === 'cobertura' ? 'page' : undefined}>
+              <FileCheck2 aria-hidden="true" className="size-5" />
+              {es.nav.cobertura}
+            </a>
+          </li>
+          <li>
+            <a className={enlace} href={`/e/${empresa.id}/declaracion`} aria-current={activo === 'declaracion' ? 'page' : undefined}>
+              <FileSignature aria-hidden="true" className="size-5" />
+              {es.nav.declaracion}
+            </a>
+          </li>
+          <li>
+            <a className={enlace} href={`/e/${empresa.id}/normas`} aria-current={activo === 'normas' ? 'page' : undefined}>
+              <BookMarked aria-hidden="true" className="size-5" />
+              {es.nav.normas}
+            </a>
+          </li>
+          <li>
+            <a className={enlace} href={`/e/${empresa.id}/marca`} aria-current={activo === 'marca' ? 'page' : undefined}>
+              <Palette aria-hidden="true" className="size-5" />
+              {es.nav.marca}
             </a>
           </li>
         </ul>

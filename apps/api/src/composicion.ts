@@ -4,9 +4,9 @@ import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
-import { AgregarMapeoUseCase, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
-import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, type EmpresaRepositoryPort } from '@sig/empresas';
-import { AdoptarLibreriaUseCase, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
+import { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
+import { ActualizarMarcaUseCase, crearUnidadDeTrabajoMarca, CambiarEmpresaUseCase, EmpresaActivaKysely, EmpresaKysely, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase, ResolverEmpresaActivaUseCase, type EmpresaActivaPort, type EmpresaRepositoryPort } from '@sig/empresas';
+import { AdoptarLibreriaUseCase, CargarLibreriaUseCase, crearUnidadDeTrabajoCarga, LectorLibreriaYaml, type ContextoCarga, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
 import { leerConfiguracionAuth, leerConfiguracionLimites, type Entorno } from './autenticacion/configuracion.js';
 import type { RegistradorHechos } from './autenticacion/registrador-token-invalido.js';
@@ -55,14 +55,35 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
     puede: async (usuarioId, permiso, empresaId) => new AutorizacionPostgres(obtenerPools().db('app')).puede(usuarioId, permiso, empresaId),
     rolesDe: async (usuarioId, empresaId) => new AutorizacionPostgres(obtenerPools().db('app')).rolesDe(usuarioId, empresaId),
   };
+  // ADR 035: la empresa activa de la sesión y las pertenencias de la persona viven fuera de la empresa de la petición (se consultan
+  // ANTES de conocerla), por eso las atiende el rol de PLATAFORMA con permisos mínimos y no el de la aplicación.
+  const empresaActiva: EmpresaActivaPort = {
+    activaDe: async (...a) => new EmpresaActivaKysely(obtenerPools().db('plataforma')).activaDe(...a),
+    empresasDe: async (...a) => new EmpresaActivaKysely(obtenerPools().db('plataforma')).empresasDe(...a),
+    fijar: async (...a) => new EmpresaActivaKysely(obtenerPools().db('plataforma')).fijar(...a),
+    limpiar: async (...a) => new EmpresaActivaKysely(obtenerPools().db('plataforma')).limpiar(...a),
+  };
   // Una unidad de trabajo por ejecución sobre el pool del rol de la aplicación (con la RLS aplicada).
   const unidad: UnidadDeTrabajoPort<ContextoAdopcion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoNormas(obtenerPools().db('app')).ejecutar(empresaId, fn) };
+
+  const unidadCarga: UnidadDeTrabajoPort<ContextoCarga> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoCarga(obtenerPools().db('app')).ejecutar(empresaId, fn) };
 
   const librerias = new ListarLibreriasUseCase(unidad);
   const requisitos = new ListarRequisitosUseCase(unidad);
   const catalogo = new CatalogoNormasAdapter(librerias, requisitos);
   const unidadCertificacion: UnidadDeTrabajoCertificacionPort<ContextoCertificacion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoCertificacion(obtenerPools().db('app')).ejecutar(empresaId, fn) };
   const reloj = (): Date => new Date();
+  // El almacén de evidencias se abre al usarlo por primera vez: si falta `EVIDENCIAS_DIR`, la API arranca y solo la subida y la descarga
+  // fallan (500, sin dar la ruta), nunca en silencio.
+  let almacenLocal: AlmacenArchivosLocal | undefined;
+  const obtenerAlmacen = (): AlmacenArchivosLocal => (almacenLocal ??= new AlmacenArchivosLocal(env['EVIDENCIAS_DIR'] ?? ''));
+  const almacen: AlmacenArchivosPort = {
+    guardarTemporal: (...a) => obtenerAlmacen().guardarTemporal(...a),
+    abrirLector: (...a) => obtenerAlmacen().abrirLector(...a),
+    confirmar: (...a) => obtenerAlmacen().confirmar(...a),
+    descartar: (...a) => obtenerAlmacen().descartar(...a),
+    abrir: (...a) => obtenerAlmacen().abrir(...a),
+  };
 
   return {
     hechos,
@@ -72,10 +93,20 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       verificador: new TokenVerifierJose({ emisor: config.emisor, audiencia: config.audiencia, clienteAutorizado: config.clienteAutorizado, claves: crearJwksRemoto(config.jwksUrl) }),
       hechos,
       limites,
+      empresaActiva: new ResolverEmpresaActivaUseCase(empresaActiva),
     },
-    negocio: { identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos },
+    negocio: {
+      identidades: new ObtenerIdentidadUseCase(repo, autorizacion),
+      marcas: new ObtenerMarcaUseCase(repo),
+      actualizarMarca: new ActualizarMarcaUseCase({ ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoMarca(obtenerPools().db('app')).ejecutar(empresaId, fn) }, autorizacion),
+      hechos,
+      listarEmpresas: new ListarMisEmpresasUseCase(empresaActiva),
+      cambiarEmpresa: new CambiarEmpresaUseCase(empresaActiva, hechos),
+      olvidarEmpresa: new OlvidarEmpresaActivaUseCase(empresaActiva),
+    },
     normas: {
       adoptar: new AdoptarLibreriaUseCase(unidad, autorizacion, () => new Date(), flags),
+      cargar: new CargarLibreriaUseCase(unidadCarga, autorizacion, new LectorLibreriaYaml()),
       librerias,
       requisitos,
       requisito: new ObtenerRequisitoUseCase(unidad),
@@ -92,6 +123,17 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       retirarControl: new RetirarControlUseCase(unidadCertificacion, autorizacion, reloj),
       agregarMapeo: new AgregarMapeoUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
       quitarMapeo: new QuitarMapeoUseCase(unidadCertificacion, autorizacion),
+      listarEvidencias: new ListarEvidenciasUseCase(unidadCertificacion, autorizacion, reloj),
+      subirEvidencia: new SubirEvidenciaUseCase(unidadCertificacion, autorizacion, almacen, reloj, () => randomUUID()),
+      reemplazarEvidencia: new ReemplazarEvidenciaUseCase(unidadCertificacion, autorizacion, almacen, reloj, () => randomUUID()),
+      eliminarEvidencia: new EliminarEvidenciaUseCase(unidadCertificacion, autorizacion, reloj),
+      descargarEvidencia: new DescargarEvidenciaUseCase(unidadCertificacion, autorizacion, almacen),
+      cobertura: new ListarCoberturaUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      declaracion: new ObtenerDeclaracionUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      aprobarDeclaracion: new AprobarDeclaracionUseCase(unidadCertificacion, autorizacion, catalogo, reloj, () => randomUUID()),
+      versionesDeclaracion: new ListarVersionesDeclaracionUseCase(unidadCertificacion, autorizacion),
+      versionDeclaracion: new ObtenerVersionDeclaracionUseCase(unidadCertificacion, autorizacion),
+      exportarDeclaracion: new ExportarDeclaracionUseCase(unidadCertificacion, autorizacion, catalogo, new GeneradorDocumentoDocx(), reloj),
     },
   };
 };

@@ -37,6 +37,31 @@ Regla 2 (aislamiento: una prueba por tabla nueva que intenta leer lo de otra emp
 
 Un solo módulo `modules/certificacion` (Nx no permite que dos módulos se importen), con subcarpetas por agregado; un módulo Nest por rebanada en `apps/api/src/certificacion/`; contrato primero; puertos redeclarados; `CatalogoLecturaPort` con adaptador en `apps/api` que delega en `modules/normas` solo por su `index.ts`. Permisos nuevos en `roles.ts` (administrador SIG todos; colaborador: ver, registrar evidencias y proponer evaluaciones; **no** aprobar alcance ni Declaración). Tablas `*_version` solo con `select, insert` para `sigiso_app` y un disparador contra `update`/`delete` (como la bitácora), con prueba.
 
+## Diseño de M5 — Declaración de Aplicabilidad de 27001
+
+**Qué es:** una fila por **control del Anexo A** de las librerías adoptadas que aplican a 27001. Se **deriva** (no se escribe a mano) del diagnóstico, los controles de la empresa y las evidencias; si la empresa quiere cambiar algo, cambia el diagnóstico o los controles y la declaración se recalcula.
+
+**Derivación de cada fila** (función pura en el dominio):
+
+- **Aplicabilidad:** `aplica` si la evaluación es cumple, parcial o no cumple; `no_aplica` si la empresa lo evaluó así (su **justificación** es el comentario, que ya es obligatorio); `por_decidir` si no hay evaluación.
+- **Implementación:** `implementado` (cumple), `parcial`, `no_implementado` (no cumple) o `sin_evaluar`; vacía si no aplica.
+- **Controles de la empresa** que la cubren (por código, vigentes) y su **estado de cobertura** de M4.
+- Título breve y grupo vienen de la librería (propios); **nunca** texto de la norma.
+
+**Aprobación:** solo el administrador SIG. **Se rechaza (409 `incompleta`) si queda algún control «por decidir»**, porque una declaración con huecos no se puede presentar al auditor; una aplicable sin control mapeado **sí** se permite y se marca en el documento como «sin control asignado» (es un hallazgo, no un impedimento). Al aprobar se guarda una **versión congelada** (número correlativo por empresa, quién y cuándo, el texto del alcance de 27001 vigente en ese momento y todas las filas con sus textos). No se edita ni se borra; una nueva aprobación crea la versión siguiente.
+
+**Tablas (migración `0010`, `empresa_id`, RLS forzada, sin `update` ni `delete` para la aplicación):** `declaracion_version` (número, aprobada por/en, conteos) y `declaracion_fila` (clave foránea compuesta con la versión; entrada, título, grupo, aplicabilidad, implementación, justificación, códigos de controles, cobertura). Una prueba de aislamiento por tabla.
+
+**Permisos:** `declaracion.ver` y `declaracion.exportar` (administrador SIG y colaborador), `declaracion.aprobar` (solo administrador SIG).
+
+**API (contrato primero):** `GET /declaracion` (borrador derivado y datos de la última versión aprobada), `POST /declaracion/aprobacion` (201), `GET /declaracion/versiones`, `GET /declaracion/versiones/{id}` (filas congeladas), `GET /declaracion/documento` (borrador, con rótulo «preliminar») y `GET /declaracion/versiones/{id}/documento` (desde la copia congelada). Descargas con las reglas del ADR 032.
+
+**Bitácora** (claves cerradas, sin textos): `declaracion.aprobada` (número y conteos) y `declaracion.exportada` (borrador o número de versión; se registra **antes** de entregar).
+
+**Pasos:** 1 migración y aislamiento · 2 dominio, permisos y eventos · 3 casos de uso, `GeneradorDocumentoPort` y adaptadores (`docx`) · 4 API · 5 web (pantalla, aprobar, historial, descarga) y `web:verify-declaracion`.
+
+**Lo que M5 no hace:** firma electrónica, comparar versiones, plantillas de formato propias de la empresa, PDF, controles que no sean del Anexo A y declaración para 9001 o 42001.
+
 ## Bitácora (acciones nuevas, claves y motivos cerrados)
 
 `alcance.aprobado`, `evaluacion.cambiada` (estado anterior y nuevo), `control.creado|cambiado|retirado`, `mapeo.creado|eliminado`, `evidencia.creada|reemplazada|eliminada|descargada|subida_rechazada` (motivos `tipo_no_permitido`, `tamano_excedido`, `firma_invalida`), `declaracion.generada|aprobada|exportada`.
@@ -52,9 +77,32 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 | M3  | Controles de la empresa y mapeos                                                                                          | Marco de controles unificado                          |
 | M4  | Evidencias con archivos (almacén local) y cobertura                                                                       | Subir una evidencia y verla respaldar varias entradas |
 | M5  | Declaración de Aplicabilidad: derivada, aprobación, versión congelada, exportación Word                                   | El documento descargable                              |
+| M6a | **Cargar normas desde la interfaz** (añadido el 2026-11-13): cada empresa sube sus librerías de normas desde la web, sin comandos | Una persona de la empresa carga una librería y la adopta, sin terminal |
+| M6b | **Multiempresa completo** (añadido el 2026-11-13): recupera lo de la Fase 0 que el recorte dejó fuera: consultor con varias empresas (cambio explícito de empresa, sin acceso cruzado por defecto), configuración por empresa (normas activas, módulos activos, logo y colores editables) y catálogo global de solo lectura más librerías propias (este último ya cubierto por M6a) | Un consultor entra, elige entre sus empresas y cambia; el administrador de cada empresa configura su marca y sus normas |
 | M6  | Cierre: `/review`, STRIDE ampliado (subida, descarga, exportación), `estado.md`, guía                                     | MVP usable por SynapTech                              |
 
-**Hitos de PR:** H1 = M1; H2 = M2 + M3; H3 = M4 + M5 + M6.
+**Hitos de PR:** H1 = M1; H2 = M2 + M3; H3 = M4 + M5 + M6a + M6b + M6.
+
+## M6a — Cargar normas desde la interfaz (requisito añadido, entra al MVP)
+
+**Pedido del responsable (2026-11-13):** hoy una librería se carga con un comando (`pnpm libraries:load`), que no es amigable. Cada empresa debe poder **subir sus normas desde la interfaz**, indicando dónde está el archivo, y después adoptarlas. Debe estar dentro de este MVP, antes del cierre (M6). **Decisiones cerradas el 2026-11-13 y registradas en el ADR 034:** se sube el YAML (no el PDF); selector de archivo o carpeta del navegador; la librería es propia de cada empresa (con RLS); solo el administrador SIG carga; plantilla descargable. Las notas de abajo son el análisis previo.
+
+**Decisiones abiertas (a resolver antes de implementar):**
+1. **Qué se sube.** Lo previsto por el ADR 026 es la **librería en YAML** (esquema v3, sin texto de la norma), que el sistema ya sabe validar. Subir el **PDF de la norma** es otra cosa: es texto licenciado (la regla 3 prohíbe llevarlo al repositorio y la licencia de INEN es de usuario único) y habría que decidir si el sistema lo lee o solo lo guarda. Se propone empezar por el YAML.
+2. **«Especificando el directorio».** Un servidor web no puede leer una carpeta del computador de la persona: lo usual es un selector de archivos o carpeta del navegador, que sube los archivos. Si se quiere una ruta de carpeta del servidor, solo sirve en instalaciones de una sola máquina y exige una lista permitida de carpetas. Confirmar cuál se quiere.
+3. **Alcance.** El ADR 026 hoy tiene un catálogo **global e inmutable** que se carga con permisos propios (`sigiso_catalogo`) y cada empresa lo adopta. Subir desde la web obliga a decidir si la librería es **propia de la empresa** (con `empresa_id` y RLS, como prevé el ADR 020) o va al catálogo global (solo un administrador de la plataforma).
+4. **Seguridad de la subida.** Lista cerrada de tipo (YAML), tamaño máximo, validación completa con el esquema y las reglas de contenido **antes** de guardar, rechazo si trae texto de norma, y registro en la bitácora (qué librería, versión y huella; nunca el contenido). Mismo cuidado que las evidencias (ADR 032).
+5. **Permisos.** Probablemente solo el administrador SIG de la empresa (permiso nuevo), no el colaborador.
+
+**Esperado al terminar:** pantalla «Normas» con subir, ver el resultado de la validación (errores en palabras claras), adoptar y ver versiones; un ADR nuevo; migración con RLS si la librería es por empresa; pruebas de aislamiento; `web:verify-normas`.
+
+## M6b — Multiempresa completo (requisito añadido el 2026-11-13, después de M6a)
+
+**Pedido del responsable:** el MVP debe ser multiempresa como lo mostraba la Fase 0 (`FASE0.md` 5.4), que el recorte medio dejó en «una empresa = un proyecto». El aislamiento por RLS ya existe; falta lo que se ve y se usa. Entra: **consultor con varias empresas** (cambio explícito, sin acceso cruzado por defecto), **configuración por empresa** (normas activas, módulos activos, logo y colores editables por su administrador, con la verificación de contraste WCAG) y **catálogo global + librerías propias** (con M6a). Queda fuera: base dedicada y despliegue dedicado, SSO propio por empresa, modelos de IA por empresa.
+
+**Decisiones cerradas el 2026-11-15 (ADR 035):** el consultor usa **una sola cuenta** y cambia de empresa con una operación única (`POST /sesion/empresa`) que valida su pertenencia y guarda la **empresa activa de su sesión** en la base. De «configuración por empresa» entra solo la **marca editable** (color y logo, con verificación de contraste); módulos activos y nombre editable quedan fuera del MVP.
+
+**Rebanadas:** **M6b-1** (pertenencia a varias empresas y cambio de empresa: migración, guardia, API, selector en la web, `web:verify-multiempresa`) y **M6b-2** (marca editable: API, pantalla, contraste, `web:verify-marca`).
 
 ## Diseño de M3 — controles de la empresa y mapeos
 
@@ -62,10 +110,10 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 
 **Tablas (migración `0008`, todo con `empresa_id` y RLS forzada):**
 
-| Tabla | Contenido | Reglas |
-| --- | --- | --- |
-| `control` | `id`, `codigo` (1–20, `[A-Za-z0-9._-]`), `nombre` (1–120), `descripcion` (≤1000, opcional), `responsable_id` (opcional), `estado` (`vigente` o `retirado`), `version` (concurrencia optimista), quién y cuándo creó y cambió | `unique (empresa_id, codigo)` y `unique (empresa_id, id)` (clave foránea compuesta). **Sin DELETE** para la aplicación: un control se **retira** (queda el rastro) y su código no se reutiliza. |
-| `control_mapeo` | `control_id` + `(libreria_codigo, id_estable)` de la entrada, quién y cuándo | PK sobre las cuatro columnas (sin duplicados); clave foránea compuesta `(empresa_id, control_id)`. La entrada se referencia **sin FK** (como `evaluacion`: el catálogo es por versión) y el caso de uso comprueba que esté en las librerías adoptadas. La aplicación puede **insertar y borrar** mapeos (no actualizar); cada alta y baja va a la bitácora. |
+| Tabla           | Contenido                                                                                                                                                                                                                    | Reglas                                                                                                                                                                                                                                                                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `control`       | `id`, `codigo` (1–20, `[A-Za-z0-9._-]`), `nombre` (1–120), `descripcion` (≤1000, opcional), `responsable_id` (opcional), `estado` (`vigente` o `retirado`), `version` (concurrencia optimista), quién y cuándo creó y cambió | `unique (empresa_id, codigo)` y `unique (empresa_id, id)` (clave foránea compuesta). **Sin DELETE** para la aplicación: un control se **retira** (queda el rastro) y su código no se reutiliza.                                                                                                                                                             |
+| `control_mapeo` | `control_id` + `(libreria_codigo, id_estable)` de la entrada, quién y cuándo                                                                                                                                                 | PK sobre las cuatro columnas (sin duplicados); clave foránea compuesta `(empresa_id, control_id)`. La entrada se referencia **sin FK** (como `evaluacion`: el catálogo es por versión) y el caso de uso comprueba que esté en las librerías adoptadas. La aplicación puede **insertar y borrar** mapeos (no actualizar); cada alta y baja va a la bitácora. |
 
 **Dominio (`modules/certificacion/src/domain`):** `Control` (crear, cambiar nombre, descripción y responsable, retirar; un control retirado no se cambia ni recibe mapeos) y `MapeoControl` (valor: control + entrada). Tope de **50 mapeos por control**. Los textos no admiten caracteres de control.
 
@@ -74,6 +122,31 @@ Proceso: **una rama por rebanada desde `main`**, TDD con pruebas junto al códig
 **Bitácora** (claves y motivos cerrados; **nunca** el nombre ni la descripción): `control.creado`, `control.cambiado`, `control.retirado` (objeto `control:<codigo>`) y `mapeo.creado`, `mapeo.eliminado` (objeto `mapeo:<codigo>.<id_estable>`).
 
 **Lo que M3 no hace:** evidencias y cobertura (M4), derivar la Declaración (M5), importar controles ni plantillas.
+
+## Diseño de M4 — evidencias con archivo y cobertura
+
+**Qué es una evidencia:** un registro o archivo que demuestra que un **control de la empresa** opera. Cuelga del **control** (no de la entrada): la entrada de la norma queda respaldada **a través de los mapeos** de M3. Así «una evidencia, varias normas» sale sola: subir una evidencia a un control que cubre varias entradas las respalda todas.
+
+**Tabla (migración `0009`, con `empresa_id` y RLS forzada):** `evidencia` guarda el control (clave foránea compuesta), el `tipo` (`documento` o `registro`), el título (1–120), la **fecha del hecho**, la **vigencia** opcional (`vigente_hasta`, no anterior a la fecha del hecho), el `estado` (`activa`, `reemplazada` o `eliminada`), la evidencia a la que reemplaza (`reemplaza_id`) y los datos del archivo: nombre en el almacén (UUID del servidor), nombre original normalizado (≤120), tipo de contenido **de la lista cerrada**, tamaño (1 byte a 25 MB) y **SHA-256**. Los datos del archivo **no se pueden modificar** una vez guardados: la aplicación solo puede actualizar `estado` y quién y cuándo (permiso por columna, como en `usuario`) y **no puede borrar** filas. Reemplazar crea una evidencia nueva y marca la anterior como `reemplazada`; eliminar marca `eliminada`. **El archivo físico no se borra** en el MVP.
+
+**Cobertura (se calcula, no se guarda):** para cada entrada de las librerías adoptadas que no esté evaluada como «no aplica»:
+
+- **cubierta:** algún control vigente mapeado a ella tiene al menos una evidencia activa y vigente;
+- **evidencia vencida:** hay evidencias activas pero todas pasaron su vigencia;
+- **sin evidencia:** hay controles vigentes mapeados, pero ninguna evidencia activa;
+- **sin control:** ningún control vigente la cubre.
+
+Se resume por norma (cantidades y porcentaje de cubiertas) y por entrada. «Hoy» se calcula con la fecha de Ecuador (`America/Guayaquil`). Es una medida de **cobertura documental**, no una opinión sobre la eficacia del control.
+
+**Permisos:** `evidencias.ver` (administrador SIG y colaborador), `evidencias.registrar` (administrador SIG y colaborador: subir y reemplazar) y `evidencias.eliminar` (solo administrador SIG).
+
+**Tope:** 100 evidencias activas por control (acota la respuesta y evita acumulación sin sentido).
+
+**API (contrato primero):** `GET/POST /controles/{id}/evidencias` (la subida es `multipart/form-data`, **un archivo por petición**), `POST /evidencias/{id}/reemplazo` (multipart), `POST /evidencias/{id}/eliminacion` (204), `GET /evidencias/{id}/archivo` (descarga) y `GET /cobertura`. La subida y la descarga siguen el **ADR 032**: la empresa sale del token, el tipo se decide por la **firma del contenido** (nunca por la extensión ni por lo que diga el cliente), la descarga es siempre un adjunto con `nosniff` y queda en la bitácora.
+
+**Bitácora** (claves y motivos cerrados; nunca el título ni el nombre del archivo): `evidencia.creada`, `evidencia.reemplazada`, `evidencia.eliminada`, `evidencia.descargada` y `evidencia.subida_rechazada` (motivos `tipo_no_permitido`, `tamano_excedido`, `firma_invalida`).
+
+**Lo que M4 no hace** (queda fuera por el plan): cuota por empresa, antivirus, conciliación de archivos huérfanos, verificación de la huella al descargar, vencimiento registrado como hecho por el _worker_ y vista previa en el navegador.
 
 ## Prerrequisito (tuyo)
 
@@ -92,3 +165,7 @@ Integrar los PR abiertos #13 a #18 (documentos y la fase 1 del 0.7) para partir 
 ## Verificación
 
 `pnpm db:migrate && pnpm db:seed && pnpm libraries:load` → `pnpm keycloak:start` → `pnpm dev` → `admin-a` recorre alcance, diagnóstico, control, evidencia y Declaración y descarga el Word; `admin-b` no ve nada de A; `pnpm web:verify-aislamiento` en verde (se amplía con las tablas nuevas); `pnpm lint`, `typecheck`, `test:hooks` y la suite de integración en verde; `/review` final sin bloqueantes.
+
+## Resultado del cierre (2026-11-15)
+
+M1 a M6b están hechos y el hito H3 pasó una revisión completa con seis revisores y sin bloqueantes (ver `docs/fase0/estado.md`, «M6 — Revisión completa del hito H3», y `docs/security/stride-mvp-h3.md`). Del alcance prometido en este plan **no se implementó** el motivo de inclusión por control, los controles adicionales fuera del Anexo A ni la referencia al plan de tratamiento de riesgos de la Declaración de Aplicabilidad (hoy hay solo una nota fija en el Word); queda pendiente que el responsable decida si se hacen antes de presentar la declaración a un auditor o se declaran fuera del MVP.

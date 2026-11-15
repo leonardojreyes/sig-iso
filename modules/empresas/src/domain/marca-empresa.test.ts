@@ -1,6 +1,6 @@
 import { contraste } from '@sig/tokens';
 import { describe, expect, it } from 'vitest';
-import { crearMarca, ErrorMarca } from './marca-empresa.js';
+import { crearMarca, validarCambioMarca, ErrorMarca } from './marca-empresa.js';
 
 const base = { nombre: 'Empresa Alfa', colorPrimario: '#0b5fff' };
 
@@ -96,5 +96,46 @@ describe('MarcaEmpresa — monograma', () => {
 describe('MarcaEmpresa — inmutabilidad', () => {
   it('el resultado está congelado', () => {
     expect(Object.isFrozen(crearMarca(base))).toBe(true);
+  });
+});
+
+describe('validarCambioMarca (al editar se RECHAZA lo inválido; no se descarta en silencio)', () => {
+  it('acepta un color y un logo https, o un logo nulo, y normaliza el color a minúsculas', () => {
+    expect(validarCambioMarca({ colorPrimario: '#0B5FFF', logoUrl: 'https://cdn.example.test/logo.png' })).toEqual({ colorPrimario: '#0b5fff', logoUrl: 'https://cdn.example.test/logo.png' });
+    expect(validarCambioMarca({ colorPrimario: '#0b5fff', logoUrl: null })).toEqual({ colorPrimario: '#0b5fff', logoUrl: null });
+    expect(validarCambioMarca({ colorPrimario: '#0b5fff', logoUrl: '/logos/a.png' }).logoUrl).toBe('/logos/a.png');
+    for (const ext of ['png', 'svg', 'jpg', 'jpeg', 'webp']) expect(validarCambioMarca({ colorPrimario: '#0b5fff', logoUrl: `/logos/empresa-a.${ext}` }).logoUrl).toBe(`/logos/empresa-a.${ext}`);
+  });
+  it.each([['rojo'], ['#fff'], ['#12345g'], ['0b5fff'], [''], [null], [undefined], [12], [{}]])('rechaza el color %j', (color) => {
+    expect(() => validarCambioMarca({ colorPrimario: color, logoUrl: null })).toThrow(ErrorMarca);
+  });
+  it.each([
+    ['http://inseguro.example.test/x.png'],
+    ['javascript:alert(1)'],
+    ['data:image/png;base64,AAAA'],
+    ['//evil.example.test/x.png'],
+    ['/\\evil.example.test/x.png'],
+    ['https://user:clave@cdn.example.test/x.png'],
+    ['cdn.example.test/x.png'],
+    ['https://cdn.example.test/con espacio.png'],
+    ['https://cdn.example.test/' + 'a'.repeat(2100)],
+    ['/e/empresa-a/declaracion/documento'], // una ruta del sitio que NO es una imagen: provocaría descargas con la sesión de cada persona
+    ['/e/empresa-a/evidencias/11111111-1111-4111-8111-111111111111/descargar'],
+    ['/auth/login?retorno=/'],
+    ['/logos/a.html'],
+    ['/logos/../e/x/descargar.png'],
+    ['/logos/sub/a.png'],
+    [''],
+    [7],
+    [undefined],
+  ])('rechaza el logo %j', (logo) => {
+    expect(() => validarCambioMarca({ colorPrimario: '#0b5fff', logoUrl: logo })).toThrow(ErrorMarca);
+  });
+  it('el mensaje no repite lo recibido', () => {
+    try {
+      validarCambioMarca({ colorPrimario: 'SECRETO-XYZ', logoUrl: null });
+    } catch (e) {
+      expect(String(e)).not.toContain('SECRETO');
+    }
   });
 });

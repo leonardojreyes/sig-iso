@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { crearArnes, hechosEnMemoria, type Arnes } from '../autenticacion/prueba/arnes.js';
 import { erroresDeEsquema } from '../autenticacion/prueba/contrato.js';
 import { NormasApiModule } from './normas-api.module.js';
+import { cargarDePrueba } from './prueba/carga.js';
 
 // /librerias, adopción, /requisitos y /requisitos/{id} sobre una aplicación Nest REAL con los casos de uso reales y fakes que
 // respetan el aislamiento por empresa y revierten de verdad. Cada respuesta se valida contra los esquemas de openapi.yaml.
@@ -41,6 +42,7 @@ describe('controladores de normas (tarea 6.6; H4.x, H5.x, H6.5)', () => {
       modulos: [
         NormasApiModule.register({
           adoptar: new AdoptarLibreriaUseCase(unidad, autorizacion, () => new Date(), { habilitado: async (_flag, empresa) => !apagadoPara.has(empresa) }),
+          cargar: cargarDePrueba(autorizacion).caso,
           librerias: new ListarLibreriasUseCase(unidad),
           requisitos: new ListarRequisitosUseCase(unidad),
           requisito: new ObtenerRequisitoUseCase(unidad),

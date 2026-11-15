@@ -2,13 +2,14 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import { AutorizacionFake } from '@sig/autorizacion';
 import { conTenant, GestorPools, leerUrls, ROLES_BD } from '@sig/db';
-import { EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase } from '@sig/empresas';
+import { ActualizarMarcaUseCase, crearUnidadDeTrabajoMarca, EmpresaKysely, ObtenerIdentidadUseCase, ObtenerMarcaUseCase } from '@sig/empresas';
 import { crearEmpresaId } from '@sig/tenancy';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { crearArnes, type Arnes } from '../autenticacion/prueba/arnes.js';
 import { erroresDeEsquema } from '../autenticacion/prueba/contrato.js';
 import { EmpresaSesionModule } from './empresa-sesion.module.js';
+import { empresaActivaDePrueba } from './prueba/empresa-activa.js';
 
 // API + PostgreSQL REAL con los adaptadores de producción: la identidad y la marca salen de la base (con RLS), y el inicio y el
 // cierre de sesión quedan en la bitácora inmutable, una sola vez por sesión. Cada ejecución usa empresas y personas propias.
@@ -37,7 +38,7 @@ describe.skipIf(!hayBase)('empresa y sesión (API + PostgreSQL real)', () => {
         for (const [id, nombre] of personas) await sql`insert into usuario (id, empresa_id, nombre, correo) values (${id}, ${e}, ${nombre}, ${`${id}@example.test`})`.execute(trx);
       });
     await sembrar(A, 'a', '#0b5fff', 'https://cdn.a.example.test/logo.png', [[ADMIN_A, 'Administradora A'], [SIN_ROL_A, 'Sin rol A']]);
-    await sembrar(B, 'b', '#ffe066', '//evil.example.test/logo.png', [[ADMIN_B, 'Administrador B']]);
+    await sembrar(B, 'b', '#ffe066', 'https://usuario:clave@evil.example.test/logo.png', [[ADMIN_B, 'Administrador B']]);
 
     const autorizacion = new AutorizacionFake();
     autorizacion.asignar(A, ADMIN_A, 'administrador_sig');
@@ -47,21 +48,23 @@ describe.skipIf(!hayBase)('empresa y sesión (API + PostgreSQL real)', () => {
     const hechos = { registrar: (e: Parameters<Bitacora['registrar']>[0]) => bitacora.registrar(e), registrarUnaVez: (e: Parameters<Bitacora['registrarUnaVez']>[0]) => bitacora.registrarUnaVez(e) };
     arnes = await crearArnes({
       hechos,
-      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos })],
+      modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos, actualizarMarca: new ActualizarMarcaUseCase(crearUnidadDeTrabajoMarca(pools.db('app')), autorizacion), ...empresaActivaDePrueba(hechos) })],
     });
   });
 
   afterAll(async () => {
     await arnes?.cerrar();
-    if (cerrados) return;
-    const owner = pools.db('owner');
+    // El último caso cierra el pool a propósito (simula la base caída): la limpieza usa SIEMPRE una conexión nueva. Antes salía sin
+    // limpiar y cada corrida dejaba 2 empresas y sus personas en `sigiso_test`.
+    const limpieza = cerrados ? new GestorPools(leerUrls(process.env, ROLES_BD, { prueba: true }), { max: 2 }) : pools;
+    const owner = limpieza.db('owner');
     for (const [e, personas] of [[A, [ADMIN_A, SIN_ROL_A]], [B, [ADMIN_B]]] as const) {
       await conTenant(owner, e, async (trx) => {
         for (const p of personas) await sql`delete from usuario where id = ${p}`.execute(trx);
         await sql`delete from empresa where id = ${e}`.execute(trx);
       });
     }
-    await pools.cerrar();
+    await limpieza.cerrar();
   });
 
   it('GET /me lee la persona y la empresa de la base, conforme al contrato', async () => {

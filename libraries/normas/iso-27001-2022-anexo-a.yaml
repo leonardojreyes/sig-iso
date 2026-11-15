@@ -1,15 +1,14 @@
-# BORRADOR — NUMERACIONES SIN VERIFICAR (misma pendiente que la tarea 4.4 del corte 0.6).
-#
 # Anexo A de ISO/IEC 27001:2022: 93 controles en cuatro temas (Organizacionales A.5, Personas A.6, Físicos A.7, Tecnológicos A.8).
 # Librería de elaboración propia: NO es la norma ni su texto (regla 3 del proyecto). Los títulos son paráfrasis breves y las guías están
 # redactadas con palabras de SynapTech. Algunos títulos pueden parecerse al nombre usual del control: su uso final está pendiente de la
 # decisión del responsable (Q3 del spec de dominio v2).
-# La numeración y el reparto por tema salen de la memoria de experto-iso y DEBEN comprobarse con el ejemplar vigente antes de dejar de
-# marcarla como borrador. Al verificar: subir la versión y quitar este bloque (una prueba exige que «borrador» y «sin verificar» vayan juntos).
+# NUMERACIÓN VERIFICADA el 2026-11-13 contra la NTE INEN-ISO/IEC 27001:2023 (adopción ecuatoriana): los 93 controles, su numeración
+# (A.5.1 a A.5.37, A.6.1 a A.6.8, A.7.1 a A.7.14, A.8.1 a A.8.34) y su reparto por tema coinciden. Solo se compararon la numeración y el
+# tema de cada control; los títulos y las guías siguen siendo de elaboración propia.
 esquema: 3
 codigo: iso-27001-2022-anexo-a
-nombre: ISO/IEC 27001:2022 Anexo A (borrador, numeraciones sin verificar)
-version: 0.1.0
+nombre: ISO/IEC 27001:2022 Anexo A
+version: 1.0.0
 es_ejemplo: true
 fuente: elaboración propia SynapTech
 referencias:

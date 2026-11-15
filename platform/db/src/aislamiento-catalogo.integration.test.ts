@@ -167,7 +167,7 @@ describe.skipIf(!hayBase)('aislamiento entre empresas: catálogo y adopción (Po
     });
 
     it('la aplicación no puede escribir en el catálogo', async () => {
-      await expect(conTenant(app(), C, (trx) => sql`insert into libreria (codigo, nombre, version, hash, es_ejemplo, fuente) values ('x', 'x', '1.0.0', ${hex()}, true, 'x')`.execute(trx))).rejects.toThrow(/permission denied/i);
+      await expect(conTenant(app(), C, (trx) => sql`insert into libreria (codigo, nombre, version, hash, es_ejemplo, fuente) values ('x', 'x', '1.0.0', ${hex()}, true, 'x')`.execute(trx))).rejects.toThrow(/row-level security/i); // desde 0011 la aplicación inserta solo librerías PROPIAS (ver aislamiento-libreria-propia)
       await expect(conTenant(app(), C, (trx) => sql`update libreria_entrada set titulo = 'Hackeado'`.execute(trx))).rejects.toThrow(/permission denied/i);
       await expect(conTenant(app(), C, (trx) => sql`delete from libreria_entrada`.execute(trx))).rejects.toThrow(/permission denied/i);
     });

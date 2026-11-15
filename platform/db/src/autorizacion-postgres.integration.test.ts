@@ -29,7 +29,7 @@ describe.skipIf(!hayBase)("AutorizacionPostgres (PostgreSQL real)", () => {
     await conTenant(owner(), id, async (trx) => {
       await sql`insert into empresa (id, slug, nombre, color_primario) values (${id}, ${slug}, ${"Empresa " + slug}, '#0E5C42') on conflict do nothing`.execute(trx);
       for (const [uid, rol] of personas) {
-        await sql`insert into usuario (id, empresa_id, nombre, correo, rol) values (${uid}, ${id}, ${"Persona " + uid.slice(0, 8)}, ${uid.slice(0, 8) + "@example.test"}, ${rol}) on conflict (id) do update set rol = excluded.rol`.execute(trx);
+        await sql`insert into usuario (id, empresa_id, nombre, correo, rol) values (${uid}, ${id}, ${"Persona " + uid.slice(0, 8)}, ${uid.slice(0, 8) + "@example.test"}, ${rol}) on conflict (empresa_id, id) do update set rol = excluded.rol`.execute(trx);
       }
     });
   };

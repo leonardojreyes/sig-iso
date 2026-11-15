@@ -1,6 +1,8 @@
 // Variables de entorno de cada servicio en desarrollo (`pnpm dev`): se leen del .env.local de la raíz y cada servicio recibe
 // SOLO las que necesita (mínimo privilegio): la web no ve las bases de datos; la API no ve el secreto del cliente web ni la
 // clave de sellado de la sesión. Lo que ya esté en el entorno de la terminal manda sobre el archivo.
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { parsearEnv } from './db-init.mjs';
 
 export const SERVICIOS = Object.freeze({
@@ -25,6 +27,7 @@ export const SERVICIOS = Object.freeze({
     'RATE_LIMIT_EMPRESA',
     'OTEL_TRACES_EXPORTER',
     'FEATURE_ADOPCION_HABILITADA',
+    'EVIDENCIAS_DIR',
     'API_PORT',
   ]),
 });
@@ -37,5 +40,8 @@ export const entornoDeServicio = (servicio, textoEnv, base) => {
   for (const nombre of permitidas) {
     if (resultado[nombre] === undefined && deArchivo.has(nombre)) resultado[nombre] = deArchivo.get(nombre);
   }
+  // Los archivos de las evidencias van FUERA del repositorio (ADR 032). En desarrollo, si no se indicó otra, una carpeta en el directorio
+  // personal; la variable `EVIDENCIAS_DIR` del .env.local o de la terminal manda sobre este valor.
+  if (servicio === 'api' && !resultado.EVIDENCIAS_DIR) resultado.EVIDENCIAS_DIR = join(homedir(), '.sigiso', 'evidencias');
   return resultado;
 };

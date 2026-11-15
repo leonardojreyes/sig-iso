@@ -2,10 +2,10 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** **MVP de certificación** (plan ágil, `docs/specs/mvp-certificacion/plan.md`): **M1, M2 y M3 hechos**; siguen M4, M5 y M6. Ver la sección «MVP de certificación — qué está hecho». El **0.7 (puerto de IA)** quedó en preparación (spec aprobado en el PR #13, cimientos en el #14) y el plan lo deja **fuera del MVP**.
+- **Paso actual:** **MVP de certificación** (plan ágil, `docs/specs/mvp-certificacion/plan.md`): **M1 a M5 hechos**; sigue M6. Ver la sección «MVP de certificación — qué está hecho». El **0.7 (puerto de IA)** quedó en preparación (spec aprobado en el PR #13, cimientos en el #14) y el plan lo deja **fuera del MVP**.
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (#1 y #3), 0.5 (#4) y **0.6 (cerrado el 2026-11-09; PR #5 a #11)**. Siguen fuera del MVP: el resto del 0.7, el 0.8 y el 0.9.
-- **PR (2026-11-11):** `main` incluye los PR #1, #3 a #12, #15 (cierre formal del 0.6), #18 (spec del modelo de dominio v2) y #19 (**MVP M1**, Anexo A de 27001). El #2 se cerró a propósito (PR de prueba que viola las reglas). **Abiertos:** #13 (spec, plan y tareas del 0.7), #14 (cimientos del puerto de IA), #16 y #17 (documentos) y **#20 (MVP M2 + M3, hito H2)**. La protección de `main` exige los **7 checks**, incluido `integracion`, y que la rama esté al día. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
-- **Rama del MVP:** M2 y M3 están en `feature/mvp-m2-m3`, rebasada sobre `main` el 2026-11-11 y **abierta como PR #20 (hito H2)**. La antigua `feature/mvp-m2-diagnostico` de GitHub quedó obsoleta (tiene la historia previa al rebase y se puede borrar).
+- **PR (2026-11-11):** `main` incluye los PR #1, #3 a #12, #15 (cierre formal del 0.6), #18 (spec del modelo de dominio v2), #19 (**MVP M1**, Anexo A de 27001) y #20 (**MVP M2 + M3**, alcance, diagnóstico, controles y mapeos). El #2 se cerró a propósito (PR de prueba que viola las reglas). **Abiertos:** #13 (spec, plan y tareas del 0.7), #14 (cimientos del puerto de IA), #16 y #17 (documentos). La protección de `main` exige los **7 checks**, incluido `integracion`, y que la rama esté al día. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
+- **Rama del MVP:** los hitos H1 y H2 (M1, M2 y M3) **ya están integrados en `main`** (#19 y #20). El trabajo de **M4** (evidencias con archivo) está terminado en `feature/mvp-m4-evidencias` (5 commits locales, sin subir); el PR del hito H3 se abre al cerrar M5 y M6. La antigua `feature/mvp-m2-diagnostico` de GitHub quedó obsoleta y se puede borrar.
 - **Corte 0.6 cerrado: 65 de 70 tareas hechas.** Las 5 restantes no bloquean: **4.4** (tuya), **9.2 y 9.3** (OpenFGA, pospuestas por el ADR 029) y **11.2 y 11.3** (worker de intentos fallidos, diferidas a la Fase 1). Plan en `docs/specs/corte-vertical-0-6/`; `/review` completo sin bloqueantes en `docs/revisiones/2026-11-09-review-corte-0-6.md`.
 
 ## MVP de certificación — qué está hecho
@@ -14,11 +14,13 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 
 | Hito | Qué entrega | Estado |
 | --- | --- | --- |
-| **M1** | Anexo A de ISO/IEC 27001:2022 como librería propia (**93 controles** planos, con tipo y grupo, guías de SynapTech; «borrador, numeraciones sin verificar»), esquema de librerías v3 y migración `0006`; el listado de requisitos muestra tipo y grupo | **Hecho** (`5bc949b`) |
+| **M1** | Anexo A de ISO/IEC 27001:2022 como librería propia (**93 controles** planos, con tipo y grupo, guías de SynapTech; **numeración verificada el 2026-11-13** contra la NTE INEN-ISO/IEC 27001:2023, versión 1.0.0), esquema de librerías v3 y migración `0006`; el listado de requisitos muestra tipo y grupo | **Hecho** (`5bc949b`) |
 | **M2** | **Alcance** por norma (texto y aprobación con quién y cuándo) y **diagnóstico**: estado por entrada (cumple, parcial, no cumple, no aplica; «sin evaluar» = no hay fila), comentario, fecha objetivo, **madurez** por norma, capítulo y tema, y concurrencia optimista por versión | **Hecho** |
 | **M3** | **Controles de la empresa** y **mapeos** muchos a muchos con las entradas de las normas adoptadas (**marco de controles unificado**: una medida, varias normas) | **Hecho** |
-| M4 | Evidencias con archivo (huella SHA-256, vigencia, reemplazo, descarga protegida) y cobertura. Requiere el ADR 032 (almacén de archivos) | Pendiente |
-| M5 | Declaración de Aplicabilidad de 27001 derivada del diagnóstico y los controles, aprobación con versión congelada y exportación a Word. Requiere el ADR 033 | Pendiente |
+| **M4** | Evidencias con archivo (huella SHA-256, vigencia, reemplazo, descarga protegida) y cobertura derivada de los mapeos. ADR 032 (almacén de archivos) | **Hecho** |
+| **M5** | Declaración de Aplicabilidad de 27001 derivada del diagnóstico, los controles y las evidencias; aprobación con versión congelada e inmutable; exportación a Word. ADR 033 (`docx` MIT detrás de `GeneradorDocumentoPort`) | **Hecho** |
+| **M6a** | **Cargar normas desde la interfaz** (requisito añadido el 2026-11-13, dentro del MVP): subir las librerías desde la web, sin comandos (ADR 034). Archivos o carpeta del navegador, librería propia de la empresa con RLS, plantilla descargable, errores en palabras, adopción | **Hecho (2026-11-14)** |
+| **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a), ADR 035. **M6b-1** (una persona en varias empresas y cambio de empresa) **hecho 2026-11-15**; **M6b-2** (marca editable: color y logo con verificación de contraste) **hecho 2026-11-15**. Módulos activos y nombre editable quedan fuera del MVP. | **Hecho** |
 | M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
 
 **M2 y M3 en detalle** (para no tener que releer el código):
@@ -30,6 +32,85 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 - **Bitácora** (acciones nuevas, siempre dentro de la misma transacción que el cambio): `evaluacion.cambiada`, `alcance.cambiado|aprobado`, `control.creado|cambiado|retirado`, `mapeo.creado|eliminado`. Solo estados, banderas y el objeto: **nunca** el comentario, el texto del alcance ni el nombre o la descripción de un control.
 - **Verificación de extremo a extremo** con todo real (Keycloak, API, PostgreSQL y web): `pnpm web:verify-diagnostico` (44 comprobaciones) y `pnpm web:verify-controles` (51). Cubren permisos por rol, `Origin`, concurrencia y aislamiento con la empresa B. **Escriben en tu base local** (marca `VERIF-`): los controles de prueba quedan retirados, no se borran.
 - **Medición del 2026-11-11:** `pnpm lint` sin errores (queda un aviso que ya existía), `pnpm typecheck` y `pnpm test` en verde (16 de 16 tareas).
+
+**M4 en detalle:**
+
+- **Tabla** `evidencia` (`0009`): `empresa_id`, RLS forzada, clave foránea compuesta con el control; la aplicación no puede borrar (solo cambia `estado`). Prueba de aislamiento incluida.
+- **Archivos** (ADR 032): puerto `AlmacenArchivosPort` con adaptador local (`EVIDENCIAS_DIR`, por omisión `~/.sigiso/evidencias`, `<base>/<empresa>/<uuid>`, permisos 0700/0600). Siete tipos (PDF, PNG, JPEG, TXT, DOCX, XLSX, PPTX) decididos por el **contenido**, no por la extensión; rechaza macros, ejecutables, SVG/HTML y ZIP sospechosos; máximo 25 MB; subida en dos fases (el registro solo se confirma si el archivo llegó completo).
+- **API** (+6 operaciones): `GET/POST /controles/{id}/evidencias`, `POST /evidencias/{id}/reemplazo`, `POST /evidencias/{id}/eliminacion`, `GET /evidencias/{id}/archivo`, `GET /cobertura`; errores nuevos 413 y 415.
+- **Cobertura** por entrada: cubierta, evidencia vencida, sin evidencia, sin control o no aplica; la fecha «hoy» es la de Ecuador.
+- **Bitácora:** `evidencia.creada|reemplazada|eliminada|descargada|subida_rechazada`; la descarga se registra **antes** de entregar el archivo. Permisos `evidencias.ver|registrar|eliminar` (el colaborador no elimina).
+- **Web:** `/e/<empresa>/controles/<id>` (subir, reemplazar, eliminar, descargar, historial) y `/e/<empresa>/cobertura`; `proxyClientMaxBodySize: '27mb'` en Next. `pnpm web:verify-evidencias` (~75 comprobaciones con todo real, incluida una subida de 11 MB y disfraces).
+- **Nota:** un formulario con archivo de la empresa B hacia una ruta de A recibe 409 de Next («Server Action unavailable») en vez de 404; no entrega ni guarda nada.
+- **Fuera de M4:** cuota por empresa, antivirus, conciliación de huérfanos, verificar la huella al descargar, vencimiento como hecho del _worker_ y vista previa.
+
+**M5 en detalle:**
+
+- **Tablas** (`0010`): `declaracion_version` y `declaracion_fila`, con `empresa_id`, RLS forzada y claves foráneas compuestas; la aplicación solo lee e inserta (**inmutables**). Solo se guarda lo aprobado: el borrador se deriva cada vez.
+- **Derivación** (función pura `derivarDeclaracion`): una fila por control del Anexo A de las librerías adoptadas. Cumple, parcial o no cumple → «aplica» (implementado, parcial o no implementado); «no aplica» usa como justificación el comentario de la evaluación; sin evaluar (o «no aplica» sin justificación) → «por decidir». Cada fila trae los códigos de los controles vigentes que la cubren y su cobertura de M4.
+- **Aprobar** (solo administrador SIG): 409 si queda algo por decidir, si no hay controles de 27001 adoptados o si otra persona aprobó a la vez. Un control que aplica sin control asignado **sí** se puede aprobar: queda señalado. Congela filas, alcance de 27001 y conteos en una sola transacción; el número es correlativo por empresa.
+- **API** (+6 operaciones): `GET /declaracion`, `POST /declaracion/aprobacion`, `GET /declaracion/versiones`, `GET /declaracion/versiones/{id}`, `GET /declaracion/documento` y `GET /declaracion/versiones/{id}/documento`. Permisos `declaracion.ver|exportar|aprobar` (el colaborador no aprueba).
+- **Word:** `GeneradorDocumentoDocx` escribe solo texto plano (sin campos, enlaces ni macros); el borrador lleva el rótulo de preliminar y una versión sale **siempre de su copia congelada**. Cada exportación queda en la bitácora con la huella SHA-256 del documento, **antes** de entregarlo (falla cerrada).
+- **Bitácora:** `declaracion.aprobada` (versión y cuatro conteos) y `declaracion.exportada` (huella). Nunca texto.
+- **Web:** `/e/<empresa>/declaracion` (resumen, alcance, borrador, aprobar, historial, descarga) y `/declaracion/versiones/<id>` (versión congelada). `pnpm web:verify-declaracion` (~45 comprobaciones con todo real; **escribe** en la base local: evalúa como «Parcial» lo que falte del Anexo A y crea versiones aprobadas).
+- **Fuera de M5:** el nombre de la empresa en el documento (no hay un puerto para leerlo), firma electrónica, comparar versiones, plantillas propias, PDF, y declaración para 9001 o 42001.
+
+### M6a — Cargar normas desde la interfaz (hecho 2026-11-14)
+
+- **ADR 034** (Aprobado): se sube el **YAML** (no el PDF); selector de archivo o carpeta del navegador; la librería es **propia de la empresa**; solo el administrador SIG (`normas.cargar`).
+- **Base (migración `0011`):** `libreria.empresa_id` (nulo = catálogo global), código propio con el prefijo reservado `propia-` (los globales no pueden usarlo), RLS en `libreria`, la aplicación solo **inserta** librerías propias (versión inmutable), adopción limitada al catálogo global o a lo propio. Prueba de aislamiento (`aislamiento-libreria-propia`) y matriz de privilegios actualizada.
+- **Caso de uso `CargarLibreriaUseCase`:** permiso → 1 MB y texto UTF-8 → YAML **sin alias ni claves repetidas** → esquema v3 → reglas de contenido (sin texto de norma) → prefijo `propia-` y no ejemplo → guardar todo o nada con la huella → bitácora `libreria.cargada` (código, versión, huella y conteos; nunca el contenido ni el texto de los errores; el rechazo también se registra). Misma versión y mismo contenido = «ya cargada»; otro contenido = rechazo.
+- **API:** `POST /librerias/carga` (multipart, un archivo; 201 cargada, 200 ya cargada o rechazada con sus errores; 403 antes de leer el cuerpo; 413 sobre 1 MB) y `GET /librerias` con `propia`.
+- **Web:** pantalla `/e/<empresa>/normas` (archivos o carpeta, hasta 20 por tanda, un archivo por petición; plantilla descargable; errores explicados por archivo en palabras claras; lista con adopción) y `pnpm web:verify-normas` (57 comprobaciones con todo real; la plantilla descargable pasa la validación tal cual). El resultado de la subida vive en la memoria del servidor y se muestra una vez.
+- **Corregido de paso:** el fallo intermitente de `@sig/certificacion` era de las pruebas (ids de control con reloj y contador que chocaban entre archivos en paralelo); ahora usan UUID aleatorio (9 de 9 corridas completas en verde).
+- **Límites conocidos:** un 413 (más de 1 MB declarado) no queda en la bitácora porque se corta antes del caso de uso; el resultado de la subida no se comparte entre varios servidores (igual que las sesiones); la librería subida no se puede borrar ni editar (se sube una versión nueva); adoptar sigue llevando a la pantalla de requisitos.
+
+### M6b-1 — Una persona en varias empresas y cambio de empresa (hecho 2026-11-15)
+
+- **ADR 035** (Aprobado): una cuenta puede tener **una fila `usuario` por empresa**, cada una con su rol (el rol no se hereda). El token sigue mandando como empresa inicial; **una sola operación nombra una empresa**, `POST /sesion/empresa`, que comprueba la pertenencia en la base (404 si no pertenece, con `acceso.cruzado`), registra `empresa.cambiada` en la empresa destino **antes** de guardar y guarda la **empresa activa de ESA sesión** (`sid`, vence a las 8 h).
+- **Base (migración `0012`):** la clave de `usuario` pasa a `(empresa_id, id)`; tabla `empresa_activa` (sin RLS por empresa, solo el rol de plataforma, clave foránea compuesta que obliga a pertenecer); la plataforma lee solo `id`, `empresa_id` y `rol` de `usuario` y `id`, `slug` y `nombre` de `empresa`. Matriz de privilegios y pruebas actualizadas.
+- **Guardia de la API:** tras verificar el token resuelve la empresa de la petición (activa de la sesión si la persona **sigue** perteneciendo; si no, la del token). Si no puede decidir, responde 500: no cae a otra empresa. Al cerrar la sesión se olvida la elección.
+- **API:** `GET /sesion/empresas` y `POST /sesion/empresa`. **Web:** selector en la cabecera (solo para quien tiene varias empresas), `POST /e/<empresa>/empresa/cambiar` y aviso cerrado en el panel.
+- **Siembra:** el consultor (`consultor@example.test`) es **administrador en A y colaborador en B**. Para darlo de alta en tu Keycloak sin borrar nada: `pnpm keycloak:realm` y `pnpm keycloak:cuentas` (importación parcial, que respeta el `id`; crear la cuenta por la API normal lo ignora) y `pnpm db:seed`. La contraseña está en `.local/secretos-keycloak.json`.
+- **Verificación:** `pnpm web:verify-multiempresa` (39 comprobaciones con todo real): selector solo para quien tiene varias; cambiar a B y recibir el rol de colaborador; A deja de responder en esa sesión; otra sesión de la misma cuenta no se entera; una empresa ajena o inexistente da el mismo «no encontrada»; Origin, método y sesión; B ve exactamente lo que ve su administrador.
+- **Límites conocidos:** el cambio de empresa agrega una consulta por petición en la guardia (sin caché); abrir otra pestaña con la empresa anterior da 404 (la sesión ya está en la otra); no hay pantalla para dar de alta personas ni roles (se hace con la siembra); `web:verify-listado` espera 21 entradas y A tiene 114 desde que adoptó el Anexo A (el script está desactualizado desde entonces).
+
+### M6b-2 — Marca editable: color y logo (hecho 2026-11-15)
+
+- **Qué hace:** el administrador SIG cambia el **color** y el **logo** de su empresa desde `/e/<empresa>/marca`; se ve de inmediato en toda la aplicación para toda la empresa. El nombre y el slug **no** se editan (quedan fuera del MVP, igual que los módulos activos por empresa).
+- **Base (migración `0013`):** la aplicación puede actualizar **solo** `color_primario` y `logo_url` de **su** empresa (política por empresa + permiso por columnas); las reglas de forma ya estaban en la tabla. Prueba de aislamiento (`aislamiento-marca`, 15 casos) y matriz de privilegios actualizada.
+- **Dominio y casos de uso:** permiso nuevo `marca.editar` (solo administrador SIG); `ActualizarMarcaUseCase` (permiso 403 → validación 400 → cambio atómico + bitácora). Al **editar**, un logo no permitido se **rechaza** (al leer, como siempre, se descarta en silencio). El color elegido se guarda tal cual y, si no cumple el contraste AA, la marca que se **aplica** se ajusta y se avisa.
+- **Bitácora:** `marca.cambiada` registra solo **qué** cambió (color, logo), nunca el color ni la dirección del logo; si no cambia nada, no registra nada.
+- **API:** `PUT /empresa/marca` (cuerpo cerrado: solo `colorPrimario` y `logoUrl`; la empresa sale del token). **Web:** pantalla «Marca» (cómo se ve ahora, aviso de contraste, formulario solo para el administrador) y `pnpm web:verify-marca` (30 comprobaciones con todo real; **restaura** la marca de A al terminar).
+- **Límites conocidos:** el logo es una **dirección** (`https` o ruta propia), no se sube un archivo: el navegador la carga desde ese sitio (con `referrerpolicy="no-referrer"`) y quien aloja la imagen ve las visitas; subir el archivo a un almacén propio queda para después. No hay vista previa del color antes de guardar.
+
+### M6 — Revisión completa del hito H3 (2026-11-15)
+
+Un solo `/review` con seis revisores en paralelo sobre los 316 archivos del hito (M4 a M6b): arquitectura, aislamiento entre empresas, seguridad, accesibilidad, cumplimiento y experto ISO. **Ningún hallazgo bloqueante.** Veredictos: arquitectura, aislamiento y seguridad «aprobar con correcciones»; accesibilidad, cumplimiento y experto ISO «corregir (no bloqueante)». El STRIDE ampliado de los flujos nuevos está en `docs/security/stride-mvp-h3.md`.
+
+**Corregido en esta revisión**
+
+- **Seguridad:** el logo de la empresa aceptaba cualquier ruta del propio sitio (por ejemplo la descarga de un documento), y cada persona que cargara una pantalla la habría pedido con su sesión. Ahora solo es una dirección `https` o un archivo de imagen bajo `/logos/` (dominio, web, contrato y base, migración `0014`).
+- **Aislamiento:** si la elección de empresa de una sesión dejaba de valer (por ejemplo, se le quitaba el rol al consultor en esa empresa), la API volvía **en silencio** a la empresa del token mientras la pantalla seguía mostrando la otra. Ahora responde 401 y olvida la elección (ADR 035, punto 4).
+- **Arquitectura / seguridad:** el límite de frecuencia se aplica **antes** de consultar la empresa activa (así protege también a la base); y la subida de librerías y de evidencias ya no procesa el cuerpo de una petición **sin sesión**.
+- **Experto ISO:** el Word lleva la nota de que los controles salen del tratamiento de riesgos (documentos externos), como prometía el plan; y la declaración solo incluye controles de la **edición 2022** del Anexo A (no mezcla ediciones).
+- **Accesibilidad:** el menú ya no desborda en pantallas angostas; el selector de empresa tenía dos etiquetas; mensajes de la marca más claros.
+- **Pruebas:** dos pruebas de integración dejaban datos sin limpiar (la del caso «base caída» salía antes de limpiar): se acumularon 200 librerías y 222 empresas de prueba hasta que el catálogo de `sigiso_test` llegó a su tope y otras pruebas fallaron. Corregido y base de pruebas limpiada.
+- **Documentación:** ADR 032 (el 413 por `Content-Length` no deja registro), ADR 034 (límites del detector de texto de normas), ADR 035 (elección inválida y identificador compartido) y ADR 028 (tres insumos nuevos para el asesor legal).
+
+**Decisiones que son del responsable (no se tomaron solas)**
+
+1. **Declaración de Aplicabilidad — tres huecos frente a lo que el plan prometía y un auditor suele esperar:** el **motivo de inclusión** de cada control (riesgo, legal, contractual, negocio), los **controles adicionales** fuera del Anexo A, y la **referencia al plan de tratamiento y al análisis de riesgos** (hoy solo hay la nota fija en el Word). No están implementados: o se hacen antes de presentar la declaración a un auditor, o se declaran como fuera del MVP. Tampoco hay columna de responsable por control.
+2. **Títulos del Anexo A (pregunta Q3 del spec de dominio v2):** la librería `iso-27001-2022-anexo-a` reproduce la lista **completa** de los 93 títulos oficiales. La regla 3 permite «título breve»; el cumplimiento lo marca como decisión formal pendiente antes de publicar o vender (cerrar con un ADR o reformular los títulos).
+3. **Registro del 413:** un archivo que declara más de lo permitido se corta antes del caso de uso y no deja registro en la bitácora (evidencias y librerías). Registrarlo exige una huella que aún no existe; hoy está documentado como límite.
+4. **Alta, baja y cambio de rol de personas:** `rol.cambiado`, `usuario.alta` y `usuario.baja` existen en el catálogo de la bitácora pero ningún código los emite todavía (las cuentas se crean con la siembra y `keycloak:cuentas`).
+
+**Deuda anotada (no bloquea el hito)**
+
+- Accesibilidad: el aviso que aparece tras recargar la página no recibe el foco ni se anuncia de forma fiable; la tabla ancha tiene un contenedor de desplazamiento duplicado y no enfocable con teclado; una subida de muchos archivos genera hasta 20 alertas; faltan estados con axe en cobertura y en el panel; no hay prueba de contraste de `primary-subtle`; enlaces sueltos más bajos que el objetivo mínimo de toque.
+- Código: los cuatro manejadores de escritura de la web (`escribir.ts`, `subir.ts`, `editar.ts`, `cambiar.ts`) repiten el mismo control de seguridad y conviene extraerlo a uno solo; `SLUG`, `UUID`, `COLOR` y `LOGO` están repetidos en varios archivos (y el `UUID` de `flujo.ts` no admite mayúsculas); `cargar-libreria.use-case.ts` importa un error de otro caso de uso.
+- Rendimiento: la empresa activa agrega una consulta por petición sin caché; el almacén de resultados de carga tiene un tope global de 200 y un reinicio lo borra.
+- Antes de producción: `Strict-Transport-Security` y CSP con nonce en la web; verificar la huella al descargar una evidencia; retención, borrado físico y marca de «contiene datos personales» en las evidencias (ADR 028).
 
 **Límites conocidos del MVP** (decisiones ya tomadas; no son defectos pendientes de corregir):
 
@@ -59,13 +140,13 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 
 ## Corte 0.6 — lo que queda fuera del cierre (5 tareas)
 
-- **4.4 (tuya, no bloquea):** verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` está **cargada en la base local**, marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
+- **4.4 (parcialmente cerrada, 2026-11-13):** el **Anexo A de 27001** (`iso-27001-2022-anexo-a`, ahora `1.0.0`) ya se verificó contra la NTE INEN-ISO/IEC 27001:2023: los 93 controles, su numeración y su reparto por tema coinciden (solo se comparó la numeración y el tema; los títulos y las guías son propios). **Falta** la librería de ejemplo de Estructura Armonizada (cláusulas 4 a 10) y decidir sobre los títulos (Q3). Pendiente original: verificar numeraciones y guías con tus ejemplares y decidir sobre los títulos (`docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`). Mientras tanto la librería de ejemplo `0.1.0` está **cargada en la base local**, marcada «borrador, numeraciones sin verificar»; al verificar se publica la versión siguiente.
 - **9.2 y 9.3:** OpenFGA, pospuestas por el ADR 029 hasta que haya permisos por objeto. La autorización por rol funciona desde la base.
 - **11.2 y 11.3 (diferidas a la Fase 1, M5):** el worker de intentos fallidos y de eventos de administración. El código de 11.1 queda en el repositorio, probado; la bitácora acepta esos registros, pero nada los alimenta todavía, y la prueba de aislamiento no cubre el paso «intento fallido → bitácora desde Keycloak».
 
 ## Pendiente del responsable
 
-1. **PR #20 (hito H2, M2 + M3):** abierto; necesita los 7 checks en verde y tu merge. El **#14** (cimientos de IA) sigue abierto y cambia `platform/autorizacion/src/roles.ts`: se integre antes o después, se resuelve **fusionando `main` en `feature/mvp-m2-m3`** (sin reescribir historia) y juntando su lista de permisos con la del MVP. Después del merge del #20, se puede borrar la rama obsoleta `feature/mvp-m2-diagnostico`.
+1. **PR #14 (cimientos de IA).** Sigue abierto y, desde que entró el #20, **choca con `main` en `platform/autorizacion/src/roles.ts`** (la lista de permisos: el MVP agregó `diagnostico.*`, `alcance.*` y `controles.*`). Se resuelve juntando ambas listas; lo hace quien lo vaya a integrar (puedo hacerlo yo si me lo pides). Después se pueden borrar las ramas ya integradas, incluida la obsoleta `feature/mvp-m2-diagnostico`.
 2. **Aprobar o ajustar el recorte del 0.7** y el ADR 030 (modelo por defecto del asistente), propuestos tras la prueba previa, e integrar el **#13** cuando quieras. El plan del MVP deja todo esto para después, así que no bloquea.
 3. **Ramas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `feature/paso-0-6-adopcion`, `feature/paso-0-6-ingreso`, `feature/paso-0-6-cierre`, `feature/paso-0-6-aislamiento-e2e`, `feature/proteger-local`, `feature/mvp-m1-anexo-a`, `docs/cierre-paso-0-6`, `docs/spec-dominio-v2`, la obsoleta `feature/mvp-m2-diagnostico`, `docs/estado-paso-0-4` y `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo, y las ramas del 0.7 (`feature/spec-ia-0-7`, `feature/ia-cimientos`) hasta integrarlas.
 4. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`.
@@ -78,11 +159,10 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 
 ## Próximos pasos técnicos
 
-1. **Integrar el PR #20 (H2)** y resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
-2. **M4 — evidencias con archivo.** Primero el ADR 032 (almacén de archivos detrás de `AlmacenArchivosPort`, adaptador de sistema de archivos local; lista cerrada de tipos por la firma del contenido; 25 MB; huella SHA-256), migración `0009`, subida y descarga protegida, reemplazo y **cobertura** (una evidencia respalda varias entradas).
-3. **M5 — Declaración de Aplicabilidad de 27001.** ADR 033 (`docx` detrás de `GeneradorDocumentoPort`, licencias comprobadas con `scripts/check-licenses.mjs`), derivada del diagnóstico y los controles, marcada preliminar, aprobación con versión congelada e inmutable y exportación a Word.
-4. **M6 — cierre del MVP:** un solo `/review` completo (arquitecto, multiempresa, seguridad y cumplimiento), STRIDE ampliado, este archivo y `docs/fase0/guia-de-ejecucion.md`.
-5. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
+1. **M6 — cierre del MVP** (abajo); y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
+2. **M5 — Declaración de Aplicabilidad de 27001** (hecha; detalle arriba). ADR 033 (`docx` detrás de `GeneradorDocumentoPort`, licencias comprobadas con `scripts/check-licenses.mjs`), derivada del diagnóstico y los controles, marcada preliminar, aprobación con versión congelada e inmutable y exportación a Word.
+3. **M6 — cierre del MVP:** un solo `/review` completo (arquitecto, multiempresa, seguridad y cumplimiento), STRIDE ampliado, este archivo y `docs/fase0/guia-de-ejecucion.md`.
+4. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
 
 
 - **Actualizado:** 2026-11-11
@@ -127,7 +207,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M3 hechos; M4 a M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
+0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5, M6a y M6b hechos; M6 pendiente)** → resto del 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 

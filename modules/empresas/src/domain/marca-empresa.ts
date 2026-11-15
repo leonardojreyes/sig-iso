@@ -29,8 +29,9 @@ export interface MarcaEmpresa {
 const NOMBRE_MAX = 120;
 const LOGO_MAX = 2048;
 const COLOR = /^#[0-9A-Fa-f]{6}$/;
-// Misma regla que `Marca.logoUrl` del contrato OpenAPI: `https` sin credenciales, o ruta propia que no sea `//host` ni `/\host`.
-const LOGO_PERMITIDO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/[^/\\\s][^\s@]*)$/;
+// Misma regla que `Marca.logoUrl` del contrato OpenAPI: `https` sin credenciales, o un archivo de imagen bajo `/logos/` (nunca cualquier ruta
+// del sitio: una ruta como `/e/<empresa>/declaracion/documento` haría que cada persona que cargue una pantalla la pida con su sesión).
+const LOGO_PERMITIDO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/logos\/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp))$/;
 
 const logoPermitido = (logo: string | null | undefined): string | null =>
   typeof logo === 'string' && logo.length <= LOGO_MAX && LOGO_PERMITIDO.test(logo) ? logo : null;
@@ -68,4 +69,23 @@ export const crearMarca = (datos: DatosMarca): MarcaEmpresa => {
     logoUrl: logoPermitido(datos.logoUrl),
     monograma: monogramaDe(nombre),
   });
+};
+
+/** Lo que la empresa elige al editar su marca, ya validado y normalizado (color en minúsculas). */
+export interface CambioMarca {
+  readonly colorPrimario: string;
+  readonly logoUrl: string | null;
+}
+
+/**
+ * Valida lo que la empresa envía al editar su marca. A diferencia de `crearMarca` (que al LEER descarta en silencio un logo no
+ * permitido), al ESCRIBIR se rechaza: la persona debe saber que su logo no se guardó. El mensaje no repite el valor recibido.
+ */
+export const validarCambioMarca = (entrada: { readonly colorPrimario: unknown; readonly logoUrl: unknown }): CambioMarca => {
+  if (typeof entrada.colorPrimario !== 'string' || !COLOR.test(entrada.colorPrimario)) throw new ErrorMarca('El color primario debe tener el formato #RRGGBB');
+  const logo = entrada.logoUrl;
+  if (logo !== null && (typeof logo !== 'string' || logo.length > LOGO_MAX || !LOGO_PERMITIDO.test(logo))) {
+    throw new ErrorMarca('El logo debe ser una dirección https sin credenciales o una ruta propia');
+  }
+  return { colorPrimario: entrada.colorPrimario.toLowerCase(), logoUrl: logo };
 };

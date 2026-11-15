@@ -8,6 +8,9 @@ export const ACCIONES = [
   'logout',
   'sesion.expirada',
   'libreria.adoptada',
+  'libreria.cargada',
+  'empresa.cambiada',
+  'marca.cambiada',
   'evaluacion.cambiada',
   'alcance.cambiado',
   'alcance.aprobado',
@@ -16,6 +19,13 @@ export const ACCIONES = [
   'control.retirado',
   'mapeo.creado',
   'mapeo.eliminado',
+  'evidencia.creada',
+  'evidencia.reemplazada',
+  'evidencia.eliminada',
+  'evidencia.descargada',
+  'evidencia.subida_rechazada',
+  'declaracion.aprobada',
+  'declaracion.exportada',
   'acceso.denegado',
   'acceso.cruzado',
   'token.invalido',
@@ -56,6 +66,11 @@ export const MOTIVOS = [
   'huella_invalida',
   'enlace_roto',
   'error_no_clasificado',
+  'tipo_no_permitido',
+  'tamano_excedido',
+  'firma_invalida',
+  'codigo_no_permitido',
+  'ya_cargada',
 ] as const;
 export type MotivoBitacora = (typeof MOTIVOS)[number];
 
@@ -107,6 +122,22 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
     despues: { adoptada: 'booleano', entradas: 'entero' },
   },
   // Diagnóstico y alcance (MVP, M2). Solo estados y banderas: el comentario y el texto del alcance NUNCA van a la bitácora.
+  // Librería propia subida desde la web (MVP, M6a). Solo código, versión, huella y conteos: nunca el contenido ni el texto de los errores.
+  // Una persona que pertenece a varias empresas cambia la empresa activa de su sesión (ADR 035). Se registra en la empresa DESTINO.
+  'empresa.cambiada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // La empresa edita su marca (ADR 035, M6b-2). Solo QUÉ cambió (banderas), nunca el color ni la dirección del logo.
+  'marca.cambiada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', despues: { color_cambiado: 'booleano', logo_cambiado: 'booleano' } },
+  'libreria.cargada': {
+    ...nada,
+    actores: ['usuario'],
+    empresa: 'obligatoria',
+    resultados: ['ok', 'rechazado'],
+    motivo: 'opcional',
+    motivos: ['tipo_no_permitido', 'tamano_excedido', 'formato_invalido', 'contenido_no_permitido', 'codigo_no_permitido', 'hash_distinto', 'ya_cargada'],
+    objeto: 'obligatorio',
+    objetoVersion: 'obligatorio',
+    despues: { entradas: 'entero' },
+  },
   'evaluacion.cambiada': {
     ...nada,
     actores: ['usuario'],
@@ -124,6 +155,18 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   'control.retirado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'mapeo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'mapeo.eliminado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Evidencias con archivo (MVP, M4). El hecho lleva la HUELLA SHA-256 del archivo como versión del objeto (queda fijada en la cadena
+  // inmutable); el título, el nombre del archivo y su contenido NUNCA van a la bitácora. El objeto es `evidencia:<uuid>` o, si se
+  // rechaza una subida, el control `control:<codigo>`.
+  'evidencia.creada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
+  'evidencia.reemplazada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
+  'evidencia.eliminada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
+  'evidencia.descargada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
+  'evidencia.subida_rechazada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['tipo_no_permitido', 'tamano_excedido', 'firma_invalida'], objeto: 'obligatorio', objetoVersion: 'opcional' },
+  // Declaración de Aplicabilidad (M5). La aprobación guarda solo el número de versión (objeto `declaracion:v<n>`) y los conteos; la
+  // exportación fija la HUELLA SHA-256 del documento entregado (objeto `declaracion:v<n>` o `declaracion:borrador`). Ningún texto.
+  'declaracion.aprobada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', despues: { total: 'entero', aplican: 'entero', no_aplican: 'entero', sin_control: 'entero' } },
+  'declaracion.exportada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
   'acceso.denegado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['sin_permiso'], objeto: 'opcional' },
   'acceso.cruzado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['empresa_distinta'], objeto: 'opcional' },
   'token.invalido': { ...nada, actores: ['sistema'], empresa: 'opcional', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['token_vencido', 'token_alterado', 'sin_empresa'] },

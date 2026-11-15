@@ -206,3 +206,41 @@ describe('permisos de los controles de la empresa (MVP, M3)', () => {
     }
   });
 });
+
+describe('permisos de las evidencias (MVP, M4)', () => {
+  it('el colaborador consulta y registra evidencias, pero no las elimina', async () => {
+    const f = montar();
+    for (const p of ['evidencias.ver', 'evidencias.registrar'] as const) expect(await f.puede(COLAB, p, A), p).toBe(true);
+    expect(await f.puede(COLAB, 'evidencias.eliminar', A)).toBe(false);
+  });
+  it('el administrador SIG puede consultar, registrar y eliminar', async () => {
+    const f = montar();
+    for (const p of ['evidencias.ver', 'evidencias.registrar', 'evidencias.eliminar'] as const) expect(await f.puede(ADMIN, p, A), p).toBe(true);
+  });
+  it('sin rol o con el rol de otra empresa no puede nada', async () => {
+    const f = montar();
+    for (const p of ['evidencias.ver', 'evidencias.registrar', 'evidencias.eliminar'] as const) {
+      expect(await f.puede(OTRO, p, A), p).toBe(false);
+      expect(await f.puede(ADMIN, p, B), p).toBe(false);
+    }
+  });
+});
+
+describe('permisos de la declaración de aplicabilidad (MVP, M5)', () => {
+  it('el colaborador consulta y exporta, pero no aprueba', async () => {
+    const f = montar();
+    for (const p of ['declaracion.ver', 'declaracion.exportar'] as const) expect(await f.puede(COLAB, p, A), p).toBe(true);
+    expect(await f.puede(COLAB, 'declaracion.aprobar', A)).toBe(false);
+  });
+  it('el administrador SIG puede consultar, exportar y aprobar', async () => {
+    const f = montar();
+    for (const p of ['declaracion.ver', 'declaracion.exportar', 'declaracion.aprobar'] as const) expect(await f.puede(ADMIN, p, A), p).toBe(true);
+  });
+  it('sin rol o con el rol de otra empresa no puede nada', async () => {
+    const f = montar();
+    for (const p of ['declaracion.ver', 'declaracion.exportar', 'declaracion.aprobar'] as const) {
+      expect(await f.puede(OTRO, p, A), p).toBe(false);
+      expect(await f.puede(ADMIN, p, B), p).toBe(false);
+    }
+  });
+});

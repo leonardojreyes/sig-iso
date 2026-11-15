@@ -61,3 +61,16 @@ describe('clasificarExcepcion', () => {
     expect(new AccesoCruzadoException('libreria:secreta').message).not.toContain('secreta');
   });
 });
+
+describe('clasificarExcepcion: archivos rechazados (evidencias)', () => {
+  it('un archivo demasiado grande es 413 y cualquier otro rechazo por contenido es 415', async () => {
+    const { ArchivoRechazadoError } = await import('@sig/certificacion');
+    expect(clasificarExcepcion(new ArchivoRechazadoError('tamano_excedido'))).toEqual({ tipo: 'http', estado: 413 });
+    expect(clasificarExcepcion(new ArchivoRechazadoError('tipo_no_permitido'))).toEqual({ tipo: 'http', estado: 415 });
+    expect(clasificarExcepcion(new ArchivoRechazadoError('firma_invalida'))).toEqual({ tipo: 'http', estado: 415 });
+  });
+
+  it('un 413 de Nest (por el Content-Length) también es 413, y no es un acceso denegado ni cruzado', () => {
+    expect(clasificarExcepcion(new HttpException('x', 413))).toEqual({ tipo: 'http', estado: 413 });
+  });
+});

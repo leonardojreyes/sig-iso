@@ -1,7 +1,13 @@
 export { ALCANCE_MAX, Alcance, type DatosAlcance } from './alcance.js';
 export { Control, DESCRIPCION_CONTROL_MAX, MAPEOS_POR_CONTROL_MAX, NOMBRE_CONTROL_MAX, type CambiosControl, type DatosControl, type EstadoControl } from './control.js';
+export { calcularCobertura, type Cobertura, type CoberturaEntrada, type ControlParaCobertura, type EntradaParaCobertura, type EstadoCobertura, type EvidenciaParaCobertura, type MapeoParaCobertura, type ResumenCobertura } from './cobertura.js';
+export { CONTROLES_POR_FILA_MAX, derivarDeclaracion, type Aplicabilidad, type CoberturaParaDeclaracion, type ControlParaDeclaracion, type Declaracion, type EntradaParaDeclaracion, type EvaluacionParaDeclaracion, type FilaDeclaracion, type Implementacion, type MapeoParaDeclaracion, type ResumenDeclaracion } from './declaracion.js';
+export { detectarTipoArchivo, type LectorBytes, type MotivoRechazoArchivo, type ResultadoDeteccion } from './deteccion-archivo.js';
 export { ErrorCertificacion } from './errores.js';
+export { ESTADOS_EVIDENCIA, EVIDENCIAS_ACTIVAS_POR_CONTROL_MAX, Evidencia, TIPOS_EVIDENCIA, TITULO_EVIDENCIA_MAX, type ArchivoEvidencia, type DatosEvidencia, type EstadoEvidencia, type TipoEvidencia } from './evidencia.js';
+export { fechaValida, hoyEnEcuador } from './fechas.js';
 export { ESTADOS_EVALUACION, esEstadoEvaluacion, type EstadoEvaluacion } from './estado-evaluacion.js';
 export { COMENTARIO_MAX, Evaluacion, JUSTIFICACION_MIN, type DatosEvaluacion } from './evaluacion.js';
 export { calcularMadurez, desglosar, type Desglose, type EntradaParaMadurez, type Madurez, type MadurezAgrupador } from './madurez.js';
+export { esTipoArchivo, extensionDeTipo, NOMBRE_ARCHIVO_MAX, nombreDeDescarga, normalizarNombreArchivo, TAMANO_MAX_BYTES, TIPOS_ARCHIVO, type TipoArchivo } from './tipo-archivo.js';
 export { MapeoControl, type DatosMapeoControl } from './mapeo-control.js';

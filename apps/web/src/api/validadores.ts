@@ -1,6 +1,6 @@
 // La respuesta de la API se trata como un dato externo: forma EXACTA (sin campos de más ni de menos), tipos, patrones y topes del
 // contrato. Lo que no cumple se rechaza entero (nunca se corrige ni se muestra a medias).
-import type { Alcance, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol } from './tipos';
+import type { Alcance, EmpresaDePersona, CargaLibreria, ErrorCargaLibreria, Cobertura, CoberturaEntrada, Evidencia, ResumenCobertura, TipoArchivo, ControlMarco, EntradaDeMapeo, MapeoDeControl, MarcoControles, CorrespondenciaNorma, Desglose, Diagnostico, EntradaLibreria, EstadoEvaluacion, EvaluacionVigente, FilaDiagnostico, Identidad, LibreriaResumen, Madurez, Rol, Declaracion, FilaDeclaracion, VersionDeclaracion, VersionDeclaracionConFilas } from './tipos';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLES: readonly string[] = [
@@ -24,11 +24,11 @@ export const validarLibrerias = (cuerpo: unknown): LibreriaResumen[] | null => {
   const salida: LibreriaResumen[] = [];
   for (const item of cuerpo) {
     const o = objeto(item);
-    if (!o || !claves(o, ['id', 'codigo', 'nombre', 'version', 'esEjemplo', 'fuente', 'adoptada'])) return null;
+    if (!o || !claves(o, ['id', 'codigo', 'nombre', 'version', 'esEjemplo', 'fuente', 'propia', 'adoptada'])) return null;
     if (!texto(o.id, 36, UUID) || !texto(o.codigo, 64, /^[a-z0-9-]+$/, 1) || !texto(o.nombre, 120, undefined, 1))
       return null;
     if (!texto(o.version, 20, /^[0-9]+\.[0-9]+\.[0-9]+$/) || !texto(o.fuente, 200)) return null;
-    if (typeof o.esEjemplo !== 'boolean' || typeof o.adoptada !== 'boolean') return null;
+    if (typeof o.esEjemplo !== 'boolean' || typeof o.propia !== 'boolean' || typeof o.adoptada !== 'boolean') return null;
     salida.push({
       id: o.id,
       codigo: o.codigo,
@@ -36,6 +36,7 @@ export const validarLibrerias = (cuerpo: unknown): LibreriaResumen[] | null => {
       version: o.version,
       esEjemplo: o.esEjemplo,
       fuente: o.fuente,
+      propia: o.propia,
       adoptada: o.adoptada,
     });
   }
@@ -263,4 +264,215 @@ export const validarMarcoControles = (cuerpo: unknown): MarcoControles | null =>
     controles.push({ id: c.id, codigo: c.codigo, nombre: c.nombre, descripcion: c.descripcion as string | null, responsableId: c.responsableId as string | null, estado: c.estado, version: c.version, mapeos, normas: c.normas as string[] });
   }
   return { controles, normas: o.normas as string[] };
+};
+
+const TIPOS_ARCHIVO: readonly string[] = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'text/plain',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+];
+const SHA256 = /^[0-9a-f]{64}$/;
+
+export const validarEvidencias = (cuerpo: unknown): Evidencia[] | null => {
+  if (!Array.isArray(cuerpo) || cuerpo.length > 100) return null;
+  const salida: Evidencia[] = [];
+  for (const item of cuerpo) {
+    const o = objeto(item);
+    if (!o || !claves(o, ['id', 'controlId', 'tipo', 'titulo', 'fechaHecho', 'vigenteHasta', 'estado', 'reemplazaId', 'vigente', 'vencida', 'creadaEn', 'archivo'])) return null;
+    if (!texto(o.id, 36, UUID) || !texto(o.controlId, 36, UUID)) return null;
+    if (o.tipo !== 'documento' && o.tipo !== 'registro') return null;
+    if (!texto(o.titulo, 120, undefined, 1) || !texto(o.fechaHecho, 10, FECHA)) return null;
+    if (o.vigenteHasta !== null && !texto(o.vigenteHasta, 10, FECHA)) return null;
+    if (o.estado !== 'activa' && o.estado !== 'reemplazada' && o.estado !== 'eliminada') return null;
+    if (o.reemplazaId !== null && !texto(o.reemplazaId, 36, UUID)) return null;
+    if (typeof o.vigente !== 'boolean' || typeof o.vencida !== 'boolean' || (o.vigente && o.vencida)) return null;
+    // Coherencia: solo una evidencia activa puede estar vigente o vencida.
+    if (o.estado !== 'activa' && (o.vigente || o.vencida)) return null;
+    if (!texto(o.creadaEn, 40, FECHA_HORA)) return null;
+    const a = objeto(o.archivo);
+    if (!a || !claves(a, ['nombre', 'tipo', 'bytes', 'sha256'])) return null;
+    if (!texto(a.nombre, 120, undefined, 1) || typeof a.tipo !== 'string' || !TIPOS_ARCHIVO.includes(a.tipo)) return null;
+    if (!entero(a.bytes, 1) || a.bytes > 26_214_400 || !texto(a.sha256, 64, SHA256)) return null;
+    salida.push({
+      id: o.id, controlId: o.controlId, tipo: o.tipo, titulo: o.titulo, fechaHecho: o.fechaHecho, vigenteHasta: o.vigenteHasta as string | null,
+      estado: o.estado, reemplazaId: o.reemplazaId as string | null, vigente: o.vigente, vencida: o.vencida, creadaEn: o.creadaEn,
+      archivo: { nombre: a.nombre, tipo: a.tipo as TipoArchivo, bytes: a.bytes, sha256: a.sha256 },
+    });
+  }
+  return salida;
+};
+
+const resumen = (o: Record<string, unknown>, extra: readonly string[] = []): boolean => {
+  if (!claves(o, [...extra, 'total', 'cubiertas', 'evidenciaVencida', 'sinEvidencia', 'sinControl', 'porcentaje'])) return false;
+  for (const k of ['total', 'cubiertas', 'evidenciaVencida', 'sinEvidencia', 'sinControl'] as const) if (!entero(o[k])) return false;
+  if (o.porcentaje !== null && (!entero(o.porcentaje) || (o.porcentaje as number) > 100)) return false;
+  // Las cuentas suman el total.
+  return (o.cubiertas as number) + (o.evidenciaVencida as number) + (o.sinEvidencia as number) + (o.sinControl as number) === o.total;
+};
+
+const ESTADOS_COBERTURA: readonly string[] = ['cubierta', 'evidencia_vencida', 'sin_evidencia', 'sin_control', 'no_aplica'];
+
+export const validarCobertura = (cuerpo: unknown): Cobertura | null => {
+  const o = objeto(cuerpo);
+  if (!o || !claves(o, ['hoy', 'entradas', 'porNorma', 'total', 'normas'])) return null;
+  if (!texto(o.hoy, 10, FECHA) || !Array.isArray(o.entradas) || o.entradas.length > 500 || !Array.isArray(o.porNorma) || o.porNorma.length > 20 || !Array.isArray(o.normas) || o.normas.length > 20) return null;
+  if (!o.normas.every((n) => texto(n, 60, undefined, 1))) return null;
+  const total = objeto(o.total);
+  if (!total || !resumen(total)) return null;
+  const porNorma: Cobertura['porNorma'][number][] = [];
+  for (const item of o.porNorma) {
+    const n = objeto(item);
+    if (!n || !resumen(n, ['norma']) || !texto(n.norma, 60, undefined, 1)) return null;
+    porNorma.push(n as unknown as Cobertura['porNorma'][number]);
+  }
+  const entradas: CoberturaEntrada[] = [];
+  for (const item of o.entradas) {
+    const e = objeto(item);
+    if (!e || !claves(e, ['libreriaCodigo', 'idEstable', 'tipo', 'capitulo', 'grupo', 'titulo', 'normas', 'estado', 'controles', 'evidencias'])) return null;
+    if (!texto(e.libreriaCodigo, 64, /^[a-z0-9-]+$/, 1) || !texto(e.idEstable, 41, /^[a-z0-9][a-z0-9.-]{0,40}$/)) return null;
+    if (e.tipo !== 'clausula' && e.tipo !== 'control') return null;
+    if (e.capitulo !== null && (!entero(e.capitulo, 4) || e.capitulo > 10)) return null;
+    if (e.grupo !== null && !texto(e.grupo, 60, undefined, 2)) return null;
+    if ((e.tipo === 'clausula') !== (e.capitulo !== null) || (e.tipo === 'control') !== (e.grupo !== null)) return null;
+    if (!texto(e.titulo, 80, undefined, 1) || !Array.isArray(e.normas) || e.normas.length < 1 || e.normas.length > 20 || !e.normas.every((n) => texto(n, 60, undefined, 1))) return null;
+    if (typeof e.estado !== 'string' || !ESTADOS_COBERTURA.includes(e.estado) || !entero(e.controles) || !entero(e.evidencias)) return null;
+    entradas.push(e as unknown as CoberturaEntrada);
+  }
+  return { hoy: o.hoy, entradas, porNorma, total: total as unknown as ResumenCobertura, normas: o.normas as string[] };
+};
+
+// ---- Declaración de Aplicabilidad (M5)
+const IMPLEMENTACIONES: readonly string[] = ['implementado', 'parcial', 'no_implementado'];
+const CONTROL_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/;
+
+const validarFilasDeclaracion = (filas: unknown): FilaDeclaracion[] | null => {
+  if (!Array.isArray(filas) || filas.length > 500) return null;
+  const salida: FilaDeclaracion[] = [];
+  const vistas = new Set<string>();
+  for (const item of filas) {
+    const f = objeto(item);
+    if (!f || !claves(f, ['libreriaCodigo', 'idEstable', 'orden', 'titulo', 'grupo', 'aplicabilidad', 'implementacion', 'justificacion', 'controles', 'cobertura'])) return null;
+    if (!texto(f.libreriaCodigo, 64, /^[a-z0-9][a-z0-9-]*$/, 1) || !texto(f.idEstable, 41, /^[a-z0-9][a-z0-9.-]{0,40}$/) || !entero(f.orden) || !texto(f.titulo, 200, undefined, 1)) return null;
+    if (f.grupo !== null && !texto(f.grupo, 80, undefined, 1)) return null;
+    if (f.aplicabilidad !== 'aplica' && f.aplicabilidad !== 'no_aplica' && f.aplicabilidad !== 'por_decidir') return null;
+    if (f.implementacion !== null && (typeof f.implementacion !== 'string' || !IMPLEMENTACIONES.includes(f.implementacion))) return null;
+    if (f.justificacion !== null && !texto(f.justificacion, 1000, undefined, 1)) return null;
+    if (!Array.isArray(f.controles) || f.controles.length > 50 || !f.controles.every((c) => texto(c, 20, CONTROL_RE))) return null;
+    if (typeof f.cobertura !== 'string' || !ESTADOS_COBERTURA.includes(f.cobertura)) return null;
+    // Coherencia: lo que aplica trae su implementación; lo que no aplica, su justificación; lo que está por decidir, nada de las dos.
+    if (f.aplicabilidad === 'aplica' && (f.implementacion === null || f.justificacion !== null)) return null;
+    if (f.aplicabilidad === 'no_aplica' && (f.implementacion !== null || f.justificacion === null || f.cobertura !== 'no_aplica')) return null;
+    if (f.aplicabilidad === 'por_decidir' && (f.implementacion !== null || f.justificacion !== null)) return null;
+    const k = `${f.libreriaCodigo}|${f.idEstable}`;
+    if (vistas.has(k)) return null;
+    vistas.add(k);
+    salida.push(f as unknown as FilaDeclaracion);
+  }
+  return salida;
+};
+
+const CAMPOS_VERSION = ['id', 'numero', 'total', 'aplican', 'noAplican', 'sinControl', 'aprobadaPor', 'aprobadaEn'] as const;
+const versionValida = (v: Record<string, unknown>): boolean =>
+  texto(v.id, 36, UUID) && entero(v.numero, 1) && entero(v.total) && entero(v.aplican) && entero(v.noAplican) && entero(v.sinControl) && texto(v.aprobadaPor, 36, UUID) && texto(v.aprobadaEn, 40, FECHA_HORA) &&
+  (v.aplican as number) + (v.noAplican as number) === v.total && (v.sinControl as number) <= (v.aplican as number);
+
+export const validarVersionDeclaracion = (cuerpo: unknown): VersionDeclaracion | null => {
+  const v = objeto(cuerpo);
+  return v && claves(v, CAMPOS_VERSION) && versionValida(v) ? (v as unknown as VersionDeclaracion) : null;
+};
+
+export const validarVersionesDeclaracion = (cuerpo: unknown): VersionDeclaracion[] | null => {
+  if (!Array.isArray(cuerpo) || cuerpo.length > 100) return null;
+  const salida: VersionDeclaracion[] = [];
+  for (const item of cuerpo) {
+    const v = validarVersionDeclaracion(item);
+    // De la más nueva a la más antigua, sin repetir números.
+    if (!v || (salida.length > 0 && v.numero >= (salida[salida.length - 1] as VersionDeclaracion).numero)) return null;
+    salida.push(v);
+  }
+  return salida;
+};
+
+export const validarVersionDeclaracionConFilas = (cuerpo: unknown): VersionDeclaracionConFilas | null => {
+  const v = objeto(cuerpo);
+  if (!v || !claves(v, [...CAMPOS_VERSION, 'alcance', 'filas']) || !versionValida(v)) return null;
+  if (v.alcance !== null && !texto(v.alcance, 4000, undefined, 1)) return null;
+  const filas = validarFilasDeclaracion(v.filas);
+  if (!filas || filas.length !== v.total || filas.some((f) => f.aplicabilidad === 'por_decidir')) return null;
+  if (filas.filter((f) => f.aplicabilidad === 'aplica').length !== v.aplican) return null;
+  return { ...(v as unknown as VersionDeclaracion), alcance: v.alcance as string | null, filas };
+};
+
+export const validarDeclaracion = (cuerpo: unknown): Declaracion | null => {
+  const o = objeto(cuerpo);
+  if (!o || !claves(o, ['norma', 'hoy', 'resumen', 'filas', 'alcance', 'ultimaVersion'])) return null;
+  if (!texto(o.norma, 60, undefined, 1) || !texto(o.hoy, 10, FECHA)) return null;
+  const filas = validarFilasDeclaracion(o.filas);
+  const r = objeto(o.resumen);
+  if (!filas || !r || !claves(r, ['total', 'aplican', 'noAplican', 'porDecidir', 'sinControl', 'aprobable'])) return null;
+  for (const k of ['total', 'aplican', 'noAplican', 'porDecidir', 'sinControl'] as const) if (!entero(r[k])) return null;
+  // El resumen tiene que decir lo mismo que las filas: si no, no se muestra nada a medias.
+  const cuenta = (a: string) => filas.filter((f) => f.aplicabilidad === a).length;
+  if (r.total !== filas.length || r.aplican !== cuenta('aplica') || r.noAplican !== cuenta('no_aplica') || r.porDecidir !== cuenta('por_decidir')) return null;
+  if ((r.sinControl as number) > (r.aplican as number) || r.aprobable !== (filas.length > 0 && r.porDecidir === 0)) return null;
+  let alcance: Declaracion['alcance'] = null;
+  if (o.alcance !== null) {
+    const a = objeto(o.alcance);
+    if (!a || !claves(a, ['texto', 'aprobado']) || !texto(a.texto, 4000, undefined, 1) || typeof a.aprobado !== 'boolean') return null;
+    alcance = { texto: a.texto, aprobado: a.aprobado };
+  }
+  let ultimaVersion: VersionDeclaracion | null = null;
+  if (o.ultimaVersion !== null) {
+    ultimaVersion = validarVersionDeclaracion(o.ultimaVersion);
+    if (!ultimaVersion) return null;
+  }
+  return { norma: o.norma, hoy: o.hoy, resumen: r as unknown as Declaracion['resumen'], filas, alcance, ultimaVersion };
+};
+
+const ESTADOS_CARGA = ['cargada', 'ya_cargada', 'rechazada'] as const;
+const MOTIVOS_CARGA = ['tipo_no_permitido', 'tamano_excedido', 'formato_invalido', 'contenido_no_permitido', 'codigo_no_permitido', 'hash_distinto'] as const;
+
+/** Respuesta de `POST /librerias/carga`. Estricta: coherencia entre estado y motivo, y límites del contrato. */
+export const validarCargaLibreria = (cuerpo: unknown): CargaLibreria | null => {
+  const o = objeto(cuerpo);
+  if (!o || !claves(o, ['estado', 'motivo', 'codigo', 'version', 'entradas', 'huella', 'errores'])) return null;
+  const estado = ESTADOS_CARGA.find((e) => e === o.estado);
+  if (!estado) return null;
+  const motivo = o.motivo === null ? null : (MOTIVOS_CARGA.find((m) => m === o.motivo) ?? undefined);
+  if (motivo === undefined) return null;
+  if ((estado === 'rechazada') !== (motivo !== null)) return null;
+  if (o.codigo !== null && !texto(o.codigo, 64, /^[a-z0-9-]+$/, 1)) return null;
+  if (o.version !== null && !texto(o.version, 20, /^[0-9]+\.[0-9]+\.[0-9]+$/)) return null;
+  if (o.entradas !== null && !(typeof o.entradas === 'number' && Number.isInteger(o.entradas) && o.entradas >= 0 && o.entradas <= 1000)) return null;
+  if (estado !== 'rechazada' && (o.codigo === null || o.version === null || o.entradas === null)) return null;
+  if (!texto(o.huella, 64, /^[0-9a-f]{64}$/)) return null;
+  if (!Array.isArray(o.errores) || o.errores.length > 200 || (estado !== 'rechazada' && o.errores.length > 0)) return null;
+  const errores: ErrorCargaLibreria[] = [];
+  for (const item of o.errores) {
+    const e = objeto(item);
+    if (!e || !claves(e, ['entrada', 'indice', 'ruta', 'codigo'])) return null;
+    if (e.entrada !== null && !texto(e.entrada, 41)) return null;
+    if (e.indice !== null && !(typeof e.indice === 'number' && Number.isInteger(e.indice) && e.indice >= 0 && e.indice <= 999)) return null;
+    if (!texto(e.ruta, 200) || !texto(e.codigo, 60, undefined, 1)) return null;
+    errores.push({ entrada: e.entrada as string | null, indice: e.indice as number | null, ruta: e.ruta, codigo: e.codigo });
+  }
+  return { estado, motivo, codigo: o.codigo as string | null, version: o.version as string | null, entradas: o.entradas as number | null, huella: o.huella, errores };
+};
+
+/** Respuesta de `GET /sesion/empresas`: a lo sumo 50, con un slug válido, y exactamente una activa como máximo. */
+export const validarEmpresasDePersona = (cuerpo: unknown): EmpresaDePersona[] | null => {
+  if (!Array.isArray(cuerpo) || cuerpo.length > 50) return null;
+  const salida: EmpresaDePersona[] = [];
+  for (const item of cuerpo) {
+    const o = objeto(item);
+    if (!o || !claves(o, ['slug', 'nombre', 'activa'])) return null;
+    if (!texto(o.slug, 32, /^[a-z0-9-]+$/, 1) || !texto(o.nombre, 120, undefined, 1) || typeof o.activa !== 'boolean') return null;
+    salida.push({ slug: o.slug, nombre: o.nombre, activa: o.activa });
+  }
+  if (salida.filter((e) => e.activa).length > 1 || new Set(salida.map((e) => e.slug)).size !== salida.length) return null;
+  return salida;
 };

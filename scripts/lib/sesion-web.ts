@@ -63,21 +63,36 @@ export const enviarWeb = async (
   entorno: EntornoWeb,
   ruta: string,
   sesion: Map<string, string>,
-  opciones: { metodo?: string; origen?: string | null; cuerpo?: Readonly<Record<string, string>> } = {},
+  opciones: { metodo?: string; origen?: string | null; cuerpo?: Readonly<Record<string, string>>; formulario?: FormData } = {},
 ) => {
-  const { metodo = 'POST', origen = entorno.web, cuerpo } = opciones;
+  const { metodo = 'POST', origen = entorno.web, cuerpo, formulario } = opciones;
   const r = await pedir(`${entorno.web}${ruta}`, new Map(sesion), {
     method: metodo,
     headers: {
       ...(origen === null ? {} : { origin: origen }),
-      ...(cuerpo ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
+      ...(cuerpo && !formulario ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
     },
-    ...(cuerpo && metodo !== 'GET' ? { body: new URLSearchParams(cuerpo).toString() } : {}),
+    // Un multipart lleva su propio Content-Type (con el delimitador): lo arma `fetch`.
+    ...(formulario && metodo !== 'GET' ? { body: formulario } : cuerpo && metodo !== 'GET' ? { body: new URLSearchParams(cuerpo).toString() } : {}),
   });
   const destino = r.headers.get('location');
   const u = destino ? new URL(destino, entorno.web) : null;
   return {
     estado: r.status,
+    destino: u ? `${u.pathname}${u.search}` : null,
+    parametros: u?.searchParams ?? new URLSearchParams(),
+  };
+};
+
+/** Descarga de un archivo por GET (sin seguir redirecciones): estado, cabeceras, los bytes y, si fue una redirección, a dónde. */
+export const descargarWeb = async (entorno: EntornoWeb, ruta: string, sesion: Map<string, string>) => {
+  const r = await pedir(`${entorno.web}${ruta}`, new Map(sesion));
+  const destino = r.headers.get('location');
+  const u = destino ? new URL(destino, entorno.web) : null;
+  return {
+    estado: r.status,
+    cabeceras: r.headers,
+    bytes: new Uint8Array(await r.arrayBuffer()),
     destino: u ? `${u.pathname}${u.search}` : null,
     parametros: u?.searchParams ?? new URLSearchParams(),
   };

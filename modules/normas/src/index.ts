@@ -18,3 +18,8 @@ export { CatalogoKysely } from './infrastructure/catalogo-kysely.adapter.js';
 export { AdopcionKysely } from './infrastructure/adopcion-kysely.adapter.js';
 export { crearUnidadDeTrabajoNormas } from './infrastructure/unidad-de-trabajo-normas.js';
 export { FLAGS, TODO_HABILITADO, type FlagsPort, type NombreFlag } from './application/flags.port.js';
+export { CargarLibreriaUseCase, ENTRADAS_MAX_LIBRERIA, PREFIJO_LIBRERIA_PROPIA, TAMANO_MAX_LIBRERIA, type CargarLibreriaEntrada, type ContextoCarga, type ErrorCarga, type MotivoRechazoCarga, type ResultadoCargaLibreria } from './application/cargar-libreria.use-case.js';
+export { LECTOR_LIBRERIA, LIBRERIA_PROPIA_REPOSITORY, type LectorLibreriaPort, type LecturaLibreria, type LibreriaPropiaRepositoryPort } from './application/libreria-propia.port.js';
+export { LibreriaPropiaKysely } from './infrastructure/libreria-propia-kysely.adapter.js';
+export { crearUnidadDeTrabajoCarga } from './infrastructure/unidad-de-trabajo-normas.js';
+export { LectorLibreriaYaml } from './infrastructure/lector-libreria-yaml.adapter.js';
