@@ -8,12 +8,19 @@ describe('DATOS_SIEMBRA (las dos empresas de prueba)', () => {
     expect(() => validarDatosSiembra(DATOS_SIEMBRA)).not.toThrow();
   });
 
-  it('hay dos empresas y cuatro personas: administrador SIG y colaborador en cada una', () => {
+  it('hay dos empresas, cuatro personas (administrador SIG y colaborador en cada una) y un consultor de origen en A', () => {
     expect(DATOS_SIEMBRA.empresas.map((e) => e.slug)).toEqual(['empresa-a', 'empresa-b']);
     expect(DATOS_SIEMBRA.usuarios.map((u) => [u.alias, u.rol])).toEqual([
-      ['admin-a', 'administrador_sig'], ['colab-a', 'colaborador'], ['admin-b', 'administrador_sig'], ['colab-b', 'colaborador'],
+      ['admin-a', 'administrador_sig'], ['colab-a', 'colaborador'], ['admin-b', 'administrador_sig'], ['colab-b', 'colaborador'], ['consultor', 'administrador_sig'],
     ]);
-    for (const e of DATOS_SIEMBRA.empresas) expect(DATOS_SIEMBRA.usuarios.filter((u) => u.empresaId === e.id)).toHaveLength(2);
+    expect(DATOS_SIEMBRA.usuarios.filter((u) => u.empresaId === DATOS_SIEMBRA.empresas[1]!.id)).toHaveLength(2);
+  });
+
+  it('el consultor es UNA cuenta que pertenece a las dos empresas, con un rol distinto en cada una (el rol no se hereda)', () => {
+    const c = DATOS_SIEMBRA.usuarios.find((u) => u.alias === 'consultor')!;
+    expect(c.empresaId).toBe(DATOS_SIEMBRA.empresas[0]!.id);
+    expect(DATOS_SIEMBRA.membresias).toEqual([{ alias: 'consultor', empresaId: DATOS_SIEMBRA.empresas[1]!.id, rol: 'colaborador' }]);
+    expect(c.rol).not.toBe(DATOS_SIEMBRA.membresias[0]!.rol);
   });
 
   it('todos los correos son de dominio de pruebas (sin datos personales reales)', () => {
@@ -37,6 +44,11 @@ describe('validarDatosSiembra rechaza', () => {
   it('un slug repetido', () => rechaza((d) => { d.empresas[1]!.slug = d.empresas[0]!.slug; }, /repetid/i));
   it('un alias repetido', () => rechaza((d) => { d.usuarios[1]!.alias = d.usuarios[0]!.alias; }, /repetid/i));
   it('una persona de una empresa que no existe', () => rechaza((d) => { d.usuarios[0]!.empresaId = 'cccccccc-0000-4000-8000-000000000001'; }, /empresa/i));
+  it('una pertenencia adicional a una cuenta que no existe', () => rechaza((d) => { d.membresias[0]!.alias = 'nadie'; }, /cuenta/i));
+  it('una pertenencia adicional a una empresa que no existe', () => rechaza((d) => { d.membresias[0]!.empresaId = 'cccccccc-0000-4000-8000-000000000001'; }, /empresa/i));
+  it('una pertenencia adicional que repite la empresa de origen', () => rechaza((d) => { d.membresias[0]!.empresaId = d.usuarios.find((u) => u.alias === 'consultor')!.empresaId; }, /origen/i));
+  it('una pertenencia adicional repetida', () => rechaza((d) => { d.membresias.push({ ...d.membresias[0]! }); }, /repetid/i));
+  it('un rol desconocido en una pertenencia adicional', () => rechaza((d) => { (d.membresias[0] as { rol: string }).rol = 'dios'; }, /rol/i));
   it('un UUID mal formado', () => rechaza((d) => { d.empresas[0]!.id = 'no-es-uuid'; }, /uuid/i));
   it('el UUID nulo', () => rechaza((d) => { d.empresas[0]!.id = '00000000-0000-0000-0000-000000000000'; }, /uuid/i));
   it('un rol desconocido', () => rechaza((d) => { (d.usuarios[0] as { rol: string }).rol = 'superusuario'; }, /rol/i));

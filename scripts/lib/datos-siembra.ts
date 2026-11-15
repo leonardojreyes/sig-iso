@@ -22,9 +22,19 @@ export interface UsuarioSiembra {
   readonly rol: Rol;
 }
 
+/** Una cuenta que además pertenece a OTRA empresa (consultor, ADR 035): misma persona, otra fila `usuario` con su propio rol. */
+export interface MembresiaSiembra {
+  /** Alias de la cuenta que ya está en `usuarios` (de ahí salen el id, el nombre y el correo). */
+  readonly alias: string;
+  readonly empresaId: string;
+  readonly rol: Rol;
+}
+
 export interface DatosSiembra {
   empresas: EmpresaSiembra[];
   usuarios: UsuarioSiembra[];
+  /** Pertenencias adicionales a otras empresas (la empresa de origen está en `usuarios`). */
+  membresias: MembresiaSiembra[];
 }
 
 const EMPRESA_A = 'a5eed000-0000-4000-8000-00000000000a';
@@ -40,7 +50,11 @@ export const DATOS_SIEMBRA: DatosSiembra = {
     { alias: 'colab-a', id: '5eed0002-0000-4000-8000-0000000000a2', empresaId: EMPRESA_A, nombre: 'Colaborador A', correo: 'colab-a@example.test', rol: 'colaborador' },
     { alias: 'admin-b', id: '5eed0003-0000-4000-8000-0000000000b1', empresaId: EMPRESA_B, nombre: 'Administrador B', correo: 'admin-b@example.test', rol: 'administrador_sig' },
     { alias: 'colab-b', id: '5eed0004-0000-4000-8000-0000000000b2', empresaId: EMPRESA_B, nombre: 'Colaboradora B', correo: 'colab-b@example.test', rol: 'colaborador' },
+    // Consultor (ADR 035): UNA cuenta que atiende a las dos empresas. Su empresa de origen (la del token) es A, donde administra.
+    { alias: 'consultor', id: '5eed0005-0000-4000-8000-0000000000c1', empresaId: EMPRESA_A, nombre: 'Consultor Externo', correo: 'consultor@example.test', rol: 'administrador_sig' },
   ],
+  // En B el consultor solo colabora: el rol de una persona no se hereda entre empresas.
+  membresias: [{ alias: 'consultor', empresaId: EMPRESA_B, rol: 'colaborador' }],
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -73,6 +87,15 @@ export const validarDatosSiembra = (d: DatosSiembra): void => {
   const ids = new Set(d.empresas.map((e) => e.id));
   if (d.usuarios.some((u) => !ids.has(u.empresaId))) throw new Error('Hay personas de una empresa que no existe en los datos de siembra');
   if (repetidos(d.usuarios.map((u) => `${u.empresaId}|${u.correo}`))) throw new Error('Correo repetido dentro de una misma empresa en los datos de siembra');
+  d.membresias.forEach((m) => {
+    const cuenta = d.usuarios.find((u) => u.alias === m.alias);
+    if (!cuenta) throw new Error('Una pertenencia adicional apunta a una cuenta que no existe en los datos de siembra');
+    if (!ids.has(m.empresaId)) throw new Error('Una pertenencia adicional apunta a una empresa que no existe en los datos de siembra');
+    if (m.empresaId === cuenta.empresaId) throw new Error('Una pertenencia adicional repite la empresa de origen de la cuenta');
+    if (!(ROLES as readonly string[]).includes(m.rol)) throw new Error('Rol desconocido en los datos de siembra');
+    if (d.usuarios.some((u) => u.empresaId === m.empresaId && u.correo === cuenta.correo)) throw new Error('Correo repetido dentro de una misma empresa en los datos de siembra');
+  });
+  if (repetidos(d.membresias.map((m) => `${m.alias}|${m.empresaId}`))) throw new Error('Pertenencia repetida en los datos de siembra');
 };
 
 const LOCALES = new Set(['127.0.0.1', 'localhost', '[::1]']);

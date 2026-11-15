@@ -37,6 +37,7 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   libreria_entrada: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
   libreria_entrada_norma: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
   empresa_libreria: { app: ["SELECT", "INSERT"] },
+  empresa_activa: { plataforma: ["SELECT", "INSERT", "DELETE"] }, // UPDATE solo por columnas; la aplicación no la toca (migración 0012)
   alcance: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: nada se borra (migración 0007)
   evaluacion: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE (migración 0007)
   control: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: un control se retira (migración 0008)
@@ -274,6 +275,28 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
       expect(catalogo.rows[0]?.ok).toBe(false);
     });
 
+    it("la plataforma lee de usuario y empresa solo lo necesario para saber a qué empresas pertenece una persona (0012)", async () => {
+      const col = async (tabla: string, columna: string, p: string) =>
+        (
+          await sql<{
+            ok: boolean;
+          }>`select has_column_privilege('sigiso_plataforma', ${"public." + tabla}, ${columna}, ${p}) as ok`.execute(
+            owner(),
+          )
+        ).rows[0]?.ok;
+      for (const c of ["id", "empresa_id", "rol"]) expect(await col("usuario", c, "SELECT")).toBe(true);
+      for (const c of ["nombre", "correo", "creada_en"]) expect(await col("usuario", c, "SELECT")).toBe(false);
+      for (const c of ["id", "slug", "nombre"]) expect(await col("empresa", c, "SELECT")).toBe(true);
+      for (const c of ["color_primario", "logo_url", "creada_en"]) expect(await col("empresa", c, "SELECT")).toBe(false);
+      for (const t of ["usuario", "empresa"])
+        for (const c of ["id", "empresa_id", "rol", "slug", "nombre"].filter((x) => x !== "empresa_id" || t === "usuario"))
+          for (const p of ["INSERT", "UPDATE", "REFERENCES"])
+            if (!(t === "usuario" && c === "slug") && !(t === "empresa" && (c === "empresa_id" || c === "rol"))) expect({ t, c, p, ok: await col(t, c, p) }).toEqual({ t, c, p, ok: false });
+      // empresa_activa: solo se actualizan tres columnas (no la persona ni el identificador de sesión).
+      for (const c of ["empresa_id", "cambiada_en", "expira_en"]) expect(await col("empresa_activa", c, "UPDATE")).toBe(true);
+      for (const c of ["sid", "usuario_id"]) expect(await col("empresa_activa", c, "UPDATE")).toBe(false);
+    });
+
     it("la aplicación solo actualiza nombre y correo de usuario; ninguna otra columna ni tabla", async () => {
       const col = async (rol: string, tabla: string, columna: string) =>
         (
@@ -312,7 +335,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
@@ -322,6 +345,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         "declaracion_fila",
         "declaracion_version",
         "empresa",
+        "empresa_activa",
         "empresa_libreria",
         "evaluacion",
         "evidencia",
