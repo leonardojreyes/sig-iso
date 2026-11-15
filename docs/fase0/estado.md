@@ -20,7 +20,7 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 | **M4** | Evidencias con archivo (huella SHA-256, vigencia, reemplazo, descarga protegida) y cobertura derivada de los mapeos. ADR 032 (almacén de archivos) | **Hecho** |
 | **M5** | Declaración de Aplicabilidad de 27001 derivada del diagnóstico, los controles y las evidencias; aprobación con versión congelada e inmutable; exportación a Word. ADR 033 (`docx` MIT detrás de `GeneradorDocumentoPort`) | **Hecho** |
 | **M6a** | **Cargar normas desde la interfaz** (requisito añadido el 2026-11-13, dentro del MVP): subir las librerías desde la web, sin comandos (ADR 034). Archivos o carpeta del navegador, librería propia de la empresa con RLS, plantilla descargable, errores en palabras, adopción | **Hecho (2026-11-14)** |
-| **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a): consultor con varias empresas, configuración por empresa (normas, módulos, marca) y catálogo global + librerías propias. Requiere un ADR (pertenencia a varias empresas y cambio de empresa). | Pendiente |
+| **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a), ADR 035. **M6b-1** (una persona en varias empresas y cambio de empresa) **hecho 2026-11-15**; **M6b-2** (marca editable: color y logo con verificación de contraste) pendiente. Módulos activos y nombre editable quedan fuera del MVP. | M6b-1 hecho; M6b-2 pendiente |
 | M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
 
 **M2 y M3 en detalle** (para no tener que releer el código):
@@ -64,6 +64,16 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 - **Web:** pantalla `/e/<empresa>/normas` (archivos o carpeta, hasta 20 por tanda, un archivo por petición; plantilla descargable; errores explicados por archivo en palabras claras; lista con adopción) y `pnpm web:verify-normas` (57 comprobaciones con todo real; la plantilla descargable pasa la validación tal cual). El resultado de la subida vive en la memoria del servidor y se muestra una vez.
 - **Corregido de paso:** el fallo intermitente de `@sig/certificacion` era de las pruebas (ids de control con reloj y contador que chocaban entre archivos en paralelo); ahora usan UUID aleatorio (9 de 9 corridas completas en verde).
 - **Límites conocidos:** un 413 (más de 1 MB declarado) no queda en la bitácora porque se corta antes del caso de uso; el resultado de la subida no se comparte entre varios servidores (igual que las sesiones); la librería subida no se puede borrar ni editar (se sube una versión nueva); adoptar sigue llevando a la pantalla de requisitos.
+
+### M6b-1 — Una persona en varias empresas y cambio de empresa (hecho 2026-11-15)
+
+- **ADR 035** (Aprobado): una cuenta puede tener **una fila `usuario` por empresa**, cada una con su rol (el rol no se hereda). El token sigue mandando como empresa inicial; **una sola operación nombra una empresa**, `POST /sesion/empresa`, que comprueba la pertenencia en la base (404 si no pertenece, con `acceso.cruzado`), registra `empresa.cambiada` en la empresa destino **antes** de guardar y guarda la **empresa activa de ESA sesión** (`sid`, vence a las 8 h).
+- **Base (migración `0012`):** la clave de `usuario` pasa a `(empresa_id, id)`; tabla `empresa_activa` (sin RLS por empresa, solo el rol de plataforma, clave foránea compuesta que obliga a pertenecer); la plataforma lee solo `id`, `empresa_id` y `rol` de `usuario` y `id`, `slug` y `nombre` de `empresa`. Matriz de privilegios y pruebas actualizadas.
+- **Guardia de la API:** tras verificar el token resuelve la empresa de la petición (activa de la sesión si la persona **sigue** perteneciendo; si no, la del token). Si no puede decidir, responde 500: no cae a otra empresa. Al cerrar la sesión se olvida la elección.
+- **API:** `GET /sesion/empresas` y `POST /sesion/empresa`. **Web:** selector en la cabecera (solo para quien tiene varias empresas), `POST /e/<empresa>/empresa/cambiar` y aviso cerrado en el panel.
+- **Siembra:** el consultor (`consultor@example.test`) es **administrador en A y colaborador en B**. Para darlo de alta en tu Keycloak sin borrar nada: `pnpm keycloak:realm` y `pnpm keycloak:cuentas` (importación parcial, que respeta el `id`; crear la cuenta por la API normal lo ignora) y `pnpm db:seed`. La contraseña está en `.local/secretos-keycloak.json`.
+- **Verificación:** `pnpm web:verify-multiempresa` (39 comprobaciones con todo real): selector solo para quien tiene varias; cambiar a B y recibir el rol de colaborador; A deja de responder en esa sesión; otra sesión de la misma cuenta no se entera; una empresa ajena o inexistente da el mismo «no encontrada»; Origin, método y sesión; B ve exactamente lo que ve su administrador.
+- **Límites conocidos:** el cambio de empresa agrega una consulta por petición en la guardia (sin caché); abrir otra pestaña con la empresa anterior da 404 (la sesión ya está en la otra); no hay pantalla para dar de alta personas ni roles (se hace con la siembra); `web:verify-listado` espera 21 entradas y A tiene 114 desde que adoptó el Anexo A (el script está desactualizado desde entonces).
 
 **Límites conocidos del MVP** (decisiones ya tomadas; no son defectos pendientes de corregir):
 
@@ -112,7 +122,7 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 
 ## Próximos pasos técnicos
 
-1. **M6b — multiempresa completo** (ADR de pertenencia a varias empresas y cambio de empresa; ver `plan.md`) y luego **M6 — cierre del MVP** (abajo); y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
+1. **M6b-2 — marca editable** (color y logo de la empresa, con contraste WCAG; ver `plan.md`) y luego **M6 — cierre del MVP** (abajo); y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
 2. **M5 — Declaración de Aplicabilidad de 27001** (hecha; detalle arriba). ADR 033 (`docx` detrás de `GeneradorDocumentoPort`, licencias comprobadas con `scripts/check-licenses.mjs`), derivada del diagnóstico y los controles, marcada preliminar, aprobación con versión congelada e inmutable y exportación a Word.
 3. **M6 — cierre del MVP:** un solo `/review` completo (arquitecto, multiempresa, seguridad y cumplimiento), STRIDE ampliado, este archivo y `docs/fase0/guia-de-ejecucion.md`.
 4. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
@@ -160,7 +170,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5 y M6a hechos; M6b y M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
+0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5, M6a y M6b-1 hechos; M6b-2 y M6 pendientes)** → resto del 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 
