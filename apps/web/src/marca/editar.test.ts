@@ -107,6 +107,8 @@ describe('guardarMarca (web)', () => {
       ['un logo con javascript:', { color: '#0e5c42', logo: 'javascript:alert(1)' }],
       ['un logo que apunta a otro host con «//»', { color: '#0e5c42', logo: '//evil.example.test/x.png' }],
       ['un logo con credenciales', { color: '#0e5c42', logo: 'https://u:p@cdn.example.test/x.png' }],
+      ['una ruta del sitio que no es una imagen de /logos/', { color: '#0e5c42', logo: '/e/empresa-a/declaracion/documento' }],
+      ['una ruta de inicio de sesión', { color: '#0e5c42', logo: '/auth/login?retorno=/' }],
       ['un logo de más de 2048 caracteres', { color: '#0e5c42', logo: 'https://cdn.example.test/' + 'a'.repeat(2100) }],
     ])('%s: vuelve con «no_valido» SIN llamar a la API', async (_n, campos) => {
       const { llamadas, enviar } = await montar();

@@ -90,6 +90,10 @@ const reenviar = async (peticion: Request, entrada: Entrada, op: Operacion): Pro
   // Una subida que ya declara más bytes de los permitidos se rechaza sin leer el cuerpo (no se carga un archivo enorme en memoria).
   const declarado = Number(peticion.headers.get('content-length'));
   if (op.limiteCuerpo !== undefined && Number.isFinite(declarado) && declarado > op.limiteCuerpo) return redirigir(`${config.origen}/e/${slug}/${destino(null)}?aviso=archivo_grande`, []);
+  // Sin sesión no se lee ni un byte del cuerpo (una subida puede pesar hasta 25 MB): primero se abre la cookie, que es local.
+  const servicio = crearServicioSesion(entrada.deps);
+  const sesion = await servicio.leer(peticion);
+  if (!sesion) return aIngresar([]);
   let formulario: FormData;
   if (op.sinFormulario) formulario = new FormData();
   else {
@@ -107,9 +111,6 @@ const reenviar = async (peticion: Request, entrada: Entrada, op: Operacion): Pro
 
   const cuerpo = op.cuerpo(formulario, id);
   const rutaApi = typeof op.rutaApi === 'string' ? op.rutaApi : op.rutaApi(formulario, id);
-  const servicio = crearServicioSesion(entrada.deps);
-  const sesion = await servicio.leer(peticion);
-  if (!sesion) return aIngresar([]);
   if (cuerpo === 'archivo_grande') return volver('archivo_grande', []);
   if (!cuerpo || !rutaApi) return volver('no_valido', []);
   const acceso = await servicio.obtenerAcceso(sesion);

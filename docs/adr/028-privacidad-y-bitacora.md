@@ -116,6 +116,9 @@ Preguntas que el asesor necesita poder responder, y qué se le entregará:
 5. ¿Qué debe informarse a las personas y cómo?
 6. ¿Es obligatoria la figura del delegado, el registro de actividades y una evaluación de impacto?
 7. ¿Qué plazos aplican a las solicitudes de las personas y a las brechas?
+8. **Una persona en varias empresas (ADR 035, añadido en la revisión del hito H3):** el identificador opaco es el mismo en todas las empresas de un consultor, lo que permite correlacionarlo entre empresas (solo la plataforma). ¿Es aceptable, o debe haber un identificador de bitácora por empresa?
+9. **Evidencias con datos personales (ADR 032):** los archivos pueden contener datos personales y hoy solo se clasifican como confidenciales; eliminar una evidencia cambia su estado, no borra el archivo. ¿Qué retención, marca de «contiene datos personales» y borrado físico se exigen antes del primer cliente? Hasta entonces, solo datos de prueba.
+10. **Librerías propias subidas por las empresas (ADR 034):** la empresa responde por el contenido (derechos de autor sobre texto de normas); ¿qué declaración de responsabilidad y qué cláusula contractual corresponden?
 
 ## Alternativas consideradas
 

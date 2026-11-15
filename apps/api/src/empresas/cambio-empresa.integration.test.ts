@@ -184,12 +184,25 @@ describe('cambio de empresa de una persona en varias empresas (ADR 035)', () => 
       expect(((await json(r)) as { empresa: { slug: string } }).empresa.slug).toBe('empresa-a');
     });
 
-    it('si a la persona se le quita su rol en la empresa elegida, vuelve a su empresa de origen enseguida', async () => {
+    it('si a la persona se le quita su rol en la empresa elegida, la petición FALLA con 401 (no la atiende en silencio otra empresa) y la elección se olvida', async () => {
       const t = await token(A, CONSULTOR, 'sid-quitada');
       await cambiar(t, { slug: 'empresa-b' });
       expect(((await json(await arnes.pedir('/me', t))) as { empresa: { slug: string } }).empresa.slug).toBe('empresa-b');
       activa.puerto.pertenencias.set(CONSULTOR, [{ empresaId: A, slug: 'empresa-a', nombre: 'Empresa A (prueba)' }]);
+      // La persona cree estar en B (su pantalla lo dice): se le avisa en vez de mostrarle los datos de A.
+      const r = await arnes.pedir('/me', t);
+      expect(r.status).toBe(401);
+      expect(await json(r)).toMatchObject({ status: 401, codigo: 'no_autenticado' });
+      expect(activa.puerto.activas.has('sid-quitada')).toBe(false);
+      // Al volver a entrar, empieza en la empresa de su token.
       expect(((await json(await arnes.pedir('/me', t))) as { empresa: { slug: string } }).empresa.slug).toBe('empresa-a');
+    });
+
+    it('una elección vencida también falla con 401 y se olvida', async () => {
+      const t = await token(A, CONSULTOR, 'sid-vencida');
+      activa.puerto.activas.set('sid-vencida', { usuario: CONSULTOR, empresa: B, expira: new Date(Date.now() - 1000) });
+      expect((await arnes.pedir('/me', t)).status).toBe(401);
+      expect(activa.puerto.activas.has('sid-vencida')).toBe(false);
     });
 
     it('si no se puede consultar la empresa activa, TODA petición autenticada responde 500 (no cae a otra empresa en silencio)', async () => {
@@ -209,6 +222,37 @@ describe('cambio de empresa de una persona en varias empresas (ADR 035)', () => 
       expect(activa.puerto.activas.has('sid-cierre')).toBe(false);
       const otraVez = (await json(await arnes.pedir('/me', await token(A, CONSULTOR, 'sid-cierre')))) as { empresa: { slug: string } };
       expect(otraVez.empresa.slug).toBe('empresa-a');
+    });
+  });
+
+  describe('orden del límite de frecuencia y la consulta de la empresa activa', () => {
+    it('agotado el límite de la persona, la base NO se consulta: el tope protege también a la base', async () => {
+      const hechos2 = hechosEnMemoria();
+      const activa2 = empresaActivaDePrueba(hechos2.hechos);
+      let consultas = 0;
+      const original = activa2.puerto.activaDe.bind(activa2.puerto);
+      activa2.puerto.activaDe = async (...a) => {
+        consultas += 1;
+        return original(...a);
+      };
+      const autorizacion = new AutorizacionFake();
+      autorizacion.asignar(A, CONSULTOR, 'administrador_sig');
+      const repo: EmpresaRepositoryPort = { obtenerPropia: async (e) => empresas[e] ?? null, obtenerPersona: async (e, u) => personas[e]?.[u] ?? null };
+      const arnes2 = await crearArnes({
+        hechos: hechos2.hechos,
+        empresaActiva: activa2.resolver,
+        limites: { persona: 2, empresa: 1000 },
+        modulos: [EmpresaSesionModule.register({ identidades: new ObtenerIdentidadUseCase(repo, autorizacion), marcas: new ObtenerMarcaUseCase(repo), hechos: hechos2.hechos, actualizarMarca: marcaDePrueba(empresas, autorizacion).caso, listarEmpresas: activa2.listarEmpresas, cambiarEmpresa: activa2.cambiarEmpresa, olvidarEmpresa: activa2.olvidarEmpresa })],
+      });
+      try {
+        const t = await arnes2.firmar(A, CONSULTOR, { sid: 'sid-tope' });
+        const estados: number[] = [];
+        for (let i = 0; i < 6; i++) estados.push((await arnes2.pedir('/me', t)).status);
+        expect(estados).toEqual([200, 200, 429, 429, 429, 429]);
+        expect(consultas).toBe(2); // solo las dos admitidas consultaron la base
+      } finally {
+        await arnes2.cerrar();
+      }
     });
   });
 });

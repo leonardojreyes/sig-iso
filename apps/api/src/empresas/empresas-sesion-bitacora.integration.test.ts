@@ -38,7 +38,7 @@ describe.skipIf(!hayBase)('empresa y sesión (API + PostgreSQL real)', () => {
         for (const [id, nombre] of personas) await sql`insert into usuario (id, empresa_id, nombre, correo) values (${id}, ${e}, ${nombre}, ${`${id}@example.test`})`.execute(trx);
       });
     await sembrar(A, 'a', '#0b5fff', 'https://cdn.a.example.test/logo.png', [[ADMIN_A, 'Administradora A'], [SIN_ROL_A, 'Sin rol A']]);
-    await sembrar(B, 'b', '#ffe066', '//evil.example.test/logo.png', [[ADMIN_B, 'Administrador B']]);
+    await sembrar(B, 'b', '#ffe066', 'https://usuario:clave@evil.example.test/logo.png', [[ADMIN_B, 'Administrador B']]);
 
     const autorizacion = new AutorizacionFake();
     autorizacion.asignar(A, ADMIN_A, 'administrador_sig');
@@ -54,15 +54,17 @@ describe.skipIf(!hayBase)('empresa y sesión (API + PostgreSQL real)', () => {
 
   afterAll(async () => {
     await arnes?.cerrar();
-    if (cerrados) return;
-    const owner = pools.db('owner');
+    // El último caso cierra el pool a propósito (simula la base caída): la limpieza usa SIEMPRE una conexión nueva. Antes salía sin
+    // limpiar y cada corrida dejaba 2 empresas y sus personas en `sigiso_test`.
+    const limpieza = cerrados ? new GestorPools(leerUrls(process.env, ROLES_BD, { prueba: true }), { max: 2 }) : pools;
+    const owner = limpieza.db('owner');
     for (const [e, personas] of [[A, [ADMIN_A, SIN_ROL_A]], [B, [ADMIN_B]]] as const) {
       await conTenant(owner, e, async (trx) => {
         for (const p of personas) await sql`delete from usuario where id = ${p}`.execute(trx);
         await sql`delete from empresa where id = ${e}`.execute(trx);
       });
     }
-    await pools.cerrar();
+    await limpieza.cerrar();
   });
 
   it('GET /me lee la persona y la empresa de la base, conforme al contrato', async () => {

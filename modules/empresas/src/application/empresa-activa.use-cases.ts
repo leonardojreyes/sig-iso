@@ -13,6 +13,18 @@ export class EmpresaAjenaError extends Error {
   }
 }
 
+/**
+ * La persona había elegido una empresa para esta sesión y ya no puede usarla (venció o dejó de pertenecer a ella). No se vuelve en
+ * silencio a la empresa del token: la persona cree estar en la otra y escribiría donde no quiere. La API responde 401 y la
+ * elección se olvida, así que al volver a entrar se empieza en la empresa del token.
+ */
+export class EleccionDeEmpresaInvalidaError extends Error {
+  constructor() {
+    super('La empresa elegida para esta sesión ya no es válida');
+    this.name = 'EleccionDeEmpresaInvalidaError';
+  }
+}
+
 /** El dato recibido no tiene la forma esperada. No repite el valor. */
 export class EmpresaPedidaInvalidaError extends Error {
   constructor() {
@@ -36,7 +48,10 @@ const exigirUuid = (v: unknown): string => {
   return v.toLowerCase();
 };
 
-/** La empresa con la que se atiende la petición: la activa de la sesión si vale, y si no, la del token verificado. */
+/**
+ * La empresa con la que se atiende la petición: la activa de la sesión si vale; la del token verificado si no hay elección; y si hay
+ * una elección que ya no vale, `EleccionDeEmpresaInvalidaError` (después de olvidarla).
+ */
 export class ResolverEmpresaActivaUseCase {
   constructor(private readonly puerto: EmpresaActivaPort) {}
 
@@ -44,8 +59,13 @@ export class ResolverEmpresaActivaUseCase {
     const empresaDelToken = crearEmpresaId(e.empresaDelToken);
     // Sin sesión no hay dónde guardar una elección: manda el token.
     if (e.sesionId === null) return empresaDelToken;
-    const activa = await this.puerto.activaDe(e.sesionId, exigirUuid(e.usuarioId), e.ahora);
-    return activa === null ? empresaDelToken : crearEmpresaId(activa);
+    const eleccion = await this.puerto.activaDe(e.sesionId, exigirUuid(e.usuarioId), e.ahora);
+    if (eleccion.tipo === 'sin_eleccion') return empresaDelToken;
+    if (eleccion.tipo === 'invalida') {
+      await this.puerto.limpiar(e.sesionId);
+      throw new EleccionDeEmpresaInvalidaError();
+    }
+    return crearEmpresaId(eleccion.empresaId);
   }
 }
 

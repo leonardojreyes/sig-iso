@@ -5,6 +5,7 @@ import {
   ListarMisEmpresasUseCase,
   OlvidarEmpresaActivaUseCase,
   ResolverEmpresaActivaUseCase,
+  type EleccionDeSesion,
   type EmpresaActivaPort,
   type EmpresaDePersona,
   type RegistradorHechosPort,
@@ -17,11 +18,12 @@ export class EmpresaActivaEnMemoria implements EmpresaActivaPort {
   activas = new Map<string, { usuario: string; empresa: EmpresaId; expira: Date }>();
   falla = false;
 
-  async activaDe(sid: string, usuario: string, ahora: Date): Promise<EmpresaId | null> {
+  async activaDe(sid: string, usuario: string, ahora: Date): Promise<EleccionDeSesion> {
     if (this.falla) throw new Error('base de empresa activa caída');
     const a = this.activas.get(sid);
-    if (!a || a.usuario !== usuario || a.expira <= ahora) return null;
-    return (this.pertenencias.get(usuario) ?? []).some((e) => e.empresaId === a.empresa) ? a.empresa : null;
+    if (!a || a.usuario !== usuario) return { tipo: 'sin_eleccion' };
+    const sigue = (this.pertenencias.get(usuario) ?? []).some((e) => e.empresaId === a.empresa);
+    return a.expira > ahora && sigue ? { tipo: 'activa', empresaId: a.empresa } : { tipo: 'invalida' };
   }
   async empresasDe(usuario: string): Promise<readonly EmpresaDePersona[]> {
     return [...(this.pertenencias.get(usuario) ?? [])].sort((x, y) => x.nombre.localeCompare(y.nombre));

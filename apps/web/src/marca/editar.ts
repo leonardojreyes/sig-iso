@@ -7,7 +7,7 @@ import { crearServicioSesion, origenValido } from '../auth/sesion';
 
 const SIN_CACHE = { 'Cache-Control': 'no-store' };
 const COLOR = /^#[0-9A-Fa-f]{6}$/;
-const LOGO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/[^/\\\s][^\s@]*)$/;
+const LOGO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/logos\/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp))$/;
 
 export type AvisoMarca = 'guardada' | 'sin_permiso' | 'no_valido' | 'no_disponible';
 const AVISOS: readonly string[] = ['guardada', 'sin_permiso', 'no_valido', 'no_disponible'];

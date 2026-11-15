@@ -57,7 +57,7 @@ const montar = async (api: { respuestas?: (n: number) => Response | 'lanza' } = 
     });
     return subirLibrerias(peticion, { slugDeLaDireccion: slug, slugVerificado: verificado }, deps);
   };
-  return { llamadas, enviar, cookie };
+  return { llamadas, enviar, cookie, deps };
 };
 
 const yaml = (nombre: string, bytes = 100) => new File([new Uint8Array(bytes).fill(97)], nombre, { type: 'application/yaml' });
@@ -196,10 +196,24 @@ describe('subirLibrerias', () => {
       expect(destino(r).pathname).toBe('/auth/login');
       expect(llamadas).toEqual([]);
     });
-    it('el cuerpo mal formado vuelve con «no_valido»', async () => {
-      const peticion = new Request(`${config.origen}/e/empresa-a/normas/subir`, { method: 'POST', headers: { origin: config.origen, 'content-type': 'multipart/form-data; boundary=x' }, body: 'basura' });
-      const r = await subirLibrerias(peticion, { slugDeLaDireccion: 'empresa-a', slugVerificado: 'empresa-a' }, { config, ahora: () => AHORA, fetchFn: fetch, almacen: new AlmacenAcceso() });
+    it('el cuerpo mal formado vuelve con «no_valido» (con sesión)', async () => {
+      const { cookie, deps } = await montar();
+      const peticion = new Request(`${config.origen}/e/empresa-a/normas/subir`, { method: 'POST', headers: { origin: config.origen, cookie, 'content-type': 'multipart/form-data; boundary=x' }, body: 'basura' });
+      const r = await subirLibrerias(peticion, { slugDeLaDireccion: 'empresa-a', slugVerificado: 'empresa-a' }, deps);
       expect(aviso(r)).toBe('no_valido');
+    });
+    it('SIN sesión no se procesa el cuerpo: se manda a ingresar antes de llamar a formData()', async () => {
+      const { deps } = await montar();
+      const peticion = new Request(`${config.origen}/e/empresa-a/normas/subir`, { method: 'POST', headers: { origin: config.origen, 'content-type': 'multipart/form-data; boundary=x' }, body: 'cuerpo que no debe leerse' });
+      let procesado = false;
+      const original = peticion.formData.bind(peticion);
+      peticion.formData = async () => {
+        procesado = true;
+        return original();
+      };
+      const r = await subirLibrerias(peticion, { slugDeLaDireccion: 'empresa-a', slugVerificado: 'empresa-a' }, deps);
+      expect(destino(r).pathname).toBe('/auth/login');
+      expect(procesado).toBe(false);
     });
   });
 });

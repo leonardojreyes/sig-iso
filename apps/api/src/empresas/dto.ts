@@ -19,7 +19,7 @@ export class MarcaResponse {
   @ApiProperty({ type: String, pattern: '^#[0-9A-Fa-f]{6}$', maxLength: 7 }) colorPrimario!: string;
   @ApiProperty({ type: String, pattern: '^#[0-9A-Fa-f]{6}$', maxLength: 7 }) colorOriginal!: string;
   @ApiProperty({ type: Boolean }) ajustadoPorContraste!: boolean;
-  @ApiProperty({ type: String, nullable: true, maxLength: 2048, pattern: '^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\\s@]*|/[^/\\\\\\s][^\\s@]*)$' }) logoUrl!: string | null;
+  @ApiProperty({ type: String, nullable: true, maxLength: 2048, pattern: '^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\\s@]*|/logos/[A-Za-z0-9._-]{1,100}\\.(png|svg|jpe?g|webp))$' }) logoUrl!: string | null;
 }
 
 export class EmpresaDePersonaResponse {
@@ -39,5 +39,5 @@ export class EmpresaActualResponse {
 
 export class MarcaEdicionRequest {
   @ApiProperty({ type: String, pattern: '^#[0-9A-Fa-f]{6}$', maxLength: 7 }) colorPrimario!: string;
-  @ApiProperty({ type: String, nullable: true, maxLength: 2048, pattern: '^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\\s@]*|/[^/\\\\\\s][^\\s@]*)$', description: 'Solo `https` sin credenciales, una ruta propia (nunca `//host`) o nulo para quitarlo.' }) logoUrl!: string | null;
+  @ApiProperty({ type: String, nullable: true, maxLength: 2048, pattern: '^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\\s@]*|/logos/[A-Za-z0-9._-]{1,100}\\.(png|svg|jpe?g|webp))$', description: 'Solo `https` sin credenciales, un archivo de imagen bajo `/logos/` o nulo para quitarlo.' }) logoUrl!: string | null;
 }

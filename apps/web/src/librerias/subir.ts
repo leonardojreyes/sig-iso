@@ -45,6 +45,10 @@ export const subirLibrerias = async (
   // Una subida que ya declara más de lo posible se rechaza sin leer el cuerpo.
   const declarado = Number(peticion.headers.get('content-length'));
   if (Number.isFinite(declarado) && declarado > PETICION_MAX) return volver('archivo_grande');
+  // Sin sesión no se lee ni un byte del cuerpo (la subida puede pesar decenas de MB): primero se abre la cookie, que es local.
+  const servicio = crearServicioSesion(deps);
+  const sesion = await servicio.leer(peticion);
+  if (!sesion) return aIngresar([]);
   let formulario: FormData;
   try {
     formulario = await peticion.formData();
@@ -57,9 +61,6 @@ export const subirLibrerias = async (
   if (yamls.length === 0) return volver('sin_archivos');
   const elegidos = yamls.slice(0, ARCHIVOS_MAX);
 
-  const servicio = crearServicioSesion(deps);
-  const sesion = await servicio.leer(peticion);
-  if (!sesion) return aIngresar([]);
   const acceso = await servicio.obtenerAcceso(sesion);
   if (!acceso.ok) return acceso.motivo === 'expirada' ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()]) : volver('no_disponible');
   const cookies = acceso.nuevaCookie ? [acceso.nuevaCookie] : [];

@@ -6,9 +6,10 @@ export { EmpresaNoEncontradaError, ObtenerMarcaUseCase } from './application/obt
 export { ObtenerIdentidadUseCase, PersonaNoEncontradaError, type IdentidadDto, type RolesPort } from './application/obtener-identidad.use-case.js';
 export { EmpresaKysely } from './infrastructure/empresa-kysely.adapter.js';
 export { EMPRESA_ACTIVA } from './application/empresa-activa.port.js';
-export type { EmpresaActivaPort, EmpresaDePersona } from './application/empresa-activa.port.js';
+export type { EleccionDeSesion, EmpresaActivaPort, EmpresaDePersona } from './application/empresa-activa.port.js';
 export {
   CambiarEmpresaUseCase,
+  EleccionDeEmpresaInvalidaError,
   EmpresaAjenaError,
   EmpresaPedidaInvalidaError,
   ListarMisEmpresasUseCase,

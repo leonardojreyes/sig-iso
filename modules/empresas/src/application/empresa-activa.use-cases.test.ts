@@ -1,9 +1,10 @@
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
 import { describe, expect, it } from 'vitest';
 import type { EventoBitacora } from '@sig/auditoria';
-import type { EmpresaActivaPort, EmpresaDePersona } from './empresa-activa.port.js';
+import type { EleccionDeSesion, EmpresaActivaPort, EmpresaDePersona } from './empresa-activa.port.js';
 import {
   CambiarEmpresaUseCase,
+  EleccionDeEmpresaInvalidaError,
   EmpresaAjenaError,
   EmpresaPedidaInvalidaError,
   ListarMisEmpresasUseCase,
@@ -24,12 +25,13 @@ class Puerto implements EmpresaActivaPort {
   pertenencias = new Map<string, EmpresaDePersona[]>();
   activas = new Map<string, { usuario: string; empresa: EmpresaId; expira: Date }>();
   falla: string | null = null;
-  async activaDe(sid: string, usuario: string, ahora: Date) {
+  async activaDe(sid: string, usuario: string, ahora: Date): Promise<EleccionDeSesion> {
     if (this.falla === 'activaDe') throw new Error('base caída');
     const a = this.activas.get(sid);
-    if (!a || a.usuario !== usuario || a.expira <= ahora) return null;
-    // Como la base: solo vale si la persona SIGUE perteneciendo a esa empresa.
-    return (this.pertenencias.get(usuario) ?? []).some((e) => e.empresaId === a.empresa) ? a.empresa : null;
+    if (!a || a.usuario !== usuario) return { tipo: 'sin_eleccion' };
+    // Como la base: solo vale si no venció y la persona SIGUE perteneciendo a esa empresa; si no, hay una elección INVÁLIDA.
+    const sigue = (this.pertenencias.get(usuario) ?? []).some((e) => e.empresaId === a.empresa);
+    return a.expira > ahora && sigue ? { tipo: 'activa', empresaId: a.empresa } : { tipo: 'invalida' };
   }
   async empresasDe(usuario: string) {
     return this.pertenencias.get(usuario) ?? [];
@@ -71,13 +73,16 @@ describe('ResolverEmpresaActivaUseCase', () => {
     puerto.activas.set(SID, { usuario: U, empresa: B, expira: new Date(AHORA.getTime() + 1000) });
     expect(await new ResolverEmpresaActivaUseCase(puerto).ejecutar({ usuarioId: U, sesionId: SID, empresaDelToken: A, ahora: AHORA })).toBe(B);
   });
-  it('si venció o la persona ya no pertenece a esa empresa, vuelve a la del token', async () => {
+  it('si la elección venció o la persona ya no pertenece a esa empresa, FALLA (no vuelve en silencio a la del token) y la olvida', async () => {
     const { puerto } = montar();
     const r = new ResolverEmpresaActivaUseCase(puerto);
-    puerto.activas.set(SID, { usuario: U, empresa: B, expira: new Date(AHORA.getTime() - 1) });
-    expect(await r.ejecutar({ usuarioId: U, sesionId: SID, empresaDelToken: A, ahora: AHORA })).toBe(A);
+    puerto.activas.set(SID, { usuario: U, empresa: B, expira: new Date(AHORA.getTime() - 1) }); // venció
+    await expect(r.ejecutar({ usuarioId: U, sesionId: SID, empresaDelToken: A, ahora: AHORA })).rejects.toBeInstanceOf(EleccionDeEmpresaInvalidaError);
+    expect(puerto.activas.has(SID)).toBe(false);
     puerto.activas.set(SID, { usuario: U, empresa: B, expira: new Date(AHORA.getTime() + 1000) });
     puerto.pertenencias.set(U, [{ empresaId: A, slug: 'empresa-a', nombre: 'A' }]); // se le quitó B
+    await expect(r.ejecutar({ usuarioId: U, sesionId: SID, empresaDelToken: A, ahora: AHORA })).rejects.toBeInstanceOf(EleccionDeEmpresaInvalidaError);
+    // Ya olvidada: la siguiente petición de esa sesión empieza en la empresa del token.
     expect(await r.ejecutar({ usuarioId: U, sesionId: SID, empresaDelToken: A, ahora: AHORA })).toBe(A);
   });
   it('la elección de una sesión no vale para otra persona ni para otra sesión', async () => {

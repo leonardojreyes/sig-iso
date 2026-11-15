@@ -125,6 +125,11 @@ describe.skipIf(!hayBase)(
       ["un logo con http", "logo_url", "http://inseguro.example.test/x.png"],
       ["un logo con otro esquema", "logo_url", "javascript:alert(1)"],
       ["un logo que no empieza por https ni por barra", "logo_url", "cdn.example.test/x.png"],
+      ["una ruta del propio sitio que NO es una imagen de /logos/ (la descarga de un documento)", "logo_url", "/e/empresa-a/declaracion/documento"],
+      ["una ruta de inicio de sesión como logo", "logo_url", "/auth/login?retorno=/"],
+      ["un logo con «//» (otro sitio)", "logo_url", "//evil.example.test/x.png"],
+      ["un archivo de /logos/ que no es una imagen", "logo_url", "/logos/a.html"],
+      ["un archivo de /logos/ dentro de otra carpeta", "logo_url", "/logos/../e/x/descargar.png"],
     ])("la base rechaza %s", async (_n, columna, valor) => {
       await expect(
         conTenant(app(), A, (trx) =>
@@ -139,6 +144,13 @@ describe.skipIf(!hayBase)(
       await expect(
         sql`update empresa set color_primario = '#000000'`.execute(app()),
       ).rejects.toThrow(/app\.tenant_id/);
+    });
+
+    it("un archivo de imagen bajo /logos/ sí se acepta", async () => {
+      await conTenant(app(), A, (trx) =>
+        sql`update empresa set logo_url = '/logos/empresa-a.png' where id = ${A}`.execute(trx),
+      );
+      expect((await marcaDe(A))?.logo_url).toBe("/logos/empresa-a.png");
     });
 
     it("el logo puede quitarse (nulo)", async () => {

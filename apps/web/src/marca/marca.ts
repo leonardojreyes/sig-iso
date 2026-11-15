@@ -3,7 +3,7 @@
 import { esIdEmpresa, type Empresa } from './tipos';
 
 const COLOR = /^#[0-9A-Fa-f]{6}$/;
-const LOGO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/[^/\\\s][^\s@]*)$/;
+const LOGO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/logos\/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp))$/;
 const CLAVES = ['ajustadoPorContraste', 'colorOriginal', 'colorPrimario', 'logoUrl', 'nombre'];
 
 export interface MarcaValidada {

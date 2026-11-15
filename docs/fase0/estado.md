@@ -84,6 +84,34 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 - **API:** `PUT /empresa/marca` (cuerpo cerrado: solo `colorPrimario` y `logoUrl`; la empresa sale del token). **Web:** pantalla «Marca» (cómo se ve ahora, aviso de contraste, formulario solo para el administrador) y `pnpm web:verify-marca` (30 comprobaciones con todo real; **restaura** la marca de A al terminar).
 - **Límites conocidos:** el logo es una **dirección** (`https` o ruta propia), no se sube un archivo: el navegador la carga desde ese sitio (con `referrerpolicy="no-referrer"`) y quien aloja la imagen ve las visitas; subir el archivo a un almacén propio queda para después. No hay vista previa del color antes de guardar.
 
+### M6 — Revisión completa del hito H3 (2026-11-15)
+
+Un solo `/review` con seis revisores en paralelo sobre los 316 archivos del hito (M4 a M6b): arquitectura, aislamiento entre empresas, seguridad, accesibilidad, cumplimiento y experto ISO. **Ningún hallazgo bloqueante.** Veredictos: arquitectura, aislamiento y seguridad «aprobar con correcciones»; accesibilidad, cumplimiento y experto ISO «corregir (no bloqueante)». El STRIDE ampliado de los flujos nuevos está en `docs/security/stride-mvp-h3.md`.
+
+**Corregido en esta revisión**
+
+- **Seguridad:** el logo de la empresa aceptaba cualquier ruta del propio sitio (por ejemplo la descarga de un documento), y cada persona que cargara una pantalla la habría pedido con su sesión. Ahora solo es una dirección `https` o un archivo de imagen bajo `/logos/` (dominio, web, contrato y base, migración `0014`).
+- **Aislamiento:** si la elección de empresa de una sesión dejaba de valer (por ejemplo, se le quitaba el rol al consultor en esa empresa), la API volvía **en silencio** a la empresa del token mientras la pantalla seguía mostrando la otra. Ahora responde 401 y olvida la elección (ADR 035, punto 4).
+- **Arquitectura / seguridad:** el límite de frecuencia se aplica **antes** de consultar la empresa activa (así protege también a la base); y la subida de librerías y de evidencias ya no procesa el cuerpo de una petición **sin sesión**.
+- **Experto ISO:** el Word lleva la nota de que los controles salen del tratamiento de riesgos (documentos externos), como prometía el plan; y la declaración solo incluye controles de la **edición 2022** del Anexo A (no mezcla ediciones).
+- **Accesibilidad:** el menú ya no desborda en pantallas angostas; el selector de empresa tenía dos etiquetas; mensajes de la marca más claros.
+- **Pruebas:** dos pruebas de integración dejaban datos sin limpiar (la del caso «base caída» salía antes de limpiar): se acumularon 200 librerías y 222 empresas de prueba hasta que el catálogo de `sigiso_test` llegó a su tope y otras pruebas fallaron. Corregido y base de pruebas limpiada.
+- **Documentación:** ADR 032 (el 413 por `Content-Length` no deja registro), ADR 034 (límites del detector de texto de normas), ADR 035 (elección inválida y identificador compartido) y ADR 028 (tres insumos nuevos para el asesor legal).
+
+**Decisiones que son del responsable (no se tomaron solas)**
+
+1. **Declaración de Aplicabilidad — tres huecos frente a lo que el plan prometía y un auditor suele esperar:** el **motivo de inclusión** de cada control (riesgo, legal, contractual, negocio), los **controles adicionales** fuera del Anexo A, y la **referencia al plan de tratamiento y al análisis de riesgos** (hoy solo hay la nota fija en el Word). No están implementados: o se hacen antes de presentar la declaración a un auditor, o se declaran como fuera del MVP. Tampoco hay columna de responsable por control.
+2. **Títulos del Anexo A (pregunta Q3 del spec de dominio v2):** la librería `iso-27001-2022-anexo-a` reproduce la lista **completa** de los 93 títulos oficiales. La regla 3 permite «título breve»; el cumplimiento lo marca como decisión formal pendiente antes de publicar o vender (cerrar con un ADR o reformular los títulos).
+3. **Registro del 413:** un archivo que declara más de lo permitido se corta antes del caso de uso y no deja registro en la bitácora (evidencias y librerías). Registrarlo exige una huella que aún no existe; hoy está documentado como límite.
+4. **Alta, baja y cambio de rol de personas:** `rol.cambiado`, `usuario.alta` y `usuario.baja` existen en el catálogo de la bitácora pero ningún código los emite todavía (las cuentas se crean con la siembra y `keycloak:cuentas`).
+
+**Deuda anotada (no bloquea el hito)**
+
+- Accesibilidad: el aviso que aparece tras recargar la página no recibe el foco ni se anuncia de forma fiable; la tabla ancha tiene un contenedor de desplazamiento duplicado y no enfocable con teclado; una subida de muchos archivos genera hasta 20 alertas; faltan estados con axe en cobertura y en el panel; no hay prueba de contraste de `primary-subtle`; enlaces sueltos más bajos que el objetivo mínimo de toque.
+- Código: los cuatro manejadores de escritura de la web (`escribir.ts`, `subir.ts`, `editar.ts`, `cambiar.ts`) repiten el mismo control de seguridad y conviene extraerlo a uno solo; `SLUG`, `UUID`, `COLOR` y `LOGO` están repetidos en varios archivos (y el `UUID` de `flujo.ts` no admite mayúsculas); `cargar-libreria.use-case.ts` importa un error de otro caso de uso.
+- Rendimiento: la empresa activa agrega una consulta por petición sin caché; el almacén de resultados de carga tiene un tope global de 200 y un reinicio lo borra.
+- Antes de producción: `Strict-Transport-Security` y CSP con nonce en la web; verificar la huella al descargar una evidencia; retención, borrado físico y marca de «contiene datos personales» en las evidencias (ADR 028).
+
 **Límites conocidos del MVP** (decisiones ya tomadas; no son defectos pendientes de corregir):
 
 - Las pantallas **no asignan responsable** (ni en el diagnóstico ni en los controles), aunque la API lo admite. Hoy nada lo asigna; cuando se agregue, reevaluar una entrada debe conservar el responsable.

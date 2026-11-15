@@ -22,3 +22,7 @@ Hoy una librería de norma se carga con un comando (`pnpm libraries:load`) al ca
 - Una empresa puede cargar una librería sin ayuda técnica; el comando sigue sirviendo para el catálogo global.
 - La responsabilidad de que el YAML no contenga texto licenciado es de quien sube; el sistema lo mitiga con las reglas de contenido, pero no puede garantizarlo.
 - Hay dos orígenes de librería (global y propia) y las pantallas existentes de adopción deben contemplar ambos.
+- **Límites que se asumen (revisión H3, 2026-11-15):**
+  - El detector de texto de normas es **estructural** (largo, tono normativo, citas largas, listas): no contrasta con ningún texto real. Un párrafo de una norma reformulado en una o dos frases imperativas cortas, o repartido en varias entradas, puede pasar. La garantía real es la **responsabilidad de quien sube** (ya declarada arriba) y la revisión humana; el sistema solo ayuda.
+  - Un archivo de más de 1 MB responde 413 antes de leer el cuerpo y **no deja registro** en la bitácora (no hay huella que identificarlo). Los demás rechazos sí se registran.
+  - Cada empresa decide el contenido de sus librerías propias: la plataforma no revisa que lo que sube sea fiel a la norma.

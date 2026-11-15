@@ -94,6 +94,15 @@ describe('el borrador', () => {
     expect(d.filas[1]).toMatchObject({ aplicabilidad: 'no_aplica', implementacion: null, justificacion: 'No hay personal propio', controles: [], cobertura: 'no_aplica' });
     expect(d.resumen).toEqual({ total: 2, aplican: 1, noAplican: 1, porDecidir: 0, sinControl: 0, aprobable: true });
   });
+  it('no mezcla ediciones: un control del Anexo A de la edición 2013 (de una librería adoptada) NO entra a la declaración', async () => {
+    const m = montar();
+    const de2013 = { ...ROL, idEstable: 'a27-2013-6-1', aplicaA: ROL.aplicaA.map((a) => ({ ...a, edicion: '2013' })) };
+    m.estado.catalogoPorEmpresa.set(A, [entradas.contexto, POL, ROL, de2013]);
+    const d = await m.borrador.ejecutar(yo);
+    expect(d.filas.map((f) => f.idEstable)).toEqual([POL.idEstable, ROL.idEstable]);
+    expect(d.resumen.total).toBe(2);
+  });
+
   it('nunca copia el comentario de una evaluación que aplica', async () => {
     const m = montar();
     completa(m);

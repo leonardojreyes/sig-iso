@@ -6,9 +6,9 @@ import { es } from '../i18n/es-EC';
 import { SelectorTema } from './selector-tema';
 
 /** Logo de la empresa: imagen si existe, monograma si no (el logo real llega con la configuración por empresa). */
-/** Solo rutas propias o `https:`; cualquier otra cosa se descarta y se muestra el monograma. */
+/** Solo un archivo de imagen bajo `/logos/` o una dirección `https:`; cualquier otra cosa se descarta y se muestra el monograma. */
 export const logoSeguro = (url: string | undefined): string | undefined =>
-  url && (/^\/(?!\/)/.test(url) || /^https:\/\//i.test(url)) ? url : undefined;
+  url && (/^\/logos\/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp)$/.test(url) || /^https:\/\//i.test(url)) ? url : undefined;
 
 export const LogoEmpresa = ({ empresa }: { empresa: Empresa }) =>
   logoSeguro(empresa.logoUrl) ? (
@@ -34,9 +34,9 @@ export const SelectorEmpresa = ({ empresa }: { empresa: Empresa }) => {
   return (
     <form method="post" action={`/e/${empresa.id}/empresa/cambiar`} className="flex items-center gap-2">
       <label htmlFor="selector-empresa" className="sr-only">
-        {es.empresas.etiqueta}
+        {es.empresas.cambiarAria}
       </label>
-      <Select id="selector-empresa" name="empresa" defaultValue={otras[0]!.slug} aria-label={es.empresas.cambiarAria}>
+      <Select id="selector-empresa" name="empresa" defaultValue={otras[0]!.slug}>
         {otras.map((o) => (
           <option key={o.slug} value={o.slug}>
             {o.nombre}
@@ -65,7 +65,7 @@ export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: 
     </header>
     <div className="grid grid-cols-1 md:grid-cols-[14rem_1fr]">
       <nav aria-label={es.nav.principal} className="border-b border-line bg-surface p-3 md:min-h-[calc(100vh-4rem)] md:border-b-0 md:border-r">
-        <ul className="flex gap-1 md:flex-col">
+        <ul className="flex flex-wrap gap-1 md:flex-col">
           <li>
             <a className={enlace} href={`/e/${empresa.id}/panel`} aria-current={activo === 'panel' ? 'page' : undefined}>
               <LayoutDashboard aria-hidden="true" className="size-5" />

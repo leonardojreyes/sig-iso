@@ -29,8 +29,9 @@ export interface MarcaEmpresa {
 const NOMBRE_MAX = 120;
 const LOGO_MAX = 2048;
 const COLOR = /^#[0-9A-Fa-f]{6}$/;
-// Misma regla que `Marca.logoUrl` del contrato OpenAPI: `https` sin credenciales, o ruta propia que no sea `//host` ni `/\host`.
-const LOGO_PERMITIDO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/[^/\\\s][^\s@]*)$/;
+// Misma regla que `Marca.logoUrl` del contrato OpenAPI: `https` sin credenciales, o un archivo de imagen bajo `/logos/` (nunca cualquier ruta
+// del sitio: una ruta como `/e/<empresa>/declaracion/documento` haría que cada persona que cargue una pantalla la pida con su sesión).
+const LOGO_PERMITIDO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/logos\/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp))$/;
 
 const logoPermitido = (logo: string | null | undefined): string | null =>
   typeof logo === 'string' && logo.length <= LOGO_MAX && LOGO_PERMITIDO.test(logo) ? logo : null;

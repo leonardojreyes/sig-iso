@@ -75,6 +75,14 @@ describe('GeneradorDocumentoDocx', () => {
     expect(g.sha256).toBe(sha256Hex(g.bytes));
   });
 
+  it('el borrador y la versión aprobada llevan la nota de que los controles salen del tratamiento de riesgos (documentos externos)', async () => {
+    for (const d of [base, { ...base, preliminar: false, version: 3, aprobadaEl: '2026-11-10' }]) {
+      const x = await texto(d);
+      expect(x).toContain('tratamiento de riesgos de seguridad de la información');
+      expect(x).toContain('documentos externos a este sistema');
+    }
+  });
+
   it('el borrador lleva el rótulo de preliminar; una versión aprobada, no', async () => {
     const borrador = await texto(base);
     expect(borrador).toContain('DOCUMENTO PRELIMINAR');

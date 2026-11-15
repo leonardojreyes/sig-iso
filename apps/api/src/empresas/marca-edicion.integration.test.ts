@@ -74,6 +74,11 @@ describe('PUT /empresa/marca (M6b-2)', () => {
     expect(erroresDeEsquema('Marca', c)).toEqual([]);
   });
 
+  it('un archivo de imagen bajo /logos/ sí se acepta', async () => {
+    const c = await json(await editar(await token(A, ADMIN_A), { colorPrimario: '#0b5fff', logoUrl: '/logos/empresa-a.png' }));
+    expect(c['logoUrl']).toBe('/logos/empresa-a.png');
+  });
+
   it('el logo puede quitarse (nulo)', async () => {
     const t = await token(A, ADMIN_A);
     await editar(t, { colorPrimario: '#0b5fff', logoUrl: 'https://cdn.example.test/a.png' });
@@ -109,6 +114,8 @@ describe('PUT /empresa/marca (M6b-2)', () => {
     ['un logo con javascript:', { colorPrimario: '#112233', logoUrl: 'javascript:alert(1)' }],
     ['un logo con otro host por «//»', { colorPrimario: '#112233', logoUrl: '//evil.example.test/x.png' }],
     ['un logo con credenciales', { colorPrimario: '#112233', logoUrl: 'https://u:p@cdn.example.test/x.png' }],
+    ['una ruta del sitio que no es una imagen (la descarga de un documento)', { colorPrimario: '#112233', logoUrl: '/e/empresa-a/declaracion/documento' }],
+    ['una ruta de inicio de sesión como logo', { colorPrimario: '#112233', logoUrl: '/auth/login?retorno=/' }],
     ['un logo vacío', { colorPrimario: '#112233', logoUrl: '' }],
     ['un logo que no es texto', { colorPrimario: '#112233', logoUrl: 5 }],
     ['un campo de más (el nombre)', { colorPrimario: '#112233', logoUrl: null, nombre: 'Otra' }],

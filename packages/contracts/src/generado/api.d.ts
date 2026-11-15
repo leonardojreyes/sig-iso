@@ -775,13 +775,13 @@ export interface components {
             colorOriginal: string;
             /** @description Verdadero si el color original se ajustó para cumplir el contraste mínimo; el administrador SIG ve un aviso. */
             ajustadoPorContraste: boolean;
-            /** @description Solo `https` sin credenciales en la URL, o una ruta propia (nunca `//host`). Si no es válido se devuelve nulo y se muestra el monograma. */
+            /** @description Solo `https` sin credenciales en la URL, o un archivo de imagen bajo `/logos/` (nunca otra ruta del sitio). Si no es válido se devuelve nulo y se muestra el monograma. */
             logoUrl: string | null;
         };
         /** @description Lo que la empresa elige. La empresa nunca viaja aquí, sale del token. */
         MarcaEdicion: {
             colorPrimario: string;
-            /** @description Solo `https` sin credenciales, una ruta propia (nunca `//host`) o nulo para quitarlo. */
+            /** @description Solo `https` sin credenciales, un archivo de imagen bajo `/logos/` o nulo para quitarlo. */
             logoUrl: string | null;
         };
         LibreriaResumen: {

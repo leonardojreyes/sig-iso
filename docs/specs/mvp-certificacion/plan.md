@@ -165,3 +165,7 @@ Integrar los PR abiertos #13 a #18 (documentos y la fase 1 del 0.7) para partir 
 ## Verificación
 
 `pnpm db:migrate && pnpm db:seed && pnpm libraries:load` → `pnpm keycloak:start` → `pnpm dev` → `admin-a` recorre alcance, diagnóstico, control, evidencia y Declaración y descarga el Word; `admin-b` no ve nada de A; `pnpm web:verify-aislamiento` en verde (se amplía con las tablas nuevas); `pnpm lint`, `typecheck`, `test:hooks` y la suite de integración en verde; `/review` final sin bloqueantes.
+
+## Resultado del cierre (2026-11-15)
+
+M1 a M6b están hechos y el hito H3 pasó una revisión completa con seis revisores y sin bloqueantes (ver `docs/fase0/estado.md`, «M6 — Revisión completa del hito H3», y `docs/security/stride-mvp-h3.md`). Del alcance prometido en este plan **no se implementó** el motivo de inclusión por control, los controles adicionales fuera del Anexo A ni la referencia al plan de tratamiento de riesgos de la Declaración de Aplicabilidad (hoy hay solo una nota fija en el Word); queda pendiente que el responsable decida si se hacen antes de presentar la declaración a un auditor o se declaran fuera del MVP.

@@ -4,17 +4,20 @@
 // la persona pertenece a la empresa que se guarda.
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
 import { sql, type Kysely } from 'kysely';
-import type { EmpresaActivaPort, EmpresaDePersona } from '../application/empresa-activa.port.js';
+import type { EleccionDeSesion, EmpresaActivaPort, EmpresaDePersona } from '../application/empresa-activa.port.js';
 
 export class EmpresaActivaKysely implements EmpresaActivaPort {
   constructor(private readonly db: Kysely<unknown>) {}
 
-  async activaDe(sesionId: string, usuarioId: string, ahora: Date): Promise<EmpresaId | null> {
-    const { rows } = await sql<{ empresa_id: string }>`
-      select a.empresa_id from empresa_activa a
-        join usuario u on u.empresa_id = a.empresa_id and u.id = a.usuario_id
-       where a.sid = ${sesionId} and a.usuario_id = ${usuarioId} and a.expira_en > ${ahora} and u.rol is not null`.execute(this.db);
-    return rows[0] ? crearEmpresaId(rows[0].empresa_id) : null;
+  async activaDe(sesionId: string, usuarioId: string, ahora: Date): Promise<EleccionDeSesion> {
+    // La fila de ESTA persona y esta sesión (la de otra persona con el mismo `sid` no cuenta); `vigente` = sigue teniendo un rol allí.
+    const { rows } = await sql<{ empresa_id: string; vence: boolean; vigente: boolean }>`
+      select a.empresa_id, (a.expira_en > ${ahora}) as vence, (u.rol is not null) as vigente from empresa_activa a
+        left join usuario u on u.empresa_id = a.empresa_id and u.id = a.usuario_id
+       where a.sid = ${sesionId} and a.usuario_id = ${usuarioId}`.execute(this.db);
+    const f = rows[0];
+    if (!f) return { tipo: 'sin_eleccion' };
+    return f.vence && f.vigente ? { tipo: 'activa', empresaId: crearEmpresaId(f.empresa_id) } : { tipo: 'invalida' };
   }
 
   async empresasDe(usuarioId: string): Promise<readonly EmpresaDePersona[]> {
