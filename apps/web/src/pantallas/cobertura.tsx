@@ -84,13 +84,12 @@ export const PantallaCobertura = ({ empresa, persona, cobertura, filtros, filtro
         </form>
       </Card>
 
-      <p className="mb-2 text-sm text-fg-muted" role="status">
+      <p className="mb-2 text-sm text-fg-muted">
         {t.resultados(cobertura.entradas.length)}
       </p>
       {cobertura.entradas.length === 0 ? (
         <EstadoVacio titulo={t.sinResultadosTitulo} descripcion={t.sinResultadosDescripcion} />
       ) : (
-        <div className="overflow-x-auto">
           <Tabla aria-describedby="cobertura-desc">
             <caption id="cobertura-desc" className="sr-only">
               {t.tablaDescripcion}
@@ -132,7 +131,6 @@ export const PantallaCobertura = ({ empresa, persona, cobertura, filtros, filtro
               ))}
             </tbody>
           </Tabla>
-        </div>
       )}
     </MarcoApp>
   );

@@ -34,8 +34,8 @@ export const PantallaDetalleRequisito = ({ empresa, requisito }: { empresa: Empr
         {requisito.evidencias.length > 0 && (
           <Card className="lg:col-span-3">
             <CardTitle>{t.evidencias}</CardTitle>
-            <Tabla>
-              <caption className="sr-only">{t.evidencias}</caption>
+            <Tabla aria-describedby="detalle-evidencias-desc">
+              <caption id="detalle-evidencias-desc" className="sr-only">{t.evidencias}</caption>
               <thead><tr><Th>{t.columnas.evidencia}</Th><Th>{t.columnas.responsable}</Th><Th>{t.columnas.vigencia}</Th></tr></thead>
               <tbody>{requisito.evidencias.map((e) => (<tr key={e.nombre}><Td>{e.nombre}</Td><Td>{e.responsable}</Td><Td>{e.vigenteHasta}</Td></tr>))}</tbody>
             </Tabla>

@@ -59,8 +59,8 @@ export const PantallaRequisitos = ({ empresa, filtros }: { empresa: Empresa; fil
       {filas.length === 0 ? (
         <EstadoVacio titulo={t.vacioTitulo} descripcion={t.vacioDescripcion} />
       ) : (
-        <Tabla>
-          <caption className="sr-only">{t.tablaDescripcion}</caption>
+        <Tabla aria-describedby="requisitos-desc">
+          <caption id="requisitos-desc" className="sr-only">{t.tablaDescripcion}</caption>
           <thead>
             <tr><Th>{t.columnas.clausula}</Th><Th>{t.columnas.titulo}</Th><Th>{t.columnas.norma}</Th><Th>{t.columnas.estado}</Th><Th>{t.columnas.controles}</Th></tr>
           </thead>

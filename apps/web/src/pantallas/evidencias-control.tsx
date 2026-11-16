@@ -146,7 +146,7 @@ export const PantallaEvidenciasControl = ({ empresa, persona, control, evidencia
       )}
 
       <p className="mb-2 flex flex-wrap items-center gap-3 text-sm text-fg-muted">
-        <span role="status">{t.resultados(evidencias.length)}</span>
+        <span>{t.resultados(evidencias.length)}</span>
         <a className="font-medium text-primary underline" href={`/e/${empresa.id}/controles/${control.id}${historial ? '' : '?historicas=true'}`}>
           {historial ? t.sinHistorial : t.historial}
         </a>
@@ -155,7 +155,6 @@ export const PantallaEvidenciasControl = ({ empresa, persona, control, evidencia
       {evidencias.length === 0 ? (
         <EstadoVacio titulo={t.sinEvidenciasTitulo} descripcion={puedeSubir ? t.sinEvidenciasAdmin : t.sinEvidenciasOtros} />
       ) : (
-        <div className="overflow-x-auto">
           <Tabla aria-describedby="evidencias-desc">
             <caption id="evidencias-desc" className="sr-only">
               {t.tablaDescripcion}
@@ -212,7 +211,6 @@ export const PantallaEvidenciasControl = ({ empresa, persona, control, evidencia
               ))}
             </tbody>
           </Tabla>
-        </div>
       )}
     </MarcoApp>
   );

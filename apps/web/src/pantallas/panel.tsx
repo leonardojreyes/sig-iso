@@ -32,8 +32,8 @@ export const PantallaPanel = ({ empresa }: { empresa: Empresa }) => {
       <Card><CardTitle>{es.panel.riesgos}</CardTitle><MatrizRiesgos celdas={riesgosDemo} /></Card>
       <Card>
         <CardTitle>{es.panel.vencimientos}</CardTitle>
-        <Tabla>
-          <caption className="sr-only">{es.panel.vencimientos}</caption>
+        <Tabla aria-describedby="panel-vencimientos-desc">
+          <caption id="panel-vencimientos-desc" className="sr-only">{es.panel.vencimientos}</caption>
           <thead><tr><Th>{es.panel.evidencia}</Th><Th>{es.panel.vence}</Th><Th>{es.panel.responsable}</Th></tr></thead>
           <tbody>
             {vencimientosDemo.map((v) => (<tr key={v.evidencia}><Td>{v.evidencia}</Td><Td>{v.vence}</Td><Td>{v.responsable}</Td></tr>))}

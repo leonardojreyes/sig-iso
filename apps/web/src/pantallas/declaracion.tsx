@@ -18,7 +18,6 @@ export const fechaDeAprobacion = (iso: string): string => hoyEnEcuador(new Date(
 
 /** Tabla de filas de la declaración: la misma para el borrador de hoy y para una versión congelada. */
 export const TablaFilasDeclaracion = ({ filas }: { filas: readonly FilaDeclaracion[] }) => (
-  <div className="overflow-x-auto">
     <Tabla aria-describedby="declaracion-desc">
       <caption id="declaracion-desc" className="sr-only">
         {t.tablaDescripcion}
@@ -68,7 +67,6 @@ export const TablaFilasDeclaracion = ({ filas }: { filas: readonly FilaDeclaraci
         ))}
       </tbody>
     </Tabla>
-  </div>
 );
 
 export interface PropsDeclaracion {

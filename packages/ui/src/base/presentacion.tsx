@@ -53,10 +53,16 @@ export const CardTitle = ({ className, ...p }: ComponentProps<'h2'>) => (
 );
 
 const iconosAlerta = { info: Info, success: CircleCheck, warning: TriangleAlert, danger: CircleAlert } as const;
-export const Alert = ({ tono = 'info', titulo, children }: { tono?: keyof typeof iconosAlerta; titulo: string; children?: ReactNode }) => {
+/**
+ * Aviso con icono y título. Por omisión es una región «viva» (`alert` o `status`) para que un lector de pantalla anuncie un aviso que
+ * APARECE o CAMBIA. Un aviso que ya está en la página al cargarla (tras enviar un formulario) no se anuncia de forma fiable: ese se
+ * envuelve en un contenedor que recibe el foco (`AvisoEnfocado`). Si hay VARIOS avisos juntos, solo el contenedor debe anunciar:
+ * `anunciar={false}` los deja como bloques sin rol propio.
+ */
+export const Alert = ({ tono = 'info', titulo, children, anunciar = true }: { tono?: keyof typeof iconosAlerta; titulo: string; children?: ReactNode; anunciar?: boolean }) => {
   const Icono = iconosAlerta[tono];
   return (
-    <div role={tono === 'danger' || tono === 'warning' ? 'alert' : 'status'} className={cn('flex gap-3 rounded-md p-4 text-sm', tonos[tono])}>
+    <div {...(anunciar ? { role: tono === 'danger' || tono === 'warning' ? 'alert' : 'status' } : {})} className={cn('flex gap-3 rounded-md p-4 text-sm', tonos[tono])}>
       <Icono aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
       <div>
         <p className="font-semibold">{titulo}</p>
@@ -66,11 +72,20 @@ export const Alert = ({ tono = 'info', titulo, children }: { tono?: keyof typeof
   );
 };
 
-export const Tabla = ({ className, ...p }: ComponentProps<'table'>) => (
-  <div className="overflow-x-auto rounded-lg border border-line">
-    <table className={cn('w-full border-collapse text-left text-sm', className)} {...p} />
-  </div>
-);
+/**
+ * Tabla de datos. El contenedor es la región que se DESPLAZA cuando la tabla es ancha: debe poder enfocarse con el teclado
+ * (`tabIndex=0`) para que quien no usa ratón pueda moverla, y llevar `role="region"` con un nombre accesible. El nombre sale del
+ * `caption`: pásale `aria-describedby` con el `id` del `caption` (es lo que la nombra). Sin ese `id` el contenedor sigue siendo
+ * enfocable pero no se anuncia como región.
+ */
+export const Tabla = ({ className, ...p }: ComponentProps<'table'>) => {
+  const captionId = p['aria-describedby'];
+  return (
+    <div tabIndex={0} {...(captionId ? { role: 'region', 'aria-labelledby': captionId } : {})} className="overflow-x-auto rounded-lg border border-line">
+      <table className={cn('w-full border-collapse text-left text-sm', className)} {...p} />
+    </div>
+  );
+};
 export const Th = ({ className, ...p }: ComponentProps<'th'>) => (
   <th scope="col" className={cn('border-b border-line bg-surface-muted px-4 py-3 font-semibold text-fg', className)} {...p} />
 );
