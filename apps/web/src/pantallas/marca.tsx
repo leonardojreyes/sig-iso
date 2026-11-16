@@ -74,14 +74,30 @@ export const PantallaMarca = ({ empresa, persona, marca, aviso = null }: PropsMa
             <form method="post" action={`/e/${empresa.id}/marca/guardar`} className="mt-3 flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="marca-color">{t.colorEtiqueta}</Label>
-                <Input id="marca-color" name="color" type="color" defaultValue={marca.colorOriginal} required aria-describedby="marca-color-ayuda" />
+                <Input
+                  id="marca-color"
+                  name="color"
+                  type="color"
+                  defaultValue={marca.colorOriginal}
+                  required
+                  aria-describedby="marca-color-ayuda"
+                />
                 <p id="marca-color-ayuda" className="text-sm text-fg-muted">
                   {t.colorAyuda}
                 </p>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="marca-logo">{t.logoEtiqueta}</Label>
-                <Input id="marca-logo" name="logo" type="text" inputMode="url" maxLength={2048} autoComplete="off" defaultValue={marca.logoUrl ?? ''} aria-describedby="marca-logo-ayuda" />
+                <Input
+                  id="marca-logo"
+                  name="logo"
+                  type="text"
+                  inputMode="url"
+                  maxLength={2048}
+                  autoComplete="off"
+                  defaultValue={marca.logoUrl ?? ''}
+                  aria-describedby="marca-logo-ayuda"
+                />
                 <p id="marca-logo-ayuda" className="text-sm text-fg-muted">
                   {t.logoAyuda}
                 </p>

@@ -22,7 +22,8 @@ export const guardarMarca = async (
   const { config } = deps;
   if (peticion.method !== 'POST') return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
   if (!origenValido(peticion, config.origen)) return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
-  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion) return new Response(null, { status: 404, headers: SIN_CACHE });
+  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion)
+    return new Response(null, { status: 404, headers: SIN_CACHE });
   const slug = entrada.slugVerificado;
 
   const redirigir = (ubicacion: string, cookies: readonly string[] = []): Response => {
@@ -30,8 +31,10 @@ export const guardarMarca = async (
     for (const c of cookies) cabeceras.append('Set-Cookie', c);
     return new Response(null, { status: 303, headers: cabeceras });
   };
-  const volver = (aviso: AvisoMarca, cookies: readonly string[] = []): Response => redirigir(`${config.origen}/e/${slug}/marca?aviso=${aviso}`, cookies);
-  const aIngresar = (cookies: readonly string[]): Response => redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/marca`)}`, cookies);
+  const volver = (aviso: AvisoMarca, cookies: readonly string[] = []): Response =>
+    redirigir(`${config.origen}/e/${slug}/marca?aviso=${aviso}`, cookies);
+  const aIngresar = (cookies: readonly string[]): Response =>
+    redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/marca`)}`, cookies);
 
   let formulario: FormData;
   try {
@@ -43,13 +46,15 @@ export const guardarMarca = async (
   const logoCrudo = formulario.get('logo');
   // Un logo vacío quita el logo (vuelve el monograma). Lo demás debe tener la forma permitida; la API vuelve a decidir.
   const logo = typeof logoCrudo === 'string' ? logoCrudo.trim() : null;
-  if (typeof color !== 'string' || !COLOR.test(color) || logo === null || (logo !== '' && (logo.length > 2048 || !LOGO.test(logo)))) return volver('no_valido');
+  if (typeof color !== 'string' || !COLOR.test(color) || logo === null || (logo !== '' && (logo.length > 2048 || !LOGO.test(logo))))
+    return volver('no_valido');
 
   const servicio = crearServicioSesion(deps);
   const sesion = await servicio.leer(peticion);
   if (!sesion) return aIngresar([]);
   const acceso = await servicio.obtenerAcceso(sesion);
-  if (!acceso.ok) return acceso.motivo === 'expirada' ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()]) : volver('no_disponible');
+  if (!acceso.ok)
+    return acceso.motivo === 'expirada' ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()]) : volver('no_disponible');
   const cookies = acceso.nuevaCookie ? [acceso.nuevaCookie] : [];
 
   let estado: number | null;

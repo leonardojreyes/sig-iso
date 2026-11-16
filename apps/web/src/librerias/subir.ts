@@ -31,7 +31,8 @@ export const subirLibrerias = async (
   const { config } = deps;
   if (peticion.method !== 'POST') return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
   if (!origenValido(peticion, config.origen)) return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
-  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion) return new Response(null, { status: 404, headers: SIN_CACHE });
+  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion)
+    return new Response(null, { status: 404, headers: SIN_CACHE });
   const slug = entrada.slugVerificado;
 
   const redirigir = (ubicacion: string, cookies: readonly string[] = []): Response => {
@@ -39,8 +40,10 @@ export const subirLibrerias = async (
     for (const c of cookies) cabeceras.append('Set-Cookie', c);
     return new Response(null, { status: 303, headers: cabeceras });
   };
-  const volver = (aviso: AvisoNormas, cookies: readonly string[] = []): Response => redirigir(`${config.origen}/e/${slug}/normas?aviso=${aviso}`, cookies);
-  const aIngresar = (cookies: readonly string[]): Response => redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/normas`)}`, cookies);
+  const volver = (aviso: AvisoNormas, cookies: readonly string[] = []): Response =>
+    redirigir(`${config.origen}/e/${slug}/normas?aviso=${aviso}`, cookies);
+  const aIngresar = (cookies: readonly string[]): Response =>
+    redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/normas`)}`, cookies);
 
   // Una subida que ya declara más de lo posible se rechaza sin leer el cuerpo.
   const declarado = Number(peticion.headers.get('content-length'));
@@ -62,7 +65,8 @@ export const subirLibrerias = async (
   const elegidos = yamls.slice(0, ARCHIVOS_MAX);
 
   const acceso = await servicio.obtenerAcceso(sesion);
-  if (!acceso.ok) return acceso.motivo === 'expirada' ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()]) : volver('no_disponible');
+  if (!acceso.ok)
+    return acceso.motivo === 'expirada' ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()]) : volver('no_disponible');
   const cookies = acceso.nuevaCookie ? [acceso.nuevaCookie] : [];
 
   const archivos: ResultadoArchivo[] = [];
@@ -107,9 +111,15 @@ export const subirLibrerias = async (
 };
 
 /** La plantilla se entrega siempre como adjunto y de un tipo fijo; no usa datos de la petición. */
-export const descargarPlantilla = (peticion: Request, entrada: { slugDeLaDireccion: string; slugVerificado: string | null }, contenido: string, nombre: string): Response => {
+export const descargarPlantilla = (
+  peticion: Request,
+  entrada: { slugDeLaDireccion: string; slugVerificado: string | null },
+  contenido: string,
+  nombre: string,
+): Response => {
   if (peticion.method !== 'GET') return new Response('Método no permitido', { status: 405, headers: { Allow: 'GET', ...SIN_CACHE } });
-  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion) return new Response(null, { status: 404, headers: SIN_CACHE });
+  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion)
+    return new Response(null, { status: 404, headers: SIN_CACHE });
   return new Response(contenido, {
     status: 200,
     headers: {

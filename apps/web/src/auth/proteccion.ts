@@ -15,8 +15,7 @@ const SLUG = /^[a-z0-9-]{1,32}$/;
 const VIDA_IDENTIDAD_MS = 5 * 60_000;
 const TIEMPO_API_MS = 5_000;
 
-type Identidad =
-  { readonly ok: true; readonly slug: string } | { readonly ok: false; readonly motivo: 'rechazada' | 'no_disponible' };
+type Identidad = { readonly ok: true; readonly slug: string } | { readonly ok: false; readonly motivo: 'rechazada' | 'no_disponible' };
 
 // La empresa de la sesión, tal como la confirma la API con el token (nunca la que diga la dirección).
 const empresaDeLaSesion = async (sid: string, acceso: string, deps: DependenciasSesion): Promise<Identidad> => {
@@ -63,9 +62,7 @@ export const decidirAcceso = async (peticion: Request, deps: DependenciasSesion)
 
   const acceso = await servicio.obtenerAcceso(sesion);
   if (!acceso.ok) {
-    return acceso.motivo === 'expirada'
-      ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()])
-      : { tipo: 'no_disponible' };
+    return acceso.motivo === 'expirada' ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()]) : { tipo: 'no_disponible' };
   }
   const cookies = acceso.nuevaCookie ? [acceso.nuevaCookie] : [];
 

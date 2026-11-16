@@ -36,7 +36,13 @@ export const validarMarcaDetalle = (cuerpo: unknown): MarcaDetalle | null => {
     if (typeof m.logoUrl !== 'string' || m.logoUrl.length > 2048 || !LOGO.test(m.logoUrl)) return null;
     logoUrl = m.logoUrl;
   }
-  return { nombre: m.nombre, colorPrimario: m.colorPrimario, colorOriginal: m.colorOriginal, ajustadoPorContraste: m.ajustadoPorContraste, logoUrl: logoUrl ?? null };
+  return {
+    nombre: m.nombre,
+    colorPrimario: m.colorPrimario,
+    colorOriginal: m.colorOriginal,
+    ajustadoPorContraste: m.ajustadoPorContraste,
+    logoUrl: logoUrl ?? null,
+  };
 };
 
 export const validarMarca = (cuerpo: unknown): MarcaValidada | null => {
@@ -45,15 +51,9 @@ export const validarMarca = (cuerpo: unknown): MarcaValidada | null => {
 };
 
 export type ResultadoMarca =
-  | { readonly ok: true; readonly empresa: Empresa }
-  | { readonly ok: false; readonly motivo: 'no_autenticado' | 'no_disponible' };
+  { readonly ok: true; readonly empresa: Empresa } | { readonly ok: false; readonly motivo: 'no_autenticado' | 'no_disponible' };
 
-export const cargarMarca = async (p: {
-  slug: string;
-  acceso: string;
-  apiUrl: string;
-  fetchFn: typeof fetch;
-}): Promise<ResultadoMarca> => {
+export const cargarMarca = async (p: { slug: string; acceso: string; apiUrl: string; fetchFn: typeof fetch }): Promise<ResultadoMarca> => {
   // El slug ya viene verificado, pero se vuelve a comprobar: va a ser el identificador del CSS.
   if (!esIdEmpresa(p.slug)) return { ok: false, motivo: 'no_disponible' };
   try {
