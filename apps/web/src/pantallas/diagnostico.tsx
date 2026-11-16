@@ -197,13 +197,12 @@ export const PantallaDiagnostico = ({ empresa, persona, diagnostico, filtros, fi
         </form>
       </Card>
 
-      <p className="mb-2 text-sm text-fg-muted" role="status">
+      <p className="mb-2 text-sm text-fg-muted">
         {t.resultados(diagnostico.filas.length)}
       </p>
       {diagnostico.filas.length === 0 ? (
         <EstadoVacio titulo={t.sinResultadosTitulo} descripcion={t.sinResultadosDescripcion} />
       ) : (
-        <div className="overflow-x-auto">
           <Tabla aria-describedby="diagnostico-desc">
             <caption id="diagnostico-desc" className="sr-only">
               {t.tablaDescripcion}
@@ -239,7 +238,6 @@ export const PantallaDiagnostico = ({ empresa, persona, diagnostico, filtros, fi
               ))}
             </tbody>
           </Tabla>
-        </div>
       )}
     </MarcoApp>
   );

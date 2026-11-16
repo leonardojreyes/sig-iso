@@ -100,7 +100,7 @@ describe('PantallaNormas', () => {
           }}
         />,
       );
-      const region = within(getByRole('region', { name: es.normas.resultadoTitulo }));
+      const region = within(getByRole('group', { name: es.normas.resultadoTitulo }));
       expect(region.getByText(es.normas.estados.cargada('propia-mi-norma', '1.0.0', 3))).toBeTruthy();
       expect(region.getByText(es.normas.estados.ya_cargada('propia-mi-norma', '1.0.0'))).toBeTruthy();
       expect(region.getByText(es.normas.motivos.hash_distinto)).toBeTruthy();
@@ -108,6 +108,22 @@ describe('PantallaNormas', () => {
       expect(region.getByText(es.normas.omitidos(2))).toBeTruthy();
       expect(region.getByText(es.normas.recortado(20))).toBeTruthy();
       for (const n of ['a.yaml', 'b.yaml', 'c.yaml', 'd.yaml']) expect(region.getByText(es.normas.archivo(n))).toBeTruthy();
+    });
+
+    it('el resultado recibe el foco al cargar y ANUNCIA UNA SOLA VEZ: los avisos de cada archivo no llevan rol propio (no hay ráfaga de alertas)', () => {
+      const { getByRole } = render(
+        <PantallaNormas
+          {...base}
+          resultado={resultado(
+            ...Array.from({ length: 6 }, (_, i) => ({ nombre: `a${i}.yaml`, tipo: 'fallo' as const, motivo: 'no_disponible' as const })),
+            { nombre: 'b.yaml', tipo: 'respuesta', carga: carga({ estado: 'rechazada', motivo: 'formato_invalido', codigo: null, version: null, entradas: null, errores: [{ entrada: null, indice: null, ruta: 'codigo', codigo: 'campo_obligatorio' }] }) },
+            { nombre: 'c.yaml', tipo: 'respuesta', carga: carga() },
+          )}
+        />,
+      );
+      const seccion = getByRole('group', { name: es.normas.resultadoTitulo });
+      expect(document.activeElement).toBe(seccion);
+      expect(seccion.querySelectorAll('[role="alert"], [role="status"]')).toHaveLength(0);
     });
 
     it('lista los errores con dónde y qué, y recorta los muy numerosos', () => {

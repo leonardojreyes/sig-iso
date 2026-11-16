@@ -4,6 +4,7 @@ import { es } from '../i18n/es-EC';
 import type { Empresa } from '../marca/tipos';
 import type { AvisoAdopcion } from '../librerias/avisos';
 import type { FiltrosRequisitos } from '../requisitos/filtros';
+import { AvisoEnfocado } from './aviso-enfocado';
 import { MarcoApp } from './marco';
 
 const CAPITULOS = [4, 5, 6, 7, 8, 9, 10] as const;
@@ -24,7 +25,7 @@ export interface PropsListadoRequisitos {
  * Listado de requisitos: las entradas de las librerías que la empresa adoptó. Solo consulta (H5.6): no hay estados de
  * cumplimiento, hallazgos ni evidencias, que pertenecen a la evaluación de cada empresa y no a la librería.
  */
-const AvisoDeAdopcion = ({
+const nodoAvisoAdopcion = ({
   aviso,
   librerias,
   entradas,
@@ -66,6 +67,12 @@ const AvisoDeAdopcion = ({
       {a.noDisponibleDetalle}
     </Alert>
   );
+};
+
+/** El aviso de adopción llega con la página: se envuelve para que reciba el foco (solo si hay algo que mostrar). */
+const AvisoDeAdopcion = (props: Parameters<typeof nodoAvisoAdopcion>[0]) => {
+  const nodo = nodoAvisoAdopcion(props);
+  return nodo ? <AvisoEnfocado etiqueta={es.app.aviso}>{nodo}</AvisoEnfocado> : null;
 };
 
 /** Librerías del catálogo. Solo el administrador SIG ve el botón de adoptar (la API decide de verdad); no manda ningún dato. */
@@ -234,8 +241,8 @@ export const PantallaListadoRequisitos = ({
         <EstadoVacio titulo={t.sinResultadosTitulo} descripcion={t.sinResultadosDescripcion} />
       ) : (
         <>
-          <Tabla>
-            <caption className="sr-only">{t.tablaDescripcion}</caption>
+          <Tabla aria-describedby="listado-requisitos-desc">
+            <caption id="listado-requisitos-desc" className="sr-only">{t.tablaDescripcion}</caption>
             <thead>
               <tr>
                 <Th>{t.columnas.capitulo}</Th>

@@ -3,6 +3,7 @@ import type { EmpresaDePersona } from '../api/tipos';
 import type { AvisoCambio } from '../cambio-empresa/cambiar';
 import { es } from '../i18n/es-EC';
 import { MARCA_GENERICA } from '../marca/generica';
+import { AvisoEnfocado } from './aviso-enfocado';
 import { LogoEmpresa } from './marco';
 
 /**
@@ -18,11 +19,11 @@ export const PantallaEleccionEmpresa = ({ empresas, aviso = null }: { empresas: 
       <h1 className="text-2xl font-semibold text-fg">{es.eleccion.titulo}</h1>
       <p className="mb-4 mt-2 text-sm text-fg-muted">{es.eleccion.ayuda}</p>
       {aviso && (
-        <div className="mb-4">
+        <AvisoEnfocado etiqueta={es.app.aviso}>
           <Alert tono={es.empresas.avisos[aviso].tono} titulo={es.empresas.avisos[aviso].titulo}>
             {es.empresas.avisos[aviso].detalle}
           </Alert>
-        </div>
+        </AvisoEnfocado>
       )}
       <ul aria-label={es.eleccion.lista} className="flex flex-col gap-3">
         {empresas.map((e) => (

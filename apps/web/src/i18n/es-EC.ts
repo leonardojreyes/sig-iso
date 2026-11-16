@@ -1,6 +1,6 @@
 // Textos de la interfaz en español de Ecuador. Ningún texto visible se escribe dentro de las pantallas.
 export const es = {
-  app: { nombre: 'sig-iso', lema: 'Sistema de Gestión Integrado ISO', saltar: 'Saltar al contenido' },
+  app: { nombre: 'sig-iso', lema: 'Sistema de Gestión Integrado ISO', saltar: 'Saltar al contenido', aviso: 'Aviso' },
   nav: { panel: 'Panel', requisitos: 'Requisitos', diagnostico: 'Diagnóstico', alcance: 'Alcance', controles: 'Controles', cobertura: 'Cobertura', declaracion: 'Declaración', normas: 'Normas', marca: 'Marca', principal: 'Navegación principal' },
   sesion: { cerrar: 'Cerrar sesión' },
   eleccion: {

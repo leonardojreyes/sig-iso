@@ -227,13 +227,12 @@ export const PantallaControles = ({ empresa, persona, marco, opciones, filtros, 
             </form>
           </Card>
 
-          <p className="mb-2 text-sm text-fg-muted" role="status">
+          <p className="mb-2 text-sm text-fg-muted">
             {t.resultados(marco.controles.length)}
           </p>
           {marco.controles.length === 0 ? (
             <EstadoVacio titulo={t.sinResultadosTitulo} descripcion={t.sinResultadosDescripcion} />
           ) : (
-            <div className="overflow-x-auto">
               <Tabla aria-describedby="controles-desc">
                 <caption id="controles-desc" className="sr-only">
                   {t.tablaDescripcion}
@@ -280,7 +279,6 @@ export const PantallaControles = ({ empresa, persona, marco, opciones, filtros, 
                   ))}
                 </tbody>
               </Tabla>
-            </div>
           )}
         </>
       )}

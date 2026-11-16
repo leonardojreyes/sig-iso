@@ -4,6 +4,7 @@ import { es } from '../i18n/es-EC';
 import type { AvisoMarca } from '../marca/editar';
 import type { MarcaDetalle } from '../marca/marca';
 import type { Empresa } from '../marca/tipos';
+import { AvisoEnfocado } from './aviso-enfocado';
 import { LogoEmpresa, logoSeguro, MarcoApp } from './marco';
 
 const t = es.marcaEdicion;
@@ -31,11 +32,11 @@ const AvisoDeMarca = ({ aviso }: { aviso: AvisoMarca | null }) => {
   if (!aviso) return null;
   const a = t.avisos[aviso];
   return (
-    <div className="mb-4">
+    <AvisoEnfocado etiqueta={es.app.aviso}>
       <Alert tono={a.tono} titulo={a.titulo}>
         {a.detalle}
       </Alert>
-    </div>
+    </AvisoEnfocado>
   );
 };
 

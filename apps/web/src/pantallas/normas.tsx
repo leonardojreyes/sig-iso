@@ -4,6 +4,7 @@ import { es } from '../i18n/es-EC';
 import { ARCHIVOS_MAX, type AvisoNormas } from '../librerias/subir';
 import type { ResultadoArchivo, ResultadoCarga } from '../librerias/resultados-carga';
 import type { Empresa } from '../marca/tipos';
+import { AvisoEnfocado } from './aviso-enfocado';
 import { MarcoApp } from './marco';
 
 const t = es.normas;
@@ -44,7 +45,7 @@ const ErroresDe = ({ errores }: { errores: readonly ErrorCargaLibreria[] }) =>
 const ResultadoDeArchivo = ({ r }: { r: ResultadoArchivo }) => {
   if (r.tipo === 'fallo') {
     return (
-      <Alert tono="danger" titulo={t.archivo(r.nombre)}>
+      <Alert anunciar={false} tono="danger" titulo={t.archivo(r.nombre)}>
         {t.fallos[r.motivo]}
       </Alert>
     );
@@ -52,7 +53,7 @@ const ResultadoDeArchivo = ({ r }: { r: ResultadoArchivo }) => {
   const c = r.carga;
   if (c.estado === 'rechazada' && c.motivo) {
     return (
-      <Alert tono="danger" titulo={t.archivo(r.nombre)}>
+      <Alert anunciar={false} tono="danger" titulo={t.archivo(r.nombre)}>
         {t.motivos[c.motivo]}
         <ErroresDe errores={c.errores} />
       </Alert>
@@ -60,14 +61,14 @@ const ResultadoDeArchivo = ({ r }: { r: ResultadoArchivo }) => {
   }
   const detalle = c.estado === 'cargada' ? t.estados.cargada(c.codigo ?? '', c.version ?? '', c.entradas ?? 0) : t.estados.ya_cargada(c.codigo ?? '', c.version ?? '');
   return (
-    <Alert tono="success" titulo={t.archivo(r.nombre)}>
+    <Alert anunciar={false} tono="success" titulo={t.archivo(r.nombre)}>
       {detalle}
     </Alert>
   );
 };
 
 const Resultado = ({ resultado }: { resultado: ResultadoCarga }) => (
-  <section aria-labelledby="resultado-titulo" className="mb-6 flex flex-col gap-3">
+  <AvisoEnfocado como="section" etiquetadoPor="resultado-titulo" className="mb-6 flex flex-col gap-3">
     <h2 id="resultado-titulo" className="text-lg font-semibold text-fg">
       {t.resultadoTitulo}
     </h2>
@@ -76,18 +77,18 @@ const Resultado = ({ resultado }: { resultado: ResultadoCarga }) => (
     ))}
     {resultado.omitidos > 0 && <p className="text-sm text-fg-muted">{t.omitidos(resultado.omitidos)}</p>}
     {resultado.recortado && <p className="text-sm text-fg-muted">{t.recortado(ARCHIVOS_MAX)}</p>}
-  </section>
+  </AvisoEnfocado>
 );
 
 const AvisoDeNormas = ({ aviso }: { aviso: AvisoNormas | null }) => {
   if (!aviso) return null;
   const a = t.avisos[aviso];
   return (
-    <div className="mb-4">
+    <AvisoEnfocado etiqueta={es.app.aviso}>
       <Alert tono={a.tono} titulo={a.titulo}>
         {a.detalle}
       </Alert>
-    </div>
+    </AvisoEnfocado>
   );
 };
 

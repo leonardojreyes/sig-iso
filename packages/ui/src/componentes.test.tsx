@@ -56,3 +56,43 @@ describe('accesibilidad (axe) — componentes de dominio', () => {
     expect(getByText('No cumple')).toBeTruthy();
   });
 });
+
+describe('Tabla: región que se desplaza (guía de tablas responsivas de modern-web-guidance)', () => {
+  const tabla = (conNombre: boolean) => (
+    <Tabla {...(conNombre ? { 'aria-describedby': 'datos-desc' } : {})}>
+      <caption id="datos-desc" className="sr-only">Datos</caption>
+      <thead><tr><Th>A</Th></tr></thead>
+      <tbody><tr><Td>1</Td></tr></tbody>
+    </Tabla>
+  );
+
+  it('el contenedor se puede enfocar con el teclado y es una región nombrada por el caption', () => {
+    const { container } = render(tabla(true));
+    const region = container.querySelector('[role="region"]')!;
+    expect(region.getAttribute('tabindex')).toBe('0');
+    expect(region.getAttribute('aria-labelledby')).toBe('datos-desc');
+    expect(region.querySelector('table')).not.toBeNull();
+  });
+
+  it('sin el id del caption el contenedor sigue siendo enfocable pero no se declara región (no hay con qué nombrarla)', () => {
+    const { container } = render(tabla(false));
+    expect(container.querySelector('[role="region"]')).toBeNull();
+    expect(container.firstElementChild?.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('no tiene violaciones de accesibilidad con ni sin nombre', async () => {
+    await verificar(tabla(true));
+    await verificar(tabla(false));
+  });
+});
+
+describe('Alert: anuncia solo si se le pide', () => {
+  it('por omisión es una región viva (alert para peligro y advertencia, status para lo demás)', () => {
+    const { container } = render(<><Alert tono="danger" titulo="a" /><Alert tono="warning" titulo="b" /><Alert tono="info" titulo="c" /><Alert tono="success" titulo="d" /></>);
+    expect([...container.querySelectorAll('[role]')].map((e) => e.getAttribute('role'))).toEqual(['alert', 'alert', 'status', 'status']);
+  });
+  it('con anunciar={false} no lleva rol: varios avisos juntos no producen una ráfaga de anuncios', () => {
+    const { container } = render(<><Alert anunciar={false} tono="danger" titulo="a" /><Alert anunciar={false} tono="success" titulo="b" /></>);
+    expect(container.querySelectorAll('[role]')).toHaveLength(0);
+  });
+});
