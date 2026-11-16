@@ -60,6 +60,14 @@ describe('aviso de cambio de empresa en el panel', () => {
     const { getByText } = render(<PantallaPanelPendiente empresa={una} persona="Persona" aviso={a} />);
     expect(getByText(es.empresas.avisos[a].detalle)).toBeTruthy();
   });
+  it('no tiene violaciones axe sin aviso ni con ninguno de sus avisos', async () => {
+    const avisos = [null, ...(Object.keys(es.empresas.avisos) as (keyof typeof es.empresas.avisos)[])];
+    for (const aviso of avisos) {
+      const { container, unmount } = render(<PantallaPanelPendiente empresa={varias} persona="Persona" aviso={aviso} />);
+      expect((await axe(container)).violations.map((v) => `${aviso ?? 'sin aviso'}: ${v.id}`)).toEqual([]);
+      unmount();
+    }
+  });
   it('sin aviso no muestra ninguna alerta', () => {
     const { queryByRole } = render(<PantallaPanelPendiente empresa={una} persona="Persona" />);
     expect(queryByRole('alert')).toBeNull();

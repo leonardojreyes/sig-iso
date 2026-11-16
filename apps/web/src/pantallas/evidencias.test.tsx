@@ -153,6 +153,28 @@ describe('PantallaCobertura', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('no tiene violaciones axe en ninguno de sus estados (los cinco estados de cobertura, sin librerías, sin resultados, porcentaje nulo, con filtro y como administrador)', async () => {
+    const entrada = cobertura().entradas[0]!;
+    const todosLosEstados = cobertura({
+      entradas: (['cubierta', 'evidencia_vencida', 'sin_evidencia', 'sin_control', 'no_aplica'] as const).map((estado, i) => ({ ...entrada, idEstable: `a27-${i}`, estado })),
+    });
+    const casos: Array<[string, Parameters<typeof PantallaCobertura>[0]]> = [
+      ['los cinco estados', { ...baseC, cobertura: todosLosEstados }],
+      ['sin librerías adoptadas', { ...baseC, cobertura: cobertura({ normas: [], entradas: [], porNorma: [] }) }],
+      ['sin resultados', { ...baseC, cobertura: cobertura({ entradas: [] }) }],
+      ['porcentaje nulo', { ...baseC, cobertura: cobertura({ porNorma: [{ norma: 'ISO 9001', total: 0, cubiertas: 0, evidenciaVencida: 0, sinEvidencia: 0, sinControl: 0, porcentaje: null }], entradas: [] }) }],
+      ['con filtro', { ...baseC, filtros: { norma: 'ISO 9001' } }],
+      ['como administrador', { ...baseC, persona: admin }],
+      ['como lector', { ...baseC, persona: lector }],
+    ];
+    for (const [nombre, props] of casos) {
+      const { container, unmount } = render(<PantallaCobertura {...props} />);
+      const resultado = await axe(container);
+      expect(resultado.violations.map((v) => `${nombre}: ${v.id}`)).toEqual([]);
+      unmount();
+    }
+  });
+
   it('muestra el estado de cada entrada con texto (no solo color) y el resumen por norma', () => {
     const { container } = render(<PantallaCobertura {...baseC} />);
     for (const estado of ['Cubierta', 'Sin control', 'Evidencia vencida']) expect(within(container).getByText(estado)).toBeTruthy();
