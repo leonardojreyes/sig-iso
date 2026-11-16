@@ -7,6 +7,7 @@ import { jwtVerify, type JWTVerifyGetKey } from 'jose';
 import type { ConfiguracionIngreso } from './configuracion';
 import { rutaDeRetornoSegura } from './retorno';
 import { abrirSello, sellar, TransaccionInvalidaError } from './sellado';
+import { UUID } from '../validacion/patrones';
 
 export interface DependenciasFlujo {
   readonly config: ConfiguracionIngreso;
@@ -45,7 +46,6 @@ export type ResultadoCallback =
 const VIGENCIA_TRANSACCION_SEGUNDOS = 300;
 const CODIGO_MAXIMO = 2048;
 const TOKEN_MAXIMO = 16_384;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SESION = /^[A-Za-z0-9_-]{1,128}$/;
 const SIN_CACHE = 'no-store';
 

@@ -1,11 +1,11 @@
 // Resultado de una adopción, que viaja en la dirección al volver al listado. Solo valores CONOCIDOS; los dos de éxito llevan la
 // librería (la pantalla comprueba que de verdad esté adoptada antes de decir nada: una dirección inventada no muestra un éxito).
+import { UUID } from '../validacion/patrones';
+
 export type TipoAviso = 'adoptada' | 'ya_adoptada' | 'sin_permiso' | 'no_encontrada' | 'no_disponible';
 export type AvisoAdopcion =
   | { readonly tipo: 'adoptada' | 'ya_adoptada'; readonly libreriaId: string }
   | { readonly tipo: 'sin_permiso' | 'no_encontrada' | 'no_disponible' };
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Parametros = Readonly<Record<string, string | readonly string[] | undefined>>;
 

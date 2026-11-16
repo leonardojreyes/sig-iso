@@ -30,8 +30,8 @@ import type {
   VersionDeclaracion,
   VersionDeclaracionConFilas,
 } from './tipos';
+import { UUID } from '../validacion/patrones';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLES: readonly string[] = [
   'administrador_sig',
   'dueno_proceso',
