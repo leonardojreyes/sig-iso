@@ -14,15 +14,9 @@ export const adoptarLibreria = async (
   deps: DependenciasSesion,
 ): Promise<Response> => {
   const { config } = deps;
-  if (peticion.method !== 'POST')
-    return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
-  if (!origenValido(peticion, config.origen))
-    return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
-  if (
-    !UUID.test(entrada.libreriaId) ||
-    !entrada.slugVerificado ||
-    entrada.slugVerificado !== entrada.slugDeLaDireccion
-  ) {
+  if (peticion.method !== 'POST') return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
+  if (!origenValido(peticion, config.origen)) return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
+  if (!UUID.test(entrada.libreriaId) || !entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion) {
     return new Response(null, { status: 404, headers: SIN_CACHE });
   }
   const slug = entrada.slugVerificado;
@@ -44,9 +38,7 @@ export const adoptarLibreria = async (
   if (!sesion) return aIngresar([]);
   const acceso = await servicio.obtenerAcceso(sesion);
   if (!acceso.ok) {
-    return acceso.motivo === 'expirada'
-      ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()])
-      : volver('no_disponible', []);
+    return acceso.motivo === 'expirada' ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()]) : volver('no_disponible', []);
   }
   const cookies = acceso.nuevaCookie ? [acceso.nuevaCookie] : [];
 

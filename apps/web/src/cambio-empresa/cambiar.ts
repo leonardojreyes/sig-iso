@@ -33,7 +33,9 @@ export const pedirCambioDeEmpresa = async (peticion: Request, elegida: string, d
   if (!sesion) return { tipo: 'ingresar', cookies: [] };
   const acceso = await servicio.obtenerAcceso(sesion);
   if (!acceso.ok) {
-    return acceso.motivo === 'expirada' ? { tipo: 'ingresar', cookies: [acceso.limpiarCookie ?? servicio.borrarCookie()] } : { tipo: 'aviso', aviso: 'no_disponible', cookies: [] };
+    return acceso.motivo === 'expirada'
+      ? { tipo: 'ingresar', cookies: [acceso.limpiarCookie ?? servicio.borrarCookie()] }
+      : { tipo: 'aviso', aviso: 'no_disponible', cookies: [] };
   }
   const cookies = acceso.nuevaCookie ? [acceso.nuevaCookie] : [];
 
@@ -84,10 +86,13 @@ export const cambiarEmpresa = async (
   const { config } = deps;
   if (peticion.method !== 'POST') return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
   if (!origenValido(peticion, config.origen)) return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
-  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion) return new Response(null, { status: 404, headers: SIN_CACHE });
+  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion)
+    return new Response(null, { status: 404, headers: SIN_CACHE });
   const actual = entrada.slugVerificado;
-  const volver = (aviso: AvisoCambio, cookies: readonly string[] = []): Response => redirigirA(`${config.origen}/e/${actual}/panel?cambio=${aviso}`, cookies);
-  const aIngresar = (cookies: readonly string[]): Response => redirigirA(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${actual}/panel`)}`, cookies);
+  const volver = (aviso: AvisoCambio, cookies: readonly string[] = []): Response =>
+    redirigirA(`${config.origen}/e/${actual}/panel?cambio=${aviso}`, cookies);
+  const aIngresar = (cookies: readonly string[]): Response =>
+    redirigirA(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${actual}/panel`)}`, cookies);
 
   // Sin sesión no hay nada que cambiar: se manda a ingresar antes de procesar el cuerpo.
   if (!(await crearServicioSesion(deps).leer(peticion))) return aIngresar([]);
@@ -114,8 +119,10 @@ export const elegirEmpresa = async (peticion: Request, deps: DependenciasSesion)
   const { config } = deps;
   if (peticion.method !== 'POST') return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
   if (!origenValido(peticion, config.origen)) return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
-  const volver = (aviso: AvisoCambio, cookies: readonly string[] = []): Response => redirigirA(`${config.origen}/empresas?cambio=${aviso}`, cookies);
-  const aIngresar = (cookies: readonly string[]): Response => redirigirA(`${config.origen}/auth/login?retorno=${encodeURIComponent('/empresas')}`, cookies);
+  const volver = (aviso: AvisoCambio, cookies: readonly string[] = []): Response =>
+    redirigirA(`${config.origen}/empresas?cambio=${aviso}`, cookies);
+  const aIngresar = (cookies: readonly string[]): Response =>
+    redirigirA(`${config.origen}/auth/login?retorno=${encodeURIComponent('/empresas')}`, cookies);
 
   if (!(await crearServicioSesion(deps).leer(peticion))) return aIngresar([]);
   let formulario: FormData;
