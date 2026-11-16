@@ -32,7 +32,7 @@ const PRIVILEGIOS = [
 // Matriz esperada de privilegios de TABLA (el dueño, `sigiso_owner`, es dueño de todo y no se lista).
 const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   empresa: { app: ["SELECT"] },
-  usuario: { app: ["SELECT"] }, // INSERT y UPDATE solo por columnas, sin `rol` (migración 0005)
+  usuario: { app: ["SELECT"] }, // INSERT y UPDATE solo por columnas (migraciones 0005 y 0015)
   libreria: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
   libreria_entrada: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
   libreria_entrada_norma: { app: ["SELECT", "INSERT"], catalogo: ["SELECT", "INSERT"] },
@@ -42,6 +42,7 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   evaluacion: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE (migración 0007)
   control: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: un control se retira (migración 0008)
   evidencia: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas (estado y quién y cuándo), sin DELETE (migración 0009)
+  solicitud_acceso: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas (estado y quién y cuándo), sin DELETE (migración 0015)
   declaracion_version: { app: ["SELECT", "INSERT"] }, // inmutable: ni UPDATE ni DELETE (migración 0010)
   declaracion_fila: { app: ["SELECT", "INSERT"] }, // inmutable (migración 0010)
   control_mapeo: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro, nunca se actualiza (migración 0008)
@@ -297,7 +298,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
       for (const c of ["sid", "usuario_id"]) expect(await col("empresa_activa", c, "UPDATE")).toBe(false);
     });
 
-    it("la aplicación solo actualiza nombre y correo de usuario; ninguna otra columna ni tabla", async () => {
+    it("la aplicación solo actualiza nombre, correo, rol, baja y versión de usuario, y estado y resolución de las solicitudes; ninguna otra columna ni tabla", async () => {
       const col = async (rol: string, tabla: string, columna: string) =>
         (
           await sql<{
@@ -308,8 +309,27 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         ).rows[0]?.ok;
       expect(await col("sigiso_app", "usuario", "nombre")).toBe(true);
       expect(await col("sigiso_app", "usuario", "correo")).toBe(true);
+      // 0015: la aplicación fija rol, baja y versión (quién puede lo decide la autorización por rol, no la base).
+      for (const c of ["rol", "baja_en", "version"])
+        expect(await col("sigiso_app", "usuario", c)).toBe(true);
       for (const c of ["id", "empresa_id", "creada_en"])
         expect(await col("sigiso_app", "usuario", c)).toBe(false);
+      // solicitud_acceso (0015): solo se resuelve (estado, cuándo y quién); ni la persona, ni el código, ni la empresa, ni los plazos.
+      for (const c of ["estado", "resuelta_en", "resuelta_por"])
+        expect(await col("sigiso_app", "solicitud_acceso", c)).toBe(true);
+      for (const c of ["id", "empresa_id", "usuario_id", "codigo", "creada_en", "vence_en"])
+        expect(await col("sigiso_app", "solicitud_acceso", c)).toBe(false);
+      // INSERT en usuario por columnas: con rol sí (0015); la baja y la versión nacen con su valor por omisión.
+      const ins = async (columna: string) =>
+        (
+          await sql<{
+            ok: boolean;
+          }>`select has_column_privilege('sigiso_app', 'public.usuario', ${columna}, 'INSERT') as ok`.execute(
+            owner(),
+          )
+        ).rows[0]?.ok;
+      for (const c of ["id", "empresa_id", "nombre", "correo", "rol"]) expect({ c, ok: await ins(c) }).toEqual({ c, ok: true });
+      for (const c of ["baja_en", "version", "creada_en"]) expect({ c, ok: await ins(c) }).toEqual({ c, ok: false });
       // empresa (0013): la aplicación cambia SOLO el color y el logo de su empresa; ni el nombre, ni el slug, ni el identificador.
       for (const c of ["color_primario", "logo_url"])
         expect(await col("sigiso_app", "empresa", c)).toBe(true);
@@ -325,6 +345,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
             "evaluacion",
             "control",
             "evidencia",
+            "solicitud_acceso",
           ].includes(x),
       )) {
         const r = await sql<{
@@ -341,7 +362,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma', 'solicitud_acceso') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
@@ -358,6 +379,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         "libreria",
         "libreria_entrada",
         "libreria_entrada_norma",
+        "solicitud_acceso",
         "usuario",
       ]);
       for (const f of r.rows)

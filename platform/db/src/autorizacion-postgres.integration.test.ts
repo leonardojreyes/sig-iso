@@ -111,17 +111,25 @@ describe.skipIf(!hayBase)("AutorizacionPostgres (PostgreSQL real)", () => {
     await expect(conTenant(owner(), A, async (trx) => sql`update usuario set rol = 'superadmin' where id = ${COLAB_A}`.execute(trx))).rejects.toThrow(/check|rol/i);
   });
 
-  it("la aplicación NO puede asignarse ni cambiar roles: ni UPDATE ni INSERT de la columna rol", async () => {
-    await expect(conTenant(app(), A, async (trx) => sql`update usuario set rol = 'administrador_sig' where id = ${COLAB_A}`.execute(trx))).rejects.toThrow(/permission denied|permiso denegado/i);
-    await expect(
-      conTenant(app(), A, async (trx) =>
-        sql`insert into usuario (id, empresa_id, nombre, correo, rol) values ('a9000099-0000-4000-8000-000000000099', ${A}, 'Intruso', 'intruso@example.test', 'administrador_sig')`.execute(trx),
-      ),
-    ).rejects.toThrow(/permission denied|permiso denegado/i);
-    // Insertar sin rol sigue permitido (alta de datos de identificación) y queda sin ningún permiso.
+  it("el rol que fija la aplicación (ADR 036) rige de inmediato; una baja lo quita; un alta sin rol no da ningún permiso", async () => {
+    const P = "a9000097-0000-4000-8000-000000000097";
+    await conTenant(app(), A, async (trx) =>
+      sql`insert into usuario (id, empresa_id, nombre, correo, rol) values (${P}, ${A}, 'Alta', 'alta@example.test', 'colaborador')`.execute(trx),
+    );
+    expect(await autorizacion().rolesDe(P, A)).toEqual(["colaborador"]);
+    await conTenant(app(), A, async (trx) => sql`update usuario set rol = 'auditor_interno', version = version + 1 where id = ${P}`.execute(trx));
+    expect(await autorizacion().rolesDe(P, A)).toEqual(["auditor_interno"]);
+    // Una baja deja el rol en nulo: desde la siguiente consulta no puede nada (falla cerrada, ADR 029).
+    await conTenant(app(), A, async (trx) => sql`update usuario set rol = null, baja_en = now(), version = version + 1 where id = ${P}`.execute(trx));
+    expect(await autorizacion().rolesDe(P, A)).toEqual([]);
+    // Insertar sin rol sigue permitido y queda sin ningún permiso.
     await conTenant(app(), A, async (trx) =>
       sql`insert into usuario (id, empresa_id, nombre, correo) values ('a9000098-0000-4000-8000-000000000098', ${A}, 'Nueva', 'nueva@example.test')`.execute(trx),
     );
     expect(await autorizacion().rolesDe("a9000098-0000-4000-8000-000000000098", A)).toEqual([]);
+    // Lo que la aplicación NO puede hacer: cambiar el rol de una persona de OTRA empresa (RLS) ni la identidad de una persona.
+    const ajena = await conTenant(app(), A, async (trx) => sql`update usuario set rol = 'administrador_sig' where empresa_id <> ${A}`.execute(trx));
+    expect(Number(ajena.numAffectedRows)).toBe(0);
+    await expect(conTenant(app(), A, async (trx) => sql`update usuario set empresa_id = ${A} where id = ${P}`.execute(trx))).rejects.toThrow(/permission denied|permiso denegado/i);
   });
 });
