@@ -11,5 +11,7 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 .claude/settings.local.json
+# Skill de terceros (guías de desarrollo web moderno), instalada en local; no se sube al repositorio (revisar su licencia antes).
+.claude/skills/modern-web-guidance/
 *.tsbuildinfo
 .local/
