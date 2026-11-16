@@ -147,7 +147,7 @@ export const PantallaEvidenciasControl = ({ empresa, persona, control, evidencia
 
       <p className="mb-2 flex flex-wrap items-center gap-3 text-sm text-fg-muted">
         <span>{t.resultados(evidencias.length)}</span>
-        <a className="font-medium text-primary underline" href={`/e/${empresa.id}/controles/${control.id}${historial ? '' : '?historicas=true'}`}>
+        <a className="inline-flex min-h-[var(--sig-density-target-min)] items-center font-medium text-primary underline" href={`/e/${empresa.id}/controles/${control.id}${historial ? '' : '?historicas=true'}`}>
           {historial ? t.sinHistorial : t.historial}
         </a>
       </p>

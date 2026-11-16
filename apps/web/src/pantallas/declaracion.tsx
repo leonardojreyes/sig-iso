@@ -131,7 +131,7 @@ export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, 
               <p className="text-sm text-fg-muted">{t.sinAlcance}</p>
             )}
             <p className="mt-3">
-              <a className="text-sm font-medium text-primary underline" href={`${base}/alcance`}>
+              <a className="inline-flex min-h-[var(--sig-density-target-min)] items-center text-sm font-medium text-primary underline" href={`${base}/alcance`}>
                 {t.irAlAlcance}
               </a>
             </p>
