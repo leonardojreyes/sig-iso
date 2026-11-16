@@ -3,6 +3,7 @@
 import type { ConfiguracionIngreso } from './configuracion';
 import { leerCookie } from './flujo';
 import { crearServicioSesion, type DependenciasSesion } from './sesion';
+import { SLUG } from '../validacion/patrones';
 
 export type DecisionProxy =
   | { readonly tipo: 'pasar'; readonly empresa: string | null; readonly cookies: readonly string[] }
@@ -11,7 +12,6 @@ export type DecisionProxy =
   | { readonly tipo: 'no_disponible' };
 
 const RUTA_DE_EMPRESA = /^\/e\/([^/]+)(?:\/(.*))?$/;
-const SLUG = /^[a-z0-9-]{1,32}$/;
 const VIDA_IDENTIDAD_MS = 5 * 60_000;
 const TIEMPO_API_MS = 5_000;
 

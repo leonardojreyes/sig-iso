@@ -3,9 +3,16 @@
 // formulario: método POST, `Origin` propio exacto, empresa de la dirección = empresa verificada, y se arma un cuerpo con una lista
 // cerrada de campos. El resultado vuelve a la pantalla como un aviso de una lista cerrada (nunca texto de la API ni del usuario).
 import type { DependenciasSesion } from '../auth/sesion';
-import { crearServicioSesion, origenValido } from '../auth/sesion';
-
-const SIN_CACHE = { 'Cache-Control': 'no-store' };
+import { crearServicioSesion } from '../auth/sesion';
+import {
+  SIN_CACHE,
+  rechazoDeEmpresa,
+  rechazoDeEscritura,
+  rechazoDeMetodo,
+  redirigir,
+  type EntradaDeEmpresa,
+} from '../auth/guardia-formulario';
+import { UUID } from '../validacion/patrones';
 
 export type AvisoEscritura =
   | 'guardado'
@@ -55,15 +62,12 @@ const AVISOS: readonly string[] = [
 export const leerAvisoEscritura = (sp: Readonly<Record<string, string | readonly string[] | undefined>>): AvisoEscritura | null =>
   typeof sp.aviso === 'string' && AVISOS.includes(sp.aviso) ? (sp.aviso as AvisoEscritura) : null;
 
-interface Entrada {
-  readonly slugDeLaDireccion: string;
-  readonly slugVerificado: string | null;
+interface Entrada extends EntradaDeEmpresa {
   readonly deps: DependenciasSesion;
   /** El recurso de la dirección (por ejemplo, el control o la evidencia): se exige un UUID o responde 404, como una empresa distinta. */
   readonly id?: string;
 }
 
-const UUID_DIRECCION = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** 25 MB: lo que acepta la API por archivo. */
 const ARCHIVO_MAX = 26_214_400;
 /** Un cuerpo vacío a propósito (la operación de la API no lleva cuerpo). */
@@ -109,23 +113,16 @@ const opcional = (f: FormData, nombre: string): string | null => {
 
 const reenviar = async (peticion: Request, entrada: Entrada, op: Operacion): Promise<Response> => {
   const { config } = entrada.deps;
-  if (peticion.method !== 'POST') return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
-  if (!origenValido(peticion, config.origen)) return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
-  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion)
-    return new Response(null, { status: 404, headers: SIN_CACHE });
-  const slug = entrada.slugVerificado;
+  const rechazo = rechazoDeEscritura(peticion, config.origen, entrada);
+  if (rechazo) return rechazo;
+  const slug = entrada.slugVerificado as string;
   let id: string | null = null;
   if (op.conId) {
-    if (!entrada.id || !UUID_DIRECCION.test(entrada.id)) return new Response(null, { status: 404, headers: SIN_CACHE });
+    if (!entrada.id || !UUID.test(entrada.id)) return new Response(null, { status: 404, headers: SIN_CACHE });
     id = entrada.id.toLowerCase();
   }
   const destino = (f: FormData | null): string => op.volverA?.(f, id) ?? op.pantalla;
 
-  const redirigir = (ubicacion: string, cookies: readonly string[]): Response => {
-    const cabeceras = new Headers({ Location: ubicacion, ...SIN_CACHE });
-    for (const c of cookies) cabeceras.append('Set-Cookie', c);
-    return new Response(null, { status: 303, headers: cabeceras });
-  };
   const aIngresar = (cookies: readonly string[]): Response =>
     redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/${destino(null)}`)}`, cookies);
 
@@ -226,7 +223,6 @@ const ESTADOS = ['cumple', 'parcial', 'no_cumple', 'no_aplica'];
 const CODIGO = /^[a-z0-9-]{1,64}$/;
 const ID = /^[a-z0-9][a-z0-9.-]{0,40}$/;
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const evaluarEntrada = (peticion: Request, entrada: Entrada): Promise<Response> =>
   reenviar(peticion, entrada, {
@@ -269,7 +265,6 @@ export const evaluarEntrada = (peticion: Request, entrada: Entrada): Promise<Res
 
 // ---- Controles de la empresa y mapeos (M3)
 
-const UUID_FORM = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CODIGO_CONTROL = /^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$/;
 const NORMA_FILTRO = /^[A-Za-z0-9 :./-]{1,60}$/;
 
@@ -283,7 +278,7 @@ const conservarControles = (f: FormData): string => {
 };
 const idControl = (f: FormData): string | null => {
   const id = campo(f, 'id');
-  return id && UUID_FORM.test(id) ? id.toLowerCase() : null;
+  return id && UUID.test(id) ? id.toLowerCase() : null;
 };
 const versionControl = (f: FormData): number | null => {
   const v = campo(f, 'version');
@@ -418,7 +413,7 @@ const cuerpoEvidencia = (f: FormData, o: { tipoObligatorio: boolean; tituloOblig
 /** El control al que se vuelve tras reemplazar o eliminar (campo oculto `control`), solo si es un UUID. */
 const controlDeVuelta = (f: FormData | null): string | null => {
   const c = f ? campo(f, 'control') : null;
-  return c && UUID_DIRECCION.test(c) ? c.toLowerCase() : null;
+  return c && UUID.test(c) ? c.toLowerCase() : null;
 };
 const paginaDelControl = (_f: FormData | null, id: string | null): string => (id ? `controles/${id}` : 'controles');
 const paginaDeLaEvidencia = (f: FormData | null): string => {
@@ -496,20 +491,14 @@ interface ParametrosDescarga {
  */
 const descargar = async (peticion: Request, entrada: Entrada, p: ParametrosDescarga): Promise<Response> => {
   const { config } = entrada.deps;
-  if (peticion.method !== 'GET') return new Response('Método no permitido', { status: 405, headers: { Allow: 'GET', ...SIN_CACHE } });
-  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion)
-    return new Response(null, { status: 404, headers: SIN_CACHE });
+  const rechazo = rechazoDeMetodo(peticion, 'GET') ?? rechazoDeEmpresa(entrada);
+  if (rechazo) return rechazo;
   let id: string | null = null;
   if (p.conId) {
-    if (!entrada.id || !UUID_DIRECCION.test(entrada.id)) return new Response(null, { status: 404, headers: SIN_CACHE });
+    if (!entrada.id || !UUID.test(entrada.id)) return new Response(null, { status: 404, headers: SIN_CACHE });
     id = entrada.id.toLowerCase();
   }
-  const slug = entrada.slugVerificado;
-  const redirigir = (ubicacion: string, cookies: readonly string[]): Response => {
-    const cabeceras = new Headers({ Location: ubicacion, ...SIN_CACHE });
-    for (const c of cookies) cabeceras.append('Set-Cookie', c);
-    return new Response(null, { status: 303, headers: cabeceras });
-  };
+  const slug = entrada.slugVerificado as string;
   const aIngresar = (cookies: readonly string[]): Response =>
     redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/${p.pantalla}`)}`, cookies);
   const aviso = (a: AvisoEscritura, cookies: readonly string[]): Response =>

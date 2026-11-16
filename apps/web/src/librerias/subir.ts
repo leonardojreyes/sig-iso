@@ -4,11 +4,18 @@
 // = empresa verificada, solo archivos .yaml/.yml y tamaño por archivo. El resultado se guarda en la memoria del servidor y la
 // pantalla lo muestra UNA vez (no viaja en la dirección).
 import type { DependenciasSesion } from '../auth/sesion';
-import { crearServicioSesion, origenValido } from '../auth/sesion';
+import { crearServicioSesion } from '../auth/sesion';
+import {
+  SIN_CACHE,
+  rechazoDeEmpresa,
+  rechazoDeEscritura,
+  rechazoDeMetodo,
+  redirigir,
+  type EntradaDeEmpresa,
+} from '../auth/guardia-formulario';
 import { validarCargaLibreria } from '../api/validadores';
 import { resultadosCompartidos, type ResultadoArchivo } from './resultados-carga';
 
-const SIN_CACHE = { 'Cache-Control': 'no-store' };
 /** 1 MB: lo que acepta la API por archivo. */
 export const ARCHIVO_LIBRERIA_MAX = 1_048_576;
 export const ARCHIVOS_MAX = 20;
@@ -23,23 +30,12 @@ export const leerAvisoNormas = (sp: Readonly<Record<string, string | readonly st
 /** Etiqueta del archivo para mostrar: sin caracteres raros ni longitud excesiva (el nombre lo escribe quien sube). */
 export const etiquetaDeArchivo = (nombre: string): string => nombre.replace(/[^A-Za-z0-9._ -]/g, '_').slice(0, 60) || 'archivo';
 
-export const subirLibrerias = async (
-  peticion: Request,
-  entrada: { slugDeLaDireccion: string; slugVerificado: string | null },
-  deps: DependenciasSesion,
-): Promise<Response> => {
+export const subirLibrerias = async (peticion: Request, entrada: EntradaDeEmpresa, deps: DependenciasSesion): Promise<Response> => {
   const { config } = deps;
-  if (peticion.method !== 'POST') return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
-  if (!origenValido(peticion, config.origen)) return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
-  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion)
-    return new Response(null, { status: 404, headers: SIN_CACHE });
-  const slug = entrada.slugVerificado;
+  const rechazo = rechazoDeEscritura(peticion, config.origen, entrada);
+  if (rechazo) return rechazo;
+  const slug = entrada.slugVerificado as string;
 
-  const redirigir = (ubicacion: string, cookies: readonly string[] = []): Response => {
-    const cabeceras = new Headers({ Location: ubicacion, ...SIN_CACHE });
-    for (const c of cookies) cabeceras.append('Set-Cookie', c);
-    return new Response(null, { status: 303, headers: cabeceras });
-  };
   const volver = (aviso: AvisoNormas, cookies: readonly string[] = []): Response =>
     redirigir(`${config.origen}/e/${slug}/normas?aviso=${aviso}`, cookies);
   const aIngresar = (cookies: readonly string[]): Response =>
@@ -111,15 +107,9 @@ export const subirLibrerias = async (
 };
 
 /** La plantilla se entrega siempre como adjunto y de un tipo fijo; no usa datos de la petición. */
-export const descargarPlantilla = (
-  peticion: Request,
-  entrada: { slugDeLaDireccion: string; slugVerificado: string | null },
-  contenido: string,
-  nombre: string,
-): Response => {
-  if (peticion.method !== 'GET') return new Response('Método no permitido', { status: 405, headers: { Allow: 'GET', ...SIN_CACHE } });
-  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion)
-    return new Response(null, { status: 404, headers: SIN_CACHE });
+export const descargarPlantilla = (peticion: Request, entrada: EntradaDeEmpresa, contenido: string, nombre: string): Response => {
+  const rechazo = rechazoDeMetodo(peticion, 'GET') ?? rechazoDeEmpresa(entrada);
+  if (rechazo) return rechazo;
   return new Response(contenido, {
     status: 200,
     headers: {

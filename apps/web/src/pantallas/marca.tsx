@@ -6,9 +6,9 @@ import type { MarcaDetalle } from '../marca/marca';
 import type { Empresa } from '../marca/tipos';
 import { AvisoEnfocado } from './aviso-enfocado';
 import { LogoEmpresa, logoSeguro, MarcoApp } from './marco';
+import { COLOR } from '../validacion/patrones';
 
 const t = es.marcaEdicion;
-const COLOR = /^#[0-9A-Fa-f]{6}$/;
 
 export interface PropsMarca {
   readonly empresa: Empresa;

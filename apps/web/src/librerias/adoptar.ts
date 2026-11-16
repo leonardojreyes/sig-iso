@@ -3,29 +3,21 @@
 // formulario: método POST, `Origin` propio exacto (ausente o «null» se rechaza), empresa de la dirección = empresa verificada y
 // librería con forma de UUID. El resultado vuelve al listado como un aviso de una lista cerrada.
 import type { DependenciasSesion } from '../auth/sesion';
-import { crearServicioSesion, origenValido } from '../auth/sesion';
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SIN_CACHE = { 'Cache-Control': 'no-store' };
+import { crearServicioSesion } from '../auth/sesion';
+import { SIN_CACHE, rechazoDeEscritura, redirigir, type EntradaDeEmpresa } from '../auth/guardia-formulario';
+import { UUID } from '../validacion/patrones';
 
 export const adoptarLibreria = async (
   peticion: Request,
-  entrada: { slugDeLaDireccion: string; slugVerificado: string | null; libreriaId: string },
+  entrada: EntradaDeEmpresa & { libreriaId: string },
   deps: DependenciasSesion,
 ): Promise<Response> => {
   const { config } = deps;
-  if (peticion.method !== 'POST') return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
-  if (!origenValido(peticion, config.origen)) return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
-  if (!UUID.test(entrada.libreriaId) || !entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion) {
-    return new Response(null, { status: 404, headers: SIN_CACHE });
-  }
-  const slug = entrada.slugVerificado;
+  const rechazo = rechazoDeEscritura(peticion, config.origen, entrada);
+  if (rechazo) return rechazo;
+  if (!UUID.test(entrada.libreriaId)) return new Response(null, { status: 404, headers: SIN_CACHE });
+  const slug = entrada.slugVerificado as string;
 
-  const redirigir = (ubicacion: string, cookies: readonly string[]): Response => {
-    const cabeceras = new Headers({ Location: ubicacion, ...SIN_CACHE });
-    for (const c of cookies) cabeceras.append('Set-Cookie', c);
-    return new Response(null, { status: 303, headers: cabeceras });
-  };
   const aIngresar = (cookies: readonly string[]): Response =>
     redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/requisitos`)}`, cookies);
   const volver = (aviso: string, cookies: readonly string[], libreria?: string): Response => {

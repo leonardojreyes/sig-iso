@@ -23,6 +23,7 @@ import {
 } from '../api/validadores';
 import { construirConsulta, type FiltrosDiagnostico } from './filtros';
 import { construirConsultaControles, type FiltrosControles } from './filtros-controles';
+import { UUID } from '../validacion/patrones';
 
 export type ResultadoCarga<T> =
   | { readonly tipo: 'ok'; readonly datos: T }
@@ -82,7 +83,6 @@ export const cargarControles = async (p: Base & { filtros: FiltrosControles }): 
   return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
 };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type Fallo =
   | { readonly tipo: 'ingresar' }
   | { readonly tipo: 'sin_permiso' }
