@@ -27,6 +27,15 @@ describe('matriz de permisos por rol (ADR 008, corte 0.6)', () => {
     expect(permisosDe('colaborador')).not.toContain('librerias.adoptar');
   });
 
+  // ADR 036: gestionar quién entra y con qué rol es SOLO del administrador SIG. Ni siquiera verlas es del colaborador: la lista trae
+  // los códigos de solicitud y los correos de las personas.
+  it('personas.ver y personas.gestionar son solo del administrador SIG', () => {
+    for (const p of ['personas.ver', 'personas.gestionar'] as const) {
+      expect(permisosDe('administrador_sig')).toContain(p);
+      for (const rol of ROLES.filter((r) => r !== 'administrador_sig')) expect(permisosDe(rol), `${rol} no debe tener ${p}`).not.toContain(p);
+    }
+  });
+
   it.each(['dueno_proceso', 'auditor_interno', 'auditor_externo', 'alta_direccion'] as Rol[])(
     'el rol %s aún no tiene permisos definidos en este corte (cerrado por defecto)',
     (rol) => {
