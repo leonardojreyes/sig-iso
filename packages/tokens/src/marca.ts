@@ -52,8 +52,10 @@ export const derivarTema = (marca: MarcaEmpresa): TemaMarca => {
     advertencias.push(`Color primario aclarado en modo oscuro para cumplir contraste AA (${marca.primario} → ${oscuro.color}).`);
 
   const variables = (primario: string, fondo: string, esClaro: boolean): Record<string, string> => {
-    const hover = esClaro ? mezclar(primario, NEGRO, 0.2) : mezclar(primario, BLANCO, 0.2);
     const sobre = textoSobre(primario);
+    // El hover se mezcla hacia el color OPUESTO al del texto: con texto negro se aclara, con texto blanco se oscurece. Así el
+    // contraste del texto sobre el botón solo puede mejorar al pasar el cursor (oscurecer siempre lo rompía con texto negro).
+    const hover = mezclar(primario, sobre === BLANCO ? NEGRO : BLANCO, 0.2);
     return {
       '--sig-color-primary': primario,
       '--sig-color-primary-hover': hover,

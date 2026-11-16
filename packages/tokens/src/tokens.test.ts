@@ -58,6 +58,32 @@ describe('tematización por empresa', () => {
     expect(contraste(t.oscuro['--sig-color-on-primary-subtle']!, t.oscuro['--sig-color-primary-subtle']!)).toBeGreaterThanOrEqual(AA_TEXTO);
   });
 
+  // Desde M6b-2 el administrador elige CUALQUIER color: las dos empresas sembradas no bastan. Se recorre una rejilla de 216 colores
+  // (seis niveles por canal: incluye blanco, negro, grises, amarillos y los tonos saturados) en ambos modos.
+  const NIVELES = [0, 51, 102, 153, 204, 255];
+  const rejilla = NIVELES.flatMap((r) =>
+    NIVELES.flatMap((g) => NIVELES.map((b) => `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`)),
+  );
+
+  it('para cualquier color elegido, el primario suave, el botón y su hover cumplen AA 4.5 en claro y oscuro', () => {
+    const fallos: string[] = [];
+    for (const primario of rejilla) {
+      const t = derivarTema({ nombre: 'Prueba', primario });
+      for (const [modo, v] of Object.entries({ claro: t.claro, oscuro: t.oscuro })) {
+        const pares: Array<[string, string, string]> = [
+          ['texto sobre primario suave', v['--sig-color-on-primary-subtle']!, v['--sig-color-primary-subtle']!],
+          ['texto sobre primario', v['--sig-color-on-primary']!, v['--sig-color-primary']!],
+          ['texto sobre primario (hover)', v['--sig-color-on-primary']!, v['--sig-color-primary-hover']!],
+        ];
+        for (const [que, fg, bg] of pares) {
+          const r = contraste(fg, bg);
+          if (r < AA_TEXTO) fallos.push(`${primario} ${modo}: ${que} ${r.toFixed(2)}`);
+        }
+      }
+    }
+    expect(fallos).toEqual([]);
+  });
+
   it('las dos empresas producen colores distintos', () => {
     const [a, b] = empresas.map((e) => derivarTema(e));
     expect(a!.claro['--sig-color-primary']).not.toBe(b!.claro['--sig-color-primary']);
