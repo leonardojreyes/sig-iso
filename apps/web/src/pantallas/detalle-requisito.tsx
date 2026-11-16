@@ -42,7 +42,7 @@ export const PantallaDetalleRequisito = ({ empresa, requisito }: { empresa: Empr
           </Card>
         )}
       </div>
-      <p className="mt-6"><a className="text-primary underline-offset-2 hover:underline" href={`/e/${empresa.id}/requisitos`}>{t.volver}</a></p>
+      <p className="mt-6"><a className="inline-flex min-h-[var(--sig-density-target-min)] items-center text-primary underline-offset-2 hover:underline" href={`/e/${empresa.id}/requisitos`}>{t.volver}</a></p>
     </MarcoApp>
   );
 };

@@ -20,7 +20,7 @@ export const PantallaVersionDeclaracion = ({ empresa, persona, version }: PropsV
   return (
     <MarcoApp empresa={empresa} activo="declaracion" persona={persona.nombre}>
       <p className="mb-2">
-        <a className="text-sm font-medium text-primary underline" href={`${base}/declaracion`}>
+        <a className="inline-flex min-h-[var(--sig-density-target-min)] items-center text-sm font-medium text-primary underline" href={`${base}/declaracion`}>
           {t.volver}
         </a>
       </p>
