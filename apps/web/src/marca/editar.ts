@@ -3,35 +3,25 @@
 // protege el formulario: método POST, `Origin` propio exacto, empresa de la dirección = empresa verificada y forma de los dos campos.
 // El resultado vuelve a la pantalla como un aviso de una lista cerrada.
 import type { DependenciasSesion } from '../auth/sesion';
-import { crearServicioSesion, origenValido } from '../auth/sesion';
-
-const SIN_CACHE = { 'Cache-Control': 'no-store' };
-const COLOR = /^#[0-9A-Fa-f]{6}$/;
-const LOGO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/logos\/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp))$/;
+import { crearServicioSesion } from '../auth/sesion';
+import { rechazoDeEscritura, redirigir, type EntradaDeEmpresa } from '../auth/guardia-formulario';
+import { COLOR, LOGO } from '../validacion/patrones';
 
 export type AvisoMarca = 'guardada' | 'sin_permiso' | 'no_valido' | 'no_disponible';
 const AVISOS: readonly string[] = ['guardada', 'sin_permiso', 'no_valido', 'no_disponible'];
 export const leerAvisoMarca = (sp: Readonly<Record<string, string | readonly string[] | undefined>>): AvisoMarca | null =>
   typeof sp.aviso === 'string' && AVISOS.includes(sp.aviso) ? (sp.aviso as AvisoMarca) : null;
 
-export const guardarMarca = async (
-  peticion: Request,
-  entrada: { slugDeLaDireccion: string; slugVerificado: string | null },
-  deps: DependenciasSesion,
-): Promise<Response> => {
+export const guardarMarca = async (peticion: Request, entrada: EntradaDeEmpresa, deps: DependenciasSesion): Promise<Response> => {
   const { config } = deps;
-  if (peticion.method !== 'POST') return new Response('Método no permitido', { status: 405, headers: { Allow: 'POST', ...SIN_CACHE } });
-  if (!origenValido(peticion, config.origen)) return new Response('Origen no permitido', { status: 403, headers: SIN_CACHE });
-  if (!entrada.slugVerificado || entrada.slugVerificado !== entrada.slugDeLaDireccion) return new Response(null, { status: 404, headers: SIN_CACHE });
-  const slug = entrada.slugVerificado;
+  const rechazo = rechazoDeEscritura(peticion, config.origen, entrada);
+  if (rechazo) return rechazo;
+  const slug = entrada.slugVerificado as string;
 
-  const redirigir = (ubicacion: string, cookies: readonly string[] = []): Response => {
-    const cabeceras = new Headers({ Location: ubicacion, ...SIN_CACHE });
-    for (const c of cookies) cabeceras.append('Set-Cookie', c);
-    return new Response(null, { status: 303, headers: cabeceras });
-  };
-  const volver = (aviso: AvisoMarca, cookies: readonly string[] = []): Response => redirigir(`${config.origen}/e/${slug}/marca?aviso=${aviso}`, cookies);
-  const aIngresar = (cookies: readonly string[]): Response => redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/marca`)}`, cookies);
+  const volver = (aviso: AvisoMarca, cookies: readonly string[] = []): Response =>
+    redirigir(`${config.origen}/e/${slug}/marca?aviso=${aviso}`, cookies);
+  const aIngresar = (cookies: readonly string[]): Response =>
+    redirigir(`${config.origen}/auth/login?retorno=${encodeURIComponent(`/e/${slug}/marca`)}`, cookies);
 
   let formulario: FormData;
   try {
@@ -43,13 +33,15 @@ export const guardarMarca = async (
   const logoCrudo = formulario.get('logo');
   // Un logo vacío quita el logo (vuelve el monograma). Lo demás debe tener la forma permitida; la API vuelve a decidir.
   const logo = typeof logoCrudo === 'string' ? logoCrudo.trim() : null;
-  if (typeof color !== 'string' || !COLOR.test(color) || logo === null || (logo !== '' && (logo.length > 2048 || !LOGO.test(logo)))) return volver('no_valido');
+  if (typeof color !== 'string' || !COLOR.test(color) || logo === null || (logo !== '' && (logo.length > 2048 || !LOGO.test(logo))))
+    return volver('no_valido');
 
   const servicio = crearServicioSesion(deps);
   const sesion = await servicio.leer(peticion);
   if (!sesion) return aIngresar([]);
   const acceso = await servicio.obtenerAcceso(sesion);
-  if (!acceso.ok) return acceso.motivo === 'expirada' ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()]) : volver('no_disponible');
+  if (!acceso.ok)
+    return acceso.motivo === 'expirada' ? aIngresar([acceso.limpiarCookie ?? servicio.borrarCookie()]) : volver('no_disponible');
   const cookies = acceso.nuevaCookie ? [acceso.nuevaCookie] : [];
 
   let estado: number | null;
