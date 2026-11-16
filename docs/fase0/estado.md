@@ -22,6 +22,7 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 | **M6a** | **Cargar normas desde la interfaz** (requisito añadido el 2026-11-13, dentro del MVP): subir las librerías desde la web, sin comandos (ADR 034). Archivos o carpeta del navegador, librería propia de la empresa con RLS, plantilla descargable, errores en palabras, adopción | **Hecho (2026-11-14)** |
 | **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a), ADR 035. **M6b-1** (una persona en varias empresas y cambio de empresa) **hecho 2026-11-15**; **M6b-2** (marca editable: color y logo con verificación de contraste) **hecho 2026-11-15**. Módulos activos y nombre editable quedan fuera del MVP. | **Hecho** |
 | M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
+| **M7** | **Personas:** alta por solicitud de acceso con código corto, cambio de rol y baja, desde la web (ADR 036). La cuenta se sigue creando en Keycloak; la API no guarda credenciales de administración. | **En curso** (ADR 036 aprobado 2026-11-16) |
 
 **M2 y M3 en detalle** (para no tener que releer el código):
 
@@ -104,6 +105,8 @@ Un solo `/review` con seis revisores en paralelo sobre los 316 archivos del hito
 2. **Títulos del Anexo A (pregunta Q3 del spec de dominio v2):** la librería `iso-27001-2022-anexo-a` reproduce la lista **completa** de los 93 títulos oficiales. La regla 3 permite «título breve»; el cumplimiento lo marca como decisión formal pendiente antes de publicar o vender (cerrar con un ADR o reformular los títulos).
 3. **Registro del 413:** un archivo que declara más de lo permitido se corta antes del caso de uso y no deja registro en la bitácora (evidencias y librerías). Registrarlo exige una huella que aún no existe; hoy está documentado como límite.
 4. **Alta, baja y cambio de rol de personas:** `rol.cambiado`, `usuario.alta` y `usuario.baja` existen en el catálogo de la bitácora pero ningún código los emite todavía (las cuentas se crean con la siembra y `keycloak:cuentas`).
+
+**Resuelto el 2026-11-16 (responsable):** (1) la Declaración con motivo de inclusión, controles adicionales y referencia al tratamiento de riesgos queda **fuera del MVP**; el motivo de inclusión es lo primero después. (2) Títulos del Anexo A: el responsable los revisa con su ejemplar de la NTE INEN; la lista de 93 filas con alternativas propias está en `docs/revisiones/2026-11-16-titulos-anexo-a.md` (los títulos actuales ya son frases cortas de 2 a 5 palabras, no los nombres oficiales completos; el riesgo es que algunos coincidan con el nombre usual). (3) El registro del 413 queda como **límite documentado**. (4) Altas, bajas y roles: pantalla mínima de personas, **M7** (ADR 036).
 
 **Deuda anotada (no bloquea el hito)**
 
