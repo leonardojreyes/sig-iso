@@ -44,10 +44,12 @@ export const derivarTema = (marca: MarcaEmpresa): TemaMarca => {
   const advertencias: string[] = [];
 
   const claro = ajustar(marca.primario, NEGRO, FONDO_CLARO, AA_TEXTO);
-  if (claro.pasos > 0) advertencias.push(`Color primario oscurecido en modo claro para cumplir contraste AA (${marca.primario} → ${claro.color}).`);
+  if (claro.pasos > 0)
+    advertencias.push(`Color primario oscurecido en modo claro para cumplir contraste AA (${marca.primario} → ${claro.color}).`);
 
   const oscuro = ajustar(marca.primario, BLANCO, FONDO_OSCURO, AA_TEXTO);
-  if (oscuro.pasos > 0) advertencias.push(`Color primario aclarado en modo oscuro para cumplir contraste AA (${marca.primario} → ${oscuro.color}).`);
+  if (oscuro.pasos > 0)
+    advertencias.push(`Color primario aclarado en modo oscuro para cumplir contraste AA (${marca.primario} → ${oscuro.color}).`);
 
   const variables = (primario: string, fondo: string, esClaro: boolean): Record<string, string> => {
     const hover = esClaro ? mezclar(primario, NEGRO, 0.2) : mezclar(primario, BLANCO, 0.2);
@@ -68,7 +70,10 @@ export const derivarTema = (marca: MarcaEmpresa): TemaMarca => {
 /** CSS que aplica la marca de una empresa bajo `[data-empresa="<id>"]`. */
 export const cssMarca = (id: string, tema: TemaMarca): string => {
   if (!/^[a-z0-9-]{1,32}$/.test(id)) throw new Error('Identificador de empresa no válido para CSS de marca');
-  const bloque = (vars: Record<string, string>) => Object.entries(vars).map(([k, v]) => `${k}:${v};`).join('');
+  const bloque = (vars: Record<string, string>) =>
+    Object.entries(vars)
+      .map(([k, v]) => `${k}:${v};`)
+      .join('');
   return [
     `[data-empresa="${id}"]{${bloque(tema.claro)}}`,
     `[data-empresa="${id}"][data-theme="dark"],[data-theme="dark"] [data-empresa="${id}"]{${bloque(tema.oscuro)}}`,

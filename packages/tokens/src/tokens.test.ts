@@ -28,11 +28,14 @@ describe.each(Object.entries(modos))('tokens base — modo %s', (_nombre, t) => 
     expect(contraste(c('primary'), c('background'))).toBeGreaterThanOrEqual(AA_TEXTO);
     expect(contraste(c('primary'), c('surface'))).toBeGreaterThanOrEqual(AA_TEXTO);
   });
-  it.each(['success', 'warning', 'danger', 'info', 'neutral-status'])('estado %s legible sobre su fondo suave y la superficie (AA 4.5)', (e) => {
-    const suave = e === 'neutral-status' ? 'neutral-status-subtle' : `${e}-subtle`;
-    expect(contraste(c(e), c(suave))).toBeGreaterThanOrEqual(AA_TEXTO);
-    expect(contraste(c(e), c('surface'))).toBeGreaterThanOrEqual(AA_TEXTO);
-  });
+  it.each(['success', 'warning', 'danger', 'info', 'neutral-status'])(
+    'estado %s legible sobre su fondo suave y la superficie (AA 4.5)',
+    (e) => {
+      const suave = e === 'neutral-status' ? 'neutral-status-subtle' : `${e}-subtle`;
+      expect(contraste(c(e), c(suave))).toBeGreaterThanOrEqual(AA_TEXTO);
+      expect(contraste(c(e), c('surface'))).toBeGreaterThanOrEqual(AA_TEXTO);
+    },
+  );
   it('bordes de controles y anillo de foco (componentes, 3:1)', () => {
     expect(contraste(c('border-strong'), c('surface'))).toBeGreaterThanOrEqual(AA_COMPONENTE);
     expect(contraste(c('ring'), c('surface'))).toBeGreaterThanOrEqual(AA_COMPONENTE);
