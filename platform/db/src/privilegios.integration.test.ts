@@ -45,6 +45,10 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   solicitud_acceso: { app: ["SELECT"] }, // INSERT y UPDATE solo por columnas (migraciones 0015 y 0016), sin DELETE
   declaracion_version: { app: ["SELECT", "INSERT"] }, // inmutable: ni UPDATE ni DELETE (migración 0010)
   declaracion_fila: { app: ["SELECT", "INSERT"] }, // inmutable (migración 0010)
+  declaracion_motivo: { app: ["SELECT", "INSERT"] }, // copia congelada: inmutable (migración 0019)
+  declaracion_riesgo: { app: ["SELECT", "INSERT"] }, // inmutable (migración 0019)
+  declaracion_fila_riesgo: { app: ["SELECT", "INSERT"] }, // inmutable (migración 0019)
+  declaracion_referencia: { app: ["SELECT", "INSERT"] }, // inmutable (migración 0019)
   control_mapeo: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro, nunca se actualiza (migración 0008)
   motivo_inclusion: { app: ["SELECT", "INSERT", "UPDATE", "DELETE"] }, // borrador editable; la copia congelada es inmutable (migración 0018)
   referencia_tratamiento: { app: ["SELECT", "INSERT", "UPDATE", "DELETE"] }, // igual (migración 0018)
@@ -383,7 +387,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'motivo_inclusion', 'referencia_tratamiento', 'riesgo', 'riesgo_control', 'riesgo_entrada', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma', 'solicitud_acceso') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_motivo', 'declaracion_riesgo', 'declaracion_fila_riesgo', 'declaracion_referencia', 'motivo_inclusion', 'referencia_tratamiento', 'riesgo', 'riesgo_control', 'riesgo_entrada', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma', 'solicitud_acceso') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
@@ -391,6 +395,10 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         "control",
         "control_mapeo",
         "declaracion_fila",
+        "declaracion_fila_riesgo",
+        "declaracion_motivo",
+        "declaracion_referencia",
+        "declaracion_riesgo",
         "declaracion_version",
         "empresa",
         "empresa_activa",
