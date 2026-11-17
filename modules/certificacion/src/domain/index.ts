@@ -11,3 +11,4 @@ export { COMENTARIO_MAX, Evaluacion, JUSTIFICACION_MIN, type DatosEvaluacion } f
 export { calcularMadurez, desglosar, type Desglose, type EntradaParaMadurez, type Madurez, type MadurezAgrupador } from './madurez.js';
 export { esTipoArchivo, extensionDeTipo, NOMBRE_ARCHIVO_MAX, nombreDeDescarga, normalizarNombreArchivo, TAMANO_MAX_BYTES, TIPOS_ARCHIVO, type TipoArchivo } from './tipo-archivo.js';
 export { MapeoControl, type DatosMapeoControl } from './mapeo-control.js';
+export { CORTES_NIVEL, DECISIONES_TRATAMIENTO, DESCRIPCION_RIESGO_MAX, ESCALA_MAX, ESCALA_MIN, TITULO_RIESGO_MAX, Riesgo, calcularNivel, nombreDeNivel, type CambiosRiesgo, type CorteNivel, type DatosRiesgo, type DecisionTratamiento, type EstadoRiesgo, type NivelRiesgo } from './riesgo.js';
