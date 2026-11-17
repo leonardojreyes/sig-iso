@@ -2,10 +2,10 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** **MVP de certificación** (plan ágil, `docs/specs/mvp-certificacion/plan.md`): **M1 a M5 hechos**; sigue M6. Ver la sección «MVP de certificación — qué está hecho». El **0.7 (puerto de IA)** quedó en preparación (spec aprobado en el PR #13, cimientos en el #14) y el plan lo deja **fuera del MVP**.
+- **Paso actual:** **MVP de certificación** (plan ágil, `docs/specs/mvp-certificacion/plan.md`): **M1 a M7 hechos y fusionados en `main`** (M6 se cerró el 2026-11-15 con su `/review`; M7, el 2026-11-17 con el PR #26). Siguen fuera del MVP el resto del 0.7 (puerto de IA), el 0.8 y el 0.9. **Siguiente:** la «Declaración de Aplicabilidad justificada» (`docs/specs/declaracion-justificada/`, por aprobar).
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (#1 y #3), 0.5 (#4) y **0.6 (cerrado el 2026-11-09; PR #5 a #11)**. Siguen fuera del MVP: el resto del 0.7, el 0.8 y el 0.9.
-- **PR (2026-11-11):** `main` incluye los PR #1, #3 a #12, #15 (cierre formal del 0.6), #18 (spec del modelo de dominio v2), #19 (**MVP M1**, Anexo A de 27001) y #20 (**MVP M2 + M3**, alcance, diagnóstico, controles y mapeos). El #2 se cerró a propósito (PR de prueba que viola las reglas). **Abiertos:** #13 (spec, plan y tareas del 0.7), #14 (cimientos del puerto de IA), #16 y #17 (documentos). La protección de `main` exige los **7 checks**, incluido `integracion`, y que la rama esté al día. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
-- **Rama del MVP:** los hitos H1 y H2 (M1, M2 y M3) **ya están integrados en `main`** (#19 y #20). El trabajo de **M4** (evidencias con archivo) está terminado en `feature/mvp-m4-evidencias` (5 commits locales, sin subir); el PR del hito H3 se abre al cerrar M5 y M6. La antigua `feature/mvp-m2-diagnostico` de GitHub quedó obsoleta y se puede borrar.
+- **PR (2026-11-17):** `main` incluye los PR #1, #3 a #12, #15, #18 a #23 y #26 (**M7**, personas). El #2 se cerró a propósito (PR de prueba que viola las reglas). **Abiertos:** #13, #14, #16 y #17 (0.7, 0.8 y 0.9, fuera del MVP: ver «Pendiente del responsable»), #24 (la guardia común de formularios; **ya entró en `main` dentro del #26**, se cierra) y #25 (accesibilidad y contraste del *hover*; **sigue vigente**, solo choca en este archivo). La protección de `main` exige los **7 checks**, incluido `integracion`, y que la rama esté al día. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
+- **Hitos del MVP integrados:** H1 y H2 (M1 a M3, #19 y #20), H3 (M4 a M6b, #21), elegir empresa al entrar y cerrar sesión (#22), accesibilidad de avisos y tablas (#23) y M7, personas (#26).
 - **Corte 0.6 cerrado: 65 de 70 tareas hechas.** Las 5 restantes no bloquean: **4.4** (tuya), **9.2 y 9.3** (OpenFGA, pospuestas por el ADR 029) y **11.2 y 11.3** (worker de intentos fallidos, diferidas a la Fase 1). Plan en `docs/specs/corte-vertical-0-6/`; `/review` completo sin bloqueantes en `docs/revisiones/2026-11-09-review-corte-0-6.md`.
 
 ## MVP de certificación — qué está hecho
@@ -21,8 +21,8 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 | **M5** | Declaración de Aplicabilidad de 27001 derivada del diagnóstico, los controles y las evidencias; aprobación con versión congelada e inmutable; exportación a Word. ADR 033 (`docx` MIT detrás de `GeneradorDocumentoPort`) | **Hecho** |
 | **M6a** | **Cargar normas desde la interfaz** (requisito añadido el 2026-11-13, dentro del MVP): subir las librerías desde la web, sin comandos (ADR 034). Archivos o carpeta del navegador, librería propia de la empresa con RLS, plantilla descargable, errores en palabras, adopción | **Hecho (2026-11-14)** |
 | **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a), ADR 035. **M6b-1** (una persona en varias empresas y cambio de empresa) **hecho 2026-11-15**; **M6b-2** (marca editable: color y logo con verificación de contraste) **hecho 2026-11-15**. Módulos activos y nombre editable quedan fuera del MVP. | **Hecho** |
-| M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
-| **M7** | **Personas:** alta por solicitud de acceso con código corto, cambio de rol y baja, desde la web (ADR 036). La cuenta se sigue creando en Keycloak; la API no guarda credenciales de administración. | **Hecho (2026-11-16)**; falta el `/review` y el PR |
+| M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | **Hecho (2026-11-15)**: `/review` con seis revisores y sin bloqueantes, con sus correcciones (ver «M6 — Revisión completa del hito H3»); STRIDE en `docs/security/stride-mvp-h3.md` |
+| **M7** | **Personas:** alta por solicitud de acceso con código corto, cambio de rol y baja, desde la web (ADR 036). La cuenta se sigue creando en Keycloak; la API no guarda credenciales de administración. | **Hecho y fusionado (#26, 2026-11-17)**; `/review` hecho (cinco revisores, sin bloqueantes) |
 
 **M2 y M3 en detalle** (para no tener que releer el código):
 
@@ -172,25 +172,35 @@ Al probarlo, el responsable señaló dos carencias reales: no había forma de **
 
 ## Pendiente del responsable
 
-1. **PR #14 (cimientos de IA).** Sigue abierto y, desde que entró el #20, **choca con `main` en `platform/autorizacion/src/roles.ts`** (la lista de permisos: el MVP agregó `diagnostico.*`, `alcance.*` y `controles.*`). Se resuelve juntando ambas listas; lo hace quien lo vaya a integrar (puedo hacerlo yo si me lo pides). Después se pueden borrar las ramas ya integradas, incluida la obsoleta `feature/mvp-m2-diagnostico`.
-2. **Aprobar o ajustar el recorte del 0.7** y el ADR 030 (modelo por defecto del asistente), propuestos tras la prueba previa, e integrar el **#13** cuando quieras. El plan del MVP deja todo esto para después, así que no bloquea.
-3. **Ramas ya integradas** (se pueden borrar, en local y en GitHub): `feature/docs-fase0-skills`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-librerias`, `feature/paso-0-6-plataforma`, `feature/paso-0-6-adopcion`, `feature/paso-0-6-ingreso`, `feature/paso-0-6-cierre`, `feature/paso-0-6-aislamiento-e2e`, `feature/proteger-local`, `feature/mvp-m1-anexo-a`, `docs/cierre-paso-0-6`, `docs/spec-dominio-v2`, la obsoleta `feature/mvp-m2-diagnostico`, `docs/estado-paso-0-4` y `fix/pipeline-bootstrap`. Dejar `feature/prueba-violacion-reglas` (PR #2 cerrado) mientras sirva de ejemplo, y las ramas del 0.7 (`feature/spec-ia-0-7`, `feature/ia-cimientos`) hasta integrarlas.
-4. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`.
-5. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
-6. **A1 de la revisión de calidad** (el repositorio de GitHub es público): decisión tuya, pendiente; requiere un ADR. Sus demás hallazgos (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`): M1, M5 y la protección de `.local/` resueltos; A2, M3 y M4 son prerrequisitos de la Fase 1 (abajo); **M2** conviene al pasar por la migración de adopción y **B1–B4** al pasar por esos archivos.
-7. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global (ver H6.10 abajo).
+1. **PR #13, #14, #16 y #17 (pasos 0.7, 0.8 y 0.9, todos fuera del MVP). Propuesta del 2026-11-17**, comprobada simulando la integración con el `main` actual:
+   - **#16** (ADR 031, **aprobado**: se difiere el 0.8 y se reduce el 0.9): **integrar**. Solo choca en el índice de ADR (`docs/adr/README.md`).
+   - **#17** (paquete mínimo del 0.9: STRIDE, clasificación de datos, política de IA): **integrar**, no choca. Después, sumar a `clasificacion-datos.md` lo del M7 (solicitud de acceso, cookie del código, nombre y correo que escribe el administrador).
+   - **#13** (spec, plan y tareas del 0.7; ADR 030 en estado «Propuesto»): **integrar**; solo choca en el índice de ADR. El ADR 030 sigue «Propuesto» hasta tu aprobación expresa.
+   - **#14** (cimientos de IA, +1785 líneas, 20 archivos): **no integrar ahora; pasarlo a borrador.** Es código sin uso en el MVP y choca con `platform/autorizacion/src/roles.ts` y `platform/auditoria/src/dominio/catalogo.ts` (permisos y acciones del M7). Al retomar el 0.7 se rebasa uniendo las dos listas. `feature/ia-dominio` (esqueleto del módulo `asistente`, sin PR) queda apilada sobre él.
+   - Orden sugerido: #16, #17 y #13 (cada uno rebasado sobre `main`, resolviendo el índice de ADR). Puedo preparar los tres rebases si me lo pides.
+2. **#24 y #25 (míos).** El **#24** ya está contenido en `main` por el #26: **cerrarlo**. El **#25** sigue vigente (arreglo del contraste del *hover* con cualquier color de marca, axe en cobertura y panel, enlaces con objetivo táctil): rebasarlo sobre `main` (solo choca en este archivo) e integrarlo.
+3. **Aprobar o ajustar el recorte del 0.7** y el ADR 030 (modelo por defecto del asistente), propuestos tras la prueba previa. El plan del MVP deja todo esto para después, así que no bloquea.
+4. **Ramas a borrar (propuesta del 2026-11-17).** Todas tienen su PR fusionado, salvo las marcadas.
+   - **GitHub y local** (PR fusionado): `fix/pipeline-bootstrap`, `docs/estado-paso-0-4`, `feature/paso-0-5-look-and-feel`, `feature/paso-0-6-plataforma`, `feature/docs-fase0-skills`, `feature/paso-0-6-librerias`, `feature/paso-0-6-adopcion`, `feature/paso-0-6-ingreso`, `feature/paso-0-6-cierre`, `feature/paso-0-6-aislamiento-e2e`, `feature/proteger-local`, `docs/cierre-paso-0-6`, `docs/spec-dominio-v2`, `feature/mvp-m1-anexo-a`, `feature/mvp-m2-m3`, `feature/mvp-m4-evidencias`, `feature/eleccion-empresa-al-entrar`, `fix/accesibilidad-avisos-y-tablas` y `feature/mvp-m7-personas`.
+   - **GitHub y local, sin PR propio:** `feature/mvp-m2-diagnostico` (obsoleta: sus 72 archivos ya están en `main` por el #20, más evolucionados). **Solo locales:** `backup-m2-antes-de-rebase` y `tmp-cierre-15` (temporales).
+   - **`docs/spec-mvp`: rescatar y luego borrar.** Tiene `docs/specs/mvp-certificacion/spec.md` (el spec aprobado del MVP), que **no estaba en `main`**; se recupera en este mismo PR.
+   - **No borrar todavía:** `feature/prueba-violacion-reglas` (ejemplo de PR que viola las reglas); `docs/ruta-mvp`, `docs/seguridad-0-9` y `feature/spec-ia-0-7` (hasta integrar el #16, el #17 y el #13); `feature/ia-cimientos` y `feature/ia-dominio` (0.7, en pausa); `refactor/web-control-escritura` y `fix/accesibilidad-subida-normas` (sus PR #24 y #25: cerrar el primero, integrar el segundo, y entonces borrarlas).
+   - Para borrar: `git push origin --delete <rama>` y `git branch -d <rama>` (las locales con PR fusionado por *squash* piden `-D`).
+5. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`. **Títulos del Anexo A:** la lista de 93 filas con una alternativa propia para que marques los que se parezcan a tu ejemplar está en `docs/revisiones/2026-11-16-titulos-anexo-a.md`.
+6. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
+7. **A1 de la revisión de calidad** (el repositorio de GitHub es público): decisión tuya, pendiente; requiere un ADR. Sus demás hallazgos (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`): M1, M5 y la protección de `.local/` resueltos; A2, M3 y M4 son prerrequisitos de la Fase 1 (abajo); **M2** conviene al pasar por la migración de adopción y **B1–B4** al pasar por esos archivos.
+8. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global (ver H6.10 abajo).
 
-Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado (**hasta la `0008`**) y las dos empresas de prueba; `pnpm libraries:load` carga las librerías (la de ejemplo y, desde M1, el Anexo A de 27001; si todavía no adoptaste esta última, hazlo desde la pantalla de requisitos); las claves están en `.env.local` y `.local/` (ignorados). La empresa A ya adoptó la librería de ejemplo (ver «Brechas y avisos»). Los scripts `web:verify-diagnostico` y `web:verify-controles` dejaron en tu base datos de prueba de A: una evaluación, un alcance y controles `VERIF-…` retirados.
+Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado (**hasta la `0016`**) y las dos empresas de prueba; `pnpm libraries:load` carga las librerías (la de ejemplo y, desde M1, el Anexo A de 27001; si todavía no adoptaste esta última, hazlo desde la pantalla de requisitos); las claves están en `.env.local` y `.local/` (ignorados). La empresa A ya adoptó la librería de ejemplo (ver «Brechas y avisos»). Los scripts `web:verify-diagnostico` y `web:verify-controles` dejaron en tu base datos de prueba de A: una evaluación, un alcance y controles `VERIF-…` retirados.
 
 ## Próximos pasos técnicos
 
-1. **M6 — cierre del MVP** (abajo); y, aparte, resolver `roles.ts` con el #14 (ver «Pendiente del responsable»).
-2. **M5 — Declaración de Aplicabilidad de 27001** (hecha; detalle arriba). ADR 033 (`docx` detrás de `GeneradorDocumentoPort`, licencias comprobadas con `scripts/check-licenses.mjs`), derivada del diagnóstico y los controles, marcada preliminar, aprobación con versión congelada e inmutable y exportación a Word.
-3. **M6 — cierre del MVP:** un solo `/review` completo (arquitecto, multiempresa, seguridad y cumplimiento), STRIDE ampliado, este archivo y `docs/fase0/guia-de-ejecucion.md`.
-4. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
+1. **Declaración de Aplicabilidad justificada** (siguiente; spec por aprobar en `docs/specs/declaracion-justificada/`): motivo de inclusión por control, registro de riesgos básico vinculado a controles y referencia al tratamiento en el Word. Cierra el hueco 1 de «Decisiones que son del responsable» del M6.
+2. **Integrar o cerrar los PR abiertos** según la propuesta de «Pendiente del responsable» (#16, #17, #13; #14 en borrador; #24 cerrar; #25 rebasar).
+3. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
 
 
-- **Actualizado:** 2026-11-11
+- **Actualizado:** 2026-11-17
 
 ## Prerrequisitos de la Fase 1 (de la revisión de calidad del 2026-11-08)
 
@@ -232,7 +242,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.6 cerrados → **MVP de certificación (en curso: M1 a M5, M6a y M6b hechos; M6 pendiente)** → resto del 0.7 → 0.8 → 0.9
+0.1 a 0.6 cerrados → **MVP de certificación (M1 a M7 hechos; sigue la Declaración de Aplicabilidad justificada)** → resto del 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 

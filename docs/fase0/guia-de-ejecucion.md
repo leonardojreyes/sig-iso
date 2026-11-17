@@ -75,6 +75,7 @@ Con los servicios en marcha (Keycloak, `pnpm dev`). Cada una usa cuentas reales 
 | `pnpm web:verify-normas`                     | Subir librerías propias, rechazos explicados, adopción, aislamiento                    |
 | `pnpm web:verify-multiempresa`               | Una cuenta en dos empresas: selector, cambio, rol por empresa, sesiones independientes |
 | `pnpm web:verify-marca`                      | Editar color y logo; **restaura** la marca de A al terminar                            |
+| `pnpm web:verify-personas`                   | Cuenta sin rol: código sin sesión; aprobar, cambiar rol y dar de baja; **escribe** y deja a «pendiente» sin rol |
 | `pnpm lint` · `typecheck` · `test` · `build` | Controles del CI, incluidos los límites de módulos y capas                             |
 | `pnpm licenses:check`                        | Licencias de las dependencias (MIT/Apache/BSD/MPL)                                     |
 | `pnpm test:hooks`                            | Reglas del hook de Bash de Claude Code                                                 |
