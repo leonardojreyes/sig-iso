@@ -22,7 +22,7 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 | **M6a** | **Cargar normas desde la interfaz** (requisito añadido el 2026-11-13, dentro del MVP): subir las librerías desde la web, sin comandos (ADR 034). Archivos o carpeta del navegador, librería propia de la empresa con RLS, plantilla descargable, errores en palabras, adopción | **Hecho (2026-11-14)** |
 | **M6b** | **Multiempresa completo** (requisito añadido el 2026-11-13, después de M6a), ADR 035. **M6b-1** (una persona en varias empresas y cambio de empresa) **hecho 2026-11-15**; **M6b-2** (marca editable: color y logo con verificación de contraste) **hecho 2026-11-15**. Módulos activos y nombre editable quedan fuera del MVP. | **Hecho** |
 | M6 | Cierre: `/review` completo, STRIDE ampliado (subida, descarga, exportación), este archivo y la guía de ejecución | Pendiente |
-| **M7** | **Personas:** alta por solicitud de acceso con código corto, cambio de rol y baja, desde la web (ADR 036). La cuenta se sigue creando en Keycloak; la API no guarda credenciales de administración. | **En curso** (ADR 036 aprobado 2026-11-16) |
+| **M7** | **Personas:** alta por solicitud de acceso con código corto, cambio de rol y baja, desde la web (ADR 036). La cuenta se sigue creando en Keycloak; la API no guarda credenciales de administración. | **Hecho (2026-11-16)**; falta el `/review` y el PR |
 
 **M2 y M3 en detalle** (para no tener que releer el código):
 
@@ -84,6 +84,18 @@ Plan vigente: `docs/specs/mvp-certificacion/plan.md` (manda sobre los specs larg
 - **Bitácora:** `marca.cambiada` registra solo **qué** cambió (color, logo), nunca el color ni la dirección del logo; si no cambia nada, no registra nada.
 - **API:** `PUT /empresa/marca` (cuerpo cerrado: solo `colorPrimario` y `logoUrl`; la empresa sale del token). **Web:** pantalla «Marca» (cómo se ve ahora, aviso de contraste, formulario solo para el administrador) y `pnpm web:verify-marca` (30 comprobaciones con todo real; **restaura** la marca de A al terminar).
 - **Límites conocidos:** el logo es una **dirección** (`https` o ruta propia), no se sube un archivo: el navegador la carga desde ese sitio (con `referrerpolicy="no-referrer"`) y quien aloja la imagen ve las visitas; subir el archivo a un almacén propio queda para después. No hay vista previa del color antes de guardar.
+
+### M7 — Personas: alta, cambio de rol y baja (hecho 2026-11-16)
+
+- **ADR 036** (Aprobado): «alta» es **dar acceso a una cuenta que ya existe en Keycloak**, no crearla; la API no guarda credenciales de administración. Una cuenta que ingresa **sin rol no recibe sesión** (se conserva la decisión de H6.1): el *callback* de la web pide su solicitud con ese token y muestra el código en `/acceso-pendiente` desde una cookie sellada de corta vida (≤ 10 min). El administrador SIG ve `/e/<empresa>/personas`: aprueba una solicitud escribiendo nombre, correo y rol (las cuentas no traen nombre ni correo en el token), la descarta, cambia el rol o da de baja.
+- **Base (migración `0015`):** tabla `solicitud_acceso` (RLS forzada; una vigente por persona y empresa; código `XXXX-XXXX` de un alfabeto de 31 sin 0, O, 1, I ni L; vence a los 7 días; tope de 50 vigentes por empresa), y `usuario.baja_en` y `usuario.version`. **La aplicación vuelve a poder fijar `rol`** (la 0005 se lo había quitado) por columnas; quién puede lo decide el permiso. Una baja deja el rol en nulo y la fila se conserva.
+- **API** (+6 operaciones, 41 protegidas en total): `POST /acceso/solicitud` (sin permiso, 201 o 200 si ya había una), `GET /personas`, `POST /personas/solicitudes/{id}/aprobacion` y `/descarte`, `PUT /personas/{id}/rol` y `POST /personas/{id}/baja`. Permisos nuevos `personas.ver` y `personas.gestionar` (**solo** el administrador SIG; el colaborador ni siquiera ve la lista). Orden 401 → 403 → 400 → 404 → 409. Una empresa **no puede quedarse sin administrador**, ni con dos bajas simultáneas (se bloquean las filas al contar; probado con una carrera real).
+- **Bitácora** (misma transacción): `acceso.solicitado`, `acceso.rechazado`, `usuario.alta`, `rol.cambiado`, `usuario.baja`; solo identificadores y roles, **nunca** nombre, correo ni código.
+- **Contrato:** las guardas de privacidad tienen excepciones **exactas y explicadas** (el correo solo en `Persona` y en la aprobación; el nombre solo en la aprobación).
+- **Siembra:** `CUENTAS_SIN_ACCESO` (`pendiente`, empresa A) existe en Keycloak pero **no** se inserta como persona. Para tenerla: `pnpm db:migrate`, `pnpm keycloak:realm` y `pnpm keycloak:cuentas` (no cambia contraseñas existentes).
+- **Verificación:** `pnpm web:verify-personas` (50 comprobaciones con Keycloak, API, PostgreSQL y web; **escribe** en tu base local y deja a `pendiente` dada de baja para poder repetirlo). Cubre: sin sesión pero con código; la baja y el cambio de rol rigen de inmediato en una sesión abierta; volver a pedir acceso reactiva a la misma persona; último administrador; aislamiento entre empresas. STRIDE en `docs/security/stride-mvp-m7.md`.
+- **Límites conocidos:** crear la cuenta en Keycloak sigue siendo un paso aparte; quien pide acceso se identifica ante el administrador **fuera del sistema** (el código no prueba quién es); un rol por persona y empresa; sin pantalla para editar el nombre o el correo de una persona ya aprobada; **solo datos de prueba** hasta el asesor legal (ADR 028; se suma el tratamiento «solicitud de acceso con código» a sus insumos).
+
 
 ### M6 — Revisión completa del hito H3 (2026-11-15)
 
