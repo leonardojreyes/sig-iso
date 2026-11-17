@@ -5,7 +5,7 @@ import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
 import { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
-import { ActualizarMarcaUseCase, crearUnidadDeTrabajoMarca, CambiarEmpresaUseCase, EmpresaActivaKysely, EmpresaKysely, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase, ResolverEmpresaActivaUseCase, type EmpresaActivaPort, type EmpresaRepositoryPort } from '@sig/empresas';
+import { AprobarSolicitudUseCase, CambiarRolUseCase as CambiarRolPersonaUseCase, crearUnidadDeTrabajoPersonas, DarDeBajaUseCase, DescartarSolicitudUseCase, ListarPersonasUseCase, SolicitarAccesoUseCase, type UnidadDeTrabajoPersonasPort, ActualizarMarcaUseCase, crearUnidadDeTrabajoMarca, CambiarEmpresaUseCase, EmpresaActivaKysely, EmpresaKysely, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase, ResolverEmpresaActivaUseCase, type EmpresaActivaPort, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, CargarLibreriaUseCase, crearUnidadDeTrabajoCarga, LectorLibreriaYaml, type ContextoCarga, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
 import { leerConfiguracionAuth, leerConfiguracionLimites, type Entorno } from './autenticacion/configuracion.js';
@@ -16,12 +16,14 @@ import { FlagsOpenFeature } from './flags/flags-openfeature.js';
 import { CatalogoNormasAdapter } from './certificacion/catalogo-normas.adapter.js';
 import type { OpcionesCertificacionApi } from './certificacion/certificacion-api.module.js';
 import type { OpcionesNormasApi } from './normas/normas-api.module.js';
+import type { OpcionesPersonasApi } from './personas/personas-api.module.js';
 
 export interface Composicion {
   readonly autenticacion: OpcionesAutenticacion;
   readonly negocio: OpcionesEmpresaSesion;
   readonly normas: OpcionesNormasApi;
   readonly certificacion: OpcionesCertificacionApi;
+  readonly personas: OpcionesPersonasApi;
   readonly hechos: RegistradorHechos;
   readonly autorizacion: AutorizacionPort;
   readonly flags: FlagsPort;
@@ -73,6 +75,8 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
   const catalogo = new CatalogoNormasAdapter(librerias, requisitos);
   const unidadCertificacion: UnidadDeTrabajoCertificacionPort<ContextoCertificacion> = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoCertificacion(obtenerPools().db('app')).ejecutar(empresaId, fn) };
   const reloj = (): Date => new Date();
+  // Personas y solicitudes de acceso (ADR 036): una unidad de trabajo por ejecución sobre el pool de la aplicación (con la RLS aplicada).
+  const unidadPersonas: UnidadDeTrabajoPersonasPort = { ejecutar: async (empresaId, fn) => crearUnidadDeTrabajoPersonas(obtenerPools().db('app')).ejecutar(empresaId, fn) };
   // El almacén de evidencias se abre al usarlo por primera vez: si falta `EVIDENCIAS_DIR`, la API arranca y solo la subida y la descarga
   // fallan (500, sin dar la ruta), nunca en silencio.
   let almacenLocal: AlmacenArchivosLocal | undefined;
@@ -134,6 +138,15 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       versionesDeclaracion: new ListarVersionesDeclaracionUseCase(unidadCertificacion, autorizacion),
       versionDeclaracion: new ObtenerVersionDeclaracionUseCase(unidadCertificacion, autorizacion),
       exportarDeclaracion: new ExportarDeclaracionUseCase(unidadCertificacion, autorizacion, catalogo, new GeneradorDocumentoDocx(), reloj),
+    },
+    personas: {
+      solicitarAcceso: new SolicitarAccesoUseCase(unidadPersonas, (n) => crypto.getRandomValues(new Uint8Array(n)), () => randomUUID()),
+      listarPersonas: new ListarPersonasUseCase(unidadPersonas, autorizacion),
+      aprobarSolicitud: new AprobarSolicitudUseCase(unidadPersonas, autorizacion),
+      descartarSolicitud: new DescartarSolicitudUseCase(unidadPersonas, autorizacion),
+      cambiarRol: new CambiarRolPersonaUseCase(unidadPersonas, autorizacion),
+      darDeBaja: new DarDeBajaUseCase(unidadPersonas, autorizacion),
+      reloj,
     },
   };
 };

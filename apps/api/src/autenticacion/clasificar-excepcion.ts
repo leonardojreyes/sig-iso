@@ -1,5 +1,5 @@
 import { HttpException } from '@nestjs/common';
-import { EmpresaAjenaError, EmpresaNoEncontradaError, EmpresaPedidaInvalidaError, MarcaNoValidaError, PersonaNoEncontradaError, SinPermisoMarcaError } from '@sig/empresas';
+import { ConflictoDePersonasError, EmpresaAjenaError, EmpresaNoEncontradaError, EmpresaPedidaInvalidaError, ErrorDatosPersona, MarcaNoValidaError, PeticionDePersonasNoValidaError, PersonaDeLaEmpresaNoEncontradaError, PersonaNoEncontradaError, SinPermisoMarcaError, SinPermisoPersonasError, SolicitudNoEncontradaError } from '@sig/empresas';
 import { FuncionDeshabilitadaError, LibreriaNoEncontradaError, ParametroInvalidoError, RequisitoNoEncontradoError, SinPermisoError } from '@sig/normas';
 import { ArchivoRechazadoError, ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError as ParametroInvalidoCertificacion, SinPermisoError as SinPermisoCertificacion } from '@sig/certificacion';
 import { AccesoCruzadoException, AccesoDenegadoException } from './excepciones-acceso.js';
@@ -21,6 +21,7 @@ export const clasificarExcepcion = (e: unknown): Clasificacion => {
   if (e instanceof SinPermisoError) return { tipo: 'denegado', objeto: `accion:${e.permiso}` };
   if (e instanceof SinPermisoMarcaError) return { tipo: 'denegado', objeto: `accion:${e.permiso}` };
   if (e instanceof SinPermisoCertificacion) return { tipo: 'denegado', objeto: `accion:${e.permiso}` };
+  if (e instanceof SinPermisoPersonasError) return { tipo: 'denegado', objeto: `accion:${e.permiso}` };
   // Pedir una empresa a la que la persona no pertenece: 404 indistinguible de una que no existe, y queda `acceso.cruzado` (ADR 035).
   if (e instanceof EmpresaAjenaError) return { tipo: 'cruzado', objeto: `empresa:${e.slug}` };
   if (e instanceof AccesoCruzadoException) return { tipo: 'cruzado', objeto: e.objeto ?? null };
@@ -29,6 +30,10 @@ export const clasificarExcepcion = (e: unknown): Clasificacion => {
   if (e instanceof RequisitoNoEncontradoError || e instanceof LibreriaNoEncontradaError || e instanceof FuncionDeshabilitadaError) return { tipo: 'http', estado: 404 };
   if (e instanceof EmpresaNoEncontradaError || e instanceof PersonaNoEncontradaError) return { tipo: 'http', estado: 401 };
   if (e instanceof EntradaNoEncontradaError) return { tipo: 'http', estado: 404 };
+  // Personas (ADR 036): una solicitud o una persona que no existe, ya se resolvió o está de baja es 404; el estado que lo impide, 409.
+  if (e instanceof SolicitudNoEncontradaError || e instanceof PersonaDeLaEmpresaNoEncontradaError) return { tipo: 'http', estado: 404 };
+  if (e instanceof ConflictoDePersonasError) return { tipo: 'http', estado: 409 };
+  if (e instanceof PeticionDePersonasNoValidaError || e instanceof ErrorDatosPersona) return { tipo: 'http', estado: 400 };
   // Un archivo que no se acepta: 413 si pasa del tamaño, 415 si su contenido no es de un tipo permitido o está dañado.
   if (e instanceof ArchivoRechazadoError) return { tipo: 'http', estado: e.motivo === 'tamano_excedido' ? 413 : 415 };
   if (e instanceof ConflictoError) return { tipo: 'http', estado: 409 };

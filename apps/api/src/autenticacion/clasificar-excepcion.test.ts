@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, HttpException, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { EmpresaNoEncontradaError, PersonaNoEncontradaError } from '@sig/empresas';
+import { ConflictoDePersonasError, EmpresaNoEncontradaError, ErrorDatosPersona, PeticionDePersonasNoValidaError, PersonaDeLaEmpresaNoEncontradaError, PersonaNoEncontradaError, SinPermisoPersonasError, SolicitudNoEncontradaError } from '@sig/empresas';
 import { ErrorNormas, FuncionDeshabilitadaError, LibreriaNoEncontradaError, ParametroInvalidoError, RequisitoNoEncontradoError, SinPermisoError } from '@sig/normas';
 import { describe, expect, it } from 'vitest';
 import { clasificarExcepcion } from './clasificar-excepcion.js';
@@ -18,6 +18,15 @@ describe('clasificarExcepcion', () => {
   it('un 403 cualquiera (ForbiddenException) también es un acceso denegado', () => {
     expect(clasificarExcepcion(new ForbiddenException('detalle'))).toEqual({ tipo: 'denegado', objeto: null });
     expect(clasificarExcepcion(new HttpException('x', 403))).toEqual({ tipo: 'denegado', objeto: null });
+  });
+
+  it('personas (ADR 036): sin permiso → denegado con su permiso; petición o datos mal formados → 400; solicitud o persona inexistente → 404; conflicto → 409', () => {
+    expect(clasificarExcepcion(new SinPermisoPersonasError('personas.gestionar'))).toEqual({ tipo: 'denegado', objeto: 'accion:personas.gestionar' });
+    expect(clasificarExcepcion(new SinPermisoPersonasError('personas.ver'))).toEqual({ tipo: 'denegado', objeto: 'accion:personas.ver' });
+    for (const e of [new PeticionDePersonasNoValidaError(), new ErrorDatosPersona()]) expect(clasificarExcepcion(e)).toEqual({ tipo: 'http', estado: 400 });
+    for (const e of [new SolicitudNoEncontradaError(), new PersonaDeLaEmpresaNoEncontradaError()]) expect(clasificarExcepcion(e)).toEqual({ tipo: 'http', estado: 404 });
+    for (const motivo of ['ya_tiene_acceso', 'demasiadas_solicitudes', 'correo_repetido', 'version_vieja', 'ultimo_administrador'] as const)
+      expect(clasificarExcepcion(new ConflictoDePersonasError(motivo))).toEqual({ tipo: 'http', estado: 409 });
   });
 
   it('AccesoCruzadoException → cruzado con su objeto', () => {
