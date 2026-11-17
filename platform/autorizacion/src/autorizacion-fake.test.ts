@@ -235,6 +235,20 @@ describe('permisos de los riesgos (declaración justificada, ADR 037)', () => {
   });
 });
 
+describe('permiso de justificar la Declaración (ADR 037)', () => {
+  it('solo el administrador SIG registra motivos y referencias; el colaborador solo consulta la Declaración', async () => {
+    const f = montar();
+    expect(await f.puede(ADMIN, 'declaracion.justificar', A)).toBe(true);
+    expect(await f.puede(COLAB, 'declaracion.justificar', A)).toBe(false);
+    expect(await f.puede(COLAB, 'declaracion.ver', A)).toBe(true);
+  });
+  it('ningún rol sin permisos justifica, y no hay permiso en otra empresa', async () => {
+    const f = montar();
+    expect(await f.puede(OTRO, 'declaracion.justificar', A)).toBe(false);
+    expect(await f.puede(ADMIN, 'declaracion.justificar', B)).toBe(false);
+  });
+});
+
 describe('permisos de las evidencias (MVP, M4)', () => {
   it('el colaborador consulta y registra evidencias, pero no las elimina', async () => {
     const f = montar();

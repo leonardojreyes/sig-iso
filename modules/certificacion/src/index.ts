@@ -34,3 +34,7 @@ export { efectoDeRetirarRiesgo, type ControlSinMotivo } from './domain/declaraci
 export type { RiesgoRepositoryPort } from './application/repositorios.port.js';
 export { DesvincularRiesgoControlUseCase, PreverTratamientoUseCase, QuitarTratamientoPrevistoUseCase, RiesgosDeUnControlUseCase, VINCULOS_POR_RIESGO_MAX, VincularRiesgoControlUseCase } from './application/vinculos-riesgo.use-cases.js';
 export type { VinculoRiesgoControlFila, VinculoRiesgoEntradaFila, VinculoRiesgoRepositoryPort } from './application/repositorios.port.js';
+export { GuardarReferenciaUseCase, ListarMotivosUseCase, ListarReferenciasUseCase, QuitarMotivoUseCase, QuitarReferenciaUseCase, RegistrarMotivoUseCase, TOPE_MOTIVOS, type MotivoDto, type ReferenciaDto } from './application/motivos.use-cases.js';
+export { AvisoRetiroRiesgoUseCase, type AvisoRetiroRiesgoDto } from './application/aviso-retiro-riesgo.use-case.js';
+export { MotivoInclusion, NOTA_MOTIVO_MAX, ReferenciaTratamiento, TIPOS_MOTIVO, TIPOS_REFERENCIA, type TipoMotivo, type TipoReferencia } from './domain/index.js';
+export type { MotivoRepositoryPort, ReferenciaRepositoryPort } from './application/repositorios.port.js';

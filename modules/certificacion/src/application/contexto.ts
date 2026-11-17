@@ -1,5 +1,5 @@
 import type { EventoBitacora } from '@sig/auditoria';
-import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, MapeoRepositoryPort, RiesgoRepositoryPort, VinculoRiesgoRepositoryPort } from './repositorios.port.js';
+import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, MapeoRepositoryPort, MotivoRepositoryPort, ReferenciaRepositoryPort, RiesgoRepositoryPort, VinculoRiesgoRepositoryPort } from './repositorios.port.js';
 
 /** Registra un hecho en la bitácora DENTRO de la misma unidad de trabajo que la acción (si falla, la acción se revierte). */
 export interface RegistradorBitacora {
@@ -14,6 +14,8 @@ export interface ContextoCertificacion {
   readonly mapeos: MapeoRepositoryPort;
   readonly riesgos: RiesgoRepositoryPort;
   readonly vinculosRiesgo: VinculoRiesgoRepositoryPort;
+  readonly motivos: MotivoRepositoryPort;
+  readonly referencias: ReferenciaRepositoryPort;
   readonly evidencias: EvidenciaRepositoryPort;
   readonly declaraciones: DeclaracionRepositoryPort;
   readonly bitacora: RegistradorBitacora;

@@ -12,3 +12,5 @@ export { calcularMadurez, desglosar, type Desglose, type EntradaParaMadurez, typ
 export { esTipoArchivo, extensionDeTipo, NOMBRE_ARCHIVO_MAX, nombreDeDescarga, normalizarNombreArchivo, TAMANO_MAX_BYTES, TIPOS_ARCHIVO, type TipoArchivo } from './tipo-archivo.js';
 export { MapeoControl, type DatosMapeoControl } from './mapeo-control.js';
 export { codigoDeRiesgo, numeroDeRiesgo, CORTES_NIVEL, DECISIONES_TRATAMIENTO, DESCRIPCION_RIESGO_MAX, ESCALA_MAX, ESCALA_MIN, TITULO_RIESGO_MAX, Riesgo, calcularNivel, nombreDeNivel, type CambiosRiesgo, type CorteNivel, type DatosRiesgo, type DecisionTratamiento, type EstadoRiesgo, type NivelRiesgo } from './riesgo.js';
+export { MotivoInclusion, NOTA_MOTIVO_MAX, type DatosMotivoInclusion } from './motivo-inclusion.js';
+export { ReferenciaTratamiento, TIPOS_REFERENCIA, TITULO_REFERENCIA_MAX, UBICACION_REFERENCIA_MAX, VERSION_REFERENCIA_MAX, type DatosReferenciaTratamiento, type TipoReferencia } from './referencia-tratamiento.js';

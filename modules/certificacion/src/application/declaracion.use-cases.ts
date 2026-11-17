@@ -60,7 +60,7 @@ const aDtoVersion = (v: VersionDeclaracion): VersionDeclaracionDto => ({ id: v.i
 /** Edición del Anexo A que cubre la declaración. Si se adoptara una librería de la edición 2013, sus controles NO entran (no se mezclan ediciones). */
 export const EDICION_DECLARACION = '2022';
 
-const esDeLaDeclaracion = (e: EntradaCatalogo): boolean => e.tipo === 'control' && e.aplicaA.some((a) => a.norma === NORMA_DECLARACION && a.edicion === EDICION_DECLARACION);
+export const esDeLaDeclaracion = (e: EntradaCatalogo): boolean => e.tipo === 'control' && e.aplicaA.some((a) => a.norma === NORMA_DECLARACION && a.edicion === EDICION_DECLARACION);
 
 /** Lo que se lee de la base para derivar la declaración. */
 interface DatosLeidos {

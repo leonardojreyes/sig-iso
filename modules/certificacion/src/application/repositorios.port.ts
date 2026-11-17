@@ -3,6 +3,9 @@ import type { Control } from '../domain/control.js';
 import type { Evaluacion } from '../domain/evaluacion.js';
 import type { Evidencia } from '../domain/evidencia.js';
 import type { FilaDeclaracion } from '../domain/declaracion.js';
+import type { MotivoInclusion } from '../domain/motivo-inclusion.js';
+import type { ReferenciaTratamiento, TipoReferencia } from '../domain/referencia-tratamiento.js';
+import type { TipoMotivo } from '../domain/declaracion.js';
 import type { Riesgo } from '../domain/riesgo.js';
 import type { MapeoControl } from '../domain/mapeo-control.js';
 
@@ -134,4 +137,30 @@ export interface VinculoRiesgoRepositoryPort {
   agregarEntrada(riesgoId: string, libreriaCodigo: string, idEstable: string, usuarioId: string, ahora: Date): Promise<boolean>;
   /** Falso si no existía. */
   quitarEntrada(riesgoId: string, libreriaCodigo: string, idEstable: string): Promise<boolean>;
+}
+
+/** Repositorio de los motivos de inclusión registrados, ligado a la empresa y la transacción. */
+export interface MotivoRepositoryPort {
+  /** Todos, ordenados por librería, control y tipo. */
+  listar(): Promise<readonly MotivoInclusion[]>;
+  obtener(libreriaCodigo: string, idEstable: string, tipo: TipoMotivo): Promise<MotivoInclusion | null>;
+  /** Falso si ya existía (otra persona lo registró entre la lectura y la escritura). */
+  crear(motivo: MotivoInclusion, usuarioId: string, ahora: Date): Promise<boolean>;
+  /** Cambia solo si la versión guardada es `versionEsperada` y la sube a `motivo.version`. Falso si no coincide. */
+  actualizar(motivo: MotivoInclusion, usuarioId: string, ahora: Date, versionEsperada: number): Promise<boolean>;
+  /** Quita solo si la versión guardada es `versionEsperada`. Falso si no coincide o ya no existía. */
+  eliminar(libreriaCodigo: string, idEstable: string, tipo: TipoMotivo, versionEsperada: number): Promise<boolean>;
+}
+
+/** Repositorio de las referencias al análisis y al plan de tratamiento (una de cada tipo por norma), ligado a la empresa y la transacción. */
+export interface ReferenciaRepositoryPort {
+  /** Las de la norma (a lo sumo una por tipo). */
+  listar(norma: string): Promise<readonly ReferenciaTratamiento[]>;
+  obtener(norma: string, tipo: TipoReferencia): Promise<ReferenciaTratamiento | null>;
+  /** Falso si ya existía. */
+  crear(referencia: ReferenciaTratamiento, usuarioId: string, ahora: Date): Promise<boolean>;
+  /** Cambia solo si la versión guardada es `versionEsperada`. Falso si no coincide. */
+  actualizar(referencia: ReferenciaTratamiento, usuarioId: string, ahora: Date, versionEsperada: number): Promise<boolean>;
+  /** Quita solo si la versión guardada es `versionEsperada`. Falso si no coincide o ya no existía. */
+  eliminar(norma: string, tipo: TipoReferencia, versionEsperada: number): Promise<boolean>;
 }

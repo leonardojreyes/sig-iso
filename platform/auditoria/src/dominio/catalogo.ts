@@ -24,6 +24,12 @@ export const ACCIONES = [
   'riesgo.retirado',
   'vinculo.creado',
   'vinculo.eliminado',
+  'motivo.creado',
+  'motivo.cambiado',
+  'motivo.eliminado',
+  'referencia.creada',
+  'referencia.cambiada',
+  'referencia.eliminada',
   'evidencia.creada',
   'evidencia.reemplazada',
   'evidencia.eliminada',
@@ -171,6 +177,14 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   // `vinculo:<código del riesgo>.<código del control o id estable de la entrada>`; nada más.
   'vinculo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'vinculo.eliminado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Motivos de inclusión y referencias al tratamiento de riesgos (ADR 037). Objeto `motivo:<id estable>.<tipo>` y
+  // `referencia:<norma>.<tipo>`; la nota, el título, la versión, la fecha y la ubicación NUNCA van a la bitácora.
+  'motivo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'motivo.cambiado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'motivo.eliminado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'referencia.creada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'referencia.cambiada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'referencia.eliminada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   // Evidencias con archivo (MVP, M4). El hecho lleva la HUELLA SHA-256 del archivo como versión del objeto (queda fijada en la cadena
   // inmutable); el título, el nombre del archivo y su contenido NUNCA van a la bitácora. El objeto es `evidencia:<uuid>` o, si se
   // rechaza una subida, el control `control:<codigo>`.

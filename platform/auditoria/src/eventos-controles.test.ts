@@ -18,6 +18,12 @@ const ACCIONES = [
   "riesgo.retirado",
   "vinculo.creado",
   "vinculo.eliminado",
+  "motivo.creado",
+  "motivo.cambiado",
+  "motivo.eliminado",
+  "referencia.creada",
+  "referencia.cambiada",
+  "referencia.eliminada",
 ] as const;
 
 describe.each(ACCIONES)("%s", (accion) => {
@@ -42,6 +48,10 @@ describe.each(ACCIONES)("%s", (accion) => {
       "titulo",
       "probabilidad",
       "impacto",
+      "nota",
+      "ubicacion",
+      "version_doc",
+      "fecha",
     ]) {
       rechaza({ ...e, despues: { [clave]: "algo" } });
       rechaza({ ...e, antes: { [clave]: "algo" } });

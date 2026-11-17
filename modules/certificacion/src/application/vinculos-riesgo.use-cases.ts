@@ -3,6 +3,7 @@ import type { AutorizacionPort } from './autorizacion.port.js';
 import type { CatalogoLecturaPort } from './catalogo-lectura.port.js';
 import { exigirPermiso, identificar, validarUuid } from './comunes.js';
 import type { ContextoCertificacion, Reloj } from './contexto.js';
+import { esDeLaDeclaracion } from './declaracion.use-cases.js';
 import { ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError } from './errores.js';
 import { aDtoRiesgo, type RiesgoDto } from './riesgos.use-cases.js';
 import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
@@ -94,8 +95,8 @@ export class PreverTratamientoUseCase {
     const riesgoId = validarUuid(entrada.riesgoId, 'riesgoId');
     const { libreriaCodigo, idEstable } = entradaValida(empresaId, entrada, SIN_CONTROL);
     const entradas = await this.catalogo.listarEntradasVigentes(empresaId);
-    // Solo controles (no cláusulas) de las librerías que la empresa adoptó; si no, es como si no existiera.
-    if (!entradas.some((e) => e.libreriaCodigo === libreriaCodigo && e.idEstable === idEstable && e.tipo === 'control')) throw new EntradaNoEncontradaError();
+    // Solo controles del Anexo A de la edición de la Declaración, de las librerías que la empresa adoptó; si no, es como si no existiera.
+    if (!entradas.filter(esDeLaDeclaracion).some((e) => e.libreriaCodigo === libreriaCodigo && e.idEstable === idEstable)) throw new EntradaNoEncontradaError();
     return this.unidad.ejecutar(empresaId, async (c) => {
       const riesgo = await c.riesgos.obtener(riesgoId);
       if (!riesgo) throw new EntradaNoEncontradaError();
