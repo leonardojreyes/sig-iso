@@ -1,7 +1,7 @@
 # Tareas — Declaración de Aplicabilidad justificada
 
 - **Spec:** [spec.md](spec.md) · **Plan:** no hay; el proceso es ágil (una rama por rebanada, PR por hito, un solo `/review` al final) y las decisiones de diseño van en el ADR de la tarea 1.
-- **Estado:** por aprobar el spec (2026-11-17). **20 tareas** en 6 fases.
+- **Estado:** spec **aprobado el 2026-11-17**. **20 tareas** en 6 fases; en curso desde la 1.
 
 ## Cómo leer este documento
 
@@ -15,7 +15,7 @@
 
 | ID  | Tarea                                                                                                                                                                                                                                                                                                                                     | Depende |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 1   | **ADR 037** «Riesgos mínimos y motivos de inclusión derivados» (motivo «riesgo» siempre derivado; tratamiento previsto directo; escala y cortes congelados; qué no cubre). Actualizar el glosario (motivo de inclusión, equivalencias de las decisiones de tratamiento), `modelo-dominio.md` y H8.7 del spec del MVP                      | —       |
+| 1   | ✅ **ADR 037** «Riesgos mínimos y motivos de inclusión derivados» (motivo «riesgo» siempre derivado; tratamiento previsto directo; escala y cortes congelados; qué no cubre). Actualizar el glosario (motivo de inclusión, equivalencias de las decisiones de tratamiento), `modelo-dominio.md` y H8.7 del spec del MVP                      | —       |
 | 2   | Migración `0017`: `riesgo` (código correlativo por empresa, probabilidad, impacto, decisión, responsable, versión, estado), `riesgo_control` y `riesgo_entrada` (tratamiento previsto a un control del Anexo A, por código de librería e id estable, sin clave foránea). RLS forzada, **aislamiento** y matriz de privilegios actualizada | 1       |
 | 3   | Migración `0018`: `motivo_inclusion` (por empresa y control del Anexo A: tipo, nota obligatoria, versión) y `referencia_tratamiento` (por empresa y norma: análisis y plan con título, versión, fecha y ubicación). RLS forzada, **aislamiento**, privilegios ‖                                                                           | 1       |
 | 4   | Migración `0019`: copia congelada de la versión (`declaracion_motivo`, `declaracion_riesgo`, `declaracion_referencia`, y la escala y los cortes en la versión). Inmutables (sin `update` ni `delete`), RLS, **aislamiento**; las versiones anteriores siguen leyéndose                                                                    | 1       |

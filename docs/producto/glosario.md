@@ -23,6 +23,9 @@ Definiciones de trabajo redactadas por SynapTech con palabras propias (no reprod
 | **Oportunidad de mejora** | Sugerencia de auditoría sin carácter de incumplimiento. |
 | **Acción correctiva / CAPA** | Acción para eliminar la causa raíz de una NC, con verificación de eficacia. |
 | **Causa raíz** | Origen de un problema, analizado con técnicas como 5 porqués o Ishikawa. |
+| **Motivo de inclusión** | Por qué un control del Anexo A aplica en la Declaración. Lista cerrada: **riesgo** (siempre **derivado** de los riesgos vigentes que se tratan con el control, o de un tratamiento previsto), requisito legal, requisito contractual, necesidad del negocio y otro; los cuatro últimos se registran con una nota obligatoria. Es la **justificación de inclusión** de la Declaración (ADR 037). |
+| **Decisión de tratamiento (del riesgo)** | Mitigar, aceptar, transferir o evitar; equivalen a lo que la norma llama modificar, retener, compartir y evitar el riesgo. Aceptar exige responsable. |
+| **Tratamiento previsto** | Vínculo directo de un riesgo con un control del Anexo A cuando la empresa aún no tiene el control propio; cuenta como motivo «riesgo» pero se muestra distinguido y no cuenta como implementado. |
 | **Declaración de Aplicabilidad (SoA)** | Documento que exigen 27001 y 42001. Se arma por control de la norma (Anexo A): si aplica, justificación de inclusión, estado de implementación, justificación de exclusión y enlace a los controles de la empresa. Se genera desde los controles reales. |
 | **Evaluación de impacto de sistemas de IA** | Análisis de 42001 de los efectos de un sistema de IA sobre personas y la organización. |
 | **Auditoría interna** | Auditoría realizada por la propia organización; prerrequisito de la Etapa 2. |

@@ -217,7 +217,9 @@ Las líneas punteadas no son claves foráneas: la entrada se referencia por `(c�
 | Evidencia | *(M4, pendiente)* | Con archivo, huella SHA-256, vigencia y reemplazo; una evidencia respaldará varias entradas. |
 | Declaración de Aplicabilidad | *(M5, pendiente)* | Se derivará del diagnóstico y de los controles reales. |
 | Bitácora inmutable | `bitacora`, `bitacora_ancla` | Encadenada por huellas; nada la modifica ni la borra. |
-| Etapas, Auditoría, Hallazgo, No conformidad, Riesgo, Documento, Indicador, Sistema de IA, Proceso | *(fuera del MVP)* | Siguen siendo el norte. |
+| Riesgo (mínimo) | *(en curso, ADR 037)* | Registro simplificado: probabilidad e impacto de 1 a 5, nivel inicial calculado, decisión de tratamiento y responsable; se vincula con controles de la empresa o, como tratamiento previsto, con controles del Anexo A. Sin riesgo residual, activos ni controles adicionales. |
+| Motivo de inclusión y referencia al tratamiento | *(en curso, ADR 037)* | Por control del Anexo A y por Declaración; se congelan en cada versión aprobada junto con la escala del nivel. |
+| Etapas, Auditoría, Hallazgo, No conformidad, Documento, Indicador, Sistema de IA, Proceso | *(fuera del MVP)* | Siguen siendo el norte. |
 
 ## Reglas de dominio clave
 
