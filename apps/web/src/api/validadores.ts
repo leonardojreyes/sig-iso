@@ -31,6 +31,7 @@ import type {
   VersionDeclaracionConFilas,
 } from './tipos';
 import { UUID } from '../validacion/patrones';
+import type { Personas, PersonaDeLaEmpresa, SolicitudDeAcceso } from './tipos';
 
 const ROLES: readonly string[] = [
   'administrador_sig',
@@ -631,4 +632,32 @@ export const validarEmpresasDePersona = (cuerpo: unknown): EmpresaDePersona[] | 
   }
   if (salida.filter((e) => e.activa).length > 1 || new Set(salida.map((e) => e.slug)).size !== salida.length) return null;
   return salida;
+};
+
+const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CODIGO_SOLICITUD = /^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/;
+
+/** Respuesta de `GET /personas` (ADR 036): las personas y las solicitudes vigentes, con la forma exacta del contrato. */
+export const validarPersonas = (cuerpo: unknown): Personas | null => {
+  const o = objeto(cuerpo);
+  if (!o || !claves(o, ['personas', 'solicitudes'])) return null;
+  if (!Array.isArray(o.personas) || o.personas.length > 1000 || !Array.isArray(o.solicitudes) || o.solicitudes.length > 50) return null;
+  const personas: PersonaDeLaEmpresa[] = [];
+  for (const item of o.personas) {
+    const p = objeto(item);
+    if (!p || !claves(p, ['id', 'nombre', 'correo', 'rol', 'bajaEn', 'version'])) return null;
+    if (!texto(p.id, 36, UUID) || !texto(p.nombre, 120, undefined, 1) || !texto(p.correo, 254, CORREO, 3)) return null;
+    if (!(p.rol === null || ROLES.includes(p.rol as Rol))) return null;
+    if (!(p.bajaEn === null || texto(p.bajaEn, 40, FECHA_HORA)) || !entero(p.version, 1)) return null;
+    personas.push({ id: p.id, nombre: p.nombre, correo: p.correo, rol: p.rol as Rol | null, bajaEn: p.bajaEn as string | null, version: p.version });
+  }
+  const solicitudes: SolicitudDeAcceso[] = [];
+  for (const item of o.solicitudes) {
+    const s = objeto(item);
+    if (!s || !claves(s, ['id', 'usuarioId', 'codigo', 'creadaEn', 'venceEn'])) return null;
+    if (!texto(s.id, 36, UUID) || !texto(s.usuarioId, 36, UUID) || !texto(s.codigo, 9, CODIGO_SOLICITUD)) return null;
+    if (!texto(s.creadaEn, 40, FECHA_HORA) || !texto(s.venceEn, 40, FECHA_HORA)) return null;
+    solicitudes.push({ id: s.id, usuarioId: s.usuarioId, codigo: s.codigo, creadaEn: s.creadaEn, venceEn: s.venceEn });
+  }
+  return { personas, solicitudes };
 };

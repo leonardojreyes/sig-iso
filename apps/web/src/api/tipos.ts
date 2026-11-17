@@ -273,3 +273,27 @@ export interface EmpresaDePersona {
   /** Es la empresa de esta sesión ahora. */
   readonly activa: boolean;
 }
+
+/** Una persona de la empresa (ADR 036). Rol nulo = sin acceso (dada de baja). Nombre y correo los ve solo el administrador SIG. */
+export interface PersonaDeLaEmpresa {
+  readonly id: string;
+  readonly nombre: string;
+  readonly correo: string;
+  readonly rol: Rol | null;
+  readonly bajaEn: string | null;
+  readonly version: number;
+}
+
+/** Una solicitud de acceso vigente: el código es lo que la persona le entrega al administrador. */
+export interface SolicitudDeAcceso {
+  readonly id: string;
+  readonly usuarioId: string;
+  readonly codigo: string;
+  readonly creadaEn: string;
+  readonly venceEn: string;
+}
+
+export interface Personas {
+  readonly personas: readonly PersonaDeLaEmpresa[];
+  readonly solicitudes: readonly SolicitudDeAcceso[];
+}

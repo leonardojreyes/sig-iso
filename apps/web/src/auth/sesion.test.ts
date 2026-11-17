@@ -20,6 +20,8 @@ type Llamada = { url: string; metodo: string; cuerpo: URLSearchParams | null; au
 interface Servidor {
   llamadas: Llamada[];
   api: { estado: number; lanza?: boolean };
+  /** Respuesta de `POST /acceso/solicitud` (ADR 036): 201 o 200 traen el código; otro estado, nada. */
+  solicitud: { estado: number; cuerpo: unknown };
   keycloak: { refresco: 'ok' | 'invalid_grant' | 'caido'; revocar: number };
   revocados: Set<string>;
   contador: number;
@@ -30,6 +32,7 @@ const montar = () => {
   const s: Servidor = {
     llamadas: [],
     api: { estado: 204 },
+    solicitud: { estado: 201, cuerpo: { codigo: 'K7F2-9QXM', venceEn: '2026-11-15T10:00:00.000Z' } },
     keycloak: { refresco: 'ok', revocar: 200 },
     revocados: new Set(),
     contador: 1,
@@ -41,6 +44,8 @@ const montar = () => {
     s.llamadas.push({ url, metodo: init.method ?? 'GET', cuerpo, autorizacion: cab.get('authorization') });
     if (url.startsWith(config.apiUrl)) {
       if (s.api.lanza) throw new Error('ECONNREFUSED');
+      if (url.endsWith('/acceso/solicitud'))
+        return new Response([200, 201].includes(s.solicitud.estado) ? JSON.stringify(s.solicitud.cuerpo) : null, { status: s.solicitud.estado, headers: { 'content-type': 'application/json' } });
       return new Response(null, { status: s.api.estado });
     }
     if (url.endsWith('/protocol/openid-connect/revoke')) {
@@ -180,6 +185,8 @@ describe('iniciar: la sesión solo se emite si el inicio quedó registrado (ADR 
     async (_n, api) => {
       const { s, fetchFn } = montar();
       s.api = api;
+      // Un 401 del inicio es el caso de «sin rol» (ADR 036): solo acaba aquí si además la solicitud de acceso no se puede pedir.
+      s.solicitud = { estado: 409, cuerpo: null };
       const { svc, almacen } = servicio(fetchFn);
       const r = await svc.iniciar(callbackOk());
       expect(r.status).toBe(303);
@@ -202,6 +209,108 @@ describe('iniciar: la sesión solo se emite si el inicio quedó registrado (ADR 
         })) as { sid: string }
       ).sid;
     expect(await sidDe(a)).not.toBe(await sidDe(b));
+  });
+});
+
+describe('iniciar: una cuenta SIN rol no recibe sesión, pero ve su código de solicitud (ADR 036)', () => {
+  const sinRol = (s: Servidor) => {
+    s.api.estado = 401; // la API no inicia sesión de una cuenta sin rol: no hay sesión sin rastro
+  };
+
+  it('pide la solicitud con SU token y vuelve a /acceso-pendiente con una cookie sellada; NO emite la cookie de sesión ni guarda el token', async () => {
+    const { s, fetchFn } = montar();
+    sinRol(s);
+    const { svc, almacen } = servicio(fetchFn);
+    const r = await svc.iniciar(callbackOk());
+    expect(s.llamadas.map((l) => [l.metodo, l.url, l.autorizacion])).toEqual([
+      ['POST', `${config.apiUrl}/sesion/inicio`, 'Bearer acceso-inicial'],
+      ['POST', `${config.apiUrl}/acceso/solicitud`, 'Bearer acceso-inicial'],
+    ]);
+    expect(r.status).toBe(303);
+    expect(r.headers.get('location')).toBe('http://localhost:3000/acceso-pendiente');
+    expect(valorCookie(r, config.nombreCookieSesion)).toBeNull();
+    expect(valorCookie(r, config.nombreCookieAcceso)).not.toBeNull();
+    expect(almacen.obtener(SID)).toBeUndefined();
+    expect(r.headers.get('cache-control')).toMatch(/no-store/);
+    // La cookie de la transacción de ingreso se borra, como siempre.
+    expect(r.headers.getSetCookie().some((c) => c.startsWith(`${config.nombreCookie}=;`))).toBe(true);
+  });
+
+  it('la cookie va sellada (el código no viaja en claro) y trae solo el código y el plazo', async () => {
+    const { s, fetchFn } = montar();
+    sinRol(s);
+    const r = await servicio(fetchFn).svc.iniciar(callbackOk());
+    const valor = valorCookie(r, config.nombreCookieAcceso)!;
+    expect(valor).not.toContain('K7F2');
+    expect(await abrirSello(valor, { claves: config.clavesSellado, ahora: AHORA })).toEqual({ v: 1, c: 'K7F2-9QXM', e: '2026-11-15T10:00:00.000Z' });
+  });
+
+  it('la cookie es httpOnly, SameSite=Lax, Path=/ y dura como máximo 10 minutos (sin Domain)', async () => {
+    const { s, fetchFn } = montar();
+    sinRol(s);
+    const r = await servicio(fetchFn).svc.iniciar(callbackOk());
+    const sc = r.headers.getSetCookie().find((c) => c.startsWith(`${config.nombreCookieAcceso}=`))!;
+    expect(sc).toMatch(/; HttpOnly/);
+    expect(sc).toMatch(/; SameSite=Lax/);
+    expect(sc).toMatch(/; Path=\//);
+    expect(sc).not.toMatch(/Domain=/i);
+    expect(Number(/Max-Age=(\d+)/.exec(sc)![1])).toBeLessThanOrEqual(600);
+  });
+
+  it('si la solicitud vence antes de 10 minutos, la cookie no dura más que ella', async () => {
+    const { s, fetchFn } = montar();
+    sinRol(s);
+    s.solicitud.cuerpo = { codigo: 'K7F2-9QXM', venceEn: new Date(AHORA.getTime() + 90_000).toISOString() };
+    const r = await servicio(fetchFn).svc.iniciar(callbackOk());
+    const sc = r.headers.getSetCookie().find((c) => c.startsWith(`${config.nombreCookieAcceso}=`))!;
+    expect(Number(/Max-Age=(\d+)/.exec(sc)![1])).toBe(90);
+  });
+
+  it.each([
+    ['la API la rechaza (409: ya tiene acceso, o demasiadas solicitudes)', { estado: 409, cuerpo: null }],
+    ['la API falla (500)', { estado: 500, cuerpo: null }],
+    ['la respuesta no cumple el contrato (código mal formado)', { estado: 201, cuerpo: { codigo: '0000-0000', venceEn: '2026-11-15T10:00:00.000Z' } }],
+    ['la respuesta no trae plazo válido', { estado: 201, cuerpo: { codigo: 'K7F2-9QXM', venceEn: 'mañana' } }],
+    ['el plazo ya pasó', { estado: 201, cuerpo: { codigo: 'K7F2-9QXM', venceEn: '2026-11-01T00:00:00.000Z' } }],
+  ])('si %s: sin sesión ni cookie de acceso, y vuelve a la portada con «ingreso_no_disponible»', async (_c, solicitud) => {
+    const { s, fetchFn } = montar();
+    sinRol(s);
+    s.solicitud = solicitud;
+    const r = await servicio(fetchFn).svc.iniciar(callbackOk());
+    expect(r.headers.get('location')).toBe('http://localhost:3000/?error=ingreso_no_disponible');
+    expect(valorCookie(r, config.nombreCookieSesion)).toBeNull();
+    expect(valorCookie(r, config.nombreCookieAcceso)).toBeNull();
+  });
+
+  it('con la API caída al pedir la solicitud: sin sesión ni cookie', async () => {
+    const { s, fetchFn } = montar();
+    sinRol(s);
+    const original = fetchFn;
+    const roto = (async (url: string, init?: RequestInit) => {
+      if (String(url).endsWith('/acceso/solicitud')) throw new Error('ECONNREFUSED');
+      return original(url, init);
+    }) as unknown as typeof fetch;
+    const r = await servicio(roto).svc.iniciar(callbackOk());
+    expect(r.headers.get('location')).toBe('http://localhost:3000/?error=ingreso_no_disponible');
+    expect(valorCookie(r, config.nombreCookieAcceso)).toBeNull();
+  });
+
+  it('SOLO ante un 401 del inicio: con cualquier otro estado no se pide ninguna solicitud', async () => {
+    for (const estado of [403, 404, 500, 503]) {
+      const { s, fetchFn } = montar();
+      s.api.estado = estado;
+      const r = await servicio(fetchFn).svc.iniciar(callbackOk());
+      expect(s.llamadas.map((l) => l.url)).toEqual([`${config.apiUrl}/sesion/inicio`]);
+      expect(r.headers.get('location')).toBe('http://localhost:3000/?error=ingreso_no_disponible');
+    }
+  });
+
+  it('la cookie de acceso NO sirve como cookie de sesión (no abre una sesión)', async () => {
+    const { s, fetchFn } = montar();
+    sinRol(s);
+    const { svc } = servicio(fetchFn);
+    const valor = valorCookie(await svc.iniciar(callbackOk()), config.nombreCookieAcceso)!;
+    expect(await svc.leer(conCookie(valor))).toBeNull();
   });
 });
 

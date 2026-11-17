@@ -13,6 +13,8 @@ export interface ConfiguracionIngreso {
   readonly seguro: boolean;
   readonly nombreCookie: string;
   readonly nombreCookieSesion: string;
+  /** Cookie sellada y de corta vida con el código de solicitud de quien ingresó sin rol (ADR 036). No es una sesión. */
+  readonly nombreCookieAcceso: string;
   /** Dirección de la API (servidor a servidor). */
   readonly apiUrl: string;
   readonly clavesSellado: readonly ClaveSellado[];
@@ -68,6 +70,7 @@ export const leerConfiguracion = (env: EntornoWeb): ConfiguracionIngreso => {
     seguro,
     nombreCookie: seguro ? '__Host-sig-oidc' : 'sig-oidc',
     nombreCookieSesion: seguro ? '__Host-sig-sesion' : 'sig-sesion',
+    nombreCookieAcceso: seguro ? '__Host-sig-acceso' : 'sig-acceso',
     apiUrl: api.origin,
     clavesSellado: claves,
   };

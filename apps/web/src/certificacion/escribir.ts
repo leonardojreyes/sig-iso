@@ -27,6 +27,11 @@ export type AvisoEscritura =
   | 'evidencia_eliminada'
   | 'declaracion_aprobada'
   | 'declaracion_no_aprobada'
+  | 'persona_aprobada'
+  | 'solicitud_descartada'
+  | 'rol_cambiado'
+  | 'persona_dada_de_baja'
+  | 'personas_conflicto'
   | 'sin_cambios'
   | 'sin_permiso'
   | 'no_valido'
@@ -48,6 +53,11 @@ const AVISOS: readonly string[] = [
   'evidencia_eliminada',
   'declaracion_aprobada',
   'declaracion_no_aprobada',
+  'persona_aprobada',
+  'solicitud_descartada',
+  'rol_cambiado',
+  'persona_dada_de_baja',
+  'personas_conflicto',
   'sin_cambios',
   'sin_permiso',
   'no_valido',
@@ -75,7 +85,7 @@ const SIN_CUERPO = Symbol('sin_cuerpo');
 type Cuerpo = Record<string, unknown> | FormData | typeof SIN_CUERPO | 'archivo_grande' | null;
 interface Operacion {
   /** Pantalla a la que se vuelve (`/e/<empresa>/<pantalla>`). */
-  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion';
+  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion' | 'personas';
   /** Ruta (tras `/e/<empresa>/`) a la que se vuelve si no es `pantalla`; recibe el formulario (si se pudo leer) y el recurso de la dirección. */
   readonly volverA?: (f: FormData | null, id: string | null) => string;
   readonly metodoApi: 'PUT' | 'POST';
@@ -594,4 +604,77 @@ export const aprobarDeclaracion = (peticion: Request, entrada: Entrada): Promise
     conflicto: 'declaracion_no_aprobada',
     sinFormulario: true,
     cuerpo: () => SIN_CUERPO,
+  });
+
+// ---- Personas y solicitudes de acceso (M7, ADR 036). La web no decide nada: reenvía a la API, que autoriza (solo el administrador SIG).
+
+const ROLES_DE_PERSONA = ['administrador_sig', 'dueno_proceso', 'auditor_interno', 'auditor_externo', 'colaborador', 'alta_direccion'];
+const idSolicitud = (f: FormData): string | null => {
+  const id = campo(f, 'solicitud');
+  return id && UUID.test(id) ? id.toLowerCase() : null;
+};
+
+/** Aprueba una solicitud: el administrador escribe el nombre y el correo y elige el rol. Nada de eso se guarda en la web ni sale de ella. */
+export const aprobarSolicitudAcceso = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'personas',
+    metodoApi: 'POST',
+    rutaApi: (f) => {
+      const id = idSolicitud(f);
+      return id ? `/personas/solicitudes/${id}/aprobacion` : null;
+    },
+    exito: 'persona_aprobada',
+    conflicto: 'personas_conflicto',
+    cuerpo: (f) => {
+      const nombre = campo(f, 'nombre')?.trim();
+      const correo = campo(f, 'correo')?.trim();
+      const rol = campo(f, 'rol');
+      if (!nombre || nombre.length > 120 || !correo || correo.length > 254 || !rol || !ROLES_DE_PERSONA.includes(rol)) return null;
+      return { nombre, correo, rol };
+    },
+  });
+
+export const descartarSolicitudAcceso = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'personas',
+    metodoApi: 'POST',
+    rutaApi: (f) => {
+      const id = idSolicitud(f);
+      return id ? `/personas/solicitudes/${id}/descarte` : null;
+    },
+    exito: 'solicitud_descartada',
+    cuerpo: () => SIN_CUERPO,
+  });
+
+export const cambiarRolPersona = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'personas',
+    metodoApi: 'PUT',
+    rutaApi: (f) => {
+      const id = idControl(f);
+      return id ? `/personas/${id}/rol` : null;
+    },
+    exito: 'rol_cambiado',
+    conflicto: 'personas_conflicto',
+    cuerpo: (f) => {
+      const rol = campo(f, 'rol');
+      const version = versionControl(f);
+      return rol && ROLES_DE_PERSONA.includes(rol) && version !== null ? { rol, versionEsperada: version } : null;
+    },
+  });
+
+export const darDeBajaPersona = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'personas',
+    metodoApi: 'POST',
+    rutaApi: (f) => {
+      const id = idControl(f);
+      return id ? `/personas/${id}/baja` : null;
+    },
+    exito: 'persona_dada_de_baja',
+    conflicto: 'personas_conflicto',
+    cuerpo: (f) => {
+      const version = versionControl(f);
+      return version === null ? null : { versionEsperada: version };
+    },
   });
