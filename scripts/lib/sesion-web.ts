@@ -19,11 +19,11 @@ const pedir = async (url: string, jar: Map<string, string>, init: RequestInit = 
   return r;
 };
 
-export const iniciarSesionWeb = async (
-  entorno: EntornoWeb,
-  alias: string,
-  retorno = '/',
-): Promise<Map<string, string>> => {
+/**
+ * Ingresa con una cuenta de prueba (web → Keycloak → web) y devuelve lo que la web respondió en el callback, SIN exigir que haya sesión:
+ * una cuenta sin rol no recibe sesión sino la cookie de su código de solicitud (ADR 036).
+ */
+export const ingresarWeb = async (entorno: EntornoWeb, alias: string, retorno = '/') => {
   const jarWeb = new Map<string, string>();
   const jarKc = new Map<string, string>();
   const inicio = await pedir(`${entorno.web}/auth/login?retorno=${encodeURIComponent(retorno)}`, jarWeb);
@@ -42,14 +42,26 @@ export const iniciarSesionWeb = async (
   if (envio.status !== 302 || !regreso)
     throw new Error(`El ingreso de ${alias} no fue aceptado (respuesta ${envio.status})`);
   const callback = await pedir(regreso, new Map(jarWeb));
-  const sesion = new Map<string, string>();
+  const cookies = new Map<string, string>();
+  const setCookies = callback.headers.getSetCookie();
   guardarCookies(
-    sesion,
-    callback.headers.getSetCookie().filter((c) => !/Max-Age=0/.test(c)),
+    cookies,
+    setCookies.filter((c) => !/Max-Age=0/.test(c)),
   );
-  if (callback.status !== 303 || sesion.size === 0)
-    throw new Error(`La web no emitió la sesión de ${alias} (respuesta ${callback.status})`);
-  return sesion;
+  const destino = callback.headers.get('location');
+  const u = destino ? new URL(destino, entorno.web) : null;
+  return { estado: callback.status, destino: u ? `${u.pathname}${u.search}` : null, cookies, setCookies };
+};
+
+export const iniciarSesionWeb = async (
+  entorno: EntornoWeb,
+  alias: string,
+  retorno = '/',
+): Promise<Map<string, string>> => {
+  const r = await ingresarWeb(entorno, alias, retorno);
+  if (r.estado !== 303 || r.cookies.size === 0)
+    throw new Error(`La web no emitió la sesión de ${alias} (respuesta ${r.estado})`);
+  return r.cookies;
 };
 
 export const paginaWeb = async (entorno: EntornoWeb, ruta: string, sesion: Map<string, string>) => {

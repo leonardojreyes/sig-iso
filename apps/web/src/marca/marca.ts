@@ -1,9 +1,8 @@
 // Marca real de la empresa de la sesión (GET /empresa/marca). La respuesta de la API se valida igual que cualquier dato externo:
 // forma exacta, color #RRGGBB y logo solo https sin credenciales o ruta propia. Lo inválido no se corrige: se rechaza.
 import { esIdEmpresa, type Empresa } from './tipos';
+import { COLOR, LOGO } from '../validacion/patrones';
 
-const COLOR = /^#[0-9A-Fa-f]{6}$/;
-const LOGO = /^(https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?\/[^\s@]*|\/logos\/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp))$/;
 const CLAVES = ['ajustadoPorContraste', 'colorOriginal', 'colorPrimario', 'logoUrl', 'nombre'];
 
 export interface MarcaValidada {
@@ -36,7 +35,13 @@ export const validarMarcaDetalle = (cuerpo: unknown): MarcaDetalle | null => {
     if (typeof m.logoUrl !== 'string' || m.logoUrl.length > 2048 || !LOGO.test(m.logoUrl)) return null;
     logoUrl = m.logoUrl;
   }
-  return { nombre: m.nombre, colorPrimario: m.colorPrimario, colorOriginal: m.colorOriginal, ajustadoPorContraste: m.ajustadoPorContraste, logoUrl: logoUrl ?? null };
+  return {
+    nombre: m.nombre,
+    colorPrimario: m.colorPrimario,
+    colorOriginal: m.colorOriginal,
+    ajustadoPorContraste: m.ajustadoPorContraste,
+    logoUrl: logoUrl ?? null,
+  };
 };
 
 export const validarMarca = (cuerpo: unknown): MarcaValidada | null => {
@@ -45,15 +50,9 @@ export const validarMarca = (cuerpo: unknown): MarcaValidada | null => {
 };
 
 export type ResultadoMarca =
-  | { readonly ok: true; readonly empresa: Empresa }
-  | { readonly ok: false; readonly motivo: 'no_autenticado' | 'no_disponible' };
+  { readonly ok: true; readonly empresa: Empresa } | { readonly ok: false; readonly motivo: 'no_autenticado' | 'no_disponible' };
 
-export const cargarMarca = async (p: {
-  slug: string;
-  acceso: string;
-  apiUrl: string;
-  fetchFn: typeof fetch;
-}): Promise<ResultadoMarca> => {
+export const cargarMarca = async (p: { slug: string; acceso: string; apiUrl: string; fetchFn: typeof fetch }): Promise<ResultadoMarca> => {
   // El slug ya viene verificado, pero se vuelve a comprobar: va a ser el identificador del CSS.
   if (!esIdEmpresa(p.slug)) return { ok: false, motivo: 'no_disponible' };
   try {

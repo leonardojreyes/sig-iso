@@ -365,6 +365,137 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/acceso/solicitud": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pide acceso a la empresa del token y recibe un código corto
+         * @description Para una persona autenticada que todavía no tiene un rol en la empresa (ADR 036). No exige permiso: justo lo que pide es tenerlo.
+         *     La persona y la empresa salen del token verificado y no hay cuerpo. Crea UNA solicitud vigente por persona y empresa, que vence a
+         *     los 7 días: pedir de nuevo devuelve la misma, con 200. El código solo sirve para que el administrador SIG reconozca la solicitud;
+         *     no es una credencial. El nombre y el correo nunca se leen del token. Orden de evaluación: 401, 409 (la persona ya tiene acceso o la
+         *     empresa tiene demasiadas solicitudes vigentes).
+         */
+        post: operations["solicitarAcceso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/personas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Personas de la empresa y solicitudes de acceso vigentes
+         * @description Para el administrador SIG. Incluye a quienes están dados de baja (con rol nulo y la fecha de baja) y las solicitudes vigentes con
+         *     su código. Orden de evaluación: 401, 403.
+         */
+        get: operations["listarPersonas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/personas/solicitudes/{id}/aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprueba una solicitud de acceso con un rol
+         * @description Crea a la persona de la solicitud con el rol, el nombre y el correo que escribe el administrador, o la reactiva si estaba dada de
+         *     baja. Una solicitud inexistente, vencida, ya resuelta o de otra empresa responde 404 (indistinguibles). Un correo que ya usa otra
+         *     persona de la empresa, o una persona que ya tiene rol, responde 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["aprobarSolicitudAcceso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/personas/solicitudes/{id}/descarte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Descarta una solicitud de acceso
+         * @description La solicitud no se borra: queda resuelta como descartada. Sin cuerpo. Una solicitud que no está vigente responde 404. Orden de
+         *     evaluación: 401, 403, 400, 404.
+         */
+        post: operations["descartarSolicitudAcceso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/personas/{id}/rol": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Cambia el rol de una persona con acceso
+         * @description Con la versión que vio el administrador (409 si cambió). No deja a la empresa sin administrador SIG (409). Una persona dada de
+         *     baja o que no existe responde 404: para volver necesita una solicitud nueva. Pedir el mismo rol no cambia nada. Orden de
+         *     evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["cambiarRolPersona"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/personas/{id}/baja": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Da de baja a una persona
+         * @description Deja el rol en nulo y anota la baja; la persona no se borra (la autoría la referencia). Desde la siguiente petición no puede
+         *     nada. No se da de baja al último administrador SIG (409). Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["darDeBajaPersona"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/controles": {
         parameters: {
             query?: never;
@@ -783,6 +914,57 @@ export interface components {
             colorPrimario: string;
             /** @description Solo `https` sin credenciales, un archivo de imagen bajo `/logos/` o nulo para quitarlo. */
             logoUrl: string | null;
+        };
+        /** @enum {string} */
+        RolPersona: "administrador_sig" | "dueno_proceso" | "auditor_interno" | "auditor_externo" | "colaborador" | "alta_direccion";
+        /** @description Lo que la persona le entrega al administrador. No lleva nombre ni correo. */
+        SolicitudAcceso: {
+            codigo: string;
+            /** Format: date-time */
+            venceEn: string;
+        };
+        SolicitudPendiente: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            usuarioId: string;
+            codigo: string;
+            /** Format: date-time */
+            creadaEn: string;
+            /** Format: date-time */
+            venceEn: string;
+        };
+        /** @description Una persona de la empresa. El rol nulo es una persona sin acceso (dada de baja). Nombre y correo son datos personales. */
+        Persona: {
+            /** Format: uuid */
+            id: string;
+            nombre: string;
+            correo: string;
+            /**
+             * @description Nulo si la persona está dada de baja (sin acceso).
+             * @enum {string|null}
+             */
+            rol: "administrador_sig" | "dueno_proceso" | "auditor_interno" | "auditor_externo" | "colaborador" | "alta_direccion" | null;
+            /** Format: date-time */
+            bajaEn: string | null;
+            version: number;
+        };
+        Personas: {
+            personas: components["schemas"]["Persona"][];
+            solicitudes: components["schemas"]["SolicitudPendiente"][];
+        };
+        /** @description Lo que escribe el administrador. La empresa y la persona de la solicitud no viajan aquí. */
+        AprobacionSolicitud: {
+            nombre: string;
+            correo: string;
+            rol: components["schemas"]["RolPersona"];
+        };
+        CambioDeRol: {
+            rol: components["schemas"]["RolPersona"];
+            versionEsperada: number;
+        };
+        PersonaVersion: {
+            versionEsperada: number;
         };
         LibreriaResumen: {
             /** Format: uuid */
@@ -1942,6 +2124,199 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Evaluacion"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    solicitarAcceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ya había una solicitud vigente; es la misma. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudAcceso"];
+                };
+            };
+            /** @description La solicitud creada. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudAcceso"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarPersonas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las personas y las solicitudes vigentes. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Personas"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    aprobarSolicitudAcceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AprobacionSolicitud"];
+            };
+        };
+        responses: {
+            /** @description La persona con acceso. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Persona"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    descartarSolicitudAcceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La solicitud se descartó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarRolPersona: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CambioDeRol"];
+            };
+        };
+        responses: {
+            /** @description La persona con su rol vigente. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Persona"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    darDeBajaPersona: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonaVersion"];
+            };
+        };
+        responses: {
+            /** @description La persona dada de baja. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Persona"];
                 };
             };
             400: components["responses"]["ParametrosInvalidos"];

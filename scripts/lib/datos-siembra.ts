@@ -57,6 +57,22 @@ export const DATOS_SIEMBRA: DatosSiembra = {
   membresias: [{ alias: 'consultor', empresaId: EMPRESA_B, rol: 'colaborador' }],
 };
 
+/**
+ * Cuentas de Keycloak que ingresan pero NO tienen fila en `usuario` (ADR 036): piden acceso y el administrador SIG las aprueba. Existen en
+ * el realm (para poder ingresar) y la siembra NO las inserta: justo lo que prueban es el camino de «solicitar acceso».
+ */
+export interface CuentaSinAccesoSiembra {
+  readonly alias: string;
+  readonly id: string;
+  readonly empresaId: string;
+  readonly nombre: string;
+  readonly correo: string;
+}
+
+export const CUENTAS_SIN_ACCESO: readonly CuentaSinAccesoSiembra[] = [
+  { alias: 'pendiente', id: '5eed0006-0000-4000-8000-0000000000c2', empresaId: EMPRESA_A, nombre: 'Persona Pendiente', correo: 'pendiente@example.test' },
+];
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const UUID_NULO = '00000000-0000-0000-0000-000000000000';
 const SLUG = /^[a-z0-9-]{1,32}$/;
@@ -96,6 +112,19 @@ export const validarDatosSiembra = (d: DatosSiembra): void => {
     if (d.usuarios.some((u) => u.empresaId === m.empresaId && u.correo === cuenta.correo)) throw new Error('Correo repetido dentro de una misma empresa en los datos de siembra');
   });
   if (repetidos(d.membresias.map((m) => `${m.alias}|${m.empresaId}`))) throw new Error('Pertenencia repetida en los datos de siembra');
+};
+
+/** Las cuentas sin acceso no chocan con las de la siembra ni entre sí, y son de una empresa que existe. */
+export const validarCuentasSinAcceso = (cuentas: readonly CuentaSinAccesoSiembra[], d: DatosSiembra): void => {
+  const ids = new Set(d.empresas.map((e) => e.id));
+  cuentas.forEach((c) => {
+    exigirUuid(c.id);
+    exigirUuid(c.empresaId);
+    if (!ids.has(c.empresaId)) throw new Error('Una cuenta sin acceso es de una empresa que no existe en los datos de siembra');
+    if (!c.correo.endsWith('@example.test')) throw new Error('Los correos de siembra deben ser del dominio de pruebas example.test');
+  });
+  const todos = [...d.usuarios, ...cuentas];
+  if (repetidos(todos.map((u) => u.id)) || repetidos(todos.map((u) => u.alias))) throw new Error('Una cuenta sin acceso repite el identificador o el alias de otra cuenta de siembra');
 };
 
 const LOCALES = new Set(['127.0.0.1', 'localhost', '[::1]']);

@@ -7,6 +7,7 @@ import { jwtVerify, type JWTVerifyGetKey } from 'jose';
 import type { ConfiguracionIngreso } from './configuracion';
 import { rutaDeRetornoSegura } from './retorno';
 import { abrirSello, sellar, TransaccionInvalidaError } from './sellado';
+import { UUID } from '../validacion/patrones';
 
 export interface DependenciasFlujo {
   readonly config: ConfiguracionIngreso;
@@ -45,7 +46,6 @@ export type ResultadoCallback =
 const VIGENCIA_TRANSACCION_SEGUNDOS = 300;
 const CODIGO_MAXIMO = 2048;
 const TOKEN_MAXIMO = 16_384;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SESION = /^[A-Za-z0-9_-]{1,128}$/;
 const SIN_CACHE = 'no-store';
 
@@ -118,13 +118,9 @@ export const completarCallback = async (peticion: Request, deps: DependenciasFlu
   try {
     transaccion = await abrirSello<Transaccion>(sello, { claves: config.clavesSellado, ahora: deps.ahora() });
   } catch (e) {
-    return falla(
-      e instanceof TransaccionInvalidaError && e.motivo === 'vencida' ? 'transaccion_vencida' : 'transaccion_invalida',
-    );
+    return falla(e instanceof TransaccionInvalidaError && e.motivo === 'vencida' ? 'transaccion_vencida' : 'transaccion_invalida');
   }
-  if (
-    ![transaccion.s, transaccion.n, transaccion.v, transaccion.r].every((x) => typeof x === 'string' && x.length > 0)
-  ) {
+  if (![transaccion.s, transaccion.n, transaccion.v, transaccion.r].every((x) => typeof x === 'string' && x.length > 0)) {
     return falla('transaccion_invalida');
   }
 
@@ -165,26 +161,17 @@ export const completarCallback = async (peticion: Request, deps: DependenciasFlu
   } catch {
     return falla('intercambio_fallido');
   }
-  const texto = (v: unknown): string | null =>
-    typeof v === 'string' && v.length > 0 && v.length <= TOKEN_MAXIMO ? v : null;
+  const texto = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 && v.length <= TOKEN_MAXIMO ? v : null);
   const acceso = texto(cuerpo?.access_token);
   const refresco = texto(cuerpo?.refresh_token);
   const id = texto(cuerpo?.id_token);
-  if (
-    typeof cuerpo?.token_type !== 'string' ||
-    cuerpo.token_type.toLowerCase() !== 'bearer' ||
-    !acceso ||
-    !refresco ||
-    !id
-  ) {
+  if (typeof cuerpo?.token_type !== 'string' || cuerpo.token_type.toLowerCase() !== 'bearer' || !acceso || !refresco || !id) {
     return falla('intercambio_fallido');
   }
 
   const expiraEn = cuerpo?.expires_in;
   const vidaDelAcceso =
-    typeof expiraEn === 'number' && Number.isFinite(expiraEn) && expiraEn > 0 && expiraEn <= 3600
-      ? Math.floor(expiraEn)
-      : 300;
+    typeof expiraEn === 'number' && Number.isFinite(expiraEn) && expiraEn > 0 && expiraEn <= 3600 ? Math.floor(expiraEn) : 300;
 
   // 6. id_token: firma, emisor, audiencia (este cliente), vigencia y el nonce de ESTE ingreso.
   try {
@@ -215,10 +202,7 @@ export const completarCallback = async (peticion: Request, deps: DependenciasFlu
 };
 
 /** Fallo visible para la persona: vuelve al inicio con un código GENÉRICO (sin revelar qué regla falló) y sin dejar la cookie. */
-export const respuestaDeFallo = (
-  resultado: Extract<ResultadoCallback, { ok: false }>,
-  config: ConfiguracionIngreso,
-): Response => {
+export const respuestaDeFallo = (resultado: Extract<ResultadoCallback, { ok: false }>, config: ConfiguracionIngreso): Response => {
   const codigo = resultado.motivo === 'rechazado_por_proveedor' ? 'ingreso_cancelado' : 'ingreso_invalido';
   const cabeceras = new Headers({ Location: `${config.origen}/?error=${codigo}`, 'Cache-Control': SIN_CACHE });
   cabeceras.append('Set-Cookie', resultado.limpiarCookie);

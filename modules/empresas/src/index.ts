@@ -25,3 +25,32 @@ export { ActualizarMarcaUseCase, MarcaNoValidaError, SinPermisoMarcaError } from
 export type { BitacoraDeUnidad, ContextoMarca, MarcaRepositoryPort, PermisoMarcaPort, UnidadDeTrabajoMarcaPort } from './application/marca-repository.port.js';
 export { MarcaKysely } from './infrastructure/marca-kysely.adapter.js';
 export { crearUnidadDeTrabajoMarca } from './infrastructure/unidad-de-trabajo-marca.js';
+export { ErrorDatosPersona, validarDatosPersona } from './domain/datos-persona.js';
+export { ALFABETO_CODIGO, FORMA_CODIGO, generarCodigo, TOPE_SOLICITUDES_VIGENTES, VIDA_SOLICITUD_MS } from './domain/solicitud-acceso.js';
+export type { Aleatorio } from './domain/solicitud-acceso.js';
+export type {
+  ContextoPersonas,
+  PermisoDePersonas,
+  PermisoPersonasPort,
+  PersonaDto,
+  PersonasRepositoryPort,
+  SolicitudDto,
+  SolicitudesRepositoryPort,
+  UnidadDeTrabajoPersonasPort,
+} from './application/personas.port.js';
+export {
+  AprobarSolicitudUseCase,
+  CambiarRolUseCase,
+  ConflictoDePersonasError,
+  DarDeBajaUseCase,
+  DescartarSolicitudUseCase,
+  ListarPersonasUseCase,
+  PeticionDePersonasNoValidaError,
+  PersonaDeLaEmpresaNoEncontradaError,
+  SinPermisoPersonasError,
+  SolicitarAccesoUseCase,
+  SolicitudNoEncontradaError,
+  type MotivoConflictoDePersonas,
+} from './application/personas.use-cases.js';
+export { PersonasKysely, SolicitudesKysely } from './infrastructure/personas-kysely.adapter.js';
+export { crearUnidadDeTrabajoPersonas } from './infrastructure/unidad-de-trabajo-personas.js';

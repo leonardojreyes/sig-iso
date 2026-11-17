@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { actualizarEnv, generarClave, parsearEnv } from './lib/db-init.mjs';
-import { DATOS_SIEMBRA } from './lib/datos-siembra.ts';
+import { CUENTAS_SIN_ACCESO, DATOS_SIEMBRA, validarCuentasSinAcceso } from './lib/datos-siembra.ts';
 import { generarSecretos, resolverRealm } from './lib/realm-keycloak.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -17,6 +17,9 @@ const escribirPrivado = (ruta: string, texto: string) => {
 };
 
 try {
+  // Las cuentas con rol y las que aún no tienen acceso (ADR 036) existen todas en el realm.
+  validarCuentasSinAcceso(CUENTAS_SIN_ACCESO, DATOS_SIEMBRA);
+  const cuentas = [...DATOS_SIEMBRA.usuarios, ...CUENTAS_SIN_ACCESO];
   const origenWeb = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
   const archivoSecretos = join(raiz, '.local', 'secretos-keycloak.json');
   const archivoRealm = join(raiz, '.local', 'realm', 'sigiso-realm.json');
@@ -24,7 +27,7 @@ try {
 
   const secretos = generarSecretos({
     existentes: existsSync(archivoSecretos) ? leerJson(archivoSecretos) : {},
-    aliases: DATOS_SIEMBRA.usuarios.map((u) => u.alias),
+    aliases: cuentas.map((u) => u.alias),
   });
   escribirPrivado(archivoSecretos, `${JSON.stringify(secretos, null, 2)}\n`);
 
@@ -32,7 +35,7 @@ try {
     plantilla: leerJson(join(raiz, 'infra', 'keycloak', 'realm-sigiso.plantilla.json')),
     perfil: leerJson(join(raiz, 'infra', 'keycloak', 'perfil-usuario.json')),
     valores: { WEB_ORIGIN: origenWeb, ...secretos.marcadores },
-    usuarios: DATOS_SIEMBRA.usuarios,
+    usuarios: cuentas,
     clavesUsuarios: secretos.usuarios,
   });
   escribirPrivado(archivoRealm, `${JSON.stringify(realm, null, 2)}\n`);

@@ -106,7 +106,6 @@ En macOS `ram:report` mide la **huella real** (`footprint`, `phys_footprint`), q
 
 ## Problemas conocidos
 
-- `GITHUB_TOKEN` inválido en `~/.zshrc`: usa `env -u GITHUB_TOKEN gh …` y `env -u GITHUB_TOKEN git push …`.
 - Si `gh` o `git` fallan con errores de TLS, revisa VPN, proxy, antivirus y el reloj del sistema.
 - El hook de Bash de Claude Code evalúa el texto completo del comando y puede dar falsos positivos (registrado como B6): por ejemplo, un comando que mencione el archivo de entorno o contenga ciertas sentencias SQL de ejemplo.
 - Crear una cuenta de Keycloak con la API de administración normal **ignora el identificador** que se le da (el `sub` del token ya no coincide con la persona de la base): usa `pnpm keycloak:cuentas`, que usa la importación parcial y lo respeta.

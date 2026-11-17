@@ -28,6 +28,8 @@ export const ACCIONES = [
   'declaracion.exportada',
   'acceso.denegado',
   'acceso.cruzado',
+  'acceso.solicitado',
+  'acceso.rechazado',
   'token.invalido',
   'catalogo.cargado',
   'rol.cambiado',
@@ -181,9 +183,14 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
     objetoVersion: 'obligatorio',
     despues: { entradas: 'entero' },
   },
-  'rol.cambiado': { ...nada, actores: ['proceso', 'plataforma'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', antes: { rol: { estado: ROLES } }, despues: { rol: { estado: ROLES } } },
-  'usuario.alta': { ...nada, actores: ['proceso', 'plataforma'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
-  'usuario.baja': { ...nada, actores: ['proceso', 'plataforma'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Personas (MVP, M7, ADR 036). La solicitud se nombra por su identificador (`solicitud:<uuid>`), nunca por su código; solo roles de la
+  // lista cerrada y banderas: el nombre y el correo que escribe el administrador NUNCA van a la bitácora. Las hace una persona (quien pide
+  // acceso y quien administra) o el mantenimiento.
+  'acceso.solicitado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'acceso.rechazado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'rol.cambiado': { ...nada, actores: ['usuario', 'proceso', 'plataforma'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', antes: { rol: { estado: ROLES } }, despues: { rol: { estado: ROLES } } },
+  'usuario.alta': { ...nada, actores: ['usuario', 'proceso', 'plataforma'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', despues: { rol: { estado: ROLES } } },
+  'usuario.baja': { ...nada, actores: ['usuario', 'proceso', 'plataforma'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', antes: { rol: { estado: ROLES } } },
   'datos_iniciales.cargados': { ...nada, actores: ['plataforma'], empresa: 'prohibida', resultados: ['ok'], motivo: 'obligatorio', motivos: ['carga_inicial'], despues: { empresas: 'entero', usuarios: 'entero' } },
   'bitacora.verificacion': {
     ...nada,

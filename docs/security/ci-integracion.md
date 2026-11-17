@@ -24,13 +24,13 @@ SIGISO_SIN_BASE=1 PGPORT=1 pnpm test:cov
 Primero debe haberse ejecutado al menos una vez en un PR. El comando **agrega** el check sin quitar los existentes:
 
 ```
-env -u GITHUB_TOKEN gh api -X POST repos/leonardojreyes/sig-iso/branches/main/protection/required_status_checks/contexts -f 'contexts[]=integracion'
+gh api -X POST repos/leonardojreyes/sig-iso/branches/main/protection/required_status_checks/contexts -f 'contexts[]=integracion'
 ```
 
 Para comprobarlo:
 
 ```
-env -u GITHUB_TOKEN gh api repos/leonardojreyes/sig-iso/branches/main/protection/required_status_checks --jq '.contexts'
+gh api repos/leonardojreyes/sig-iso/branches/main/protection/required_status_checks --jq '.contexts'
 ```
 
 Debe incluir `integracion` junto a `verificar (macos-latest)`, `verificar (windows-latest)`, `gitleaks`, `semgrep`, `osv-scanner y licencias` y `trivy y SBOM CycloneDX`.

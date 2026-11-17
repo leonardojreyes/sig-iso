@@ -51,6 +51,8 @@ export const ejemplos: Record<AccionBitacora, EventoBitacora> = {
   'acceso.cruzado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'acceso.cruzado', resultado: 'rechazado', motivo: 'empresa_distinta', objeto: 'libreria:otra' },
   'token.invalido': { empresaId: null, actor: { tipo: 'sistema' }, accion: 'token.invalido', resultado: 'rechazado', motivo: 'token_vencido' },
   'catalogo.cargado': { empresaId: null, actor: { tipo: 'plataforma' }, accion: 'catalogo.cargado', resultado: 'ok', objeto: 'libreria:ejemplo-estructura-armonizada', objetoVersion: HUELLA, despues: { entradas: 21 } },
+  'acceso.solicitado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'acceso.solicitado', resultado: 'ok', objeto: 'solicitud:8f3a2c1e-5b7d-4e90-9a12-3c4d5e6f7a8b' },
+  'acceso.rechazado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'acceso.rechazado', resultado: 'ok', objeto: 'solicitud:8f3a2c1e-5b7d-4e90-9a12-3c4d5e6f7a8b' },
   'rol.cambiado': { empresaId: EMPRESA, actor: { tipo: 'proceso' }, accion: 'rol.cambiado', resultado: 'ok', objeto: `usuario:${USUARIO}`, antes: { rol: 'colaborador' }, despues: { rol: 'administrador_sig' }, origenId: 'kc:admin:xyz' },
   'usuario.alta': { empresaId: EMPRESA, actor: { tipo: 'plataforma' }, accion: 'usuario.alta', resultado: 'ok', objeto: `usuario:${USUARIO}` },
   'usuario.baja': { empresaId: EMPRESA, actor: { tipo: 'plataforma' }, accion: 'usuario.baja', resultado: 'ok', objeto: `usuario:${USUARIO}` },

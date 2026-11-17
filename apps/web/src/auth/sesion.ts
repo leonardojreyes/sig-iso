@@ -31,6 +31,9 @@ const SESION_MAXIMA_SEGUNDOS = 8 * 3600;
 const MARGEN_RENOVACION_MS = 30_000;
 const TIEMPO_API_MS = 5_000;
 const SIN_CACHE = 'no-store';
+/** La cookie del código de solicitud dura a lo sumo esto (y nunca más que la propia solicitud). */
+const VIDA_COOKIE_ACCESO_SEGUNDOS = 600;
+const CODIGO_SOLICITUD = /^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/;
 
 export const origenValido = (peticion: Request, origenPropio: string): boolean => {
   const origen = peticion.headers.get('origin');
@@ -69,6 +72,32 @@ export const crearServicioSesion = (deps: DependenciasSesion) => {
     }
   };
 
+  /**
+   * Una cuenta de Keycloak que ya ingresó pero NO tiene rol en la empresa (ADR 036): la API no le inicia sesión (401), así que no hay
+   * sesión. Con ese mismo token se le pide a la API una solicitud de acceso y se le muestra el código desde una cookie sellada de
+   * corta vida. Devuelve `null` si no hay una solicitud válida y vigente (el que llama responde «ingreso no disponible»).
+   */
+  const pedirSolicitud = async (acceso: string): Promise<{ codigo: string; venceEn: string; restante: number } | null> => {
+    try {
+      const r = await deps.fetchFn(`${config.apiUrl}/acceso/solicitud`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${acceso}`, accept: 'application/json' },
+        signal: AbortSignal.timeout(TIEMPO_API_MS),
+        redirect: 'error',
+        cache: 'no-store',
+      });
+      if (r.status !== 200 && r.status !== 201) return null;
+      const cuerpo = (await r.json()) as { codigo?: unknown; venceEn?: unknown } | null;
+      if (typeof cuerpo?.codigo !== 'string' || !CODIGO_SOLICITUD.test(cuerpo.codigo) || typeof cuerpo.venceEn !== 'string') return null;
+      const vence = Date.parse(cuerpo.venceEn);
+      const restante = Math.floor((vence - deps.ahora().getTime()) / 1000);
+      if (!Number.isFinite(vence) || restante <= 0) return null;
+      return { codigo: cuerpo.codigo, venceEn: new Date(vence).toISOString(), restante };
+    } catch {
+      return null;
+    }
+  };
+
   const iniciar = async (resultado: Extract<ResultadoCallback, { ok: true }>): Promise<Response> => {
     const sid = resultado.identidad.sid ?? randomBytes(18).toString('base64url');
     const fallo = (): Response => {
@@ -77,7 +106,19 @@ export const crearServicioSesion = (deps: DependenciasSesion) => {
       return new Response(null, { status: 303, headers: c });
     };
     // Primero el rastro, después la sesión (regla 4): si la bitácora no lo registró, no se emite nada.
-    if ((await llamarApi('/sesion/inicio', resultado.tokens.acceso)) !== 204) return fallo();
+    const estadoInicio = await llamarApi('/sesion/inicio', resultado.tokens.acceso);
+    if (estadoInicio === 401) {
+      // Sin rol no hay sesión (decisión de H6.1, se mantiene): solo se muestra el código para que el administrador la apruebe.
+      const solicitud = await pedirSolicitud(resultado.tokens.acceso);
+      if (solicitud === null) return fallo();
+      const vigencia = Math.min(VIDA_COOKIE_ACCESO_SEGUNDOS, solicitud.restante);
+      const sello = await sellar({ v: 1, t: 'acceso', c: solicitud.codigo, e: solicitud.venceEn }, { claves: config.clavesSellado, vigenciaSegundos: vigencia, ahora: deps.ahora() });
+      const cabeceras = new Headers({ Location: `${config.origen}/acceso-pendiente`, 'Cache-Control': SIN_CACHE });
+      cabeceras.append('Set-Cookie', `${config.nombreCookieAcceso}=${sello}; ${atributosCookie}; Max-Age=${vigencia}`);
+      cabeceras.append('Set-Cookie', resultado.limpiarCookie);
+      return new Response(null, { status: 303, headers: cabeceras });
+    }
+    if (estadoInicio !== 204) return fallo();
 
     const inicio = ahoraSeg();
     const vida = (resultado.tokens.accesoExpiraEnSegundos ?? 300) * 1000;

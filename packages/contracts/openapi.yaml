@@ -34,6 +34,8 @@ tags:
     description: Catálogo de librerías de normas y su adopción por la empresa
   - name: requisitos
     description: Entradas de las librerías adoptadas
+  - name: personas
+    description: Personas de la empresa, solicitudes de acceso y roles
 security:
   - bearerAuth: []
 paths:
@@ -645,6 +647,225 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Evaluacion'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /acceso/solicitud:
+    post:
+      operationId: solicitarAcceso
+      summary: Pide acceso a la empresa del token y recibe un código corto
+      description: |
+        Para una persona autenticada que todavía no tiene un rol en la empresa (ADR 036). No exige permiso: justo lo que pide es tenerlo.
+        La persona y la empresa salen del token verificado y no hay cuerpo. Crea UNA solicitud vigente por persona y empresa, que vence a
+        los 7 días: pedir de nuevo devuelve la misma, con 200. El código solo sirve para que el administrador SIG reconozca la solicitud;
+        no es una credencial. El nombre y el correo nunca se leen del token. Orden de evaluación: 401, 409 (la persona ya tiene acceso o la
+        empresa tiene demasiadas solicitudes vigentes).
+      tags: [personas]
+      responses:
+        '200':
+          description: Ya había una solicitud vigente; es la misma.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudAcceso'
+        '201':
+          description: La solicitud creada.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudAcceso'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /personas:
+    get:
+      operationId: listarPersonas
+      summary: Personas de la empresa y solicitudes de acceso vigentes
+      description: |
+        Para el administrador SIG. Incluye a quienes están dados de baja (con rol nulo y la fecha de baja) y las solicitudes vigentes con
+        su código. Orden de evaluación: 401, 403.
+      tags: [personas]
+      x-permiso: personas.ver
+      responses:
+        '200':
+          description: Las personas y las solicitudes vigentes.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Personas'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /personas/solicitudes/{id}/aprobacion:
+    post:
+      operationId: aprobarSolicitudAcceso
+      summary: Aprueba una solicitud de acceso con un rol
+      description: |
+        Crea a la persona de la solicitud con el rol, el nombre y el correo que escribe el administrador, o la reactiva si estaba dada de
+        baja. Una solicitud inexistente, vencida, ya resuelta o de otra empresa responde 404 (indistinguibles). Un correo que ya usa otra
+        persona de la empresa, o una persona que ya tiene rol, responde 409. Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [personas]
+      x-permiso: personas.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AprobacionSolicitud'
+      responses:
+        '201':
+          description: La persona con acceso.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /personas/solicitudes/{id}/descarte:
+    post:
+      operationId: descartarSolicitudAcceso
+      summary: Descarta una solicitud de acceso
+      description: |
+        La solicitud no se borra: queda resuelta como descartada. Sin cuerpo. Una solicitud que no está vigente responde 404. Orden de
+        evaluación: 401, 403, 400, 404.
+      tags: [personas]
+      x-permiso: personas.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '204':
+          description: La solicitud se descartó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /personas/{id}/rol:
+    put:
+      operationId: cambiarRolPersona
+      summary: Cambia el rol de una persona con acceso
+      description: |
+        Con la versión que vio el administrador (409 si cambió). No deja a la empresa sin administrador SIG (409). Una persona dada de
+        baja o que no existe responde 404: para volver necesita una solicitud nueva. Pedir el mismo rol no cambia nada. Orden de
+        evaluación: 401, 403, 400, 404, 409.
+      tags: [personas]
+      x-permiso: personas.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambioDeRol'
+      responses:
+        '200':
+          description: La persona con su rol vigente.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /personas/{id}/baja:
+    post:
+      operationId: darDeBajaPersona
+      summary: Da de baja a una persona
+      description: |
+        Deja el rol en nulo y anota la baja; la persona no se borra (la autoría la referencia). Desde la siguiente petición no puede
+        nada. No se da de baja al último administrador SIG (409). Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [personas]
+      x-permiso: personas.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonaVersion'
+      responses:
+        '200':
+          description: La persona dada de baja.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
         '400':
           $ref: '#/components/responses/ParametrosInvalidos'
         '401':
@@ -1704,6 +1925,126 @@ components:
           pattern: ^(https://[A-Za-z0-9.-]+(:[0-9]+)?/[^\s@]*|/logos/[A-Za-z0-9._-]{1,100}\.(png|svg|jpe?g|webp))$
           maxLength: 2048
           description: Solo `https` sin credenciales, un archivo de imagen bajo `/logos/` o nulo para quitarlo.
+    RolPersona:
+      type: string
+      enum: [administrador_sig, dueno_proceso, auditor_interno, auditor_externo, colaborador, alta_direccion]
+    SolicitudAcceso:
+      type: object
+      description: Lo que la persona le entrega al administrador. No lleva nombre ni correo.
+      required: [codigo, venceEn]
+      additionalProperties: false
+      properties:
+        codigo:
+          type: string
+          pattern: ^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$
+          maxLength: 9
+        venceEn:
+          type: string
+          format: date-time
+          maxLength: 40
+    SolicitudPendiente:
+      type: object
+      required: [id, usuarioId, codigo, creadaEn, venceEn]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        usuarioId:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          pattern: ^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$
+          maxLength: 9
+        creadaEn:
+          type: string
+          format: date-time
+          maxLength: 40
+        venceEn:
+          type: string
+          format: date-time
+          maxLength: 40
+    Persona:
+      type: object
+      description: Una persona de la empresa. El rol nulo es una persona sin acceso (dada de baja). Nombre y correo son datos personales.
+      required: [id, nombre, correo, rol, bajaEn, version]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+        correo:
+          type: string
+          minLength: 3
+          maxLength: 254
+        rol:
+          type: [string, 'null']
+          enum: [administrador_sig, dueno_proceso, auditor_interno, auditor_externo, colaborador, alta_direccion, null]
+          description: Nulo si la persona está dada de baja (sin acceso).
+        bajaEn:
+          type: [string, 'null']
+          format: date-time
+          maxLength: 40
+        version:
+          type: integer
+          minimum: 1
+    Personas:
+      type: object
+      required: [personas, solicitudes]
+      additionalProperties: false
+      properties:
+        personas:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/Persona'
+        solicitudes:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/SolicitudPendiente'
+    AprobacionSolicitud:
+      type: object
+      description: Lo que escribe el administrador. La empresa y la persona de la solicitud no viajan aquí.
+      required: [nombre, correo, rol]
+      additionalProperties: false
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+        correo:
+          type: string
+          minLength: 3
+          maxLength: 254
+        rol:
+          $ref: '#/components/schemas/RolPersona'
+    CambioDeRol:
+      type: object
+      required: [rol, versionEsperada]
+      additionalProperties: false
+      properties:
+        rol:
+          $ref: '#/components/schemas/RolPersona'
+        versionEsperada:
+          type: integer
+          minimum: 1
+    PersonaVersion:
+      type: object
+      required: [versionEsperada]
+      additionalProperties: false
+      properties:
+        versionEsperada:
+          type: integer
+          minimum: 1
     LibreriaResumen:
       type: object
       required: [id, codigo, nombre, version, esEjemplo, fuente, propia, adoptada]

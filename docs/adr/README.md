@@ -37,3 +37,4 @@ Formato MADR breve. Se crean con el comando `/adr`. Aprobados el 2026-11-04 (pas
 | [033](033-exportacion-word-de-la-declaracion.md) | Exportación Word de la Declaración | `docx` (MIT) detrás de `GeneradorDocumentoPort`; versión aprobada congelada | Aprobado |
 | [034](034-librerias-de-normas-propias-de-la-empresa.md) | Librerías propias de la empresa | YAML subido desde el navegador; por empresa con RLS; validación completa antes de guardar | Aprobado |
 | [035](035-empresa-activa-por-sesion.md) | Empresa activa por sesión | una persona en varias empresas; `POST /sesion/empresa` valida pertenencia y guarda la empresa activa del `sid` | Aprobado |
+| [036](036-alta-baja-y-rol-de-personas.md) | Alta, baja y rol de personas | solicitud de acceso con código corto; sin credenciales de administración de Keycloak; baja = rol nulo | Aprobado |
