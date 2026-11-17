@@ -35,7 +35,7 @@ export interface DeclaracionDto {
   readonly norma: string;
   /** La fecha de hoy en Ecuador con la que se calculó la cobertura. */
   readonly hoy: string;
-  readonly resumen: ResumenDeclaracion;
+  readonly resumen: ResumenSaliente;
   readonly filas: readonly FilaDeclaracion[];
   /** El alcance de la norma tal como está hoy (aprobado o no) y si está aprobado. */
   readonly alcance: { readonly texto: string; readonly aprobado: boolean } | null;
@@ -69,6 +69,15 @@ interface DatosLeidos {
   readonly mapeos: Awaited<ReturnType<ContextoCertificacion['mapeos']['listar']>>;
   readonly evidencias: Awaited<ReturnType<ContextoCertificacion['evidencias']['listarActivas']>>;
 }
+
+/**
+ * Hacia afuera (contrato de la API y Word) sigue saliendo la forma de antes: la justificación (motivos y riesgos) la expondrán las
+ * tareas 10 y 14 del spec «declaración justificada». Hasta entonces no se filtra nada de ella.
+ */
+/** Resumen que sale hoy hacia afuera: los cinco campos de antes. */
+export type ResumenSaliente = Pick<ResumenDeclaracion, 'total' | 'aplican' | 'noAplican' | 'porDecidir' | 'sinControl' | 'aprobable'>;
+const resumenAnterior = (r: ResumenDeclaracion): ResumenSaliente => ({ total: r.total, aplican: r.aplican, noAplican: r.noAplican, porDecidir: r.porDecidir, sinControl: r.sinControl, aprobable: r.aprobable });
+const filaAnterior = (f: FilaDeclaracion): FilaDeclaracion => ({ libreriaCodigo: f.libreriaCodigo, idEstable: f.idEstable, orden: f.orden, titulo: f.titulo, grupo: f.grupo, aplicabilidad: f.aplicabilidad, implementacion: f.implementacion, justificacion: f.justificacion, controles: f.controles, cobertura: f.cobertura });
 
 /** Une lo leído con el catálogo y deriva la declaración (cobertura de M4 incluida). Pura. */
 const armar = (catalogo: readonly EntradaCatalogo[], d: DatosLeidos, hoy: string): Declaracion => {
@@ -121,7 +130,7 @@ export class ObtenerDeclaracionUseCase {
     const { empresaId, usuarioId } = identificar(entrada.empresaId, entrada.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'declaracion.ver', empresaId);
     const b = await derivarBorrador(this.unidad, this.catalogo, this.reloj, empresaId);
-    return { norma: NORMA_DECLARACION, hoy: b.hoy, resumen: b.declaracion.resumen, filas: b.declaracion.filas, alcance: b.alcance, ultimaVersion: b.ultima ? aDtoVersion(b.ultima) : null };
+    return { norma: NORMA_DECLARACION, hoy: b.hoy, resumen: resumenAnterior(b.declaracion.resumen), filas: b.declaracion.filas.map(filaAnterior), alcance: b.alcance, ultimaVersion: b.ultima ? aDtoVersion(b.ultima) : null };
   }
 }
 
@@ -190,7 +199,7 @@ export class ObtenerVersionDeclaracionUseCase {
     const id = validarUuid(entrada.id, 'id');
     const x = await this.unidad.ejecutar(empresaId, (c) => c.declaraciones.obtener(id));
     if (!x) throw new EntradaNoEncontradaError();
-    return { ...aDtoVersion(x.version), alcance: x.version.alcanceTexto, filas: x.filas };
+    return { ...aDtoVersion(x.version), alcance: x.version.alcanceTexto, filas: x.filas.map(filaAnterior) };
   }
 }
 
@@ -213,7 +222,7 @@ export class ExportarDeclaracionUseCase {
     const norma = identificadorDeNorma(NORMA_DECLARACION);
     if (versionId === null) {
       const b = await derivarBorrador(this.unidad, this.catalogo, this.reloj, empresaId);
-      documento = { norma: NORMA_DECLARACION, preliminar: true, version: null, aprobadaEl: null, generadaEl: b.hoy, alcance: b.alcance?.texto ?? null, resumen: b.declaracion.resumen, filas: b.declaracion.filas };
+      documento = { norma: NORMA_DECLARACION, preliminar: true, version: null, aprobadaEl: null, generadaEl: b.hoy, alcance: b.alcance?.texto ?? null, resumen: resumenAnterior(b.declaracion.resumen), filas: b.declaracion.filas.map(filaAnterior) };
       objeto = 'declaracion:borrador';
       nombre = `declaracion-${norma}-borrador.docx`;
     } else {

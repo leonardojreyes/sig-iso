@@ -3,6 +3,7 @@
 // de la norma: el título breve y el grupo vienen de la librería (propios) y la justificación la escribió la empresa.
 import type { EstadoCobertura } from './cobertura.js';
 import type { EstadoEvaluacion } from './estado-evaluacion.js';
+import type { DecisionTratamiento, NivelRiesgo } from './riesgo.js';
 
 export type Aplicabilidad = 'aplica' | 'no_aplica' | 'por_decidir';
 export type Implementacion = 'implementado' | 'parcial' | 'no_implementado';
@@ -39,6 +40,57 @@ export interface CoberturaParaDeclaracion {
   readonly estado: EstadoCobertura;
 }
 
+/** Motivos que se REGISTRAN (el motivo «riesgo» se deriva, nunca se escribe; ADR 037). */
+export const TIPOS_MOTIVO = Object.freeze(['legal', 'contractual', 'negocio', 'otro'] as const);
+export type TipoMotivo = (typeof TIPOS_MOTIVO)[number];
+
+export interface MotivoParaDeclaracion {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  readonly tipo: TipoMotivo;
+  readonly nota: string;
+}
+export interface RiesgoParaDeclaracion {
+  readonly id: string;
+  readonly codigo: string;
+  readonly titulo: string;
+  readonly nivel: NivelRiesgo;
+  readonly decision: DecisionTratamiento;
+  readonly vigente: boolean;
+}
+export interface VinculoRiesgoControl {
+  readonly riesgoId: string;
+  readonly controlId: string;
+}
+/** Tratamiento previsto: el riesgo se vincula directo a un control del Anexo A, sin control propio de la empresa. */
+export interface VinculoRiesgoEntrada {
+  readonly riesgoId: string;
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+}
+/** Lo que justifica la Declaración. Si no se entrega, la derivación es la anterior (sin motivos ni riesgos, sin bloqueo por motivo). */
+export interface JustificacionParaDeclaracion {
+  readonly riesgos: readonly RiesgoParaDeclaracion[];
+  readonly vinculosControl: readonly VinculoRiesgoControl[];
+  readonly vinculosEntrada: readonly VinculoRiesgoEntrada[];
+  readonly motivos: readonly MotivoParaDeclaracion[];
+}
+
+/** Cómo llega un riesgo a una fila: por un control vigente de la empresa o solo como tratamiento previsto (sin control propio). */
+export type ViaRiesgo = 'control' | 'previsto';
+export interface RiesgoDeFila {
+  readonly codigo: string;
+  readonly titulo: string;
+  readonly nivel: NivelRiesgo;
+  readonly via: ViaRiesgo;
+}
+export interface MotivoDeFila {
+  readonly tipo: TipoMotivo;
+  readonly nota: string;
+}
+
+export type Bloqueo = 'sin_filas' | 'por_decidir' | 'sin_motivo';
+
 export interface FilaDeclaracion {
   readonly libreriaCodigo: string;
   readonly idEstable: string;
@@ -55,6 +107,16 @@ export interface FilaDeclaracion {
   readonly cobertura: EstadoCobertura;
 }
 
+/** Fila derivada con su justificación; `FilaDeclaracion` es lo que ya se guardó en versiones anteriores (sin motivos ni riesgos). */
+export interface FilaJustificada extends FilaDeclaracion {
+  /** Solo si aplica: los motivos registrados, en el orden de `TIPOS_MOTIVO`. */
+  readonly motivos: readonly MotivoDeFila[];
+  /** Solo si aplica: riesgos vigentes que se tratan con este control (derivado), ordenados por código. */
+  readonly riesgos: readonly RiesgoDeFila[];
+  /** Aplica y no tiene ningún riesgo ni motivo registrado. Siempre falso si no se entregó la justificación. */
+  readonly sinMotivo: boolean;
+}
+
 export interface ResumenDeclaracion {
   readonly total: number;
   readonly aplican: number;
@@ -62,12 +124,22 @@ export interface ResumenDeclaracion {
   readonly porDecidir: number;
   /** Controles que aplican y ningún control de la empresa cubre: no impide aprobar, queda señalado. */
   readonly sinControl: number;
-  /** Se puede aprobar: hay filas y ninguna está por decidir. */
+  /** Controles que aplican y tienen al menos un riesgo derivado o un motivo registrado. */
+  readonly conMotivo: number;
+  /** Controles que aplican y no tienen motivo: **bloquean** la aprobación (ADR 037). */
+  readonly sinMotivo: number;
+  /** Riesgos vigentes (los que se congelan al aprobar). */
+  readonly riesgosVigentes: number;
+  /** Advertencia, no bloqueo: riesgos vigentes con decisión «mitigar» y ningún control vigente ni tratamiento previsto. */
+  readonly riesgosSinTratamiento: number;
+  /** Qué impide aprobar (vacío = se puede aprobar). */
+  readonly bloqueos: readonly Bloqueo[];
+  /** Se puede aprobar: no hay bloqueos. */
   readonly aprobable: boolean;
 }
 
 export interface Declaracion {
-  readonly filas: readonly FilaDeclaracion[];
+  readonly filas: readonly FilaJustificada[];
   readonly resumen: ResumenDeclaracion;
 }
 
@@ -83,6 +155,7 @@ export const derivarDeclaracion = (p: {
   readonly controles: readonly ControlParaDeclaracion[];
   readonly mapeos: readonly MapeoParaDeclaracion[];
   readonly cobertura: readonly CoberturaParaDeclaracion[];
+  readonly justificacion?: JustificacionParaDeclaracion;
 }): Declaracion => {
   const clave = (c: string, i: string) => `${c}|${i}`;
   const evaluacionDe = new Map(p.evaluaciones.map((e) => [clave(e.libreriaCodigo, e.idEstable), e]));
@@ -96,8 +169,37 @@ export const derivarDeclaracion = (p: {
     controlesDe.set(k, (controlesDe.get(k) ?? new Set()).add(codigo));
   }
 
+  // Justificación: riesgos vigentes → controles vigentes de la empresa (por mapeo) o tratamiento previsto directo.
+  const just = p.justificacion;
+  const riesgoDe = new Map((just?.riesgos ?? []).filter((r) => r.vigente).map((r) => [r.id, r]));
+  const controlesDeRiesgo = new Map<string, Set<string>>();
+  for (const v of just?.vinculosControl ?? []) {
+    if (!riesgoDe.has(v.riesgoId) || !codigoDe.has(v.controlId)) continue;
+    controlesDeRiesgo.set(v.riesgoId, (controlesDeRiesgo.get(v.riesgoId) ?? new Set()).add(v.controlId));
+  }
+  const entradasDeRiesgo = new Set<string>(); // riesgos con algún tratamiento previsto
+  const riesgosPorFila = new Map<string, Map<string, ViaRiesgo>>(); // fila → (riesgo → vía; «control» prevalece)
+  const anotar = (k: string, riesgoId: string, via: ViaRiesgo) => {
+    const m = riesgosPorFila.get(k) ?? new Map<string, ViaRiesgo>();
+    if (m.get(riesgoId) !== 'control') m.set(riesgoId, via);
+    riesgosPorFila.set(k, m);
+  };
+  for (const v of just?.vinculosEntrada ?? []) {
+    if (!riesgoDe.has(v.riesgoId)) continue;
+    entradasDeRiesgo.add(v.riesgoId);
+    anotar(clave(v.libreriaCodigo, v.idEstable), v.riesgoId, 'previsto');
+  }
+  for (const m of p.mapeos) {
+    for (const [riesgoId, controles] of controlesDeRiesgo) if (controles.has(m.controlId)) anotar(clave(m.libreriaCodigo, m.idEstable), riesgoId, 'control');
+  }
+  const motivosDe = new Map<string, Map<TipoMotivo, string>>();
+  for (const m of just?.motivos ?? []) {
+    const k = clave(m.libreriaCodigo, m.idEstable);
+    motivosDe.set(k, (motivosDe.get(k) ?? new Map<TipoMotivo, string>()).set(m.tipo, m.nota));
+  }
+
   const ordenadas = [...p.entradas].sort((a, b) => a.libreriaCodigo.localeCompare(b.libreriaCodigo) || a.orden - b.orden || a.idEstable.localeCompare(b.idEstable));
-  const filas: FilaDeclaracion[] = ordenadas.map((e) => {
+  const filas: FilaJustificada[] = ordenadas.map((e) => {
     const k = clave(e.libreriaCodigo, e.idEstable);
     const evaluacion = evaluacionDe.get(k);
     const codigos = [...(controlesDe.get(k) ?? [])].sort((a, b) => a.localeCompare(b, 'es'));
@@ -116,6 +218,17 @@ export const derivarDeclaracion = (p: {
         implementacion = IMPLEMENTACION[evaluacion.estado];
       }
     }
+    const motivos: MotivoDeFila[] =
+      aplicabilidad === 'aplica' ? TIPOS_MOTIVO.flatMap((tipo) => (motivosDe.get(k)?.has(tipo) ? [{ tipo, nota: motivosDe.get(k)?.get(tipo) as string }] : [])) : [];
+    const riesgos: RiesgoDeFila[] =
+      aplicabilidad === 'aplica'
+        ? [...(riesgosPorFila.get(k) ?? [])]
+            .map(([id, via]) => {
+              const r = riesgoDe.get(id) as RiesgoParaDeclaracion;
+              return { codigo: r.codigo, titulo: r.titulo, nivel: r.nivel, via };
+            })
+            .sort((a, b) => a.codigo.localeCompare(b.codigo, 'es'))
+        : [];
     return {
       libreriaCodigo: e.libreriaCodigo,
       idEstable: e.idEstable,
@@ -127,12 +240,20 @@ export const derivarDeclaracion = (p: {
       justificacion,
       controles: codigos.slice(0, CONTROLES_POR_FILA_MAX),
       cobertura: aplicabilidad === 'no_aplica' ? 'no_aplica' : (coberturaDe.get(k) ?? (codigos.length === 0 ? 'sin_control' : 'sin_evidencia')),
+      motivos,
+      riesgos,
+      sinMotivo: just !== undefined && aplicabilidad === 'aplica' && motivos.length === 0 && riesgos.length === 0,
     };
   });
 
   const aplican = filas.filter((f) => f.aplicabilidad === 'aplica').length;
   const noAplican = filas.filter((f) => f.aplicabilidad === 'no_aplica').length;
   const porDecidir = filas.length - aplican - noAplican;
+  const sinMotivo = filas.filter((f) => f.sinMotivo).length;
+  const bloqueos: Bloqueo[] = [];
+  if (filas.length === 0) bloqueos.push('sin_filas');
+  if (porDecidir > 0) bloqueos.push('por_decidir');
+  if (sinMotivo > 0) bloqueos.push('sin_motivo');
   return {
     filas,
     resumen: {
@@ -142,7 +263,13 @@ export const derivarDeclaracion = (p: {
       porDecidir,
       // Se cuenta con los controles REALES, no con los 50 que se muestran.
       sinControl: filas.filter((f) => f.aplicabilidad === 'aplica' && (controlesDe.get(clave(f.libreriaCodigo, f.idEstable))?.size ?? 0) === 0).length,
-      aprobable: filas.length > 0 && porDecidir === 0,
+      conMotivo: just === undefined ? 0 : aplican - sinMotivo,
+      sinMotivo,
+      riesgosVigentes: riesgoDe.size,
+      // «Mitigar» sin ningún control vigente (de la empresa) ni tratamiento previsto.
+      riesgosSinTratamiento: [...riesgoDe.values()].filter((r) => r.decision === 'mitigar' && !controlesDeRiesgo.has(r.id) && !entradasDeRiesgo.has(r.id)).length,
+      bloqueos,
+      aprobable: bloqueos.length === 0,
     },
   };
 };
