@@ -163,8 +163,7 @@ Al probarlo, el responsable señaló dos carencias reales: no había forma de **
 4. **Numeraciones y títulos de la librería de ejemplo (4.4)** cuando tengas los ejemplares: `docs/specs/corte-vertical-0-6/verificacion-numeraciones.md`.
 5. **Asesor legal para el ADR 028** (aprobado como provisional el 2026-11-08): validar bases de tratamiento, retención, derechos de las personas y el rol de SynapTech (`docs/adr/028-privacidad-y-bitacora.md`, «No resuelto» e «Insumos para el asesor legal»). **Bloquea el uso con datos de personas reales**, incluido el personal de SynapTech, y en todo caso al primer cliente externo.
 6. **A1 de la revisión de calidad** (el repositorio de GitHub es público): decisión tuya, pendiente; requiere un ADR. Sus demás hallazgos (`docs/revisiones/2026-11-08-revision-calidad-fase0.md`): M1, M5 y la protección de `.local/` resueltos; A2, M3 y M4 son prerrequisitos de la Fase 1 (abajo); **M2** conviene al pasar por la migración de adopción y **B1–B4** al pasar por esos archivos.
-7. Corregir o quitar el `GITHUB_TOKEN` inválido de `~/.zshrc` (mientras tanto, `env -u GITHUB_TOKEN` en `git` y `gh`).
-8. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global (ver H6.10 abajo).
+7. Para más adelante: integrar OpenFGA cuando haya permisos por objeto (ADR 029); decidir si `acceso.cruzado` se registra también para el catálogo global (ver H6.10 abajo).
 
 Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los roles y las bases `sigiso`, `sigiso_test` y `openfga` con el esquema migrado (**hasta la `0008`**) y las dos empresas de prueba; `pnpm libraries:load` carga las librerías (la de ejemplo y, desde M1, el Anexo A de 27001; si todavía no adoptaste esta última, hazlo desde la pantalla de requisitos); las claves están en `.env.local` y `.local/` (ignorados). La empresa A ya adoptó la librería de ejemplo (ver «Brechas y avisos»). Los scripts `web:verify-diagnostico` y `web:verify-controles` dejaron en tu base datos de prueba de A: una evaluación, un alcance y controles `VERIF-…` retirados.
 
@@ -210,7 +209,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 - ORM y migraciones: decididos en el ADR 024 (Kysely y migraciones SQL) y en uso desde el corte 0.6.
 - Sin Docker (ADR 022): PostgreSQL 16 nativo (Homebrew); Keycloak 26.8.2 y su JRE en `.local/` (ADR 025); OpenFGA 1.22.1 instalado pero sin uso (ADR 029). Falta instalar Valkey (`brew install valkey`) cuando se construya la cola.
-- Repo remoto **público** (decisión del responsable, para habilitar protección de ramas sin plan de pago): https://github.com/leonardojreyes/sig-iso . `GITHUB_TOKEN` del entorno es inválido: usar `env -u GITHUB_TOKEN gh ...` y `env -u GITHUB_TOKEN git push ...`.
+- Repo remoto **público** (decisión del responsable, para habilitar protección de ramas sin plan de pago): https://github.com/leonardojreyes/sig-iso .
 - TypeScript fijado en 5.9 (la v7 nativa rompe typescript-eslint).
 - Librería de DOCX: el plan fija `docx` (MIT) en el ADR 033, que se escribe al empezar M5 y completa el ADR 021; PDF queda fuera del MVP.
 - Revisión de `experto-iso`: los subagentes existen desde 0.3 (`.claude/agents/`); el responsable valida las numeraciones de las normas con sus ejemplares (4.4).
