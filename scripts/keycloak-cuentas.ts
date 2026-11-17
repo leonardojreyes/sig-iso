@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DATOS_SIEMBRA } from "./lib/datos-siembra.ts";
+import { CUENTAS_SIN_ACCESO, DATOS_SIEMBRA } from "./lib/datos-siembra.ts";
 import { cuentaDePrueba } from "./lib/realm-keycloak.mjs";
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -68,7 +68,7 @@ try {
   };
 
   const faltan = [];
-  for (const u of DATOS_SIEMBRA.usuarios) {
+  for (const u of [...DATOS_SIEMBRA.usuarios, ...CUENTAS_SIN_ACCESO]) {
     const existe = await buscar(u.alias);
     if (existe === null) {
       faltan.push(u);

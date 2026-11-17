@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DATOS_SIEMBRA, exigirBaseLocal, validarDatosSiembra, type DatosSiembra } from './datos-siembra.js';
+import { CUENTAS_SIN_ACCESO, DATOS_SIEMBRA, exigirBaseLocal, validarCuentasSinAcceso, validarDatosSiembra, type CuentaSinAccesoSiembra, type DatosSiembra } from './datos-siembra.js';
 
 const copia = (): DatosSiembra => structuredClone(DATOS_SIEMBRA) as DatosSiembra;
 
@@ -87,5 +87,31 @@ describe('exigirBaseLocal (la siembra nunca corre contra una base remota)', () =
       return;
     }
     throw new Error('debía lanzar');
+  });
+});
+
+describe('CUENTAS_SIN_ACCESO (ADR 036)', () => {
+  it('son válidas y de la empresa A, con correo de pruebas', () => {
+    expect(() => validarCuentasSinAcceso(CUENTAS_SIN_ACCESO, DATOS_SIEMBRA)).not.toThrow();
+    expect(CUENTAS_SIN_ACCESO.map((c) => [c.alias, c.empresaId])).toEqual([['pendiente', DATOS_SIEMBRA.empresas[0]!.id]]);
+    for (const c of CUENTAS_SIN_ACCESO) expect(c.correo).toMatch(/@example\.test$/);
+  });
+
+  it('NO están entre las personas que la siembra inserta: justo lo que prueban es no tener fila ni rol', () => {
+    const insertadas = new Set(DATOS_SIEMBRA.usuarios.map((u) => u.id));
+    for (const c of CUENTAS_SIN_ACCESO) expect(insertadas.has(c.id)).toBe(false);
+    expect(DATOS_SIEMBRA.usuarios.map((u) => u.alias)).not.toContain('pendiente');
+  });
+
+  it.each([
+    ['un identificador repetido', (c: CuentaSinAccesoSiembra[]) => void (c[0] = { ...c[0]!, id: DATOS_SIEMBRA.usuarios[0]!.id }), /repite/],
+    ['un alias repetido', (c: CuentaSinAccesoSiembra[]) => void (c[0] = { ...c[0]!, alias: 'admin-a' }), /repite/],
+    ['una empresa que no existe', (c: CuentaSinAccesoSiembra[]) => void (c[0] = { ...c[0]!, empresaId: '00000000-0000-4000-8000-0000000000ff' }), /no existe/],
+    ['un correo real', (c: CuentaSinAccesoSiembra[]) => void (c[0] = { ...c[0]!, correo: 'alguien@gmail.com' }), /example\.test/],
+    ['un identificador que no es UUID', (c: CuentaSinAccesoSiembra[]) => void (c[0] = { ...c[0]!, id: 'abc' }), /UUID/],
+  ])('se rechaza %s', (_c, mutar, texto) => {
+    const cuentas = structuredClone([...CUENTAS_SIN_ACCESO]) as CuentaSinAccesoSiembra[];
+    mutar(cuentas);
+    expect(() => validarCuentasSinAcceso(cuentas, DATOS_SIEMBRA)).toThrow(texto);
   });
 });
