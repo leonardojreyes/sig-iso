@@ -52,3 +52,5 @@ export {
   SolicitudNoEncontradaError,
   type MotivoConflictoDePersonas,
 } from './application/personas.use-cases.js';
+export { PersonasKysely, SolicitudesKysely } from './infrastructure/personas-kysely.adapter.js';
+export { crearUnidadDeTrabajoPersonas } from './infrastructure/unidad-de-trabajo-personas.js';
