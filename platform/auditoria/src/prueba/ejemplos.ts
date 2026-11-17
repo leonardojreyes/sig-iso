@@ -38,6 +38,8 @@ export const ejemplos: Record<AccionBitacora, EventoBitacora> = {
   'riesgo.creado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'riesgo.creado', resultado: 'ok', objeto: 'riesgo:R-001' },
   'riesgo.cambiado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'riesgo.cambiado', resultado: 'ok', objeto: 'riesgo:R-001' },
   'riesgo.retirado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'riesgo.retirado', resultado: 'ok', objeto: 'riesgo:R-001' },
+  'vinculo.creado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'vinculo.creado', resultado: 'ok', objeto: 'vinculo:R-001.C-001' },
+  'vinculo.eliminado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'vinculo.eliminado', resultado: 'ok', objeto: 'vinculo:R-001.C-001' },
   'mapeo.creado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'mapeo.creado', resultado: 'ok', objeto: 'mapeo:C-001.a27-5-1' },
   'mapeo.eliminado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'mapeo.eliminado', resultado: 'ok', objeto: 'mapeo:C-001.a27-5-1' },
   'evidencia.creada': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'evidencia.creada', resultado: 'ok', objeto: 'evidencia:e0000000-1111-4111-8111-111111111111', objetoVersion: 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90' },

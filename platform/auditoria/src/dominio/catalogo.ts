@@ -22,6 +22,8 @@ export const ACCIONES = [
   'riesgo.creado',
   'riesgo.cambiado',
   'riesgo.retirado',
+  'vinculo.creado',
+  'vinculo.eliminado',
   'evidencia.creada',
   'evidencia.reemplazada',
   'evidencia.eliminada',
@@ -165,6 +167,10 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   'riesgo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'riesgo.cambiado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'riesgo.retirado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Vínculos de un riesgo con un control de la empresa o, como tratamiento previsto, con un control del Anexo A (ADR 037). Objeto
+  // `vinculo:<código del riesgo>.<código del control o id estable de la entrada>`; nada más.
+  'vinculo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'vinculo.eliminado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   // Evidencias con archivo (MVP, M4). El hecho lleva la HUELLA SHA-256 del archivo como versión del objeto (queda fijada en la cadena
   // inmutable); el título, el nombre del archivo y su contenido NUNCA van a la bitácora. El objeto es `evidencia:<uuid>` o, si se
   // rechaza una subida, el control `control:<codigo>`.

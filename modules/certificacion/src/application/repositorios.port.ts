@@ -105,3 +105,33 @@ export interface DeclaracionRepositoryPort {
   listarVersiones(): Promise<readonly VersionDeclaracion[]>;
   obtener(id: string): Promise<{ readonly version: VersionDeclaracion; readonly filas: readonly FilaDeclaracion[] } | null>;
 }
+
+/** Un riesgo tratado con un control de la empresa. */
+export interface VinculoRiesgoControlFila {
+  readonly riesgoId: string;
+  readonly controlId: string;
+}
+/** Tratamiento previsto: un riesgo vinculado directo a un control del Anexo A, sin control propio de la empresa. */
+export interface VinculoRiesgoEntradaFila {
+  readonly riesgoId: string;
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+}
+
+/** Repositorio de los vínculos de los riesgos, ligado a la empresa y la transacción. Se agregan y se quitan (con rastro), no se actualizan. */
+export interface VinculoRiesgoRepositoryPort {
+  /** Todos los vínculos con controles de la empresa, ordenados por riesgo y control. */
+  listarControles(): Promise<readonly VinculoRiesgoControlFila[]>;
+  /** Todos los tratamientos previstos, ordenados por riesgo y entrada. */
+  listarEntradas(): Promise<readonly VinculoRiesgoEntradaFila[]>;
+  /** Cuántos vínculos (de ambas clases) tiene el riesgo. */
+  contar(riesgoId: string): Promise<number>;
+  /** Falso si ya existía. */
+  agregarControl(riesgoId: string, controlId: string, usuarioId: string, ahora: Date): Promise<boolean>;
+  /** Falso si no existía. */
+  quitarControl(riesgoId: string, controlId: string): Promise<boolean>;
+  /** Falso si ya existía. */
+  agregarEntrada(riesgoId: string, libreriaCodigo: string, idEstable: string, usuarioId: string, ahora: Date): Promise<boolean>;
+  /** Falso si no existía. */
+  quitarEntrada(riesgoId: string, libreriaCodigo: string, idEstable: string): Promise<boolean>;
+}

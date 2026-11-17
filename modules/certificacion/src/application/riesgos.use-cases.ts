@@ -2,6 +2,7 @@ import { ErrorCertificacion } from '../domain/errores.js';
 import { codigoDeRiesgo, Riesgo, type DecisionTratamiento, type EstadoRiesgo, type NivelRiesgo } from '../domain/riesgo.js';
 import type { AutorizacionPort } from './autorizacion.port.js';
 import { exigirPermiso, identificar, validarUuid } from './comunes.js';
+import type { CatalogoLecturaPort } from './catalogo-lectura.port.js';
 import type { NuevoId } from './controles.use-cases.js';
 import type { ContextoCertificacion, Reloj } from './contexto.js';
 import { ConflictoDeVersionError, ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError } from './errores.js';
@@ -172,31 +173,90 @@ export class RetirarRiesgoUseCase {
   }
 }
 
+/** Un riesgo de la lista, con cuánto tratamiento tiene (H2.5). */
+export interface RiesgoListadoDto extends RiesgoDto {
+  /** Controles VIGENTES de la empresa que lo tratan. */
+  readonly controles: number;
+  /** Controles del Anexo A vinculados directo (tratamiento previsto). */
+  readonly tratamientosPrevistos: number;
+  /** Decisión «mitigar», vigente y sin ningún control vigente ni tratamiento previsto. */
+  readonly sinTratamiento: boolean;
+}
+
 /** Lista los riesgos de la empresa (administrador y colaborador consultan). Por omisión solo los vigentes. */
 export class ListarRiesgosUseCase {
   constructor(private readonly unidad: Unidad, private readonly autorizacion: AutorizacionPort) {}
 
-  async ejecutar(entrada: { empresaId: string; usuarioId: string; incluirRetirados?: boolean }): Promise<readonly RiesgoDto[]> {
+  async ejecutar(entrada: { empresaId: string; usuarioId: string; incluirRetirados?: boolean }): Promise<readonly RiesgoListadoDto[]> {
     const { empresaId, usuarioId } = identificar(entrada.empresaId, entrada.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'riesgos.ver', empresaId);
     if (entrada.incluirRetirados !== undefined && typeof entrada.incluirRetirados !== 'boolean') throw new ParametroInvalidoError('incluirRetirados');
-    const todos = await this.unidad.ejecutar(empresaId, (c) => c.riesgos.listar());
-    const filas = todos.filter((r) => entrada.incluirRetirados === true || r.vigente).map(aDtoRiesgo);
+    const { riesgos, controles, vinculosControl, vinculosEntrada } = await this.unidad.ejecutar(empresaId, async (c) => ({
+      riesgos: await c.riesgos.listar(),
+      controles: await c.controles.listar(),
+      vinculosControl: await c.vinculosRiesgo.listarControles(),
+      vinculosEntrada: await c.vinculosRiesgo.listarEntradas(),
+    }));
+    const vigentes = new Set(controles.filter((x) => x.vigente).map((x) => x.id));
+    const cuenta = (riesgoId: string) => ({
+      controles: vinculosControl.filter((v) => v.riesgoId === riesgoId && vigentes.has(v.controlId)).length,
+      tratamientosPrevistos: vinculosEntrada.filter((v) => v.riesgoId === riesgoId).length,
+    });
+    const filas = riesgos
+      .filter((r) => entrada.incluirRetirados === true || r.vigente)
+      .map((r): RiesgoListadoDto => {
+        const n = cuenta(r.id);
+        return { ...aDtoRiesgo(r), ...n, sinTratamiento: r.vigente && r.decision === 'mitigar' && n.controles === 0 && n.tratamientosPrevistos === 0 };
+      });
     if (filas.length > TOPE_RIESGOS) throw new Error(`El resultado supera el tope de ${TOPE_RIESGOS} riesgos del contrato`);
     return filas;
   }
 }
 
-/** Un riesgo por su identificador. Uno de otra empresa responde igual que uno que no existe (404). */
-export class ObtenerRiesgoUseCase {
-  constructor(private readonly unidad: Unidad, private readonly autorizacion: AutorizacionPort) {}
+/** Un control de la empresa que trata el riesgo; si ya fue retirado se dice (el vínculo se conserva, avisado). */
+export interface ControlDeRiesgoDto {
+  readonly id: string;
+  readonly codigo: string;
+  readonly nombre: string;
+  readonly estado: 'vigente' | 'retirado';
+}
+/** Un control del Anexo A vinculado directo. `titulo` es nulo si la entrada ya no está entre las librerías adoptadas. */
+export interface TratamientoPrevistoDto {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  readonly titulo: string | null;
+}
+/** H2.4: el riesgo con los controles que lo tratan (de la empresa y del Anexo A previstos). */
+export interface RiesgoDetalleDto extends RiesgoDto {
+  readonly controles: readonly ControlDeRiesgoDto[];
+  readonly tratamientosPrevistos: readonly TratamientoPrevistoDto[];
+}
 
-  async ejecutar(entrada: { empresaId: string; usuarioId: string; id: string }): Promise<RiesgoDto> {
+/** Un riesgo por su identificador, con sus controles. Uno de otra empresa responde igual que uno que no existe (404). */
+export class ObtenerRiesgoUseCase {
+  constructor(private readonly unidad: Unidad, private readonly autorizacion: AutorizacionPort, private readonly catalogo: CatalogoLecturaPort) {}
+
+  async ejecutar(entrada: { empresaId: string; usuarioId: string; id: string }): Promise<RiesgoDetalleDto> {
     const { empresaId, usuarioId } = identificar(entrada.empresaId, entrada.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'riesgos.ver', empresaId);
     const id = validarUuid(entrada.id, 'id');
-    const riesgo = await this.unidad.ejecutar(empresaId, (c) => c.riesgos.obtener(id));
-    if (!riesgo) throw new EntradaNoEncontradaError();
-    return aDtoRiesgo(riesgo);
+    const datos = await this.unidad.ejecutar(empresaId, async (c) => {
+      const riesgo = await c.riesgos.obtener(id);
+      if (!riesgo) return null;
+      const idsControl = new Set((await c.vinculosRiesgo.listarControles()).filter((v) => v.riesgoId === id).map((v) => v.controlId));
+      return {
+        riesgo,
+        controles: (await c.controles.listar()).filter((x) => idsControl.has(x.id)),
+        previstos: (await c.vinculosRiesgo.listarEntradas()).filter((v) => v.riesgoId === id),
+      };
+    });
+    if (!datos) throw new EntradaNoEncontradaError();
+    const entradas = await this.catalogo.listarEntradasVigentes(empresaId);
+    const titulos = new Map(entradas.map((e) => [`${e.libreriaCodigo}|${e.idEstable}`, e.titulo]));
+    return {
+      ...aDtoRiesgo(datos.riesgo),
+      controles: datos.controles.map((x) => ({ id: x.id, codigo: x.codigo, nombre: x.nombre, estado: x.estado })),
+      tratamientosPrevistos: datos.previstos.map((v) => ({ libreriaCodigo: v.libreriaCodigo, idEstable: v.idEstable, titulo: titulos.get(`${v.libreriaCodigo}|${v.idEstable}`) ?? null })),
+    };
   }
 }

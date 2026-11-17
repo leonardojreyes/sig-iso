@@ -16,6 +16,8 @@ const ACCIONES = [
   "riesgo.creado",
   "riesgo.cambiado",
   "riesgo.retirado",
+  "vinculo.creado",
+  "vinculo.eliminado",
 ] as const;
 
 describe.each(ACCIONES)("%s", (accion) => {

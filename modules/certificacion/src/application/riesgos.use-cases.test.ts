@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ConflictoDeVersionError, ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError, SinPermisoError } from './errores.js';
-import { A, ADMIN, B, COLAB, EstadoFalso, crearAutorizacionFalsa, crearUnidadFalsa } from './prueba/fakes.js';
+import { A, ADMIN, B, COLAB, EstadoFalso, crearAutorizacionFalsa, crearCatalogoFalso, crearUnidadFalsa } from './prueba/fakes.js';
 import { CambiarRiesgoUseCase, CrearRiesgoUseCase, ListarRiesgosUseCase, ObtenerRiesgoUseCase, RetirarRiesgoUseCase } from './riesgos.use-cases.js';
 
 const ADMIN_B = '66666666-6666-4666-8666-666666666666';
@@ -22,7 +22,7 @@ const montar = () => {
     cambiar: new CambiarRiesgoUseCase(u, aut, reloj),
     retirar: new RetirarRiesgoUseCase(u, aut, reloj),
     listar: new ListarRiesgosUseCase(u, aut),
-    obtener: new ObtenerRiesgoUseCase(u, aut),
+    obtener: new ObtenerRiesgoUseCase(u, aut, crearCatalogoFalso(estado)),
   };
 };
 const yo = { empresaId: A, usuarioId: ADMIN };

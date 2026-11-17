@@ -13,7 +13,7 @@ import type { AutorizacionPort, Permiso } from '../autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from '../catalogo-lectura.port.js';
 import type { ContextoCertificacion } from '../contexto.js';
 import type { DocumentoDeclaracion, DocumentoGenerado, GeneradorDocumentoPort } from '../generador-documento.port.js';
-import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, MapeoRepositoryPort, RiesgoRepositoryPort, VersionDeclaracion } from '../repositorios.port.js';
+import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, MapeoRepositoryPort, RiesgoRepositoryPort, VersionDeclaracion, VinculoRiesgoRepositoryPort } from '../repositorios.port.js';
 import type { UnidadDeTrabajoPort } from '../unidad-de-trabajo.port.js';
 
 export const A: EmpresaId = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000f1');
@@ -36,6 +36,10 @@ export class EstadoFalso {
   controles = new Map<string, Control>();
   mapeos = new Map<string, MapeoControl>();
   riesgos = new Map<string, Riesgo>();
+  /** `empresa|riesgoId|controlId` → quién lo vinculó. */
+  vinculosControl = new Map<string, string>();
+  /** `empresa|riesgoId|libreria|idEstable` → quién lo vinculó. */
+  vinculosEntrada = new Map<string, string>();
   evidencias = new Map<string, FilaEvidencia>();
   /** Versiones aprobadas de la declaración, por `empresa|id`. */
   declaraciones = new Map<string, { empresaId: EmpresaId; version: VersionDeclaracion; filas: readonly FilaDeclaracion[] }>();
@@ -65,7 +69,7 @@ export const crearCatalogoFalso = (estado: EstadoFalso): CatalogoLecturaPort => 
 export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<ContextoCertificacion> => ({
   ejecutar: async (empresaId, fn) => {
     const clave = (c: string) => `${empresaId}|${c}`;
-    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), ri: new Map(estado.riesgos), evi: new Map(estado.evidencias), de: new Map(estado.declaraciones), ex: [...estado.eventos] };
+    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), ri: new Map(estado.riesgos), vc: new Map(estado.vinculosControl), ve: new Map(estado.vinculosEntrada), evi: new Map(estado.evidencias), de: new Map(estado.declaraciones), ex: [...estado.eventos] };
     const evaluaciones: EvaluacionRepositoryPort = {
       listar: async () => [...estado.evaluaciones.entries()].filter(([k]) => k.startsWith(`${empresaId}|`)).map(([, v]) => v),
       obtener: async (codigo, id) => estado.evaluaciones.get(clave(`${codigo}|${id}`)) ?? null,
@@ -128,6 +132,27 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
         return true;
       },
     };
+    const claveVC = (r: string, c: string) => `${empresaId}|${r}|${c}`;
+    const claveVE = (r: string, l: string, i: string) => `${empresaId}|${r}|${l}|${i}`;
+    const vinculosRiesgo: VinculoRiesgoRepositoryPort = {
+      listarControles: async () =>
+        [...estado.vinculosControl.keys()].filter((k) => k.startsWith(`${empresaId}|`)).map((k) => k.split('|')).map(([, riesgoId, controlId]) => ({ riesgoId: riesgoId as string, controlId: controlId as string })),
+      listarEntradas: async () =>
+        [...estado.vinculosEntrada.keys()].filter((k) => k.startsWith(`${empresaId}|`)).map((k) => k.split('|')).map(([, riesgoId, libreriaCodigo, idEstable]) => ({ riesgoId: riesgoId as string, libreriaCodigo: libreriaCodigo as string, idEstable: idEstable as string })),
+      contar: async (riesgoId) => [...estado.vinculosControl.keys(), ...estado.vinculosEntrada.keys()].filter((k) => k.startsWith(`${empresaId}|${riesgoId}|`)).length,
+      agregarControl: async (r, c, u) => {
+        if (estado.vinculosControl.has(claveVC(r, c))) return false;
+        estado.vinculosControl.set(claveVC(r, c), u);
+        return true;
+      },
+      quitarControl: async (r, c) => estado.vinculosControl.delete(claveVC(r, c)),
+      agregarEntrada: async (r, l, i, u) => {
+        if (estado.vinculosEntrada.has(claveVE(r, l, i))) return false;
+        estado.vinculosEntrada.set(claveVE(r, l, i), u);
+        return true;
+      },
+      quitarEntrada: async (r, l, i) => estado.vinculosEntrada.delete(claveVE(r, l, i)),
+    };
     const propiasEvi = (): FilaEvidencia[] => [...estado.evidencias.values()].filter((f) => f.evidencia.empresaId === empresaId);
     const evidencias: EvidenciaRepositoryPort = {
       obtener: async (id) => estado.evidencias.get(`${empresaId}|${id}`) ?? null,
@@ -171,6 +196,7 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       controles,
       mapeos,
       riesgos,
+      vinculosRiesgo,
       bitacora: {
         registrar: async (evento) => {
           if (estado.fallarBitacora) throw new Error('bitácora no disponible');
@@ -187,6 +213,8 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       estado.controles = copia.co;
       estado.mapeos = copia.ma;
       estado.riesgos = copia.ri;
+      estado.vinculosControl = copia.vc;
+      estado.vinculosEntrada = copia.ve;
       estado.evidencias = copia.evi;
       estado.declaraciones = copia.de;
       estado.eventos = copia.ex;
