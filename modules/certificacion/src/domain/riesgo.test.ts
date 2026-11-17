@@ -1,7 +1,7 @@
 import { crearEmpresaId } from '@sig/tenancy';
 import { describe, expect, it } from 'vitest';
 import { ErrorCertificacion } from './errores.js';
-import { CORTES_NIVEL, DECISIONES_TRATAMIENTO, ESCALA_MAX, ESCALA_MIN, calcularNivel, nombreDeNivel, Riesgo } from './riesgo.js';
+import { codigoDeRiesgo, numeroDeRiesgo, CORTES_NIVEL, DECISIONES_TRATAMIENTO, ESCALA_MAX, ESCALA_MIN, calcularNivel, nombreDeNivel, Riesgo } from './riesgo.js';
 
 const EMPRESA = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000e1');
 const ID = 'cccccccc-1111-4111-8111-111111111111';
@@ -140,5 +140,18 @@ describe('Riesgo.retirar', () => {
 
   it('no se retira dos veces', () => {
     expect(() => Riesgo.crear(base).retirar().retirar()).toThrow(ErrorCertificacion);
+  });
+});
+
+describe('código correlativo', () => {
+  it('se arma con relleno de tres cifras y crece sin relleno', () => {
+    expect([1, 12, 999, 1000, 123456].map(codigoDeRiesgo)).toEqual(['R-001', 'R-012', 'R-999', 'R-1000', 'R-123456']);
+  });
+  it('va y viene entre número y código', () => {
+    for (const n of [1, 42, 1000, 999999]) expect(numeroDeRiesgo(codigoDeRiesgo(n))).toBe(n);
+  });
+  it('rechaza números fuera de rango y códigos mal formados', () => {
+    for (const n of [0, -1, 1.5, 1_000_000, Number.NaN]) expect(() => codigoDeRiesgo(n)).toThrow(ErrorCertificacion);
+    for (const c of ['R-1', 'r-001', 'R-001x', '', 'C-001']) expect(() => numeroDeRiesgo(c)).toThrow(ErrorCertificacion);
   });
 });

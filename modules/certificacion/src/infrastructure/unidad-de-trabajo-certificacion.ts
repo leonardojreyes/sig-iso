@@ -8,6 +8,7 @@ import { DeclaracionKysely } from './declaracion-kysely.adapter.js';
 import { EvaluacionKysely } from './evaluacion-kysely.adapter.js';
 import { EvidenciaKysely } from './evidencia-kysely.adapter.js';
 import { MapeoKysely } from './mapeo-kysely.adapter.js';
+import { RiesgoKysely } from './riesgo-kysely.adapter.js';
 
 /**
  * Unidad de trabajo del módulo sobre PostgreSQL. `db` debe ser el pool del rol de la aplicación. En cada ejecución se abre una
@@ -19,6 +20,7 @@ export const crearUnidadDeTrabajoCertificacion = (db: Kysely<unknown>): UnidadDe
     alcances: new AlcanceKysely(trx, empresaId),
     controles: new ControlKysely(trx, empresaId),
     mapeos: new MapeoKysely(trx, empresaId),
+    riesgos: new RiesgoKysely(trx, empresaId),
     evidencias: new EvidenciaKysely(trx, empresaId),
     declaraciones: new DeclaracionKysely(trx, empresaId),
     bitacora: new Bitacora(BitacoraKysely.enTransaccion(trx)),

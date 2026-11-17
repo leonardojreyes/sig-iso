@@ -12,6 +12,17 @@ export const DESCRIPCION_RIESGO_MAX = 1000;
 export const ESCALA_MIN = 1;
 export const ESCALA_MAX = 5;
 
+/** Código correlativo de la empresa a partir del número («R-001»); lo asigna el sistema. Desde 1000 crece sin relleno («R-1000»). */
+export const codigoDeRiesgo = (numero: number): string => {
+  if (!Number.isInteger(numero) || numero < 1 || numero > 999_999) throw new ErrorCertificacion('numero');
+  return `R-${String(numero).padStart(3, '0')}`;
+};
+/** Número correlativo de un código válido («R-001» → 1). */
+export const numeroDeRiesgo = (codigo: string): number => {
+  if (typeof codigo !== 'string' || !CODIGO.test(codigo)) throw new ErrorCertificacion('codigo');
+  return Number(codigo.slice(2));
+};
+
 export type NivelRiesgo = 'bajo' | 'medio' | 'alto' | 'critico';
 
 export interface CorteNivel {

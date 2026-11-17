@@ -19,6 +19,9 @@ export const ACCIONES = [
   'control.retirado',
   'mapeo.creado',
   'mapeo.eliminado',
+  'riesgo.creado',
+  'riesgo.cambiado',
+  'riesgo.retirado',
   'evidencia.creada',
   'evidencia.reemplazada',
   'evidencia.eliminada',
@@ -157,6 +160,11 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   'control.retirado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'mapeo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'mapeo.eliminado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Riesgos mínimos (declaración justificada, ADR 037). Solo el hecho y el objeto (`riesgo:<código>`, por ejemplo `riesgo:R-001`): el título, la
+  // descripción, la probabilidad, el impacto y el responsable NUNCA van a la bitácora.
+  'riesgo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'riesgo.cambiado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'riesgo.retirado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   // Evidencias con archivo (MVP, M4). El hecho lleva la HUELLA SHA-256 del archivo como versión del objeto (queda fijada en la cadena
   // inmutable); el título, el nombre del archivo y su contenido NUNCA van a la bitácora. El objeto es `evidencia:<uuid>` o, si se
   // rechaza una subida, el control `control:<codigo>`.

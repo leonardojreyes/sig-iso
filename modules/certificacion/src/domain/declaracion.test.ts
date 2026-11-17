@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTROLES_POR_FILA_MAX, derivarDeclaracion, type EntradaParaDeclaracion, type JustificacionParaDeclaracion, type RiesgoParaDeclaracion } from './declaracion.js';
+import { CONTROLES_POR_FILA_MAX, derivarDeclaracion, efectoDeRetirarRiesgo, type EntradaParaDeclaracion, type JustificacionParaDeclaracion, type RiesgoParaDeclaracion } from './declaracion.js';
 
 const L = 'iso-27001-anexo-a';
 const entrada = (id: string, orden: number, extra: Partial<EntradaParaDeclaracion> = {}): EntradaParaDeclaracion => ({ libreriaCodigo: L, idEstable: id, orden, titulo: `Título ${id}`, grupo: 'Organizacionales', ...extra });
@@ -184,5 +184,32 @@ describe('derivarDeclaracion con justificación', () => {
   it('no cambia lo que recibe', () => {
     const justificacion = Object.freeze(just({ riesgos: [Object.freeze(riesgo('1'))], motivos: [Object.freeze(motivo('legal', 'x'))] }));
     expect(() => derivarDeclaracion({ ...base, ...aplica, justificacion })).not.toThrow();
+  });
+});
+
+describe('efectoDeRetirarRiesgo (aviso previo al retiro)', () => {
+  const dos = { ...base, entradas: [entrada('a.1', 1), entrada('a.2', 2), entrada('a.3', 3), entrada('a.4', 4)], evaluaciones: ['a.1', 'a.2', 'a.3', 'a.4'].map((i) => ev(i, 'cumple')) };
+  const previstos = (riesgoId: string, ...ids: string[]) => ids.map((idEstable) => ({ riesgoId, libreriaCodigo: L, idEstable }));
+
+  it('lista solo los controles que quedarían sin motivo: sin otro riesgo vigente ni motivo registrado', () => {
+    const justificacion = just({
+      riesgos: [riesgo('1'), riesgo('2')],
+      vinculosEntrada: [...previstos('1', 'a.1', 'a.2', 'a.3'), ...previstos('2', 'a.3')], // a.3 también lo trata el riesgo 2
+      motivos: [motivo('legal', 'Ley', 'a.2')], // a.2 tiene motivo registrado
+    });
+    expect(efectoDeRetirarRiesgo({ ...dos, justificacion }, '1')).toEqual([{ libreriaCodigo: L, idEstable: 'a.1', titulo: 'Título a.1' }]);
+  });
+
+  it('no repite los que ya estaban sin motivo y no cambia lo recibido', () => {
+    const justificacion = Object.freeze(just({ riesgos: [riesgo('1')], vinculosEntrada: previstos('1', 'a.1') }));
+    const e = efectoDeRetirarRiesgo({ ...dos, justificacion }, '1');
+    expect(e.map((x) => x.idEstable)).toEqual(['a.1']); // a.2 a a.4 ya estaban sin motivo
+    expect(justificacion.riesgos[0]?.vigente).toBe(true);
+  });
+
+  it('un riesgo que no sostiene ningún motivo, o que no existe, no afecta a nadie', () => {
+    const justificacion = just({ riesgos: [riesgo('1')], vinculosEntrada: previstos('1', 'a.1') });
+    expect(efectoDeRetirarRiesgo({ ...dos, justificacion: just({ riesgos: [riesgo('1')] }) }, '1')).toEqual([]);
+    expect(efectoDeRetirarRiesgo({ ...dos, justificacion }, 'no-existe')).toEqual([]);
   });
 });

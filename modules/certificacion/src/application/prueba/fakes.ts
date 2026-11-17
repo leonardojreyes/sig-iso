@@ -5,6 +5,7 @@ import type { Control } from '../../domain/control.js';
 import type { LectorBytes } from '../../domain/deteccion-archivo.js';
 import { sha256Hex } from './archivos.js';
 import type { FilaDeclaracion } from '../../domain/declaracion.js';
+import type { Riesgo } from '../../domain/riesgo.js';
 import type { MapeoControl } from '../../domain/mapeo-control.js';
 import type { Evaluacion } from '../../domain/evaluacion.js';
 import type { AlmacenArchivosPort, ResultadoGuardado } from '../almacen-archivos.port.js';
@@ -12,7 +13,7 @@ import type { AutorizacionPort, Permiso } from '../autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from '../catalogo-lectura.port.js';
 import type { ContextoCertificacion } from '../contexto.js';
 import type { DocumentoDeclaracion, DocumentoGenerado, GeneradorDocumentoPort } from '../generador-documento.port.js';
-import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, MapeoRepositoryPort, VersionDeclaracion } from '../repositorios.port.js';
+import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, MapeoRepositoryPort, RiesgoRepositoryPort, VersionDeclaracion } from '../repositorios.port.js';
 import type { UnidadDeTrabajoPort } from '../unidad-de-trabajo.port.js';
 
 export const A: EmpresaId = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000f1');
@@ -34,6 +35,7 @@ export class EstadoFalso {
   alcances = new Map<string, Alcance>();
   controles = new Map<string, Control>();
   mapeos = new Map<string, MapeoControl>();
+  riesgos = new Map<string, Riesgo>();
   evidencias = new Map<string, FilaEvidencia>();
   /** Versiones aprobadas de la declaración, por `empresa|id`. */
   declaraciones = new Map<string, { empresaId: EmpresaId; version: VersionDeclaracion; filas: readonly FilaDeclaracion[] }>();
@@ -63,7 +65,7 @@ export const crearCatalogoFalso = (estado: EstadoFalso): CatalogoLecturaPort => 
 export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<ContextoCertificacion> => ({
   ejecutar: async (empresaId, fn) => {
     const clave = (c: string) => `${empresaId}|${c}`;
-    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), evi: new Map(estado.evidencias), de: new Map(estado.declaraciones), ex: [...estado.eventos] };
+    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), ri: new Map(estado.riesgos), evi: new Map(estado.evidencias), de: new Map(estado.declaraciones), ex: [...estado.eventos] };
     const evaluaciones: EvaluacionRepositoryPort = {
       listar: async () => [...estado.evaluaciones.entries()].filter(([k]) => k.startsWith(`${empresaId}|`)).map(([, v]) => v),
       obtener: async (codigo, id) => estado.evaluaciones.get(clave(`${codigo}|${id}`)) ?? null,
@@ -110,6 +112,22 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       },
       quitar: async (m) => estado.mapeos.delete(`${empresaId}|${m.clave}`),
     };
+    const riesgos: RiesgoRepositoryPort = {
+      listar: async () => propios(estado.riesgos).sort((a, b) => a.codigo.localeCompare(b.codigo, 'es', { numeric: true })),
+      obtener: async (id) => propios(estado.riesgos).find((r) => r.id === id) ?? null,
+      siguienteNumero: async () => Math.max(0, ...propios(estado.riesgos).map((r) => Number(r.codigo.slice(2)))) + 1,
+      crear: async (r) => {
+        if (estado.carrera || propios(estado.riesgos).some((x) => x.codigo === r.codigo)) return false;
+        estado.riesgos.set(r.id, r);
+        return true;
+      },
+      actualizar: async (r, _u, _a, esperada) => {
+        const actual = propios(estado.riesgos).find((x) => x.id === r.id);
+        if (estado.carrera || !actual || actual.version !== esperada) return false;
+        estado.riesgos.set(r.id, r);
+        return true;
+      },
+    };
     const propiasEvi = (): FilaEvidencia[] => [...estado.evidencias.values()].filter((f) => f.evidencia.empresaId === empresaId);
     const evidencias: EvidenciaRepositoryPort = {
       obtener: async (id) => estado.evidencias.get(`${empresaId}|${id}`) ?? null,
@@ -152,6 +170,7 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       alcances,
       controles,
       mapeos,
+      riesgos,
       bitacora: {
         registrar: async (evento) => {
           if (estado.fallarBitacora) throw new Error('bitácora no disponible');
@@ -167,6 +186,7 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       estado.alcances = copia.al;
       estado.controles = copia.co;
       estado.mapeos = copia.ma;
+      estado.riesgos = copia.ri;
       estado.evidencias = copia.evi;
       estado.declaraciones = copia.de;
       estado.eventos = copia.ex;

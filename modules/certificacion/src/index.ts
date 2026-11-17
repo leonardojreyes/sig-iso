@@ -28,3 +28,7 @@ export { EvidenciaKysely } from './infrastructure/evidencia-kysely.adapter.js';
 export { MapeoKysely } from './infrastructure/mapeo-kysely.adapter.js';
 export { EvaluacionKysely } from './infrastructure/evaluacion-kysely.adapter.js';
 export { crearUnidadDeTrabajoCertificacion } from './infrastructure/unidad-de-trabajo-certificacion.js';
+export { CambiarRiesgoUseCase, CrearRiesgoUseCase, ListarRiesgosUseCase, ObtenerRiesgoUseCase, RetirarRiesgoUseCase, TOPE_RIESGOS, aDtoRiesgo, type CambiosRiesgoEntrada, type DatosRiesgoEntrada, type RiesgoDto } from './application/riesgos.use-cases.js';
+export { CORTES_NIVEL, DECISIONES_TRATAMIENTO, ESCALA_MAX, ESCALA_MIN, Riesgo, calcularNivel, codigoDeRiesgo, nombreDeNivel, numeroDeRiesgo, type DecisionTratamiento, type EstadoRiesgo, type NivelRiesgo } from './domain/riesgo.js';
+export { efectoDeRetirarRiesgo, type ControlSinMotivo } from './domain/declaracion.js';
+export type { RiesgoRepositoryPort } from './application/repositorios.port.js';

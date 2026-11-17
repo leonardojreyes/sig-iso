@@ -273,3 +273,23 @@ export const derivarDeclaracion = (p: {
     },
   };
 };
+
+export interface ControlSinMotivo {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  readonly titulo: string;
+}
+
+/**
+ * Aviso previo al retiro de un riesgo (H1.4): los controles del Anexo A que aplican y que, al retirarlo, quedarían SIN motivo (no
+ * tienen otro riesgo vigente ni un motivo registrado). Compara la derivación de hoy con la de después del retiro; no cambia nada.
+ */
+export const efectoDeRetirarRiesgo = (
+  p: Parameters<typeof derivarDeclaracion>[0] & { readonly justificacion: JustificacionParaDeclaracion },
+  riesgoId: string,
+): readonly ControlSinMotivo[] => {
+  const hoy = derivarDeclaracion(p);
+  const sin = derivarDeclaracion({ ...p, justificacion: { ...p.justificacion, riesgos: p.justificacion.riesgos.map((r) => (r.id === riesgoId ? { ...r, vigente: false } : r)) } });
+  const yaSinMotivo = new Set(hoy.filas.filter((f) => f.sinMotivo).map((f) => `${f.libreriaCodigo}|${f.idEstable}`));
+  return sin.filas.filter((f) => f.sinMotivo && !yaSinMotivo.has(`${f.libreriaCodigo}|${f.idEstable}`)).map((f) => ({ libreriaCodigo: f.libreriaCodigo, idEstable: f.idEstable, titulo: f.titulo }));
+};

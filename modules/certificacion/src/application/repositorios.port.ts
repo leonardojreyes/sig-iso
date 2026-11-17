@@ -3,6 +3,7 @@ import type { Control } from '../domain/control.js';
 import type { Evaluacion } from '../domain/evaluacion.js';
 import type { Evidencia } from '../domain/evidencia.js';
 import type { FilaDeclaracion } from '../domain/declaracion.js';
+import type { Riesgo } from '../domain/riesgo.js';
 import type { MapeoControl } from '../domain/mapeo-control.js';
 
 /** Repositorio de evaluaciones, ligado a la empresa y la transacción de la unidad de trabajo. */
@@ -32,6 +33,19 @@ export interface ControlRepositoryPort {
   crear(control: Control, usuarioId: string, ahora: Date): Promise<boolean>;
   /** Cambia solo si la versión guardada es \`versionEsperada\` y la sube a \`control.version\`. Falso si no coincide. */
   actualizar(control: Control, usuarioId: string, ahora: Date, versionEsperada: number): Promise<boolean>;
+}
+
+/** Repositorio de riesgos de la empresa (vigentes y retirados), ligado a la empresa y la transacción de la unidad de trabajo. */
+export interface RiesgoRepositoryPort {
+  /** Todos, ordenados por número. */
+  listar(): Promise<readonly Riesgo[]>;
+  obtener(id: string): Promise<Riesgo | null>;
+  /** El número que sigue al mayor de la empresa (1 si no hay ninguno); también cuenta los retirados: el código no se reutiliza. */
+  siguienteNumero(): Promise<number>;
+  /** Falso si ese número ya existe en la empresa (otra persona creó un riesgo entre la lectura y la escritura). */
+  crear(riesgo: Riesgo, usuarioId: string, ahora: Date): Promise<boolean>;
+  /** Cambia solo si la versión guardada es `versionEsperada` y la sube a `riesgo.version`. Falso si no coincide. */
+  actualizar(riesgo: Riesgo, usuarioId: string, ahora: Date, versionEsperada: number): Promise<boolean>;
 }
 
 /** Repositorio de mapeos control ↔ entrada de una norma, ligado a la empresa y la transacción. */

@@ -12,6 +12,10 @@ const ACCIONES = [
   "control.retirado",
   "mapeo.creado",
   "mapeo.eliminado",
+  // Riesgos mínimos (ADR 037): también solo el hecho y el objeto.
+  "riesgo.creado",
+  "riesgo.cambiado",
+  "riesgo.retirado",
 ] as const;
 
 describe.each(ACCIONES)("%s", (accion) => {
@@ -33,6 +37,9 @@ describe.each(ACCIONES)("%s", (accion) => {
       "comentario",
       "responsable",
       "correo",
+      "titulo",
+      "probabilidad",
+      "impacto",
     ]) {
       rechaza({ ...e, despues: { [clave]: "algo" } });
       rechaza({ ...e, antes: { [clave]: "algo" } });
@@ -61,5 +68,13 @@ describe("el objeto", () => {
       objeto: "control:Política de contraseñas",
     });
     rechaza({ ...ejemplos["mapeo.creado"], objeto: "mapeo:C 1.a27" });
+  });
+});
+
+describe("el objeto de un riesgo", () => {
+  it("acepta el código correlativo y rechaza lo que no es un identificador", () => {
+    expect(() => validarEvento({ ...ejemplos["riesgo.creado"], objeto: "riesgo:R-001" })).not.toThrow();
+    rechaza({ ...ejemplos["riesgo.creado"], objeto: "riesgo:Pérdida de portátiles" });
+    rechaza({ ...ejemplos["riesgo.creado"], objeto: "riesgo:" });
   });
 });
