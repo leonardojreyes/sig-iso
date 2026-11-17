@@ -2,6 +2,7 @@ import { Alert, BotonEnlace, Card } from '@sig/ui';
 import { enlaceDeIngreso } from './ingreso';
 import { es } from '../i18n/es-EC';
 import { MARCA_GENERICA } from '../marca/generica';
+import { CodigoSolicitud } from './codigo-solicitud';
 import { LogoEmpresa } from './marco';
 
 const t = es.accesoPendiente;
@@ -26,7 +27,7 @@ export const PantallaAccesoPendiente = ({ codigo }: { codigo: { readonly codigo:
             <h2 id="codigo-etiqueta" className="text-sm font-semibold text-fg-muted">
               {t.codigoEtiqueta}
             </h2>
-            <p className="mt-2 select-all font-mono text-3xl font-semibold text-fg">{codigo.codigo}</p>
+            <p className="mt-2 select-all font-mono text-3xl font-semibold text-fg"><CodigoSolicitud codigo={codigo.codigo} /></p>
           </section>
           <p className="text-sm text-fg">{t.instruccion}</p>
           <p className="mt-2 text-sm text-fg-muted">{t.vence(fecha(codigo.venceEn))}</p>
@@ -36,7 +37,7 @@ export const PantallaAccesoPendiente = ({ codigo }: { codigo: { readonly codigo:
         <>
           <h1 className="text-2xl font-semibold text-fg">{t.sinCodigoTitulo}</h1>
           <div className="my-4">
-            <Alert tono="info" titulo={t.sinCodigoTitulo}>
+            <Alert tono="info" titulo={t.sinCodigoAvisoTitulo}>
               {t.sinCodigoDescripcion}
             </Alert>
           </div>

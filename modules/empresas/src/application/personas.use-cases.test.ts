@@ -44,6 +44,8 @@ class Mundo {
   bitacora: EventoBitacora[] = [];
   empresasUsadas: EmpresaId[] = [];
   forzarConflictoDeCodigo = 0;
+  /** Simula que otra aprobación de la misma persona se adelantó: el alta choca con la clave y la fila ya existe. */
+  carreraDeAlta = false;
   permitido = new Set<string>(); // `usuario|permiso`
 
   persona(rol: Rol | null, id = uid(), correo = `${id.slice(0, 6)}@example.test`): PersonaDto {
@@ -59,6 +61,10 @@ class Mundo {
       listar: async () => [...this.personas.values()],
       contarAdministradores: async () => this.admins(),
       insertar: async (p) => {
+        if (this.carreraDeAlta) {
+          this.personas.set(p.id, { ...p, bajaEn: null, version: 1 });
+          return 'correo_repetido';
+        }
         if ([...this.personas.values()].some((x) => x.correo === p.correo)) return 'correo_repetido';
         this.personas.set(p.id, { ...p, bajaEn: null, version: 1 });
         return 'ok';
@@ -305,6 +311,14 @@ describe('AprobarSolicitud', () => {
     await expect(aprobar({ ahora: MAS(VIDA_SOLICITUD_MS + 1000) })).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
     await aprobar();
     await expect(aprobar()).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
+  });
+
+  it('si otra aprobación de la MISMA persona se adelantó, no es un conflicto de correo sino «solicitud no encontrada», y nada queda a medias', async () => {
+    await solicitar();
+    m.carreraDeAlta = true;
+    await expect(aprobar()).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
+    expect(m.personas.has(PERSONA)).toBe(false); // la unidad se revierte
+    expect([...m.solicitudes.values()][0]!.estado).toBe('pendiente');
   });
 
   it('si la persona ya tiene rol (otra vía) no se pisa: conflicto', async () => {

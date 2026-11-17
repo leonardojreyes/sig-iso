@@ -31,6 +31,27 @@ describe('PantallaPersonas (ADR 036)', () => {
     expect(getByRole('heading', { level: 2, name: 'Solicitudes de acceso' })).toBeTruthy();
   });
 
+  it('el nombre accesible de cada botón EMPIEZA por su texto visible (2.5.3: la activación por voz funciona)', () => {
+    const { getAllByRole } = vista();
+    for (const boton of getAllByRole('button').filter((b) => b.closest('main'))) {
+      const visible = (boton.textContent ?? '').trim();
+      expect(boton.getAttribute('aria-label') ?? visible, visible).toMatch(new RegExp(`^${visible}`));
+    }
+  });
+
+  it('solo el formulario de aprobación (de varios campos) es una región con nombre: los de una acción no llenan la lista de regiones', () => {
+    const { getAllByRole } = vista();
+    expect(getAllByRole('form').map((f) => f.getAttribute('aria-label'))).toEqual(['Aprobar la solicitud K7F2-9QXM']);
+  });
+
+  it('el código es un encabezado de nivel 3 bajo «Solicitudes de acceso», se lee carácter por carácter y se puede seleccionar de un clic', () => {
+    const { getByRole } = vista();
+    const h3 = getByRole('heading', { level: 3 });
+    expect(h3.className).toMatch(/select-all/);
+    expect(h3.querySelector('[aria-hidden="true"]')!.textContent).toBe('K7F2-9QXM');
+    expect(h3.querySelector('.sr-only')!.textContent).toBe('K, 7, F, 2, guion, 9, Q, X, M');
+  });
+
   it('ofrece los seis roles, con sus nombres en español', () => {
     const { getByRole } = vista();
     const opciones = [...(within(getByRole('form', { name: 'Aprobar la solicitud K7F2-9QXM' })).getByLabelText('Rol') as HTMLSelectElement).options].map((o) => o.textContent);
@@ -39,20 +60,20 @@ describe('PantallaPersonas (ADR 036)', () => {
 
   it('la persona con acceso lleva un formulario de cambio de rol y otro de baja, con su identificador y su versión', () => {
     const { getByRole } = vista();
-    const rol = getByRole('form', { name: 'Cambiar rol de Laura Mena' });
+    const rol = getByRole('button', { name: 'Cambiar rol de Laura Mena' }).closest('form')!;
     expect(rol.getAttribute('action')).toBe('/e/empresa-a/personas/rol');
     expect((rol.querySelector('input[name="id"]') as HTMLInputElement).value).toBe(P1);
     expect((rol.querySelector('input[name="version"]') as HTMLInputElement).value).toBe('3');
     expect((within(rol).getByLabelText('Rol de Laura Mena') as HTMLSelectElement).value).toBe('administrador_sig');
-    const baja = getByRole('form', { name: 'Dar de baja a Laura Mena' });
+    const baja = getByRole('button', { name: 'Dar de baja a Laura Mena' }).closest('form')!;
     expect(baja.getAttribute('action')).toBe('/e/empresa-a/personas/baja');
     expect((baja.querySelector('input[name="version"]') as HTMLInputElement).value).toBe('3');
   });
 
   it('quien ya está de baja no tiene acciones y se ve con su fecha (el estado no depende solo del color)', () => {
     const { queryByRole, getByText } = vista();
-    expect(queryByRole('form', { name: 'Cambiar rol de Pedro Soto' })).toBeNull();
-    expect(queryByRole('form', { name: 'Dar de baja a Pedro Soto' })).toBeNull();
+    expect(queryByRole('button', { name: 'Cambiar rol de Pedro Soto' })).toBeNull();
+    expect(queryByRole('button', { name: 'Dar de baja a Pedro Soto' })).toBeNull();
     expect(getByText(/Dada de baja el/)).toBeTruthy();
     expect(getByText('Con acceso')).toBeTruthy();
   });

@@ -191,7 +191,12 @@ export class AprobarSolicitudUseCase {
         existente === null
           ? await personas.insertar({ id: solicitud.usuarioId, nombre, correo, rol })
           : await personas.reactivar({ id: solicitud.usuarioId, nombre, correo, rol, versionEsperada: existente.version });
-      if (resultado !== 'ok') throw new ConflictoDePersonasError(resultado);
+      if (resultado !== 'ok') {
+        // `insertar` informa «correo repetido» también cuando otra aprobación de la MISMA persona se adelantó (choque de clave): se
+        // distingue releyendo, y entonces la solicitud ya estaba resuelta (404), no hay un conflicto de correo.
+        if (existente === null && resultado === 'correo_repetido' && (await personas.obtener(solicitud.usuarioId)) !== null) throw new SolicitudNoEncontradaError();
+        throw new ConflictoDePersonasError(resultado);
+      }
       // Si otra petición ya la resolvió, todo se revierte (el alta incluida).
       if (!(await solicitudes.resolver(solicitud.id, 'aprobada', admin, e.ahora))) throw new SolicitudNoEncontradaError();
 

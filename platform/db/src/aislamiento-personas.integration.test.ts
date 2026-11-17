@@ -88,7 +88,7 @@ describe.skipIf(!hayBase)('aislamiento entre empresas: personas y solicitudes de
             trx,
           ),
         ),
-      ).rejects.toThrow();
+      ).rejects.toThrow(/row-level security/i);
     });
 
     it('A no ve, no resuelve ni borra la solicitud de B', async () => {
@@ -134,9 +134,19 @@ describe.skipIf(!hayBase)('aislamiento entre empresas: personas y solicitudes de
         await expect(pedir(A, randomUUID(), randomUUID(), malo), malo).rejects.toThrow(/solicitud_acceso_codigo_check|check/);
     });
 
-    it('la resolución es coherente: pendiente sin fecha de resolución; resuelta, con ella', async () => {
+    it('la aplicación solo inserta solicitudes PENDIENTES: no puede fijar el estado ni la resolución al crear (0016)', async () => {
+      for (const columnas of ["estado, resuelta_en, resuelta_por", "estado", "resuelta_en", "resuelta_por"])
+        await expect(
+          conTenant(app(), A, (trx) =>
+            sql`insert into solicitud_acceso (id, empresa_id, usuario_id, codigo, ${sql.raw(columnas)}, vence_en) values (${randomUUID()}, ${A}, ${randomUUID()}, 'CCCC-EEEE', ${sql.raw(columnas.split(', ').map((c) => (c === 'estado' ? "'aprobada'" : c === 'resuelta_en' ? 'now()' : `'${ADMIN_A}'`)).join(', '))}, ${enUnaSemana()})`.execute(trx),
+          ),
+          columnas,
+        ).rejects.toThrow(/permission denied/i);
+    });
+
+    it('la resolución es coherente: pendiente sin fecha de resolución; resuelta, con ella (restricción de la tabla)', async () => {
       await expect(
-        conTenant(app(), A, (trx) =>
+        conTenant(owner(), A, (trx) =>
           sql`insert into solicitud_acceso (id, empresa_id, usuario_id, codigo, estado, vence_en) values (${randomUUID()}, ${A}, ${randomUUID()}, 'CCCC-DDDD', 'aprobada', ${enUnaSemana()})`.execute(
             trx,
           ),
@@ -190,7 +200,25 @@ describe.skipIf(!hayBase)('aislamiento entre empresas: personas y solicitudes de
             trx,
           ),
         ),
-      ).rejects.toThrow();
+      ).rejects.toThrow(/row-level security/i);
+    });
+
+    it('A no LEE a las personas de B (ni a la cuenta que tiene fila en las dos empresas) con el rol de la aplicación', async () => {
+      const ve = (empresa: typeof A, id: string) =>
+        conTenant(app(), empresa, async (trx) => (await sql<{ id: string }>`select id from usuario where id = ${id}`.execute(trx)).rows);
+      expect(await ve(A, ADMIN_B)).toEqual([]);
+      expect(await ve(B, ADMIN_A)).toEqual([]);
+      // Un consultor (ADR 035): la misma cuenta con una fila en cada empresa; cada una ve solo la suya.
+      const consultor = randomUUID();
+      for (const [e, rol] of [[A, 'administrador_sig'], [B, 'colaborador']] as const)
+        await conTenant(owner(), e, (trx) =>
+          sql`insert into usuario (id, empresa_id, nombre, correo, rol) values (${consultor}, ${e}, 'Consultor', ${`consultor-${e.slice(0, 4)}-${sufijo}@example.test`}, ${rol})`.execute(trx),
+        );
+      expect(await ve(A, consultor)).toHaveLength(1);
+      expect(await ve(B, consultor)).toHaveLength(1);
+      const roles = async (e: typeof A) => conTenant(app(), e, async (trx) => (await sql<{ rol: string }>`select rol from usuario where id = ${consultor}`.execute(trx)).rows[0]?.rol);
+      expect(await roles(A)).toBe('administrador_sig');
+      expect(await roles(B)).toBe('colaborador');
     });
 
     it('una baja deja el rol en nulo y anota cuándo; con rol y baja a la vez, no', async () => {

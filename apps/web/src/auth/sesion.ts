@@ -112,7 +112,7 @@ export const crearServicioSesion = (deps: DependenciasSesion) => {
       const solicitud = await pedirSolicitud(resultado.tokens.acceso);
       if (solicitud === null) return fallo();
       const vigencia = Math.min(VIDA_COOKIE_ACCESO_SEGUNDOS, solicitud.restante);
-      const sello = await sellar({ v: 1, c: solicitud.codigo, e: solicitud.venceEn }, { claves: config.clavesSellado, vigenciaSegundos: vigencia, ahora: deps.ahora() });
+      const sello = await sellar({ v: 1, t: 'acceso', c: solicitud.codigo, e: solicitud.venceEn }, { claves: config.clavesSellado, vigenciaSegundos: vigencia, ahora: deps.ahora() });
       const cabeceras = new Headers({ Location: `${config.origen}/acceso-pendiente`, 'Cache-Control': SIN_CACHE });
       cabeceras.append('Set-Cookie', `${config.nombreCookieAcceso}=${sello}; ${atributosCookie}; Max-Age=${vigencia}`);
       cabeceras.append('Set-Cookie', resultado.limpiarCookie);

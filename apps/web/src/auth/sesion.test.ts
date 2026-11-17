@@ -242,7 +242,7 @@ describe('iniciar: una cuenta SIN rol no recibe sesión, pero ve su código de s
     const r = await servicio(fetchFn).svc.iniciar(callbackOk());
     const valor = valorCookie(r, config.nombreCookieAcceso)!;
     expect(valor).not.toContain('K7F2');
-    expect(await abrirSello(valor, { claves: config.clavesSellado, ahora: AHORA })).toEqual({ v: 1, c: 'K7F2-9QXM', e: '2026-11-15T10:00:00.000Z' });
+    expect(await abrirSello(valor, { claves: config.clavesSellado, ahora: AHORA })).toEqual({ v: 1, t: 'acceso', c: 'K7F2-9QXM', e: '2026-11-15T10:00:00.000Z' });
   });
 
   it('la cookie es httpOnly, SameSite=Lax, Path=/ y dura como máximo 10 minutos (sin Domain)', async () => {

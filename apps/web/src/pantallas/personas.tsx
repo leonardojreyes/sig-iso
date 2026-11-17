@@ -1,9 +1,10 @@
-import { Badge, Button, Card, CardTitle, EstadoVacio, Input, Label, Select, Tabla, Td, Th } from '@sig/ui';
+import { Badge, Button, Card, EstadoVacio, Input, Label, Select, Tabla, Td, Th } from '@sig/ui';
 import type { Personas, Rol } from '../api/tipos';
 import type { AvisoEscritura } from '../certificacion/escribir';
 import type { Empresa } from '../empresas';
 import { es } from '../i18n/es-EC';
 import { AvisoDeEscritura } from './aviso-escritura';
+import { CodigoSolicitud } from './codigo-solicitud';
 import { MarcoApp } from './marco';
 
 const t = es.personas;
@@ -52,12 +53,16 @@ export const PantallaPersonas = ({
           {datos.solicitudes.map((s, i) => (
             <li key={s.id}>
               <Card className="p-4">
-                <CardTitle className="font-mono text-xl">{s.codigo}</CardTitle>
+                {/* Un h3 (bajo «Solicitudes de acceso»): el código se lee carácter por carácter y se puede seleccionar de un clic. */}
+                <h3 className="select-all font-mono text-xl font-semibold text-fg">
+                  <CodigoSolicitud codigo={s.codigo} />
+                </h3>
                 <p className="mt-1 text-sm text-fg-muted">
                   {t.recibida(fecha(s.creadaEn))} {t.vence(fecha(s.venceEn))}
                 </p>
                 <form method="post" action={`/e/${empresa.id}/personas/aprobar`} className="mt-3 flex flex-wrap items-end gap-3" aria-label={t.aprobarDe(s.codigo)}>
                   <input type="hidden" name="solicitud" value={s.id} />
+                  {/* autocomplete="off" a propósito: es el nombre y el correo de OTRA persona, no los de quien escribe (1.3.5 no aplica). */}
                   <div className="flex min-w-48 flex-col gap-1.5">
                     <Label htmlFor={`sol-${i}-nombre`}>{t.nombre}</Label>
                     <Input id={`sol-${i}-nombre`} name="nombre" required maxLength={120} autoComplete="off" />
@@ -76,7 +81,7 @@ export const PantallaPersonas = ({
                     {t.aprobar}
                   </Button>
                 </form>
-                <form method="post" action={`/e/${empresa.id}/personas/descartar`} className="mt-2" aria-label={t.descartarDe(s.codigo)}>
+                <form method="post" action={`/e/${empresa.id}/personas/descartar`} className="mt-2">
                   <input type="hidden" name="solicitud" value={s.id} />
                   <Button type="submit" variante="ghost" aria-label={t.descartarDe(s.codigo)}>
                     {t.descartar}
@@ -120,7 +125,7 @@ export const PantallaPersonas = ({
                 <Td>
                   {p.rol && (
                     <div className="flex flex-wrap items-end gap-2">
-                      <form method="post" action={`/e/${empresa.id}/personas/rol`} className="flex items-end gap-2" aria-label={t.cambiarRolDe(p.nombre)}>
+                      <form method="post" action={`/e/${empresa.id}/personas/rol`} className="flex items-end gap-2">
                         <input type="hidden" name="id" value={p.id} />
                         <input type="hidden" name="version" value={p.version} />
                         <Label htmlFor={`per-${i}-rol`} className="sr-only">
@@ -133,7 +138,7 @@ export const PantallaPersonas = ({
                           {t.cambiarRol}
                         </Button>
                       </form>
-                      <form method="post" action={`/e/${empresa.id}/personas/baja`} aria-label={t.darDeBajaA(p.nombre)}>
+                      <form method="post" action={`/e/${empresa.id}/personas/baja`}>
                         <input type="hidden" name="id" value={p.id} />
                         <input type="hidden" name="version" value={p.version} />
                         <Button type="submit" variante="danger" aria-label={t.darDeBajaA(p.nombre)}>

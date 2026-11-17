@@ -53,18 +53,20 @@ export class PersonasKysely implements PersonasRepositoryPort {
 
   async listar(): Promise<readonly PersonaDto[]> {
     const { rows } = await sql<FilaPersona>`
-      select id, nombre, correo, rol, baja_en, version from usuario where empresa_id = ${this.empresaId} order by nombre, id`.execute(
+      select id, nombre, correo, rol, baja_en, version from usuario where empresa_id = ${this.empresaId} order by nombre, id limit 1000`.execute(
       this.db,
     );
     return rows.map(persona);
   }
 
-  // Bloquea las filas de los administradores (`for update`): dos bajas o cambios de rol simultáneos esperan uno al otro, así el segundo
+  // Bloquea las filas de los administradores (`for no key update`, el bloqueo MÁS DÉBIL que basta: el `update` de `rol` pide el mismo, y no
+  // estorba a quien solo referencia a esa persona por una clave foránea —autoría de alcances, controles, evidencias—, que toma `for key share`):
+  // dos bajas o cambios de rol simultáneos esperan uno al otro, así el segundo
   // ya ve que queda uno solo y se detiene. Sin el bloqueo, dos administradores podrían quitarse el rol a la vez y dejar la empresa sin ninguno.
   async contarAdministradores(): Promise<number> {
     const { rows } = await sql<{ n: number }>`
       select count(*)::int as n from (
-        select 1 from usuario where empresa_id = ${this.empresaId} and rol = 'administrador_sig' for update
+        select 1 from usuario where empresa_id = ${this.empresaId} and rol = 'administrador_sig' for no key update
       ) administradores`.execute(this.db);
     return rows[0]?.n ?? 0;
   }

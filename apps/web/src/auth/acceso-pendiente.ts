@@ -16,8 +16,9 @@ export const leerCodigoDeAcceso = async (cookie: string | null, config: Configur
   const valor = leerCookie(new Request('http://interno.invalid/', { headers: { cookie } }), config.nombreCookieAcceso);
   if (valor === null || valor === 'repetida' || valor === '') return null;
   try {
-    const c = await abrirSello<{ v?: unknown; c?: unknown; e?: unknown }>(valor, { claves: config.clavesSellado, ahora });
-    if (c.v !== 1 || typeof c.c !== 'string' || !CODIGO.test(c.c) || typeof c.e !== 'string') return null;
+    const c = await abrirSello<{ v?: unknown; t?: unknown; c?: unknown; e?: unknown }>(valor, { claves: config.clavesSellado, ahora });
+    // La etiqueta `t` separa esta cookie de la de sesión (misma clave de sellado): cada lector solo acepta la suya.
+    if (c.v !== 1 || c.t !== 'acceso' || typeof c.c !== 'string' || !CODIGO.test(c.c) || typeof c.e !== 'string') return null;
     const venceEn = new Date(c.e);
     if (!Number.isFinite(venceEn.getTime()) || venceEn.getTime() <= ahora.getTime()) return null;
     return { codigo: c.c, venceEn };

@@ -38,12 +38,14 @@ const valor = (html: string, desde: number, nombre: string) =>
   new RegExp(`name="${nombre}"[^>]*value="([^"]*)"`).exec(html.slice(desde))?.[1] ?? '';
 /** El identificador y la versión de una persona, tal como los manda el formulario de la pantalla (null si no tiene acciones). */
 const personaEn = (html: string, nombre: string) => {
+  // El nombre accesible está en el botón; los campos ocultos van en SU formulario, que empieza en el `<form` anterior.
   const i = html.indexOf(`aria-label="Dar de baja a ${nombre}"`);
-  return i < 0 ? null : { id: valor(html, i, 'id'), version: valor(html, i, 'version') };
+  const desde = html.lastIndexOf('<form', i);
+  return i < 0 ? null : { id: valor(html, desde, 'id'), version: valor(html, desde, 'version') };
 };
 const solicitudEn = (html: string, codigo: string) => {
   const i = html.indexOf(`aria-label="Aprobar la solicitud ${codigo}"`);
-  return i < 0 ? null : valor(html, i, 'solicitud');
+  return i < 0 ? null : valor(html, html.lastIndexOf('<form', i), 'solicitud');
 };
 const aviso = (r: { parametros: URLSearchParams }) => r.parametros.get('aviso');
 

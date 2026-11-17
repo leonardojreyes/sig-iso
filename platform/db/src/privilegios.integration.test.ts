@@ -42,7 +42,7 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   evaluacion: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE (migración 0007)
   control: { app: ["SELECT", "INSERT", "UPDATE"] }, // sin DELETE: un control se retira (migración 0008)
   evidencia: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas (estado y quién y cuándo), sin DELETE (migración 0009)
-  solicitud_acceso: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas (estado y quién y cuándo), sin DELETE (migración 0015)
+  solicitud_acceso: { app: ["SELECT"] }, // INSERT y UPDATE solo por columnas (migraciones 0015 y 0016), sin DELETE
   declaracion_version: { app: ["SELECT", "INSERT"] }, // inmutable: ni UPDATE ni DELETE (migración 0010)
   declaracion_fila: { app: ["SELECT", "INSERT"] }, // inmutable (migración 0010)
   control_mapeo: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro, nunca se actualiza (migración 0008)
@@ -330,6 +330,19 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         ).rows[0]?.ok;
       for (const c of ["id", "empresa_id", "nombre", "correo", "rol"]) expect({ c, ok: await ins(c) }).toEqual({ c, ok: true });
       for (const c of ["baja_en", "version", "creada_en"]) expect({ c, ok: await ins(c) }).toEqual({ c, ok: false });
+      // solicitud_acceso (0016): la aplicación solo crea solicitudes PENDIENTES; el estado y la resolución no los fija al insertar.
+      const insSolicitud = async (columna: string) =>
+        (
+          await sql<{
+            ok: boolean;
+          }>`select has_column_privilege('sigiso_app', 'public.solicitud_acceso', ${columna}, 'INSERT') as ok`.execute(
+            owner(),
+          )
+        ).rows[0]?.ok;
+      for (const c of ["id", "empresa_id", "usuario_id", "codigo", "creada_en", "vence_en"])
+        expect({ c, ok: await insSolicitud(c) }).toEqual({ c, ok: true });
+      for (const c of ["estado", "resuelta_en", "resuelta_por"])
+        expect({ c, ok: await insSolicitud(c) }).toEqual({ c, ok: false });
       // empresa (0013): la aplicación cambia SOLO el color y el logo de su empresa; ni el nombre, ni el slug, ni el identificador.
       for (const c of ["color_primario", "logo_url"])
         expect(await col("sigiso_app", "empresa", c)).toBe(true);

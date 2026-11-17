@@ -37,6 +37,14 @@ Categorías: **S** suplantación · **T** manipulación · **R** repudio · **I*
 | D    | Sin riesgo nuevo.                                                                                                                                                                                                                                                                  |                                                                                                                                   |
 | E    | El rol se lee de la base en cada petición: un cambio o una baja rigen **de inmediato**, también para una sesión ya abierta (probado con todo real). Un administrador puede darse de baja a sí mismo solo si queda otro. La aplicación puede fijar `rol`, pero solo con el permiso. | MEDIO: la protección de la 0005 («la aplicación no asigna roles») ahora depende solo del permiso, que revisa `revisor-seguridad`. |
 
+## Riesgos aceptados tras la revisión
+
+- **MEDIO — asignar roles ya no tiene barrera en la base** (la 0015 devuelve a la aplicación `insert/update` de `rol`): lo contiene el permiso `personas.gestionar`, decidido antes que nada, y la RLS; la solución de fondo son roles de base por módulo (Fase 1). Ver ADR 036.
+- **BAJO — un descarte no impide volver a pedir acceso:** acotado por el tope de 50 solicitudes vigentes y el límite de frecuencia.
+- **BAJO — el permiso se comprueba un instante antes de abrir la transacción:** sin escalada posible (el último administrador está protegido dentro de ella).
+- **BAJO — quien ingresa sin rol no puede cerrar su sesión de Keycloak desde la pantalla del código:** en un equipo compartido, la siguiente persona vería ese código, que no da acceso.
+- **Auditoría:** el paso a «vencida» se deriva del plazo y no deja un hecho propio.
+
 ## Lo que no cubre este STRIDE
 
 - La creación de la cuenta en Keycloak (sigue siendo manual, ADR 036 punto 1): la API no guarda credenciales de administración.
