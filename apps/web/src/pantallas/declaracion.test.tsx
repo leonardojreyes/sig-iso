@@ -1,7 +1,7 @@
 import { render, within } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { describe, expect, it } from 'vitest';
-import type { Declaracion, FilaDeclaracion, VersionDeclaracion, VersionDeclaracionConFilas } from '../api/tipos';
+import type { Declaracion, FilaDeclaracion, JustificacionBorrador, VersionDeclaracion, VersionDeclaracionConFilas } from '../api/tipos';
 import { PantallaDeclaracion } from './declaracion';
 import { PantallaVersionDeclaracion } from './declaracion-version';
 
@@ -19,7 +19,13 @@ const filas = (): FilaDeclaracion[] => [
   fila({ idEstable: 'a27-5-3', orden: 3, titulo: 'Separación de funciones', aplicabilidad: 'no_aplica', implementacion: null, justificacion: 'No hay personal propio', controles: [], cobertura: 'no_aplica' }),
 ];
 const version = (o: Partial<VersionDeclaracion> = {}): VersionDeclaracion => ({ id: V2, numero: 2, total: 3, aplican: 2, noAplican: 1, sinControl: 1, aprobadaPor: U, aprobadaEn: '2026-11-13T02:30:00.000Z', ...o });
-const declaracion = (o: Partial<Declaracion> = {}): Declaracion => ({ norma: 'ISO/IEC 27001', hoy: '2026-11-12', resumen: { total: 3, aplican: 2, noAplican: 1, porDecidir: 0, sinControl: 1, aprobable: true }, filas: filas(), alcance: { texto: 'Desarrollo de software', aprobado: true }, ultimaVersion: version(), ...o });
+/** Justificación coherente con `filas()`: lo que aplica trae un motivo; lo que no aplica, nada. */
+const justificacion = (o: Partial<JustificacionBorrador> = {}): JustificacionBorrador => ({
+  conMotivo: 2, sinMotivo: 0, riesgosVigentes: 0, riesgosSinTratamiento: 0, bloqueos: [], faltaPlanTratamiento: false, referencias: [], escala: { escalaMax: 5, corteMedio: 5, corteAlto: 10, corteCritico: 16 },
+  filas: filas().map((f) => ({ libreriaCodigo: f.libreriaCodigo, idEstable: f.idEstable, sinMotivo: false, motivos: f.aplicabilidad === 'aplica' ? [{ tipo: 'negocio' as const, nota: 'Necesidad del negocio' }] : [], riesgos: [] })),
+  ...o,
+});
+const declaracion = (o: Partial<Declaracion> = {}): Declaracion => ({ norma: 'ISO/IEC 27001', hoy: '2026-11-12', resumen: { total: 3, aplican: 2, noAplican: 1, porDecidir: 0, sinControl: 1, aprobable: true }, filas: filas(), alcance: { texto: 'Desarrollo de software', aprobado: true }, ultimaVersion: version(), justificacion: justificacion(), ...o });
 const base = { empresa, persona: admin, declaracion: declaracion(), versiones: [version(), version({ id: V1, numero: 1 })], aviso: null };
 
 describe('PantallaDeclaracion', () => {
@@ -98,7 +104,7 @@ describe('PantallaDeclaracion', () => {
 });
 
 describe('PantallaVersionDeclaracion', () => {
-  const v: VersionDeclaracionConFilas = { ...version(), alcance: 'Alcance congelado', filas: filas() };
+  const v: VersionDeclaracionConFilas = { ...version(), alcance: 'Alcance congelado', filas: filas(), justificacion: null };
   it('no tiene violaciones de accesibilidad (axe), con y sin alcance', async () => {
     const a = render(<PantallaVersionDeclaracion empresa={empresa} persona={admin} version={v} />);
     expect(await axe(a.container)).toHaveNoViolations();

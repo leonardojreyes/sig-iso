@@ -231,9 +231,83 @@ export interface VersionDeclaracion {
   readonly aprobadaEn: string;
 }
 
+// ---- Riesgos y justificación de la Declaración (ADR 037)
+export type NivelRiesgo = 'bajo' | 'medio' | 'alto' | 'critico';
+export type DecisionTratamiento = 'mitigar' | 'aceptar' | 'transferir' | 'evitar';
+export type TipoMotivo = 'legal' | 'contractual' | 'negocio' | 'otro';
+export type TipoReferencia = 'analisis' | 'plan';
+export type ViaRiesgo = 'control' | 'previsto';
+export type BloqueoDeclaracion = 'sin_filas' | 'por_decidir' | 'sin_motivo';
+
+export interface EscalaRiesgo {
+  readonly escalaMax: number;
+  readonly corteMedio: number;
+  readonly corteAlto: number;
+  readonly corteCritico: number;
+}
+export interface ReferenciaDeclaracion {
+  readonly tipo: TipoReferencia;
+  readonly titulo: string;
+  readonly versionDoc: string;
+  readonly fecha: string;
+  readonly ubicacion: string;
+  readonly version: number;
+}
+export interface MotivoDeFila {
+  readonly tipo: TipoMotivo;
+  readonly nota: string;
+}
+export interface RiesgoDeFila {
+  readonly codigo: string;
+  readonly titulo: string;
+  readonly nivel: NivelRiesgo;
+  readonly via: ViaRiesgo;
+}
+export interface FilaJustificacion {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  readonly sinMotivo: boolean;
+  readonly motivos: readonly MotivoDeFila[];
+  readonly riesgos: readonly RiesgoDeFila[];
+}
+/** Lo que justifica el borrador, derivado en vivo. */
+export interface JustificacionBorrador {
+  readonly conMotivo: number;
+  readonly sinMotivo: number;
+  readonly riesgosVigentes: number;
+  readonly riesgosSinTratamiento: number;
+  readonly bloqueos: readonly BloqueoDeclaracion[];
+  readonly filas: readonly FilaJustificacion[];
+  readonly referencias: readonly ReferenciaDeclaracion[];
+  readonly escala: EscalaRiesgo;
+  readonly faltaPlanTratamiento: boolean;
+}
+export interface RiesgoCongelado {
+  readonly codigo: string;
+  readonly titulo: string;
+  readonly probabilidad: number;
+  readonly impacto: number;
+  readonly nivel: NivelRiesgo;
+  readonly decision: DecisionTratamiento;
+  readonly responsableId: string | null;
+  readonly controles: readonly string[];
+}
+/** Lo que justificaba una versión al aprobarla, tal como se congeló. */
+export interface JustificacionVersion {
+  readonly escala: EscalaRiesgo;
+  readonly conMotivo: number;
+  readonly riesgosVigentes: number;
+  readonly motivos: readonly { readonly libreriaCodigo: string; readonly idEstable: string; readonly tipo: TipoMotivo; readonly nota: string }[];
+  readonly riesgos: readonly RiesgoCongelado[];
+  readonly riesgosPorFila: readonly { readonly libreriaCodigo: string; readonly idEstable: string; readonly riesgoCodigo: string; readonly via: ViaRiesgo }[];
+  readonly referencias: readonly Omit<ReferenciaDeclaracion, 'version'>[];
+}
+
 export interface VersionDeclaracionConFilas extends VersionDeclaracion {
   readonly alcance: string | null;
   readonly filas: readonly FilaDeclaracion[];
+  /** Nula en las versiones aprobadas antes de la Declaración justificada. */
+  readonly justificacion: JustificacionVersion | null;
 }
 
 export interface Declaracion {
@@ -243,6 +317,7 @@ export interface Declaracion {
   readonly filas: readonly FilaDeclaracion[];
   readonly alcance: { readonly texto: string; readonly aprobado: boolean } | null;
   readonly ultimaVersion: VersionDeclaracion | null;
+  readonly justificacion: JustificacionBorrador;
 }
 
 export type EstadoCargaLibreria = 'cargada' | 'ya_cargada' | 'rechazada';

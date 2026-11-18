@@ -29,6 +29,10 @@ import type {
   FilaDeclaracion,
   VersionDeclaracion,
   VersionDeclaracionConFilas,
+  EscalaRiesgo,
+  JustificacionBorrador,
+  JustificacionVersion,
+  ReferenciaDeclaracion,
 } from './tipos';
 import { UUID } from '../validacion/patrones';
 import type { Personas, PersonaDeLaEmpresa, SolicitudDeAcceso } from './tipos';
@@ -502,6 +506,122 @@ const validarFilasDeclaracion = (filas: unknown): FilaDeclaracion[] | null => {
   return salida;
 };
 
+// ---- Riesgos y justificación de la Declaración (ADR 037)
+const NIVELES_RIESGO: readonly string[] = ['bajo', 'medio', 'alto', 'critico'];
+const DECISIONES_RIESGO: readonly string[] = ['mitigar', 'aceptar', 'transferir', 'evitar'];
+const TIPOS_MOTIVO: readonly string[] = ['legal', 'contractual', 'negocio', 'otro'];
+const TIPOS_REFERENCIA: readonly string[] = ['analisis', 'plan'];
+const VIAS_RIESGO: readonly string[] = ['control', 'previsto'];
+const CODIGO_RIESGO_RE = /^R-[0-9]{3,6}$/;
+const LIBRERIA_RE = /^[a-z0-9][a-z0-9-]*$/;
+const ID_ESTABLE_RE = /^[a-z0-9][a-z0-9.-]{0,40}$/;
+
+const enLista = (v: unknown, lista: readonly string[]): v is string => typeof v === 'string' && lista.includes(v);
+
+const validarEscala = (v: unknown): EscalaRiesgo | null => {
+  const e = objeto(v);
+  if (!e || !claves(e, ['escalaMax', 'corteMedio', 'corteAlto', 'corteCritico'])) return null;
+  if (!entero(e.escalaMax, 2) || e.escalaMax > 10 || !entero(e.corteMedio, 2) || !entero(e.corteAlto, 3) || !entero(e.corteCritico, 4)) return null;
+  // Cortes ordenados y dentro de la escala (el puntaje más alto es escalaMax al cuadrado).
+  if (!(e.corteMedio < e.corteAlto && e.corteAlto < e.corteCritico && e.corteCritico <= e.escalaMax * e.escalaMax)) return null;
+  return e as unknown as EscalaRiesgo;
+};
+
+const validarReferencias = (v: unknown, conVersion: boolean): ReferenciaDeclaracion[] | null => {
+  if (!Array.isArray(v) || v.length > 2) return null;
+  const vistos = new Set<string>();
+  for (const item of v) {
+    const r = objeto(item);
+    if (!r || !claves(r, conVersion ? ['tipo', 'titulo', 'versionDoc', 'fecha', 'ubicacion', 'version'] : ['tipo', 'titulo', 'versionDoc', 'fecha', 'ubicacion'])) return null;
+    if (!enLista(r.tipo, TIPOS_REFERENCIA) || vistos.has(r.tipo)) return null;
+    vistos.add(r.tipo);
+    if (!texto(r.titulo, 120, undefined, 1) || !texto(r.versionDoc, 40, undefined, 1) || !texto(r.fecha, 10, FECHA) || !texto(r.ubicacion, 200, undefined, 1)) return null;
+    if (conVersion && !entero(r.version, 1)) return null;
+  }
+  return v as ReferenciaDeclaracion[];
+};
+
+const claveFila = (o: Record<string, unknown>): string | null =>
+  texto(o.libreriaCodigo, 64, LIBRERIA_RE, 1) && texto(o.idEstable, 41, ID_ESTABLE_RE, 1) ? `${o.libreriaCodigo}|${o.idEstable}` : null;
+
+/** `justificacion` del borrador: forma exacta, topes del contrato y coherencia entre sus conteos, sus filas y sus bloqueos. */
+const validarJustificacionBorrador = (v: unknown, filasDeclaracion: readonly FilaDeclaracion[]): JustificacionBorrador | null => {
+  const j = objeto(v);
+  if (!j || !claves(j, ['conMotivo', 'sinMotivo', 'riesgosVigentes', 'riesgosSinTratamiento', 'bloqueos', 'filas', 'referencias', 'escala', 'faltaPlanTratamiento'])) return null;
+  for (const k of ['conMotivo', 'sinMotivo', 'riesgosVigentes', 'riesgosSinTratamiento'] as const) if (!entero(j[k])) return null;
+  if (typeof j.faltaPlanTratamiento !== 'boolean') return null;
+  if (!Array.isArray(j.bloqueos) || j.bloqueos.length > 3 || !j.bloqueos.every((b) => enLista(b, ['sin_filas', 'por_decidir', 'sin_motivo'])) || new Set(j.bloqueos).size !== j.bloqueos.length) return null;
+  if (!Array.isArray(j.filas) || j.filas.length > 500) return null;
+  const vistas = new Set<string>();
+  for (const item of j.filas) {
+    const f = objeto(item);
+    if (!f || !claves(f, ['libreriaCodigo', 'idEstable', 'sinMotivo', 'motivos', 'riesgos']) || typeof f.sinMotivo !== 'boolean') return null;
+    const k = claveFila(f);
+    if (!k || vistas.has(k)) return null;
+    vistas.add(k);
+    if (!Array.isArray(f.motivos) || f.motivos.length > 4 || !Array.isArray(f.riesgos) || f.riesgos.length > 500) return null;
+    const tipos = new Set<string>();
+    for (const m of f.motivos) {
+      const o = objeto(m);
+      if (!o || !claves(o, ['tipo', 'nota']) || !enLista(o.tipo, TIPOS_MOTIVO) || tipos.has(o.tipo) || !texto(o.nota, 500, undefined, 1)) return null;
+      tipos.add(o.tipo);
+    }
+    for (const r of f.riesgos) {
+      const o = objeto(r);
+      if (!o || !claves(o, ['codigo', 'titulo', 'nivel', 'via']) || !texto(o.codigo, 8, CODIGO_RIESGO_RE) || !texto(o.titulo, 120, undefined, 1) || !enLista(o.nivel, NIVELES_RIESGO) || !enLista(o.via, VIAS_RIESGO)) return null;
+    }
+    // Lo que no aplica no lleva motivos ni riesgos ni se le pide motivo; lo que aplica queda sin motivo solo si no trae ninguno.
+    const decl = filasDeclaracion.find((x) => `${x.libreriaCodigo}|${x.idEstable}` === k);
+    if (decl && decl.aplicabilidad !== 'aplica' && (f.sinMotivo || f.motivos.length > 0 || f.riesgos.length > 0)) return null;
+    if (f.sinMotivo !== (decl?.aplicabilidad === 'aplica' && f.motivos.length === 0 && f.riesgos.length === 0)) return null;
+  }
+  const referencias = validarReferencias(j.referencias, true);
+  const escala = validarEscala(j.escala);
+  if (!referencias || !escala) return null;
+  const sinMotivo = j.filas.filter((f: Record<string, unknown>) => f.sinMotivo === true).length;
+  if (j.sinMotivo !== sinMotivo) return null;
+  const aplican = filasDeclaracion.filter((f) => f.aplicabilidad === 'aplica').length;
+  if ((j.conMotivo as number) + (j.sinMotivo as number) !== aplican) return null;
+  // Los bloqueos dicen lo mismo que las filas.
+  const esperados = [
+    ...(filasDeclaracion.length === 0 ? ['sin_filas'] : []),
+    ...(filasDeclaracion.some((f) => f.aplicabilidad === 'por_decidir') ? ['por_decidir'] : []),
+    ...(sinMotivo > 0 ? ['sin_motivo'] : []),
+  ];
+  if ([...j.bloqueos].sort().join() !== [...esperados].sort().join()) return null;
+  return { ...(j as unknown as JustificacionBorrador), referencias, escala };
+};
+
+/** `justificacion` de una versión congelada (nula si es anterior a la Declaración justificada). */
+const validarJustificacionVersion = (v: unknown, aplican: number): JustificacionVersion | null | undefined => {
+  if (v === null) return null;
+  const j = objeto(v);
+  if (!j || !claves(j, ['escala', 'conMotivo', 'riesgosVigentes', 'motivos', 'riesgos', 'riesgosPorFila', 'referencias'])) return undefined;
+  const escala = validarEscala(j.escala);
+  const referencias = validarReferencias(j.referencias, false);
+  if (!escala || !referencias || !entero(j.conMotivo) || !entero(j.riesgosVigentes) || j.conMotivo !== aplican) return undefined; // al aprobar, todo control que aplica tenía motivo
+  if (!Array.isArray(j.motivos) || j.motivos.length > 500 || !Array.isArray(j.riesgos) || j.riesgos.length > 500 || !Array.isArray(j.riesgosPorFila) || j.riesgosPorFila.length > 5000) return undefined;
+  for (const m of j.motivos) {
+    const o = objeto(m);
+    if (!o || !claves(o, ['libreriaCodigo', 'idEstable', 'tipo', 'nota']) || !claveFila(o) || !enLista(o.tipo, TIPOS_MOTIVO) || !texto(o.nota, 500, undefined, 1)) return undefined;
+  }
+  const codigos = new Set<string>();
+  for (const r of j.riesgos) {
+    const o = objeto(r);
+    if (!o || !claves(o, ['codigo', 'titulo', 'probabilidad', 'impacto', 'nivel', 'decision', 'responsableId', 'controles'])) return undefined;
+    if (!texto(o.codigo, 8, CODIGO_RIESGO_RE) || codigos.has(o.codigo) || !texto(o.titulo, 120, undefined, 1) || !entero(o.probabilidad, 1) || o.probabilidad > 10 || !entero(o.impacto, 1) || o.impacto > 10) return undefined;
+    if (!enLista(o.nivel, NIVELES_RIESGO) || !enLista(o.decision, DECISIONES_RIESGO) || (o.responsableId !== null && !texto(o.responsableId, 36, UUID))) return undefined;
+    if (!Array.isArray(o.controles) || o.controles.length > 50 || !o.controles.every((c) => texto(c, 20, CONTROL_RE))) return undefined;
+    codigos.add(o.codigo);
+  }
+  if (j.riesgosVigentes !== j.riesgos.length) return undefined;
+  for (const x of j.riesgosPorFila) {
+    const o = objeto(x);
+    if (!o || !claves(o, ['libreriaCodigo', 'idEstable', 'riesgoCodigo', 'via']) || !claveFila(o) || !texto(o.riesgoCodigo, 8, CODIGO_RIESGO_RE) || !codigos.has(o.riesgoCodigo) || !enLista(o.via, VIAS_RIESGO)) return undefined;
+  }
+  return { ...(j as unknown as JustificacionVersion), escala, referencias };
+};
+
 const CAMPOS_VERSION = ['id', 'numero', 'total', 'aplican', 'noAplican', 'sinControl', 'aprobadaPor', 'aprobadaEn'] as const;
 const versionValida = (v: Record<string, unknown>): boolean =>
   texto(v.id, 36, UUID) &&
@@ -534,17 +654,20 @@ export const validarVersionesDeclaracion = (cuerpo: unknown): VersionDeclaracion
 
 export const validarVersionDeclaracionConFilas = (cuerpo: unknown): VersionDeclaracionConFilas | null => {
   const v = objeto(cuerpo);
-  if (!v || !claves(v, [...CAMPOS_VERSION, 'alcance', 'filas']) || !versionValida(v)) return null;
+  if (!v || !claves(v, [...CAMPOS_VERSION, 'alcance', 'filas', 'justificacion']) || !versionValida(v)) return null;
   if (v.alcance !== null && !texto(v.alcance, 4000, undefined, 1)) return null;
   const filas = validarFilasDeclaracion(v.filas);
   if (!filas || filas.length !== v.total || filas.some((f) => f.aplicabilidad === 'por_decidir')) return null;
   if (filas.filter((f) => f.aplicabilidad === 'aplica').length !== v.aplican) return null;
-  return { ...(v as unknown as VersionDeclaracion), alcance: v.alcance as string | null, filas };
+  // Una versión aprobada antes de la Declaración justificada trae la justificación nula; si la trae, tiene que cuadrar con las filas.
+  const justificacion = validarJustificacionVersion(v.justificacion, v.aplican as number);
+  if (justificacion === undefined) return null;
+  return { ...(v as unknown as VersionDeclaracion), alcance: v.alcance as string | null, filas, justificacion };
 };
 
 export const validarDeclaracion = (cuerpo: unknown): Declaracion | null => {
   const o = objeto(cuerpo);
-  if (!o || !claves(o, ['norma', 'hoy', 'resumen', 'filas', 'alcance', 'ultimaVersion'])) return null;
+  if (!o || !claves(o, ['norma', 'hoy', 'resumen', 'filas', 'alcance', 'ultimaVersion', 'justificacion'])) return null;
   if (!texto(o.norma, 60, undefined, 1) || !texto(o.hoy, 10, FECHA)) return null;
   const filas = validarFilasDeclaracion(o.filas);
   const r = objeto(o.resumen);
@@ -559,7 +682,10 @@ export const validarDeclaracion = (cuerpo: unknown): Declaracion | null => {
     r.porDecidir !== cuenta('por_decidir')
   )
     return null;
-  if ((r.sinControl as number) > (r.aplican as number) || r.aprobable !== (filas.length > 0 && r.porDecidir === 0)) return null;
+  if ((r.sinControl as number) > (r.aplican as number)) return null;
+  // Se puede aprobar si hay filas, ninguna está por decidir y ningún control que aplica está sin motivo (ADR 037).
+  const justificacion = validarJustificacionBorrador(o.justificacion, filas);
+  if (!justificacion || r.aprobable !== (filas.length > 0 && r.porDecidir === 0 && justificacion.sinMotivo === 0)) return null;
   let alcance: Declaracion['alcance'] = null;
   if (o.alcance !== null) {
     const a = objeto(o.alcance);
@@ -571,7 +697,7 @@ export const validarDeclaracion = (cuerpo: unknown): Declaracion | null => {
     ultimaVersion = validarVersionDeclaracion(o.ultimaVersion);
     if (!ultimaVersion) return null;
   }
-  return { norma: o.norma, hoy: o.hoy, resumen: r as unknown as Declaracion['resumen'], filas, alcance, ultimaVersion };
+  return { norma: o.norma, hoy: o.hoy, resumen: r as unknown as Declaracion['resumen'], filas, alcance, ultimaVersion, justificacion };
 };
 
 const ESTADOS_CARGA = ['cargada', 'ya_cargada', 'rechazada'] as const;
