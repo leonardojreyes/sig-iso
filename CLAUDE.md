@@ -4,6 +4,8 @@ Plataforma multiempresa para el ciclo de certificación ISO 9001, 27001:2022 y 4
 
 **Al iniciar una sesión: lee `docs/fase0/estado.md`.** Responde siempre en español. Commits en inglés, Conventional Commits.
 
+**Hoja de ruta del producto:** `docs/producto/hoja-de-ruta.md` (etapas A–E). Al informar avance usa: etapa · módulo · paso X de Y del módulo.
+
 ## Mapa
 
 | Ruta | Contenido |
