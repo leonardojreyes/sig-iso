@@ -735,7 +735,8 @@ export interface paths {
         /**
          * Borrador de la Declaración de Aplicabilidad de ISO/IEC 27001
          * @description Una fila por control del Anexo A de las librerías adoptadas, DERIVADA del diagnóstico, de los controles de la empresa y de la
-         *     cobertura de las evidencias; no se guarda nada. Trae también la última versión aprobada, si hay. Orden: 401, 403.
+         *     cobertura de las evidencias; no se guarda nada. Trae también la última versión aprobada, si hay, y la justificación: por fila, los
+         *     motivos registrados y los riesgos que la tratan (derivado), y qué impide aprobar. Orden: 401, 403.
          */
         get: operations["obtenerDeclaracion"];
         put?: never;
@@ -760,7 +761,9 @@ export interface paths {
          * @description Congela, en una sola transacción, lo que la API lee en ese momento: las filas, el alcance de 27001 y los conteos. La versión es
          *     inmutable y su número es correlativo por empresa. Responde 409 si queda algún control por decidir (o no hay controles de la norma
          *     adoptados) y 409 si otra persona aprobó al mismo tiempo. Un control que aplica sin control de la empresa asignado SÍ se puede
-         *     aprobar: queda señalado en el documento. Orden: 401, 403, 409.
+         *     aprobar: queda señalado en el documento. También responde 409 si un control que aplica no tiene motivo de inclusión (ni riesgo
+         *     que lo trate ni motivo registrado). Congela además los motivos, los riesgos tal como estaban, las referencias al tratamiento y la
+         *     escala del nivel de riesgo. Orden: 401, 403, 409.
          */
         post: operations["aprobarDeclaracion"];
         delete?: never;
@@ -845,6 +848,282 @@ export interface paths {
         get: operations["exportarVersionDeclaracion"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Riesgos de la empresa
+         * @description Por omisión solo los vigentes. Cada uno trae cuántos controles vigentes de la empresa y cuántos tratamientos previstos tiene, y `sinTratamiento` si su decisión es «mitigar» y no tiene ninguno. Orden de evaluación: 401, 403, 400.
+         */
+        get: operations["listarRiesgos"];
+        put?: never;
+        /**
+         * Crea un riesgo de la empresa
+         * @description El código («R-001») es correlativo por empresa, lo asigna el sistema y no se reutiliza. El nivel inicial se calcula (probabilidad por impacto) y no se envía. La decisión «aceptar» exige responsable (400). Los textos no deben llevar datos personales ni texto de las normas. Orden de evaluación: 401, 403, 400, 409.
+         */
+        post: operations["crearRiesgo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Un riesgo con los controles que lo tratan
+         * @description Los controles de la empresa (los retirados se marcan, el vínculo se conserva) y los tratamientos previstos del Anexo A. Un riesgo de otra empresa responde 404, igual que uno inexistente. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["obtenerRiesgo"];
+        /**
+         * Cambia un riesgo vigente
+         * @description Concurrencia optimista: `versionEsperada` es la versión que la persona vio. Si otra persona lo cambió antes, o el riesgo está retirado, responde 409. Lo que no se envía se conserva; `null` quita la descripción o el responsable. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["cambiarRiesgo"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos/{id}/aviso-retiro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Qué controles quedarían sin motivo si se retira el riesgo
+         * @description Solo informa; no cambia nada. Lista los controles del Anexo A que aplican y que, al retirar el riesgo, quedarían sin riesgo vigente ni motivo registrado. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["avisarRetiroRiesgo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos/{id}/retiro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retira un riesgo
+         * @description Un riesgo no se borra: se retira y conserva su historia; deja de contarse como vigente y su código no se reutiliza. Orden de evaluación: 401, 403, 400, 404, 409 (versión distinta o ya retirado).
+         */
+        post: operations["retirarRiesgo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos/{id}/controles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vincula un riesgo con un control de la empresa
+         * @description 201 la primera vez y 200 si el vínculo ya existía (no es un error). Un riesgo o un control retirado, o el tope de 50 vínculos, responden 409. Un control de otra empresa responde 404. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["vincularRiesgoControl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos/{id}/controles/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita el vínculo de un riesgo con un control de la empresa
+         * @description Se puede quitar el vínculo con un control ya retirado. Un vínculo que no existe responde 404 y un riesgo retirado, 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["desvincularRiesgoControl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos/{id}/tratamientos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vincula un riesgo con un control del Anexo A («tratamiento previsto»)
+         * @description Para cuando la empresa aún no tiene el control propio. Cuenta como motivo «riesgo» pero se distingue en la Declaración. 201 la primera vez y 200 si ya existía. La entrada que no es un control del Anexo A de las librerías adoptadas responde 404. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["preverTratamientoRiesgo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos/{id}/tratamientos/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita un tratamiento previsto
+         * @description No exige que la entrada siga adoptada. Un tratamiento que no existe responde 404 y un riesgo retirado, 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["quitarTratamientoPrevisto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/controles/{id}/riesgos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Riesgos vigentes que trata un control de la empresa
+         * @description Un control de otra empresa o inexistente responde 404. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["listarRiesgosDeControl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/motivos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Motivos de inclusión registrados
+         * @description Solo los que se escriben (legal, contractual, negocio u otro, cada uno con su nota). El motivo «riesgo» no está aquí: se deriva de los riesgos. Orden de evaluación: 401, 403.
+         */
+        get: operations["listarMotivosDeclaracion"];
+        /**
+         * Registra o cambia un motivo de inclusión de un control del Anexo A
+         * @description Sin `versionEsperada` se crea; con ella se cambia. Si otra persona lo creó, cambió o quitó antes, responde 409. La nota es obligatoria y en palabras propias. Solo controles del Anexo A de las librerías adoptadas (si no, 404). Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["registrarMotivoDeclaracion"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/motivos/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita un motivo de inclusión
+         * @description Exige la versión que la persona vio. Un motivo que no existe responde 404 y una versión distinta, 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["quitarMotivoDeclaracion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/referencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Referencias al análisis y al plan de tratamiento de riesgos
+         * @description A lo sumo una de cada tipo. Solo se nombra el documento; el producto no lo guarda. Orden de evaluación: 401, 403.
+         */
+        get: operations["listarReferenciasDeclaracion"];
+        /**
+         * Registra o cambia la referencia al análisis o al plan de tratamiento
+         * @description Sin `versionEsperada` se crea; con ella se cambia. Si otra persona la creó, cambió o quitó antes, responde 409. Orden de evaluación: 401, 403, 400, 409.
+         */
+        put: operations["guardarReferenciaDeclaracion"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/declaracion/referencias/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita una referencia
+         * @description Exige la versión que la persona vio. Una referencia que no existe responde 404 y una versión distinta, 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["quitarReferenciaDeclaracion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1307,7 +1586,7 @@ export interface components {
             porDecidir: number;
             /** @description Aplican y ningún control de la empresa los cubre; no impide aprobar. */
             sinControl: number;
-            /** @description Hay filas y ninguna está por decidir. */
+            /** @description Hay filas */
             aprobable: boolean;
         };
         VersionDeclaracion: {
@@ -1338,6 +1617,7 @@ export interface components {
             /** @description El alcance de la norma tal como estaba al aprobar. */
             alcance: string | null;
             filas: components["schemas"]["FilaDeclaracion"][];
+            justificacion: components["schemas"]["JustificacionVersion"];
         };
         Declaracion: {
             norma: string;
@@ -1367,6 +1647,7 @@ export interface components {
                 /** Format: date-time */
                 aprobadaEn: string;
             } | null;
+            justificacion: components["schemas"]["JustificacionBorrador"];
         };
         /** @enum {string} */
         EstadoCobertura: "cubierta" | "evidencia_vencida" | "sin_evidencia" | "sin_control" | "no_aplica";
@@ -1414,6 +1695,274 @@ export interface components {
             total: components["schemas"]["ResumenCobertura"];
             normas: string[];
         };
+        /**
+         * @description Nivel inicial calculado de probabilidad por impacto con los cortes de `EscalaRiesgo`; la persona no lo escribe.
+         * @enum {string}
+         */
+        NivelRiesgo: "bajo" | "medio" | "alto" | "critico";
+        /**
+         * @description Equivale a modificar, retener, compartir o evitar el riesgo. «aceptar» exige responsable.
+         * @enum {string}
+         */
+        DecisionTratamiento: "mitigar" | "aceptar" | "transferir" | "evitar";
+        /** @enum {string} */
+        EstadoRiesgo: "vigente" | "retirado";
+        /**
+         * @description Los motivos que se registran. El motivo «riesgo» no se escribe; se deriva de los riesgos vigentes.
+         * @enum {string}
+         */
+        TipoMotivo: "legal" | "contractual" | "negocio" | "otro";
+        /**
+         * @description «analisis» es el documento de análisis de riesgos; «plan» es el plan de tratamiento.
+         * @enum {string}
+         */
+        TipoReferencia: "analisis" | "plan";
+        /**
+         * @description «control» si lo trata un control vigente de la empresa; «previsto» si solo es un tratamiento previsto sin control propio.
+         * @enum {string}
+         */
+        ViaRiesgo: "control" | "previsto";
+        Riesgo: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            titulo: string;
+            descripcion: string | null;
+            probabilidad: number;
+            impacto: number;
+            /** @description Probabilidad por impacto. */
+            puntaje: number;
+            nivel: components["schemas"]["NivelRiesgo"];
+            decision: components["schemas"]["DecisionTratamiento"];
+            /** Format: uuid */
+            responsableId: string | null;
+            estado: components["schemas"]["EstadoRiesgo"];
+            version: number;
+        };
+        RiesgoListado: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            titulo: string;
+            descripcion: string | null;
+            probabilidad: number;
+            impacto: number;
+            puntaje: number;
+            nivel: components["schemas"]["NivelRiesgo"];
+            decision: components["schemas"]["DecisionTratamiento"];
+            /** Format: uuid */
+            responsableId: string | null;
+            estado: components["schemas"]["EstadoRiesgo"];
+            version: number;
+            /** @description Controles VIGENTES de la empresa que lo tratan. */
+            controles: number;
+            /** @description Controles del Anexo A vinculados directo. */
+            tratamientosPrevistos: number;
+            /** @description Está vigente */
+            sinTratamiento: boolean;
+        };
+        ControlDeRiesgo: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            nombre: string;
+            estado: components["schemas"]["EstadoControl"];
+        };
+        TratamientoPrevisto: {
+            libreriaCodigo: string;
+            idEstable: string;
+            /** @description Nulo si la entrada ya no está entre las librerías adoptadas por la empresa. */
+            titulo: string | null;
+        };
+        RiesgoDetalle: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            titulo: string;
+            descripcion: string | null;
+            probabilidad: number;
+            impacto: number;
+            puntaje: number;
+            nivel: components["schemas"]["NivelRiesgo"];
+            decision: components["schemas"]["DecisionTratamiento"];
+            /** Format: uuid */
+            responsableId: string | null;
+            estado: components["schemas"]["EstadoRiesgo"];
+            version: number;
+            /** @description Controles de la empresa que lo tratan; los retirados se marcan y el vínculo se conserva. */
+            controles: components["schemas"]["ControlDeRiesgo"][];
+            tratamientosPrevistos: components["schemas"]["TratamientoPrevisto"][];
+        };
+        RiesgoEntrada: {
+            titulo: string;
+            descripcion?: string | null;
+            probabilidad: number;
+            impacto: number;
+            decision: components["schemas"]["DecisionTratamiento"];
+            /** Format: uuid */
+            responsableId?: string | null;
+        };
+        RiesgoCambios: {
+            versionEsperada: number;
+            titulo?: string;
+            descripcion?: string | null;
+            probabilidad?: number;
+            impacto?: number;
+            decision?: components["schemas"]["DecisionTratamiento"];
+            /** Format: uuid */
+            responsableId?: string | null;
+        };
+        RiesgoVersion: {
+            versionEsperada: number;
+        };
+        VinculoControlEntrada: {
+            /** Format: uuid */
+            controlId: string;
+        };
+        VinculoResultado: {
+            /** @description Verdadero si se creó (201); falso si ya existía (200). */
+            creado: boolean;
+        };
+        AvisoRetiroRiesgo: {
+            /** Format: uuid */
+            riesgoId: string;
+            codigo: string;
+            /** @description Controles del Anexo A que aplican y quedarían sin motivo al retirar el riesgo. Vacío si el retiro no deja nada sin motivo. */
+            controlesSinMotivo: {
+                libreriaCodigo: string;
+                idEstable: string;
+                titulo: string;
+            }[];
+        };
+        MotivoDeclaracion: {
+            libreriaCodigo: string;
+            idEstable: string;
+            tipo: components["schemas"]["TipoMotivo"];
+            /** @description En palabras de la empresa; no debe llevar datos personales ni texto de las normas. */
+            nota: string;
+            version: number;
+        };
+        MotivoEntrada: {
+            libreriaCodigo: string;
+            idEstable: string;
+            tipo: components["schemas"]["TipoMotivo"];
+            nota: string;
+            /** @description Ausente = crear; presente = la versión que la persona vio. */
+            versionEsperada?: number;
+        };
+        MotivoQuitar: {
+            libreriaCodigo: string;
+            idEstable: string;
+            tipo: components["schemas"]["TipoMotivo"];
+            versionEsperada: number;
+        };
+        ReferenciaDeclaracion: {
+            tipo: components["schemas"]["TipoReferencia"];
+            titulo: string;
+            versionDoc: string;
+            /** Format: date */
+            fecha: string;
+            /** @description Dónde o con qué código conserva la empresa el documento. */
+            ubicacion: string;
+            version: number;
+        };
+        ReferenciaEntrada: {
+            tipo: components["schemas"]["TipoReferencia"];
+            titulo: string;
+            versionDoc: string;
+            /** Format: date */
+            fecha: string;
+            ubicacion: string;
+            /** @description Ausente = crear; presente = la versión que la persona vio. */
+            versionEsperada?: number;
+        };
+        ReferenciaQuitar: {
+            tipo: components["schemas"]["TipoReferencia"];
+            versionEsperada: number;
+        };
+        /** @description La escala de probabilidad e impacto (1 a escalaMax) y el primer puntaje de cada nivel. Es el método por omisión de la herramienta, no el criterio de aceptación de la empresa. */
+        EscalaRiesgo: {
+            escalaMax: number;
+            corteMedio: number;
+            corteAlto: number;
+            corteCritico: number;
+        };
+        MotivoDeFila: {
+            tipo: components["schemas"]["TipoMotivo"];
+            nota: string;
+        };
+        RiesgoDeFila: {
+            codigo: string;
+            titulo: string;
+            nivel: components["schemas"]["NivelRiesgo"];
+            via: components["schemas"]["ViaRiesgo"];
+        };
+        FilaJustificacion: {
+            libreriaCodigo: string;
+            idEstable: string;
+            /** @description Aplica y no tiene ningún riesgo ni motivo registrado; impide aprobar. */
+            sinMotivo: boolean;
+            motivos: components["schemas"]["MotivoDeFila"][];
+            riesgos: components["schemas"]["RiesgoDeFila"][];
+        };
+        /** @enum {string} */
+        BloqueoDeclaracion: "sin_filas" | "por_decidir" | "sin_motivo";
+        /** @description Lo que justifica el borrador, derivado en vivo de los riesgos, los motivos y las referencias. */
+        JustificacionBorrador: {
+            /** @description Controles que aplican y tienen un riesgo derivado o un motivo registrado. */
+            conMotivo: number;
+            /** @description Controles que aplican y no tienen motivo; impiden aprobar. */
+            sinMotivo: number;
+            riesgosVigentes: number;
+            /** @description Advertencia */
+            riesgosSinTratamiento: number;
+            /** @description Qué impide aprobar; vacío si se puede aprobar. */
+            bloqueos: components["schemas"]["BloqueoDeclaracion"][];
+            filas: components["schemas"]["FilaJustificacion"][];
+            referencias: components["schemas"]["ReferenciaDeclaracion"][];
+            escala: components["schemas"]["EscalaRiesgo"];
+            /** @description Hay riesgos «mitigar» y no hay referencia al plan de tratamiento (advierte */
+            faltaPlanTratamiento: boolean;
+        };
+        RiesgoCongelado: {
+            codigo: string;
+            titulo: string;
+            probabilidad: number;
+            impacto: number;
+            nivel: components["schemas"]["NivelRiesgo"];
+            decision: components["schemas"]["DecisionTratamiento"];
+            /** Format: uuid */
+            responsableId: string | null;
+            /** @description Códigos de los controles vigentes de la empresa que lo trataban. */
+            controles: string[];
+        };
+        /** @description Lo que justificaba la versión al aprobarla, tal como se congeló. Cambiar después un riesgo, un motivo o una referencia no la altera. Nula en las versiones aprobadas antes de la Declaración justificada (sin motivos ni riesgos). */
+        JustificacionVersion: {
+            escala: components["schemas"]["EscalaRiesgo"];
+            conMotivo: number;
+            riesgosVigentes: number;
+            motivos: {
+                libreriaCodigo: string;
+                idEstable: string;
+                tipo: components["schemas"]["TipoMotivo"];
+                nota: string;
+            }[];
+            riesgos: components["schemas"]["RiesgoCongelado"][];
+            riesgosPorFila: {
+                libreriaCodigo: string;
+                idEstable: string;
+                riesgoCodigo: string;
+                via: components["schemas"]["ViaRiesgo"];
+            }[];
+            referencias: {
+                tipo: components["schemas"]["TipoReferencia"];
+                titulo: string;
+                versionDoc: string;
+                /** Format: date */
+                fecha: string;
+                ubicacion: string;
+            }[];
+        } | null;
     };
     responses: {
         /** @description Falta el token, está vencido, alterado o no trae empresa. */
@@ -2903,6 +3452,554 @@ export interface operations {
             401: components["responses"]["NoAutenticado"];
             403: components["responses"]["SinPermiso"];
             404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarRiesgos: {
+        parameters: {
+            query?: {
+                incluirRetirados?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los riesgos de la empresa. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiesgoListado"][];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    crearRiesgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiesgoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El riesgo creado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Riesgo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerRiesgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El riesgo con sus vínculos. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiesgoDetalle"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarRiesgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiesgoCambios"];
+            };
+        };
+        responses: {
+            /** @description El riesgo con los cambios, o tal como estaba si no hubo cambios. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Riesgo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    avisarRetiroRiesgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El aviso previo al retiro. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisoRetiroRiesgo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    retirarRiesgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiesgoVersion"];
+            };
+        };
+        responses: {
+            /** @description El riesgo retirado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Riesgo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    vincularRiesgoControl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculoControlEntrada"];
+            };
+        };
+        responses: {
+            /** @description El vínculo ya existía; no hubo cambios. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinculoResultado"];
+                };
+            };
+            /** @description El vínculo creado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinculoResultado"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    desvincularRiesgoControl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculoControlEntrada"];
+            };
+        };
+        responses: {
+            /** @description El vínculo se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    preverTratamientoRiesgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapeoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El tratamiento ya estaba previsto; no hubo cambios. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapeoResultado"];
+                };
+            };
+            /** @description El tratamiento previsto. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapeoResultado"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    quitarTratamientoPrevisto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapeoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El tratamiento previsto se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarRiesgosDeControl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los riesgos vigentes que trata el control. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Riesgo"][];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarMotivosDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los motivos registrados. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MotivoDeclaracion"][];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    registrarMotivoDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MotivoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El motivo creado o cambiado, o tal como estaba si no hubo cambios. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MotivoDeclaracion"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    quitarMotivoDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MotivoQuitar"];
+            };
+        };
+        responses: {
+            /** @description El motivo se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarReferenciasDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las referencias. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenciaDeclaracion"][];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    guardarReferenciaDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenciaEntrada"];
+            };
+        };
+        responses: {
+            /** @description La referencia creada o cambiada, o tal como estaba si no hubo cambios. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenciaDeclaracion"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    quitarReferenciaDeclaracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenciaQuitar"];
+            };
+        };
+        responses: {
+            /** @description La referencia se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

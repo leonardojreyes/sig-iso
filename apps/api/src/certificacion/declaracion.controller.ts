@@ -32,7 +32,26 @@ export class DeclaracionController {
   @RespuestasProblema(401, 403, 429, 500)
   async borrador(@Identidad() identidad: IdentidadVerificada): Promise<DeclaracionResponse> {
     const d = await this.obtener.ejecutar({ empresaId: identidad.empresaId, usuarioId: identidad.usuarioId });
-    return { norma: d.norma, hoy: d.hoy, resumen: { ...d.resumen }, filas: d.filas.map((f) => ({ ...f, controles: [...f.controles] })), alcance: d.alcance ? { ...d.alcance } : null, ultimaVersion: d.ultimaVersion ? { ...d.ultimaVersion } : null };
+    const j = d.justificacion;
+    return {
+      norma: d.norma,
+      hoy: d.hoy,
+      resumen: { total: d.resumen.total, aplican: d.resumen.aplican, noAplican: d.resumen.noAplican, porDecidir: d.resumen.porDecidir, sinControl: d.resumen.sinControl, aprobable: d.resumen.aprobable },
+      filas: d.filas.map((f) => ({ ...f, controles: [...f.controles] })),
+      alcance: d.alcance ? { ...d.alcance } : null,
+      ultimaVersion: d.ultimaVersion ? { ...d.ultimaVersion } : null,
+      justificacion: {
+        conMotivo: j.resumen.conMotivo,
+        sinMotivo: j.resumen.sinMotivo,
+        riesgosVigentes: j.resumen.riesgosVigentes,
+        riesgosSinTratamiento: j.resumen.riesgosSinTratamiento,
+        bloqueos: [...j.resumen.bloqueos],
+        filas: j.filas.map((f) => ({ libreriaCodigo: f.libreriaCodigo, idEstable: f.idEstable, sinMotivo: f.sinMotivo, motivos: f.motivos.map((m) => ({ ...m })), riesgos: f.riesgos.map((r) => ({ ...r })) })),
+        referencias: j.referencias.map((r) => ({ ...r })),
+        escala: { ...j.escala },
+        faltaPlanTratamiento: j.faltaPlanTratamiento,
+      },
+    };
   }
 
   @Post('aprobacion')
@@ -68,8 +87,19 @@ export class DeclaracionController {
   @RespuestasProblema(400, 401, 403, 404, 429, 500)
   async unaVersion(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada): Promise<VersionDeclaracionConFilasResponse> {
     const v = await this.version.ejecutar({ empresaId: identidad.empresaId, usuarioId: identidad.usuarioId, id });
-    // La justificación (motivos, riesgos, referencias) se expone con el contrato en la tarea 13 del spec «declaración justificada».
-    return { id: v.id, numero: v.numero, total: v.total, aplican: v.aplican, noAplican: v.noAplican, sinControl: v.sinControl, aprobadaPor: v.aprobadaPor, aprobadaEn: v.aprobadaEn, alcance: v.alcance, filas: v.filas.map((f) => ({ ...f, controles: [...f.controles] })) };
+    return { id: v.id, numero: v.numero, total: v.total, aplican: v.aplican, noAplican: v.noAplican, sinControl: v.sinControl, aprobadaPor: v.aprobadaPor, aprobadaEn: v.aprobadaEn, alcance: v.alcance,
+      filas: v.filas.map((f) => ({ ...f, controles: [...f.controles] })),
+      // Una versión aprobada antes de la Declaración justificada no tiene justificación (nula).
+      justificacion: v.justificacion && {
+        escala: { ...v.justificacion.escala },
+        conMotivo: v.justificacion.conMotivo,
+        riesgosVigentes: v.justificacion.riesgosVigentes,
+        motivos: v.justificacion.motivos.map((m) => ({ ...m })),
+        riesgos: v.justificacion.riesgos.map((r) => ({ ...r, controles: [...r.controles] })),
+        riesgosPorFila: v.justificacion.riesgosPorFila.map((x) => ({ ...x })),
+        referencias: v.justificacion.referencias.map((r) => ({ ...r })),
+      },
+    };
   }
 
   @Get('versiones/:id/documento')

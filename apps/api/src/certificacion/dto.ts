@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { CorrespondenciaNormaResponse } from '../normas/dto.js';
+import { JUSTIFICACION_BORRADOR, JUSTIFICACION_VERSION } from './esquemas-riesgos.js';
 
 // Formas del contrato (packages/contracts/openapi.yaml) para alcance y diagnóstico. Cerradas.
 
@@ -272,7 +273,7 @@ export class ResumenDeclaracionResponse {
   @ApiProperty({ type: 'integer', minimum: 0 }) noAplican!: number;
   @ApiProperty({ type: 'integer', minimum: 0 }) porDecidir!: number;
   @ApiProperty({ type: 'integer', minimum: 0, description: 'Aplican y ningún control de la empresa los cubre; no impide aprobar.' }) sinControl!: number;
-  @ApiProperty({ type: 'boolean', description: 'Hay filas y ninguna está por decidir.' }) aprobable!: boolean;
+  @ApiProperty({ type: 'boolean', description: 'Hay filas, ninguna está por decidir y ningún control que aplica está sin motivo.' }) aprobable!: boolean;
 }
 
 export class VersionDeclaracionResponse {
@@ -289,6 +290,8 @@ export class VersionDeclaracionResponse {
 export class VersionDeclaracionConFilasResponse extends VersionDeclaracionResponse {
   @ApiProperty({ type: String, maxLength: 4000, nullable: true, description: 'El alcance de la norma tal como estaba al aprobar.' }) alcance!: string | null;
   @ApiProperty({ type: [FilaDeclaracionResponse], maxItems: 500 }) filas!: FilaDeclaracionResponse[];
+  @ApiProperty({ ...JUSTIFICACION_VERSION, selfRequired: true, description: 'Lo que justificaba la versión al aprobarla; nula en las aprobadas antes de la Declaración justificada.' })
+  justificacion!: Record<string, unknown> | null;
 }
 
 const VERSION_EN_LINEA = {
@@ -327,4 +330,6 @@ export class DeclaracionResponse {
     description: 'La última versión aprobada; nula si todavía no hay ninguna.',
   })
   ultimaVersion!: VersionDeclaracionResponse | null;
+  @ApiProperty({ ...JUSTIFICACION_BORRADOR, selfRequired: true, description: 'Lo que justifica el borrador, derivado en vivo de los riesgos, los motivos y las referencias.' })
+  justificacion!: Record<string, unknown>;
 }

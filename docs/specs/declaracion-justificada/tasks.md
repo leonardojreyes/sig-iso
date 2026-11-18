@@ -36,8 +36,8 @@
 
 | ID  | Tarea                                                                                                                                                                                                                                     | Depende |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 12  | Contrato OpenAPI: riesgos, vínculos, motivos, referencias y la Declaración ampliada; **guardas de privacidad** del contrato con las excepciones exactas (descripción y notas son textos de la empresa); tipos generados y `generar:check` | 7 a 10  |
-| 13  | Controladores y pruebas de la API: 401 → 403 → 400 → 404 → 409, la empresa del token manda, esquemas del contrato, 404 indistinguible entre empresas, bitácora, 500 si falla el registro; mapeo de errores; conformidad con el contrato   | 11, 12  |
+| 12  | ✅ Contrato OpenAPI: riesgos, vínculos, motivos, referencias y la Declaración ampliada; **guardas de privacidad** del contrato con las excepciones exactas (descripción y notas son textos de la empresa); tipos generados y `generar:check` | 7 a 10  |
+| 13  | ✅ Controladores y pruebas de la API: 401 → 403 → 400 → 404 → 409, la empresa del token manda, esquemas del contrato, 404 indistinguible entre empresas, bitácora, 500 si falla el registro; mapeo de errores; conformidad con el contrato   | 11, 12  |
 
 ## Fase 4 — El documento Word
 

@@ -3,6 +3,7 @@ import {
   AgregarMapeoUseCase, AprobarAlcanceUseCase, AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, CambiarControlUseCase, CrearControlUseCase, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, EvaluarEntradaUseCase, GuardarAlcanceUseCase,
   ListarAlcancesUseCase, ListarControlesUseCase, ListarCoberturaUseCase, ListarDiagnosticoUseCase, ListarEvidenciasUseCase, QuitarMapeoUseCase, ReemplazarEvidenciaUseCase, RetirarControlUseCase,
   SubirEvidenciaUseCase, type AlmacenArchivosPort,
+  AvisoRetiroRiesgoUseCase, CambiarRiesgoUseCase, CrearRiesgoUseCase, DesvincularRiesgoControlUseCase, GuardarReferenciaUseCase, ListarMotivosUseCase, ListarReferenciasUseCase, ListarRiesgosUseCase, ObtenerRiesgoUseCase, PreverTratamientoUseCase, QuitarMotivoUseCase, QuitarReferenciaUseCase, QuitarTratamientoPrevistoUseCase, RegistrarMotivoUseCase, RetirarRiesgoUseCase, RiesgosDeUnControlUseCase, VincularRiesgoControlUseCase,
 } from '@sig/certificacion';
 import { crearAutorizacionFalsa, crearCatalogoFalso, crearUnidadFalsa, type EstadoFalso } from '@sig/certificacion/prueba';
 import type { OpcionesCertificacionApi } from '../certificacion-api.module.js';
@@ -37,5 +38,22 @@ export const opcionesDePrueba = (p: { estado: EstadoFalso; almacen: AlmacenArchi
     versionDeclaracion: new ObtenerVersionDeclaracionUseCase(unidad, autorizacion),
     // El generador es el real (en memoria): así las pruebas de la API comprueban un Word de verdad.
     exportarDeclaracion: new ExportarDeclaracionUseCase(unidad, autorizacion, catalogo, new GeneradorDocumentoDocx(), reloj),
+    listarRiesgos: new ListarRiesgosUseCase(unidad, autorizacion),
+    crearRiesgo: new CrearRiesgoUseCase(unidad, autorizacion, reloj, nuevoId),
+    obtenerRiesgo: new ObtenerRiesgoUseCase(unidad, autorizacion, catalogo),
+    cambiarRiesgo: new CambiarRiesgoUseCase(unidad, autorizacion, reloj),
+    avisarRetiroRiesgo: new AvisoRetiroRiesgoUseCase(unidad, autorizacion, catalogo),
+    retirarRiesgo: new RetirarRiesgoUseCase(unidad, autorizacion, reloj),
+    vincularRiesgoControl: new VincularRiesgoControlUseCase(unidad, autorizacion, reloj),
+    desvincularRiesgoControl: new DesvincularRiesgoControlUseCase(unidad, autorizacion),
+    preverTratamiento: new PreverTratamientoUseCase(unidad, autorizacion, catalogo, reloj),
+    quitarTratamientoPrevisto: new QuitarTratamientoPrevistoUseCase(unidad, autorizacion),
+    riesgosDeControl: new RiesgosDeUnControlUseCase(unidad, autorizacion),
+    listarMotivos: new ListarMotivosUseCase(unidad, autorizacion),
+    registrarMotivo: new RegistrarMotivoUseCase(unidad, autorizacion, catalogo, reloj),
+    quitarMotivo: new QuitarMotivoUseCase(unidad, autorizacion),
+    listarReferencias: new ListarReferenciasUseCase(unidad, autorizacion),
+    guardarReferencia: new GuardarReferenciaUseCase(unidad, autorizacion, reloj),
+    quitarReferencia: new QuitarReferenciaUseCase(unidad, autorizacion),
   };
 };
