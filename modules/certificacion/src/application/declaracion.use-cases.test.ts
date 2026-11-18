@@ -433,3 +433,75 @@ describe('aprobar con motivos', () => {
     await expect(m.version.ejecutar({ empresaId: B, usuarioId: ADMIN_B, id: v.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
   });
 });
+
+describe('exportar con justificación (ADR 037)', () => {
+  it('el borrador lleva lo derivado hoy: motivos, riesgos vigentes, referencias y la escala', async () => {
+    const m = montar();
+    sinMotivos(m);
+    sembrarRiesgo(m, { responsableId: ADMIN });
+    preverEn(m, POL);
+    motivar(m, POL, 'legal', 'Ley de datos');
+    referenciar(m, 'plan');
+    await m.exportar.ejecutar(yo);
+    const j = m.generador.llamadas[0]?.justificacion;
+    expect(j).toMatchObject({
+      escala: { escalaMax: 5, corteMedio: 5, corteAlto: 10, corteCritico: 16 },
+      conMotivo: 1,
+      sinMotivo: 0,
+      motivos: [{ idEstable: POL.idEstable, tipo: 'legal', nota: 'Ley de datos' }],
+      riesgos: [{ codigo: 'R-001', nivel: 'alto', decision: 'mitigar', responsableId: ADMIN }],
+      riesgosPorFila: [{ idEstable: POL.idEstable, riesgoCodigo: 'R-001', via: 'previsto' }],
+      referencias: [{ tipo: 'plan' }],
+    });
+  });
+
+  it('el borrador con un control sin motivo lo cuenta (el documento lo señalará)', async () => {
+    const m = montar();
+    sinMotivos(m);
+    await m.exportar.ejecutar(yo);
+    expect(m.generador.llamadas[0]?.justificacion).toMatchObject({ conMotivo: 0, sinMotivo: 1, riesgos: [], motivos: [] });
+  });
+
+  it('una versión aprobada sale de su copia congelada, no de lo que haya hoy', async () => {
+    const m = montar();
+    sinMotivos(m);
+    const r = sembrarRiesgo(m);
+    preverEn(m, POL);
+    motivar(m, POL, 'legal', 'NOTA-ORIGINAL');
+    referenciar(m, 'plan');
+    const v = await m.aprobar.ejecutar(yo);
+    // Después de aprobar cambia todo.
+    m.estado.riesgos.set(r.id, r.conCambios({ titulo: 'OTRO-TITULO' }).retirar());
+    motivar(m, POL, 'legal', 'NOTA-CAMBIADA');
+    m.estado.referencias.clear();
+    m.estado.vinculosEntrada.clear();
+    await m.exportar.ejecutar({ ...yo, versionId: v.id });
+    const j = m.generador.llamadas[0]?.justificacion;
+    expect(j).toMatchObject({ conMotivo: 1, sinMotivo: 0, escala: { escalaMax: 5 }, riesgos: [{ codigo: 'R-001', titulo: expect.stringContaining('TITULO-RIESGO') }], referencias: [{ tipo: 'plan' }] });
+    const texto = JSON.stringify(j);
+    expect(texto).toContain('NOTA-ORIGINAL');
+    expect(texto).not.toMatch(/NOTA-CAMBIADA|OTRO-TITULO/);
+  });
+
+  it('una versión aprobada antes de la Declaración justificada sale sin justificación', async () => {
+    const m = montar();
+    completa(m);
+    const v = await m.aprobar.ejecutar(yo);
+    const guardada = m.estado.declaraciones.get(`${A}|${v.id}`);
+    if (!guardada) throw new Error('la versión debía existir');
+    m.estado.declaraciones.set(`${A}|${v.id}`, { empresaId: A, version: { ...guardada.version, justificacion: null }, filas: guardada.filas, copia: null });
+    await m.exportar.ejecutar({ ...yo, versionId: v.id });
+    expect(m.generador.llamadas[0]?.justificacion).toBeNull();
+  });
+
+  it('el hecho de exportación sigue llevando solo la huella, nunca los textos de la justificación', async () => {
+    const m = montar();
+    sinMotivos(m);
+    sembrarRiesgo(m);
+    preverEn(m, POL);
+    motivar(m, POL, 'otro', 'NOTA-PRIVADA');
+    referenciar(m, 'analisis');
+    await m.exportar.ejecutar(yo);
+    expect(JSON.stringify(m.estado.eventos)).not.toMatch(/NOTA-PRIVADA|TITULO-RIESGO|TITULO-REF|UBICACION-REF/);
+  });
+});

@@ -319,7 +319,10 @@ export class ExportarDeclaracionUseCase {
     const norma = identificadorDeNorma(NORMA_DECLARACION);
     if (versionId === null) {
       const b = await derivarBorrador(this.unidad, this.catalogo, this.reloj, empresaId);
-      documento = { norma: NORMA_DECLARACION, preliminar: true, version: null, aprobadaEl: null, generadaEl: b.hoy, alcance: b.alcance?.texto ?? null, resumen: resumenAnterior(b.declaracion.resumen), filas: b.declaracion.filas.map(filaAnterior) };
+      documento = { norma: NORMA_DECLARACION, preliminar: true, version: null, aprobadaEl: null, generadaEl: b.hoy, alcance: b.alcance?.texto ?? null, resumen: resumenAnterior(b.declaracion.resumen), filas: b.declaracion.filas.map(filaAnterior),
+        // El borrador lleva lo derivado hoy: motivos, riesgos vigentes, referencias y la escala vigente.
+        justificacion: { ...armarCopia(b.declaracion, b.datos), escala: escalaVigente(), conMotivo: b.declaracion.resumen.conMotivo, sinMotivo: b.declaracion.resumen.sinMotivo },
+      };
       objeto = 'declaracion:borrador';
       nombre = `declaracion-${norma}-borrador.docx`;
     } else {
@@ -335,6 +338,8 @@ export class ExportarDeclaracionUseCase {
         alcance: version.alcanceTexto,
         resumen: { total: version.total, aplican: version.aplican, noAplican: version.noAplican, porDecidir: 0, sinControl: version.sinControl },
         filas: x.filas,
+        // Siempre desde la copia congelada de la versión. Sin copia (aprobada antes de la Declaración justificada) no hay motivos ni riesgos.
+        justificacion: x.copia && version.justificacion ? { ...x.copia, escala: version.justificacion.escala, conMotivo: version.justificacion.conMotivo, sinMotivo: 0 } : null,
       };
       objeto = `declaracion:v${version.numero}`;
       nombre = `declaracion-${norma}-v${version.numero}.docx`;

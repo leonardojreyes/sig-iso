@@ -43,7 +43,7 @@
 
 | ID  | Tarea                                                                                                                                                                                                                                                                                                                                                           | Depende |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 14  | Word: columnas de motivo (con su nota) y de riesgos, sección «Tratamiento de riesgos» con la escala impresa y las referencias, **avisos fijos también en versiones aprobadas** (registro simplificado, sin riesgo residual ni su aceptación, sin controles adicionales ni activos, falta del plan), versión antigua, texto plano; pruebas con el generador real | 10      |
+| 14  | ✅ Word: columnas de motivo (con su nota) y de riesgos, sección «Tratamiento de riesgos» con la escala impresa y las referencias, **avisos fijos también en versiones aprobadas** (registro simplificado, sin riesgo residual ni su aceptación, sin controles adicionales ni activos, falta del plan), versión antigua, texto plano; pruebas con el generador real | 10      |
 
 ## Fase 5 — Interfaz web
 
