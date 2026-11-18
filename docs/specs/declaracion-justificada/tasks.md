@@ -50,7 +50,7 @@
 | ID  | Tarea                                                                                                                                                                                                                                                    | Depende |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | 15  | ✅ Pantalla **Riesgos**: lista con nivel en palabras, crear, cambiar y retirar con aviso previo, detalle con los controles que lo tratan y los vínculos directos; entrada en la navegación; textos es-EC; formularios por la guardia común; pruebas con axe | 13      |
-| 16  | **Declaración**: motivos por control (tipo y nota), referencias al tratamiento, resumen con y sin motivo, riesgos sin tratamiento y avisos de bloqueo; textos es-EC; pruebas con axe ‖                                                                   | 13      |
+| 16  | ✅ **Declaración**: motivos por control (tipo y nota), referencias al tratamiento, resumen con y sin motivo, riesgos sin tratamiento y avisos de bloqueo; textos es-EC; pruebas con axe ‖                                                                   | 13      |
 
 ## Fase 6 — Verificación y cierre
 

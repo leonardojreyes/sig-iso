@@ -415,3 +415,12 @@ export interface AvisoRetiroRiesgo {
   readonly codigo: string;
   readonly controlesSinMotivo: readonly { readonly libreriaCodigo: string; readonly idEstable: string; readonly titulo: string }[];
 }
+
+/** Un motivo registrado de incluir un control del Anexo A, con la versión que se vio (para cambiarlo o quitarlo). */
+export interface MotivoDeclaracion {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  readonly tipo: TipoMotivo;
+  readonly nota: string;
+  readonly version: number;
+}

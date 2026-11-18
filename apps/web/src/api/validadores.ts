@@ -34,6 +34,7 @@ import type {
   JustificacionVersion,
   ReferenciaDeclaracion,
   AvisoRetiroRiesgo,
+  MotivoDeclaracion,
   Riesgo,
   RiesgoDetalle,
   RiesgoListado,
@@ -863,3 +864,18 @@ export const validarAvisoRetiroRiesgo = (cuerpo: unknown): AvisoRetiroRiesgo | n
 };
 
 export type { Riesgo };
+
+/** Los motivos registrados (`GET /declaracion/motivos`): forma exacta, nota obligatoria y una sola fila por control y tipo. */
+export const validarMotivosDeclaracion = (cuerpo: unknown): MotivoDeclaracion[] | null => {
+  if (!Array.isArray(cuerpo) || cuerpo.length > 500) return null;
+  const vistos = new Set<string>();
+  for (const item of cuerpo) {
+    const m = objeto(item);
+    if (!m || !claves(m, ['libreriaCodigo', 'idEstable', 'tipo', 'nota', 'version']) || !claveFila(m)) return null;
+    if (!enLista(m.tipo, TIPOS_MOTIVO) || !texto(m.nota, 500, undefined, 1) || !entero(m.version, 1)) return null;
+    const k = `${claveFila(m)}|${m.tipo}`;
+    if (vistos.has(k)) return null;
+    vistos.add(k);
+  }
+  return cuerpo as MotivoDeclaracion[];
+};

@@ -2,6 +2,7 @@
 // un parámetro. Si algo falla no se muestra nada a medias.
 import { consultarApi } from '../api/cliente';
 import type {
+  MotivoDeclaracion,
   AvisoRetiroRiesgo,
   RiesgoDetalle,
   RiesgoListado,
@@ -15,6 +16,7 @@ import type {
   VersionDeclaracionConFilas,
 } from '../api/tipos';
 import {
+  validarMotivosDeclaracion,
   validarAvisoRetiroRiesgo,
   validarRiesgoDetalle,
   validarRiesgos,
@@ -211,5 +213,16 @@ export const cargarAvisoRetiroRiesgo = async (p: Base & { id: string }): Promise
   const r = await consultarApi({ acceso: p.acceso, apiUrl: p.apiUrl, fetchFn: p.fetchFn, ruta: `/riesgos/${p.id.toLowerCase()}/aviso-retiro` });
   if (!r.ok) return fallo(r.motivo);
   const datos = validarAvisoRetiroRiesgo(r.json);
+  return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
+};
+
+/** Los motivos registrados, con la versión de cada uno (para cambiarlos o quitarlos). */
+export const cargarMotivosDeclaracion = async (p: Base): Promise<ResultadoCarga<MotivoDeclaracion[]>> => {
+  const r = await consultarApi({ ...p, ruta: '/declaracion/motivos' });
+  if (!r.ok) {
+    const f = fallo(r.motivo);
+    return f.tipo === 'no_encontrado' ? { tipo: 'no_disponible' } : f;
+  }
+  const datos = validarMotivosDeclaracion(r.json);
   return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
 };

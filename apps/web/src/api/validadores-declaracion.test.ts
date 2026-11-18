@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validarDeclaracion, validarVersionDeclaracion, validarVersionDeclaracionConFilas, validarVersionesDeclaracion } from './validadores';
+import { validarDeclaracion, validarMotivosDeclaracion, validarVersionDeclaracion, validarVersionDeclaracionConFilas, validarVersionesDeclaracion } from './validadores';
 
 const V1 = 'dddddddd-1111-4111-8111-111111111111';
 const V2 = 'dddddddd-2222-4222-8222-222222222222';
@@ -181,4 +181,23 @@ describe('validarVersionDeclaracionConFilas: justificación congelada', () => {
     ['una referencia con la clave version (solo la tiene el borrador)', conFilas({ justificacion: congelada({ referencias: [ref()] }) })],
     ['una escala con cortes desordenados', conFilas({ justificacion: congelada({ escala: { ...ESCALA, corteMedio: 12 } }) })],
   ])('rechaza %s', (_n, v) => expect(validarVersionDeclaracionConFilas(v)).toBeNull());
+});
+
+describe('validarMotivosDeclaracion', () => {
+  const m = (o: Record<string, unknown> = {}) => ({ libreriaCodigo: 'iso-27001-anexo-a', idEstable: 'a27-5-1', tipo: 'legal', nota: 'Ley de protección de datos', version: 2, ...o });
+  it('acepta una lista válida, vacía o con varios tipos de un mismo control', () => {
+    expect(validarMotivosDeclaracion([])).toEqual([]);
+    expect(validarMotivosDeclaracion([m(), m({ tipo: 'otro' }), m({ idEstable: 'a27-5-2' })])).toHaveLength(3);
+  });
+  it.each([
+    ['null', null],
+    ['más de 500', Array.from({ length: 501 }, (_, i) => m({ idEstable: `a${i}` }))],
+    ['una clave de más', [{ ...m(), extra: 1 }]],
+    ['un tipo «riesgo» (se deriva, no se registra)', [m({ tipo: 'riesgo' })]],
+    ['una nota vacía', [m({ nota: '' })]],
+    ['una nota de más de 500', [m({ nota: 'x'.repeat(501) })]],
+    ['una versión cero', [m({ version: 0 })]],
+    ['un identificador mal formado', [m({ idEstable: 'MAL ID' })]],
+    ['el mismo tipo dos veces para un control', [m(), m({ nota: 'otra' })]],
+  ])('rechaza %s', (_n, cuerpo) => expect(validarMotivosDeclaracion(cuerpo)).toBeNull());
 });

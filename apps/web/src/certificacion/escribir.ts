@@ -33,6 +33,10 @@ export type AvisoEscritura =
   | 'persona_dada_de_baja'
   | 'personas_conflicto'
   | 'sin_cambios'
+  | 'motivo_guardado'
+  | 'motivo_quitado'
+  | 'referencia_guardada'
+  | 'referencia_quitada'
   | 'riesgo_creado'
   | 'riesgo_retirado'
   | 'vinculado'
@@ -65,6 +69,10 @@ const AVISOS: readonly string[] = [
   'persona_dada_de_baja',
   'personas_conflicto',
   'sin_cambios',
+  'motivo_guardado',
+  'motivo_quitado',
+  'referencia_guardada',
+  'referencia_quitada',
   'riesgo_creado',
   'riesgo_retirado',
   'vinculado',
@@ -826,4 +834,78 @@ export const quitarTratamientoRiesgo = (peticion: Request, entrada: Entrada): Pr
     },
     exito: 'tratamiento_quitado',
     cuerpo: entradaDeMapeo,
+  });
+
+// ---- Motivos de inclusión y referencias al tratamiento de la Declaración (ADR 037)
+
+const TIPOS_MOTIVO = ['legal', 'contractual', 'negocio', 'otro'];
+const TIPOS_REFERENCIA = ['analisis', 'plan'];
+/** La versión que se vio, opcional: ausente = crear; presente (>= 1) = cambiar. `undefined` si no es un entero válido. */
+const versionOpcional = (f: FormData): number | null | undefined => {
+  const v = campo(f, 'version');
+  if (v === null || v === '') return null;
+  return /^\d{1,9}$/.test(v) && Number(v) >= 1 ? Number(v) : undefined;
+};
+
+export const guardarMotivoDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'declaracion',
+    metodoApi: 'PUT',
+    rutaApi: '/declaracion/motivos',
+    exito: 'motivo_guardado',
+    cuerpo: (f) => {
+      const control = entradaDeMapeo(f);
+      const tipo = campo(f, 'tipo');
+      const nota = campo(f, 'nota')?.trim();
+      const version = versionOpcional(f);
+      if (!control || !tipo || !TIPOS_MOTIVO.includes(tipo) || !nota || nota.length > 500 || version === undefined) return null;
+      return { ...control, tipo, nota, ...(version === null ? {} : { versionEsperada: version }) };
+    },
+  });
+
+export const quitarMotivoDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'declaracion',
+    metodoApi: 'POST',
+    rutaApi: '/declaracion/motivos/eliminacion',
+    exito: 'motivo_quitado',
+    cuerpo: (f) => {
+      const control = entradaDeMapeo(f);
+      const tipo = campo(f, 'tipo');
+      const version = versionOpcional(f);
+      if (!control || !tipo || !TIPOS_MOTIVO.includes(tipo) || typeof version !== 'number') return null;
+      return { ...control, tipo, versionEsperada: version };
+    },
+  });
+
+export const guardarReferenciaDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'declaracion',
+    metodoApi: 'PUT',
+    rutaApi: '/declaracion/referencias',
+    exito: 'referencia_guardada',
+    cuerpo: (f) => {
+      const tipo = campo(f, 'tipo');
+      const titulo = campo(f, 'titulo')?.trim();
+      const versionDoc = campo(f, 'versionDoc')?.trim();
+      const fecha = campo(f, 'fecha')?.trim();
+      const ubicacion = campo(f, 'ubicacion')?.trim();
+      const version = versionOpcional(f);
+      if (!tipo || !TIPOS_REFERENCIA.includes(tipo) || !titulo || titulo.length > 120 || !versionDoc || versionDoc.length > 40) return null;
+      if (!fecha || !FECHA.test(fecha) || !ubicacion || ubicacion.length > 200 || version === undefined) return null;
+      return { tipo, titulo, versionDoc, fecha, ubicacion, ...(version === null ? {} : { versionEsperada: version }) };
+    },
+  });
+
+export const quitarReferenciaDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'declaracion',
+    metodoApi: 'POST',
+    rutaApi: '/declaracion/referencias/eliminacion',
+    exito: 'referencia_quitada',
+    cuerpo: (f) => {
+      const tipo = campo(f, 'tipo');
+      const version = versionOpcional(f);
+      return tipo && TIPOS_REFERENCIA.includes(tipo) && typeof version === 'number' ? { tipo, versionEsperada: version } : null;
+    },
   });
