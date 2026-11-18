@@ -60,13 +60,13 @@ export const CamposRiesgo = ({ id, personas, valores }: { id: string; personas: 
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${id}-probabilidad`}>{t.probabilidad}</Label>
-        <Select id={`${id}-probabilidad`} name="probabilidad" required defaultValue={String(valores?.probabilidad ?? 3)}>
+        <Select id={`${id}-probabilidad`} name="probabilidad" required aria-describedby={`${id}-escala`} defaultValue={String(valores?.probabilidad ?? 3)}>
           <Opciones15 />
         </Select>
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${id}-impacto`}>{t.impacto}</Label>
-        <Select id={`${id}-impacto`} name="impacto" required defaultValue={String(valores?.impacto ?? 3)}>
+        <Select id={`${id}-impacto`} name="impacto" required aria-describedby={`${id}-escala`} defaultValue={String(valores?.impacto ?? 3)}>
           <Opciones15 />
         </Select>
       </div>
@@ -119,7 +119,7 @@ export const PantallaRiesgos = ({ empresa, persona, riesgos, personas, filtros, 
           <form method="post" action={`/e/${empresa.id}/riesgos/crear`} className="grid max-w-3xl gap-3 md:grid-cols-3">
             {hayFiltros && <input type="hidden" name="f_retirados" value="true" />}
             <CamposRiesgo id="nuevo" personas={personas} />
-            <p className="text-sm text-fg-muted md:col-span-3">{t.escalaAyuda}</p>
+            <p id="nuevo-escala" className="text-sm text-fg-muted md:col-span-3">{t.escalaAyuda}</p>
             <div className="md:col-span-3">
               <Button type="submit">{t.crear}</Button>
             </div>
@@ -133,7 +133,7 @@ export const PantallaRiesgos = ({ empresa, persona, riesgos, personas, filtros, 
         <>
           {filtrosInvalidos && (
             <div className="mb-4">
-              <Alert tono="warning" titulo={t.filtrosInvalidos} />
+              <Alert anunciar={false} tono="warning" titulo={t.filtrosInvalidos} />
             </div>
           )}
           <Card className="mb-6">

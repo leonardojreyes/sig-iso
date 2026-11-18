@@ -73,11 +73,11 @@ export const EditorMotivos = ({ empresa, fila, motivos }: { empresa: Empresa; fi
   const propios = motivos.filter((m) => m.libreriaCodigo === fila.libreriaCodigo && m.idEstable === fila.idEstable);
   const libres = TIPOS.filter((tipo) => !propios.some((m) => m.tipo === tipo));
   const entrada = `${fila.libreriaCodigo}|${fila.idEstable}`;
-  const id = `motivo-${fila.idEstable}`;
+  const id = `motivo-${fila.libreriaCodigo}-${fila.idEstable}`;
   const base = `/e/${empresa.id}/declaracion/motivo`;
   return (
     <details className="mt-2">
-      <summary className="cursor-pointer text-sm font-medium text-primary" aria-label={t.motivosEditarAria(fila.idEstable)}>
+      <summary className="inline-flex min-h-[var(--sig-density-target-min)] cursor-pointer items-center text-sm font-medium text-primary" aria-label={t.motivosEditarAria(fila.idEstable)}>
         {t.motivosEditar}
       </summary>
       <div className="mt-3 flex max-w-xl flex-col gap-4">
@@ -163,7 +163,7 @@ export const SeccionReferencias = ({ empresa, referencias, puedeGestionar }: { e
               <p className="text-sm text-fg">{r ? t.referenciaDetalle(r.titulo, r.versionDoc, r.fecha, r.ubicacion) : <span className="text-fg-muted">{t.referenciaNoRegistrada}</span>}</p>
               {puedeGestionar && (
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-sm font-medium text-primary" aria-label={t.referenciaEditarAria(etiqueta)}>
+                  <summary className="inline-flex min-h-[var(--sig-density-target-min)] cursor-pointer items-center text-sm font-medium text-primary" aria-label={t.referenciaEditarAria(etiqueta)}>
                     {t.referenciaEditar}
                   </summary>
                   <div className="mt-3 flex flex-col gap-3">

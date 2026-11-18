@@ -2,7 +2,8 @@ import type { EmpresaId } from '@sig/tenancy';
 import { ErrorCertificacion } from './errores.js';
 import { fechaValida } from './fechas.js';
 
-const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
+// Caracteres de control y también los invisibles o de dirección (ancho cero, U+202E…), que sirven para disfrazar un texto en el documento.
+const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/;
 export const TITULO_REFERENCIA_MAX = 120;
 export const VERSION_REFERENCIA_MAX = 40;
 export const UBICACION_REFERENCIA_MAX = 200;

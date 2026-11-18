@@ -1,3 +1,6 @@
+// Fakes en memoria para las pruebas de los casos de uso. Separan los datos por empresa con claves `${empresaId}|…` y revierten si la acción
+// falla, pero NO emulan las claves foráneas compuestas, las políticas RLS ni los privilegios de la base: eso solo lo demuestran las
+// pruebas con PostgreSQL real (`*.integration.test.ts` y `platform/db`). No las tomes como prueba de aislamiento a nivel de datos.
 import { validarEvento, type EventoBitacora } from '@sig/auditoria';
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
 import type { Alcance } from '../../domain/alcance.js';

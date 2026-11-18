@@ -223,9 +223,9 @@ describe('PantallaDeclaracion con justificación', () => {
     const fila = within(container.querySelectorAll('tbody tr')[0] as HTMLElement);
     const guardar = container.querySelector('form[action="/e/empresa-a/declaracion/motivo/guardar"] input[name="version"]');
     expect(guardar?.getAttribute('value')).toBe('2');
-    expect(fila.getByRole('button', { name: 'Guardar la nota del motivo «Requisito legal» del control a27-5-1' })).toBeTruthy();
-    expect(fila.getByRole('button', { name: 'Quitar el motivo «Requisito legal» del control a27-5-1' })).toBeTruthy();
-    const tipos = container.querySelector('#motivo-a27-5-1-nuevo-tipo') as HTMLSelectElement;
+    expect(fila.getByRole('button', { name: 'Guardar nota, motivo «Requisito legal», control a27-5-1' })).toBeTruthy();
+    expect(fila.getByRole('button', { name: 'Quitar motivo, «Requisito legal», control a27-5-1' })).toBeTruthy();
+    const tipos = container.querySelector('#motivo-iso-27001-anexo-a-a27-5-1-nuevo-tipo') as HTMLSelectElement;
     expect([...tipos.options].map((o) => o.value)).toEqual(['contractual', 'negocio', 'otro']); // «legal» ya está registrado
   });
 
@@ -260,8 +260,8 @@ describe('PantallaDeclaracion con justificación', () => {
     const { container, getByRole } = render(<PantallaDeclaracion {...base} declaracion={d} />);
     expect(container.textContent).toContain('Plan 2026 · versión 1.2 · 2026-11-01 · SIG-PL-004');
     expect(container.textContent).toContain('No registrada');
-    expect(getByRole('button', { name: 'Guardar la referencia: Plan de tratamiento de riesgos' })).toBeTruthy();
-    expect(getByRole('button', { name: 'Quitar la referencia: Plan de tratamiento de riesgos' })).toBeTruthy();
+    expect(getByRole('button', { name: 'Guardar referencia, Plan de tratamiento de riesgos' })).toBeTruthy();
+    expect(getByRole('button', { name: 'Quitar referencia, Plan de tratamiento de riesgos' })).toBeTruthy();
     expect(container.querySelector('form[action="/e/empresa-a/declaracion/referencia/quitar"] input[name="version"]')?.getAttribute('value')).toBe('3');
     // el análisis no está registrado: solo se puede crear (sin versión ni «quitar»)
     const crear = container.querySelector('form[action="/e/empresa-a/declaracion/referencia/guardar"] input[name="tipo"][value="analisis"]')?.closest('form');
@@ -310,5 +310,38 @@ describe('PantallaVersionDeclaracion con justificación congelada', () => {
   it('una versión congelada no ofrece cambiar nada (ni motivos ni referencias)', () => {
     const { container } = render(<PantallaVersionDeclaracion empresa={empresa} persona={admin} version={vc(congelada())} />);
     expect(container.querySelectorAll('form').length).toBe(1); // solo «Cerrar sesión»
+  });
+});
+
+describe('accesibilidad de la justificación tras la revisión del hito', () => {
+  it('el nombre accesible de cada botón con etiqueta empieza por el texto visible (WCAG 2.5.3)', () => {
+    const d = { ...sinMotivo(), justificacion: { ...sinMotivo().justificacion, referencias: [ref()] } };
+    const { container } = render(<PantallaDeclaracion {...base} declaracion={d} motivos={[motivo()]} />);
+    for (const b of container.querySelectorAll('button[aria-label]')) {
+      const visible = (b.textContent ?? '').trim().toLowerCase();
+      expect((b.getAttribute('aria-label') ?? '').toLowerCase().startsWith(visible), `«${visible}» → «${b.getAttribute('aria-label')}»`).toBe(true);
+    }
+    for (const s of container.querySelectorAll('summary[aria-label]')) {
+      const visible = (s.textContent ?? '').trim().toLowerCase();
+      expect((s.getAttribute('aria-label') ?? '').toLowerCase().startsWith(visible), `«${visible}» → «${s.getAttribute('aria-label')}»`).toBe(true);
+    }
+  });
+
+  it('los avisos estáticos de la Declaración no anuncian por sí mismos', () => {
+    const { container } = render(<PantallaDeclaracion {...conMotivos} aviso="motivo_guardado" />);
+    expect(container.querySelectorAll('[role="alert"]').length).toBe(0);
+  });
+
+  it('los resúmenes desplegables y los enlaces sueltos tienen el objetivo táctil mínimo del sistema de diseño', () => {
+    const { container } = render(<PantallaDeclaracion {...conMotivos} />);
+    for (const s of container.querySelectorAll('summary')) expect(s.className).toContain('min-h-[var(--sig-density-target-min)]');
+    const alcance = [...container.querySelectorAll('a')].find((a) => a.getAttribute('href')?.endsWith('/alcance'));
+    expect(alcance?.className).toContain('min-h-[var(--sig-density-target-min)]');
+  });
+
+  it('los identificadores de los formularios incluyen la librería (dos librerías pueden compartir id estable)', () => {
+    const { container } = render(<PantallaDeclaracion {...conMotivos} />);
+    expect(container.querySelector('[id^="motivo-iso-27001-anexo-a-a27-5-1-"]')).not.toBeNull();
+    expect(container.querySelector('[id^="motivo-a27-5-1-"]')).toBeNull();
   });
 });

@@ -69,7 +69,7 @@ export const PantallaRiesgoDetalle = ({ empresa, persona, riesgo, aviso, control
               <input type="hidden" name="riesgoId" value={riesgo.id} />
               <input type="hidden" name="version" value={riesgo.version} />
               <CamposRiesgo id="cambiar" personas={personas} valores={riesgo} />
-              <p className="text-sm text-fg-muted md:col-span-3">{t.escalaAyuda}</p>
+              <p id="cambiar-escala" className="text-sm text-fg-muted md:col-span-3">{t.escalaAyuda}</p>
               <div className="md:col-span-3">
                 <Button type="submit" aria-label={t.guardarAria(riesgo.codigo)}>
                   {t.guardar}
@@ -184,13 +184,13 @@ export const PantallaRiesgoDetalle = ({ empresa, persona, riesgo, aviso, control
             <CardTitle id="retirar-riesgo">{t.retirarTitulo}</CardTitle>
             {aviso === null ? (
               <div className="mb-3">
-                <Alert tono="warning" titulo={t.avisoNoDisponible} />
+                <Alert anunciar={false} tono="warning" titulo={t.avisoNoDisponible} />
               </div>
             ) : aviso.controlesSinMotivo.length === 0 ? (
               <p className="mb-3 text-sm text-fg-muted">{t.retirarAvisoSinEfecto}</p>
             ) : (
               <div className="mb-3">
-                <Alert tono="warning" titulo={t.retirarAvisoConEfecto(aviso.controlesSinMotivo.length)}>
+                <Alert anunciar={false} tono="warning" titulo={t.retirarAvisoConEfecto(aviso.controlesSinMotivo.length)}>
                   <ul className="mt-2 list-disc pl-5">
                     {aviso.controlesSinMotivo.map((c) => (
                       <li key={`${c.libreriaCodigo}|${c.idEstable}`}>

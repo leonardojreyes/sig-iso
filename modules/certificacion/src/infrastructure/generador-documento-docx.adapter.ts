@@ -14,14 +14,16 @@ const TEXTOS = {
   preliminar: 'DOCUMENTO PRELIMINAR generado por el sistema. Lo revisa y aprueba la empresa antes de presentarlo.',
   aprobada: (n: number, el: string) => `Versión ${n}, aprobada el ${el}.`,
   generada: (el: string) => `Documento generado el ${el}.`,
+  edicion: 'Controles del Anexo A de ISO/IEC 27001, edición 2022.',
+  alcanceDelDocumento: 'Registro simplificado: este documento no está listo para presentarse a un auditor sin completar lo indicado en «Lo que este documento no cubre» (al final) y sin la aprobación de la dirección.',
   notaRiesgos: 'Nota: los controles de esta declaración se determinan a partir del tratamiento de riesgos de seguridad de la información de la organización. El análisis de riesgos y el plan de tratamiento son documentos externos a este sistema y deben citarse al presentar la declaración.',
   alcance: 'Alcance',
   sinAlcance: 'No se registró un alcance para esta norma.',
   resumen: 'Resumen',
   filas: { total: 'Controles', aplican: 'Aplican', noAplican: 'No aplican', porDecidir: 'Por decidir', sinControl: 'Aplican sin control asignado', conMotivo: 'Aplican con motivo', sinMotivo: 'Aplican sin motivo' },
   controlesTitulo: 'Controles',
-  columnas: ['Control', 'Título', 'Grupo', 'Aplicabilidad', 'Implementación', 'Controles de la empresa', 'Evidencia', 'Justificación'],
-  columnasJustificadas: ['Control', 'Título', 'Grupo', 'Aplicabilidad', 'Implementación', 'Controles de la empresa', 'Evidencia', 'Motivo de inclusión', 'Riesgos', 'Justificación de exclusión'],
+  columnas: ['Control', 'Título', 'Grupo', 'Aplicabilidad', 'Estado de implementación (según el Diagnóstico)', 'Controles de la empresa', 'Evidencia', 'Justificación'],
+  columnasJustificadas: ['Control', 'Título', 'Grupo', 'Aplicabilidad', 'Estado de implementación (según el Diagnóstico)', 'Controles de la empresa', 'Evidencia', 'Motivo de inclusión', 'Riesgos', 'Justificación de exclusión'],
   aplica: { aplica: 'Aplica', no_aplica: 'No aplica', por_decidir: 'Por decidir' },
   implementacion: { implementado: 'Implementado', parcial: 'Parcial', no_implementado: 'No implementado' },
   cobertura: { cubierta: 'Con evidencia vigente', evidencia_vencida: 'Evidencia vencida', sin_evidencia: 'Sin evidencia', sin_control: 'Sin control', no_aplica: 'No aplica' },
@@ -43,8 +45,9 @@ const TEXTOS = {
   decision: { mitigar: 'Mitigar', aceptar: 'Aceptar', transferir: 'Transferir', evitar: 'Evitar' } satisfies Record<DecisionTratamiento, string>,
   responsable: { asignado: 'Asignado', sin: 'Sin asignar' },
   previsto: 'Previsto',
+  equivalencias: 'Equivalencias con los términos de la norma (a confirmar con su ejemplar): mitigar = modificar el riesgo; aceptar = retener; transferir = compartir; evitar = evitar.',
   escalaTitulo: 'Escala del nivel de riesgo',
-  escala: (max: number) => `Probabilidad e impacto de 1 a ${max}; el nivel inicial es la probabilidad por el impacto. Es el método por omisión de la herramienta y no es el criterio de aceptación de la empresa.`,
+  escala: (max: number) => `Probabilidad e impacto de 1 a ${max}; el nivel inicial es la probabilidad por el impacto y es el del riesgo antes del tratamiento (no es el riesgo residual). Es el método por omisión de la herramienta y no es el criterio de aceptación de la empresa.`,
   referenciasTitulo: 'Referencias al tratamiento de riesgos',
   referencia: { analisis: 'Análisis de riesgos', plan: 'Plan de tratamiento de riesgos' },
   sinReferencia: 'No se registró',
@@ -56,11 +59,15 @@ const TEXTOS = {
     'Este documento no incluye controles adicionales fuera del Anexo A (los que el tratamiento de riesgos haya determinado y no estén en el Anexo A).',
     'Este documento no contempla activos de información.',
   ],
+  aprobacionTitulo: 'Aprobación',
+  aprobacionTexto: 'La aprobación de la dirección de la organización y la de los responsables de los riesgos no están registradas en el sistema. Anexe su constancia o complete:',
+  aprobacionCampos: ['Nombre: ______________________________', 'Cargo: ______________________________', 'Fecha: ______________________________', 'Firma: ______________________________'],
   avisoSinPlan: 'Hay riesgos con decisión «mitigar» y no se registró la referencia al plan de tratamiento.',
 } as const;
 
 // Caracteres que XML no admite (y que en un documento no tienen sentido): se quitan, sin cambiar el resto.
-const NO_XML = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f￾￿]/g;
+// Y los invisibles o de dirección (ancho cero, U+202E…): no tienen sentido en el documento y sirven para disfrazar un texto.
+const NO_XML = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff￾￿]/g;
 const limpio = (t: string): string => t.replace(NO_XML, '');
 const enUnaLinea = (t: string): string => limpio(t).replace(/\s+/g, ' ').trim();
 
@@ -143,6 +150,7 @@ const seccionTratamiento = (d: DocumentoDeclaracion): Paragraph[] | (Paragraph |
         }),
       ),
     );
+    salida.push(texto(TEXTOS.equivalencias, { cursiva: true }));
     salida.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(TEXTOS.escalaTitulo)] }), texto(TEXTOS.escala(j.escala.escalaMax)), texto(cortes(j.escala).join(' · ')));
   }
   salida.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(TEXTOS.referenciasTitulo)] }));
@@ -196,6 +204,8 @@ export class GeneradorDocumentoDocx implements GeneradorDocumentoPort {
             new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(limpio(d.norma))] }),
             new Paragraph({ children: [new TextRun({ text: d.preliminar ? TEXTOS.preliminar : TEXTOS.aprobada(d.version ?? 0, d.aprobadaEl ?? ''), bold: true })] }),
             new Paragraph({ children: [new TextRun(TEXTOS.generada(d.generadaEl))] }),
+            new Paragraph({ children: [new TextRun(TEXTOS.edicion)] }),
+            new Paragraph({ children: [new TextRun({ text: TEXTOS.alcanceDelDocumento, bold: true })] }),
             new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(TEXTOS.alcance)] }),
             ...(parrafosAlcance.length > 0 ? parrafosAlcance.map((l) => new Paragraph({ children: [new TextRun(l)] })) : [new Paragraph({ children: [new TextRun({ text: TEXTOS.sinAlcance, italics: true })] })]),
             new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(TEXTOS.resumen)] }),
@@ -204,6 +214,9 @@ export class GeneradorDocumentoDocx implements GeneradorDocumentoPort {
             tablaControles,
             ...seccionTratamiento(d),
             ...seccionAvisos(d),
+            new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun(TEXTOS.aprobacionTitulo)] }),
+            texto(TEXTOS.aprobacionTexto),
+            ...TEXTOS.aprobacionCampos.map((c) => texto(c)),
           ],
         },
       ],

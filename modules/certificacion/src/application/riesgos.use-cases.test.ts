@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ConflictoDeVersionError, ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError, SinPermisoError } from './errores.js';
 import { A, ADMIN, B, COLAB, EstadoFalso, crearAutorizacionFalsa, crearCatalogoFalso, crearUnidadFalsa } from './prueba/fakes.js';
-import { CambiarRiesgoUseCase, CrearRiesgoUseCase, ListarRiesgosUseCase, ObtenerRiesgoUseCase, RetirarRiesgoUseCase } from './riesgos.use-cases.js';
+import { CambiarRiesgoUseCase, CrearRiesgoUseCase, ListarRiesgosUseCase, ObtenerRiesgoUseCase, RetirarRiesgoUseCase, TOPE_RIESGOS } from './riesgos.use-cases.js';
+import { Riesgo } from '../domain/riesgo.js';
 
 const ADMIN_B = '66666666-6666-4666-8666-666666666666';
 const OTRO = '77777777-7777-4777-8777-777777777777';
@@ -190,5 +191,38 @@ describe('listar y ver riesgos', () => {
     await expect(obtener.ejecutar({ ...yo, id: b.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
     await expect(obtener.ejecutar({ ...yo, id: a.id })).resolves.toMatchObject({ codigo: 'R-001' });
     await expect(obtener.ejecutar({ ...yo, id: 'no-es-uuid' })).rejects.toBeInstanceOf(ParametroInvalidoError);
+  });
+});
+
+describe('topes al crear', () => {
+  it('no deja pasar el tope de riesgos (también cuentan los retirados): conflicto y nada nuevo', async () => {
+    const { crear, estado } = montar();
+    for (let i = 1; i <= TOPE_RIESGOS; i++) {
+      const r = Riesgo.crear({ id: `eeeeeeee-0000-4000-8000-${String(i).padStart(12, '0')}`, empresaId: A, codigo: `R-${String(i).padStart(3, '0')}`, titulo: `Riesgo ${i}`, probabilidad: 1, impacto: 1, decision: 'evitar' });
+      estado.riesgos.set(r.id, i % 2 === 0 ? r.retirar() : r);
+    }
+    await expect(crear.ejecutar({ ...yo, ...nuevo })).rejects.toMatchObject({ motivo: 'tope_de_riesgos' });
+    expect(estado.riesgos.size).toBe(TOPE_RIESGOS);
+    expect(estado.eventos).toEqual([]);
+  });
+
+  it('el tope es por empresa: otra empresa sigue creando', async () => {
+    const { crear, estado } = montar();
+    for (let i = 1; i <= TOPE_RIESGOS; i++) {
+      const r = Riesgo.crear({ id: `eeeeeeee-0000-4000-8000-${String(i).padStart(12, '0')}`, empresaId: A, codigo: `R-${String(i).padStart(3, '0')}`, titulo: `Riesgo ${i}`, probabilidad: 1, impacto: 1, decision: 'evitar' });
+      estado.riesgos.set(r.id, r);
+    }
+    await expect(crear.ejecutar({ empresaId: B, usuarioId: ADMIN_B, ...nuevo })).resolves.toMatchObject({ codigo: 'R-001' });
+  });
+});
+
+describe('texto con caracteres invisibles o de dirección', () => {
+  it('se rechaza (título y descripción): no se puede disfrazar el texto del documento', async () => {
+    const { crear, estado } = montar();
+    for (const malo of ['antes\u202edespués', 'a\u200bb', 'a\u2066b\u2069', 'a\ufeffb']) {
+      await expect(crear.ejecutar({ ...yo, ...nuevo, titulo: malo })).rejects.toBeInstanceOf(ParametroInvalidoError);
+      await expect(crear.ejecutar({ ...yo, ...nuevo, descripcion: malo })).rejects.toBeInstanceOf(ParametroInvalidoError);
+    }
+    expect(estado.riesgos.size).toBe(0);
   });
 });

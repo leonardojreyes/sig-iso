@@ -7,7 +7,7 @@ import type { CatalogoLecturaPort } from './catalogo-lectura.port.js';
 import { exigirPermiso, identificadorDeNorma, identificar } from './comunes.js';
 import type { ContextoCertificacion, Reloj } from './contexto.js';
 import { esDeLaDeclaracion, NORMA_DECLARACION } from './declaracion.use-cases.js';
-import { ConflictoDeVersionError, EntradaNoEncontradaError, ParametroInvalidoError } from './errores.js';
+import { ConflictoDeVersionError, ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError } from './errores.js';
 import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
 
 type Unidad = UnidadDeTrabajoPort<ContextoCertificacion>;
@@ -81,6 +81,8 @@ export class RegistrarMotivoUseCase {
       const objeto = `motivo:${motivo.idEstable}.${motivo.tipo}`;
       const previo = await c.motivos.obtener(motivo.libreriaCodigo, motivo.idEstable, motivo.tipo);
       if (esperada === null) {
+        // El tope se aplica al CREAR: el listado y la copia congelada leen todos los motivos.
+        if (!previo && (await c.motivos.listar()).length >= TOPE_MOTIVOS) throw new ConflictoError('tope_de_motivos');
         if (previo || !(await c.motivos.crear(motivo, usuarioId, this.reloj()))) throw new ConflictoDeVersionError();
         await c.bitacora.registrar({ empresaId, actor: { tipo: 'usuario', usuarioId }, accion: 'motivo.creado', resultado: 'ok', objeto });
         return aDtoMotivo(motivo);

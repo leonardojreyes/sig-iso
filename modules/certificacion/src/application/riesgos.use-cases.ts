@@ -89,6 +89,8 @@ export class CrearRiesgoUseCase {
     };
     armar(codigoDeRiesgo(1));
     return this.unidad.ejecutar(empresaId, async (c) => {
+      // El tope se aplica al CREAR (un riesgo no se borra): si no, una empresa podría pasarlo y dejar inservible la lista.
+      if ((await c.riesgos.listar()).length >= TOPE_RIESGOS) throw new ConflictoError('tope_de_riesgos');
       for (let intento = 0; intento < INTENTOS_NUMERO; intento++) {
         const riesgo = armar(codigoDeRiesgo(await c.riesgos.siguienteNumero()));
         if (!(await c.riesgos.crear(riesgo, usuarioId, this.reloj()))) continue;

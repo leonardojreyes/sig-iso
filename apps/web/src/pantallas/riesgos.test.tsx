@@ -59,7 +59,7 @@ describe('PantallaRiesgos', () => {
 
   it('cada riesgo enlaza a su detalle con un nombre accesible que dice cuál es', () => {
     const { getByRole } = render(<PantallaRiesgos {...base} />);
-    expect(getByRole('link', { name: 'Ver el detalle del riesgo R-001' }).getAttribute('href')).toBe(`/e/empresa-a/riesgos/${R1}`);
+    expect(getByRole('link', { name: 'Ver el detalle, riesgo R-001' }).getAttribute('href')).toBe(`/e/empresa-a/riesgos/${R1}`);
   });
 
   it('el administrador ve el formulario de creación; quien solo consulta, no', () => {
@@ -150,8 +150,8 @@ describe('PantallaRiesgoDetalle', () => {
 
   it('cada botón de quitar dice a qué riesgo y a qué control o entrada se refiere', () => {
     const { getByRole } = render(<PantallaRiesgoDetalle {...det} />);
-    expect(getByRole('button', { name: 'Quitar el vínculo del riesgo R-001 con el control C-001' })).toBeTruthy();
-    expect(getByRole('button', { name: 'Quitar el tratamiento previsto a27-5-1 del riesgo R-001' })).toBeTruthy();
+    expect(getByRole('button', { name: 'Quitar vínculo, riesgo R-001, control C-001' })).toBeTruthy();
+    expect(getByRole('button', { name: 'Quitar tratamiento previsto, riesgo R-001, control a27-5-1' })).toBeTruthy();
   });
 
   it('ofrece vincular solo con los controles que aún no trata y prever solo con los del Anexo A que aún no están previstos', () => {
@@ -185,7 +185,7 @@ describe('PantallaRiesgoDetalle', () => {
   it('si no se pudo calcular el aviso lo dice, y aun así deja retirar', () => {
     const { container, getByRole } = render(<PantallaRiesgoDetalle {...det} aviso={null} />);
     expect(container.textContent).toContain('No se pudo calcular el efecto del retiro');
-    expect(getByRole('button', { name: 'Retirar el riesgo R-001' })).toBeTruthy();
+    expect(getByRole('button', { name: 'Retirar riesgo R-001' })).toBeTruthy();
   });
 
   it('el aviso está ANTES del botón de retirar', () => {
@@ -215,5 +215,30 @@ describe('PantallaRiesgoDetalle', () => {
     const sel = container.querySelector('#cambiar-responsable') as HTMLSelectElement;
     expect(sel.value).toBe('33333333-3333-4333-8333-333333333333');
     expect([...sel.options].map((o) => o.textContent)).toContain('Sin responsable asignado');
+  });
+});
+
+describe('accesibilidad tras la revisión del hito', () => {
+  it('el nombre accesible de cada botón con etiqueta empieza por el texto visible (WCAG 2.5.3 «etiqueta en el nombre»)', () => {
+    const { container } = render(<PantallaRiesgoDetalle {...det} />);
+    for (const b of container.querySelectorAll('button[aria-label]')) {
+      const visible = (b.textContent ?? '').trim().toLowerCase();
+      expect((b.getAttribute('aria-label') ?? '').toLowerCase().startsWith(visible), `«${visible}» → «${b.getAttribute('aria-label')}»`).toBe(true);
+    }
+  });
+
+  it('los avisos estáticos no anuncian por sí mismos (solo el aviso de la escritura lo hace)', () => {
+    const { container } = render(<PantallaRiesgoDetalle {...det} aviso={aviso(2)} avisoEscritura="vinculado" />);
+    expect(container.querySelectorAll('[role="alert"]').length).toBe(0); // el de la escritura es «status»
+    expect(container.querySelectorAll('[role="status"]').length).toBeLessThanOrEqual(1);
+  });
+
+  it('la ayuda de la escala se asocia a los selects de probabilidad e impacto', () => {
+    const { container } = render(<PantallaRiesgos {...base} />);
+    for (const id of ['nuevo-probabilidad', 'nuevo-impacto']) {
+      const d = container.querySelector(`#${id}`)?.getAttribute('aria-describedby');
+      expect(d).toBe('nuevo-escala');
+      expect(container.querySelector(`#${d}`)?.textContent).toContain('probabilidad por impacto');
+    }
   });
 });

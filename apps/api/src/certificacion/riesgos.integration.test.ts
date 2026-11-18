@@ -292,6 +292,13 @@ describe('controladores de riesgos y justificación de la Declaración (ADR 037)
       expect(JSON.stringify(estado.eventos)).not.toMatch(/NOTA|Ley de datos/);
     });
 
+    it('AISLAMIENTO: B no ve los motivos que A registró ni puede cambiarlos o quitarlos', async () => {
+      await pedir('/declaracion/motivos', await tAdmin(), 'PUT', { ...POL, tipo: 'legal', nota: 'Motivo de A' });
+      expect(await json(await pedir('/declaracion/motivos', await tAdminB()))).toEqual([]);
+      await problema(await pedir('/declaracion/motivos/eliminacion', await tAdminB(), 'POST', { ...POL, tipo: 'legal', versionEsperada: 1 }), 404, 'no_encontrado');
+      expect(estado.motivos.size).toBe(1);
+    });
+
     it('el motivo exige nota, un tipo registrable (no «riesgo») y un control del Anexo A adoptado', async () => {
       const t = await tAdmin();
       for (const malo of [{ nota: '' }, { nota: '   ' }, { nota: 'x'.repeat(501) }, { tipo: 'riesgo' }, { idEstable: 'MAL ID' }, { versionEsperada: 0 }]) {

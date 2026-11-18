@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ConflictoDeVersionError, EntradaNoEncontradaError, ParametroInvalidoError, SinPermisoError } from './errores.js';
-import { GuardarReferenciaUseCase, ListarMotivosUseCase, ListarReferenciasUseCase, QuitarMotivoUseCase, QuitarReferenciaUseCase, RegistrarMotivoUseCase } from './motivos.use-cases.js';
+import { MotivoInclusion } from '../domain/motivo-inclusion.js';
+import { GuardarReferenciaUseCase, TOPE_MOTIVOS, ListarMotivosUseCase, ListarReferenciasUseCase, QuitarMotivoUseCase, QuitarReferenciaUseCase, RegistrarMotivoUseCase } from './motivos.use-cases.js';
 import { A, ADMIN, B, COLAB, EstadoFalso, crearAutorizacionFalsa, crearCatalogoFalso, crearUnidadFalsa, entradas } from './prueba/fakes.js';
 
 const ADMIN_B = '66666666-6666-4666-8666-666666666666';
@@ -183,5 +184,26 @@ describe('referencias al análisis y al plan de tratamiento', () => {
     expect(await listarRef.ejecutar(yo)).toEqual([]);
     expect((await listarRef.ejecutar(yoB)).map((r) => r.titulo)).toEqual(['Del B']);
     expect(estado.referencias.size).toBe(1);
+  });
+});
+
+describe('topes al crear y texto invisible', () => {
+  it('no deja pasar el tope de motivos al crear: conflicto y nada nuevo; cambiar uno existente sigue permitido', async () => {
+    const { registrar, estado } = montar();
+    for (let i = 0; i < TOPE_MOTIVOS; i++) {
+      const m = MotivoInclusion.crear({ empresaId: A, libreriaCodigo: 'otra-libreria', idEstable: `x${i}`, tipo: 'otro', nota: 'n' });
+      estado.motivos.set(`${A}|otra-libreria|x${i}|otro`, m);
+    }
+    await expect(registrar.ejecutar({ ...yo, ...motivo })).rejects.toMatchObject({ motivo: 'tope_de_motivos' });
+    expect(estado.motivos.size).toBe(TOPE_MOTIVOS);
+  });
+
+  it('una nota o una referencia con caracteres invisibles o de dirección se rechaza', async () => {
+    const { registrar, guardarRef } = montar();
+    for (const malo of ['antes\u202edespués', 'a\u200bb', 'a\ufeffb']) {
+      await expect(registrar.ejecutar({ ...yo, ...motivo, nota: malo })).rejects.toBeInstanceOf(ParametroInvalidoError);
+      await expect(guardarRef.ejecutar({ ...yo, ...ref, titulo: malo })).rejects.toBeInstanceOf(ParametroInvalidoError);
+      await expect(guardarRef.ejecutar({ ...yo, ...ref, ubicacion: malo })).rejects.toBeInstanceOf(ParametroInvalidoError);
+    }
   });
 });

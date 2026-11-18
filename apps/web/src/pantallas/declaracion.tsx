@@ -123,7 +123,7 @@ export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, 
             </dl>
             {resumen.porDecidir > 0 && (
               <div className="mt-4">
-                <Alert tono="warning" titulo={t.incompletaTitulo}>
+                <Alert anunciar={false} tono="warning" titulo={t.incompletaTitulo}>
                   {t.incompleta(resumen.porDecidir)}
                 </Alert>
               </div>
@@ -145,7 +145,7 @@ export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, 
             </dl>
             {justificacion.sinMotivo > 0 && (
               <div className="mt-4">
-                <Alert tono="warning" titulo={t.sinMotivoTitulo}>
+                <Alert anunciar={false} tono="warning" titulo={t.sinMotivoTitulo}>
                   {t.sinMotivoAviso(justificacion.sinMotivo)} {t.sinMotivoAyuda}
                 </Alert>
               </div>
@@ -167,7 +167,7 @@ export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, 
               <p className="text-sm text-fg-muted">{t.sinAlcance}</p>
             )}
             <p className="mt-3">
-              <a className="text-sm font-medium text-primary underline" href={`${base}/alcance`}>
+              <a className={enlaceClase} href={`${base}/alcance`}>
                 {t.irAlAlcance}
               </a>
             </p>

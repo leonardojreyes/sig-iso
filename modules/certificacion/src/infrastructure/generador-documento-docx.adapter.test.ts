@@ -243,3 +243,51 @@ describe('GeneradorDocumentoDocx con justificación', () => {
     expect(nombres(bytes).filter((n) => /vbaProject|embeddings|activeX|\.bin$|oleObject/i.test(n))).toEqual([]);
   });
 });
+
+// ---- Correcciones de la revisión del hito (experto ISO y seguridad)
+describe('GeneradorDocumentoDocx tras la revisión', () => {
+  it('la portada dice, siempre y también en una versión aprobada, que el documento no está listo para un auditor sin completarlo', async () => {
+    for (const d of [base, aprobada, con(), con({}, aprobada)]) {
+      const x = (await texto(d)).replace(/\s+/g, ' ');
+      expect(x).toContain('no está listo para presentarse a un auditor');
+      expect(x).toContain('Controles del Anexo A de ISO/IEC 27001, edición 2022');
+    }
+  });
+
+  it('la portada va ANTES de la tabla de controles (no solo al final)', async () => {
+    const x = await texto(con());
+    expect(x.indexOf('no está listo para presentarse a un auditor')).toBeLessThan(x.indexOf('Estado de implementación'));
+  });
+
+  it('la columna de implementación dice que sale del Diagnóstico', async () => {
+    for (const d of [base, con()]) expect(await texto(d)).toContain('Estado de implementación (según el Diagnóstico)');
+  });
+
+  it('con riesgos, la sección de tratamiento trae las equivalencias con los términos de la norma (a confirmar)', async () => {
+    const x = await texto(con());
+    expect(x).toContain('mitigar = modificar el riesgo');
+    expect(x).toContain('aceptar = retener');
+    expect(x).toContain('transferir = compartir');
+    expect(x).toContain('a confirmar con su ejemplar');
+  });
+
+  it('aclara que el nivel inicial es el de antes del tratamiento y que no es el riesgo residual', async () => {
+    expect(await texto(con())).toContain('antes del tratamiento (no es el riesgo residual)');
+  });
+
+  it('incluye siempre un bloque de aprobación para la dirección (nombre, cargo, fecha y firma) y dice que no está en el sistema', async () => {
+    for (const d of [base, aprobada, con(), con({}, aprobada)]) {
+      const x = await texto(d);
+      expect(x).toContain('Aprobación');
+      expect(x).toContain('no están registradas en el sistema');
+      for (const campo of ['Nombre:', 'Cargo:', 'Fecha:', 'Firma:']) expect(x, campo).toContain(campo);
+    }
+  });
+
+  it('quita los caracteres invisibles o de dirección (U+202E, ancho cero, marca de orden de bytes) para que no disfracen el texto', async () => {
+    const x = await texto({ ...base, alcance: 'antes‮después y​un﻿o', filas: [{ ...(base.filas[2] as DocumentoDeclaracion['filas'][number]), justificacion: 'a⁦b⁩c' }] });
+    expect(x).not.toMatch(/[​-‏‪-‮⁠-⁤⁦-⁩﻿]/);
+    expect(x).toContain('antesdespués');
+    expect(x).toContain('abc');
+  });
+});

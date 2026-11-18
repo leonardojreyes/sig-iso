@@ -21,7 +21,7 @@ export const PantallaVersionDeclaracion = ({ empresa, persona, version }: PropsV
   return (
     <MarcoApp empresa={empresa} activo="declaracion" persona={persona.nombre}>
       <p className="mb-2">
-        <a className="text-sm font-medium text-primary underline" href={`${base}/declaracion`}>
+        <a className={enlace} href={`${base}/declaracion`}>
           {t.volver}
         </a>
       </p>
