@@ -1,6 +1,6 @@
 # Spec — Declaración de Aplicabilidad justificada
 
-- **Estado:** Borrador, por aprobar (2026-11-17). Validado por `experto-iso` el mismo día («aprobar con correcciones», todas incorporadas). Preguntas Q1 a Q9 con una propuesta por omisión (sección 10).
+- **Estado:** **Aprobado por el responsable el 2026-11-17**, con la propuesta por omisión de Q1 a Q9 (en particular **Q1: faltar un motivo bloquea la aprobación**). Validado por `experto-iso` el mismo día («aprobar con correcciones», todas incorporadas). Pendiente de confirmar con el ejemplar de la norma: qué pide exactamente la cláusula 6.1.3 y el papel de la aceptación del riesgo residual.
 - **Ruta:** continúa el MVP (`docs/specs/mvp-certificacion/spec.md`, historias H8 y H9) y cierra el hueco 1 de «Decisiones que son del responsable» del hito M6 en `docs/fase0/estado.md`, **salvo** los controles adicionales y el responsable por control (sección 9).
 - **Depende de:** el MVP ya hecho (M1 a M7): controles de la empresa, mapeos, evidencias, Declaración con versión congelada y exportación a Word; y de `docs/producto/modelo-dominio.md` (un riesgo «se trata con» controles).
 - **Fecha:** 2026-11-17

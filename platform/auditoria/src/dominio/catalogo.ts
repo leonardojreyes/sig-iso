@@ -19,6 +19,17 @@ export const ACCIONES = [
   'control.retirado',
   'mapeo.creado',
   'mapeo.eliminado',
+  'riesgo.creado',
+  'riesgo.cambiado',
+  'riesgo.retirado',
+  'vinculo.creado',
+  'vinculo.eliminado',
+  'motivo.creado',
+  'motivo.cambiado',
+  'motivo.eliminado',
+  'referencia.creada',
+  'referencia.cambiada',
+  'referencia.eliminada',
   'evidencia.creada',
   'evidencia.reemplazada',
   'evidencia.eliminada',
@@ -157,6 +168,23 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   'control.retirado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'mapeo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'mapeo.eliminado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Riesgos mínimos (declaración justificada, ADR 037). Solo el hecho y el objeto (`riesgo:<código>`, por ejemplo `riesgo:R-001`): el título, la
+  // descripción, la probabilidad, el impacto y el responsable NUNCA van a la bitácora.
+  'riesgo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'riesgo.cambiado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'riesgo.retirado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Vínculos de un riesgo con un control de la empresa o, como tratamiento previsto, con un control del Anexo A (ADR 037). Objeto
+  // `vinculo:<código del riesgo>.<código del control o id estable de la entrada>`; nada más.
+  'vinculo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'vinculo.eliminado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Motivos de inclusión y referencias al tratamiento de riesgos (ADR 037). Objeto `motivo:<id estable>.<tipo>` y
+  // `referencia:<norma>.<tipo>`; la nota, el título, la versión, la fecha y la ubicación NUNCA van a la bitácora.
+  'motivo.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'motivo.cambiado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'motivo.eliminado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'referencia.creada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'referencia.cambiada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  'referencia.eliminada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   // Evidencias con archivo (MVP, M4). El hecho lleva la HUELLA SHA-256 del archivo como versión del objeto (queda fijada en la cadena
   // inmutable); el título, el nombre del archivo y su contenido NUNCA van a la bitácora. El objeto es `evidencia:<uuid>` o, si se
   // rechaza una subida, el control `control:<codigo>`.
@@ -167,7 +195,7 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   'evidencia.subida_rechazada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['tipo_no_permitido', 'tamano_excedido', 'firma_invalida'], objeto: 'obligatorio', objetoVersion: 'opcional' },
   // Declaración de Aplicabilidad (M5). La aprobación guarda solo el número de versión (objeto `declaracion:v<n>`) y los conteos; la
   // exportación fija la HUELLA SHA-256 del documento entregado (objeto `declaracion:v<n>` o `declaracion:borrador`). Ningún texto.
-  'declaracion.aprobada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', despues: { total: 'entero', aplican: 'entero', no_aplican: 'entero', sin_control: 'entero' } },
+  'declaracion.aprobada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', despues: { total: 'entero', aplican: 'entero', no_aplican: 'entero', sin_control: 'entero', con_motivo: 'entero', riesgos: 'entero' } },
   'declaracion.exportada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
   'acceso.denegado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['sin_permiso'], objeto: 'opcional' },
   'acceso.cruzado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['empresa_distinta'], objeto: 'opcional' },

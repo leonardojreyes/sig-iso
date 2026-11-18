@@ -36,6 +36,8 @@ tags:
     description: Entradas de las librerías adoptadas
   - name: personas
     description: Personas de la empresa, solicitudes de acceso y roles
+  - name: riesgos
+    description: Riesgos mínimos de la empresa y sus vínculos con controles (ADR 037)
 security:
   - bearerAuth: []
 paths:
@@ -1411,7 +1413,8 @@ paths:
       summary: Borrador de la Declaración de Aplicabilidad de ISO/IEC 27001
       description: |
         Una fila por control del Anexo A de las librerías adoptadas, DERIVADA del diagnóstico, de los controles de la empresa y de la
-        cobertura de las evidencias; no se guarda nada. Trae también la última versión aprobada, si hay. Orden: 401, 403.
+        cobertura de las evidencias; no se guarda nada. Trae también la última versión aprobada, si hay, y la justificación: por fila, los
+        motivos registrados y los riesgos que la tratan (derivado), y qué impide aprobar. Orden: 401, 403.
       tags: [declaracion]
       x-permiso: declaracion.ver
       responses:
@@ -1440,7 +1443,9 @@ paths:
         Congela, en una sola transacción, lo que la API lee en ese momento: las filas, el alcance de 27001 y los conteos. La versión es
         inmutable y su número es correlativo por empresa. Responde 409 si queda algún control por decidir (o no hay controles de la norma
         adoptados) y 409 si otra persona aprobó al mismo tiempo. Un control que aplica sin control de la empresa asignado SÍ se puede
-        aprobar: queda señalado en el documento. Orden: 401, 403, 409.
+        aprobar: queda señalado en el documento. También responde 409 si un control que aplica no tiene motivo de inclusión (ni riesgo
+        que lo trate ni motivo registrado). Congela además los motivos, los riesgos tal como estaban, las referencias al tratamiento y la
+        escala del nivel de riesgo. Orden: 401, 403, 409.
       tags: [declaracion]
       x-permiso: declaracion.aprobar
       responses:
@@ -1598,6 +1603,624 @@ paths:
           $ref: '#/components/responses/SinPermiso'
         '404':
           $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos:
+    get:
+      operationId: listarRiesgos
+      summary: Riesgos de la empresa
+      description: |
+        Por omisión solo los vigentes. Cada uno trae cuántos controles vigentes de la empresa y cuántos tratamientos previstos tiene, y `sinTratamiento` si su decisión es «mitigar» y no tiene ninguno. Orden de evaluación: 401, 403, 400.
+      tags: [riesgos]
+      x-permiso: riesgos.ver
+      parameters:
+        - name: incluirRetirados
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Los riesgos de la empresa.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 500
+                items:
+                  $ref: '#/components/schemas/RiesgoListado'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      operationId: crearRiesgo
+      summary: Crea un riesgo de la empresa
+      description: |
+        El código («R-001») es correlativo por empresa, lo asigna el sistema y no se reutiliza. El nivel inicial se calcula (probabilidad por impacto) y no se envía. La decisión «aceptar» exige responsable (400). Los textos no deben llevar datos personales ni texto de las normas. Orden de evaluación: 401, 403, 400, 409.
+      tags: [riesgos]
+      x-permiso: riesgos.gestionar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiesgoEntrada'
+      responses:
+        '201':
+          description: El riesgo creado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Riesgo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos/{id}:
+    get:
+      operationId: obtenerRiesgo
+      summary: Un riesgo con los controles que lo tratan
+      description: |
+        Los controles de la empresa (los retirados se marcan, el vínculo se conserva) y los tratamientos previstos del Anexo A. Un riesgo de otra empresa responde 404, igual que uno inexistente. Orden de evaluación: 401, 403, 400, 404.
+      tags: [riesgos]
+      x-permiso: riesgos.ver
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El riesgo con sus vínculos.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiesgoDetalle'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: cambiarRiesgo
+      summary: Cambia un riesgo vigente
+      description: |
+        Concurrencia optimista: `versionEsperada` es la versión que la persona vio. Si otra persona lo cambió antes, o el riesgo está retirado, responde 409. Lo que no se envía se conserva; `null` quita la descripción o el responsable. Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [riesgos]
+      x-permiso: riesgos.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiesgoCambios'
+      responses:
+        '200':
+          description: El riesgo con los cambios, o tal como estaba si no hubo cambios.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Riesgo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos/{id}/aviso-retiro:
+    get:
+      operationId: avisarRetiroRiesgo
+      summary: Qué controles quedarían sin motivo si se retira el riesgo
+      description: |
+        Solo informa; no cambia nada. Lista los controles del Anexo A que aplican y que, al retirar el riesgo, quedarían sin riesgo vigente ni motivo registrado. Orden de evaluación: 401, 403, 400, 404.
+      tags: [riesgos]
+      x-permiso: riesgos.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El aviso previo al retiro.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvisoRetiroRiesgo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos/{id}/retiro:
+    post:
+      operationId: retirarRiesgo
+      summary: Retira un riesgo
+      description: |
+        Un riesgo no se borra: se retira y conserva su historia; deja de contarse como vigente y su código no se reutiliza. Orden de evaluación: 401, 403, 400, 404, 409 (versión distinta o ya retirado).
+      tags: [riesgos]
+      x-permiso: riesgos.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiesgoVersion'
+      responses:
+        '200':
+          description: El riesgo retirado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Riesgo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos/{id}/controles:
+    post:
+      operationId: vincularRiesgoControl
+      summary: Vincula un riesgo con un control de la empresa
+      description: |
+        201 la primera vez y 200 si el vínculo ya existía (no es un error). Un riesgo o un control retirado, o el tope de 50 vínculos, responden 409. Un control de otra empresa responde 404. Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [riesgos]
+      x-permiso: riesgos.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VinculoControlEntrada'
+      responses:
+        '200':
+          description: El vínculo ya existía; no hubo cambios.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VinculoResultado'
+        '201':
+          description: El vínculo creado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VinculoResultado'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos/{id}/controles/eliminacion:
+    post:
+      operationId: desvincularRiesgoControl
+      summary: Quita el vínculo de un riesgo con un control de la empresa
+      description: |
+        Se puede quitar el vínculo con un control ya retirado. Un vínculo que no existe responde 404 y un riesgo retirado, 409. Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [riesgos]
+      x-permiso: riesgos.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VinculoControlEntrada'
+      responses:
+        '204':
+          description: El vínculo se quitó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos/{id}/tratamientos:
+    post:
+      operationId: preverTratamientoRiesgo
+      summary: Vincula un riesgo con un control del Anexo A («tratamiento previsto»)
+      description: |
+        Para cuando la empresa aún no tiene el control propio. Cuenta como motivo «riesgo» pero se distingue en la Declaración. 201 la primera vez y 200 si ya existía. La entrada que no es un control del Anexo A de las librerías adoptadas responde 404. Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [riesgos]
+      x-permiso: riesgos.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MapeoEntrada'
+      responses:
+        '200':
+          description: El tratamiento ya estaba previsto; no hubo cambios.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapeoResultado'
+        '201':
+          description: El tratamiento previsto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapeoResultado'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos/{id}/tratamientos/eliminacion:
+    post:
+      operationId: quitarTratamientoPrevisto
+      summary: Quita un tratamiento previsto
+      description: |
+        No exige que la entrada siga adoptada. Un tratamiento que no existe responde 404 y un riesgo retirado, 409. Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [riesgos]
+      x-permiso: riesgos.gestionar
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MapeoEntrada'
+      responses:
+        '204':
+          description: El tratamiento previsto se quitó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /controles/{id}/riesgos:
+    get:
+      operationId: listarRiesgosDeControl
+      summary: Riesgos vigentes que trata un control de la empresa
+      description: |
+        Un control de otra empresa o inexistente responde 404. Orden de evaluación: 401, 403, 400, 404.
+      tags: [riesgos]
+      x-permiso: riesgos.ver
+      parameters:
+        - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: Los riesgos vigentes que trata el control.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 500
+                items:
+                  $ref: '#/components/schemas/Riesgo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/motivos:
+    get:
+      operationId: listarMotivosDeclaracion
+      summary: Motivos de inclusión registrados
+      description: |
+        Solo los que se escriben (legal, contractual, negocio u otro, cada uno con su nota). El motivo «riesgo» no está aquí: se deriva de los riesgos. Orden de evaluación: 401, 403.
+      tags: [declaracion]
+      x-permiso: declaracion.ver
+      responses:
+        '200':
+          description: Los motivos registrados.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 500
+                items:
+                  $ref: '#/components/schemas/MotivoDeclaracion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: registrarMotivoDeclaracion
+      summary: Registra o cambia un motivo de inclusión de un control del Anexo A
+      description: |
+        Sin `versionEsperada` se crea; con ella se cambia. Si otra persona lo creó, cambió o quitó antes, responde 409. La nota es obligatoria y en palabras propias. Solo controles del Anexo A de las librerías adoptadas (si no, 404). Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [declaracion]
+      x-permiso: declaracion.justificar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MotivoEntrada'
+      responses:
+        '200':
+          description: El motivo creado o cambiado, o tal como estaba si no hubo cambios.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MotivoDeclaracion'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/motivos/eliminacion:
+    post:
+      operationId: quitarMotivoDeclaracion
+      summary: Quita un motivo de inclusión
+      description: |
+        Exige la versión que la persona vio. Un motivo que no existe responde 404 y una versión distinta, 409. Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [declaracion]
+      x-permiso: declaracion.justificar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MotivoQuitar'
+      responses:
+        '204':
+          description: El motivo se quitó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/referencias:
+    get:
+      operationId: listarReferenciasDeclaracion
+      summary: Referencias al análisis y al plan de tratamiento de riesgos
+      description: |
+        A lo sumo una de cada tipo. Solo se nombra el documento; el producto no lo guarda. Orden de evaluación: 401, 403.
+      tags: [declaracion]
+      x-permiso: declaracion.ver
+      responses:
+        '200':
+          description: Las referencias.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 2
+                items:
+                  $ref: '#/components/schemas/ReferenciaDeclaracion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: guardarReferenciaDeclaracion
+      summary: Registra o cambia la referencia al análisis o al plan de tratamiento
+      description: |
+        Sin `versionEsperada` se crea; con ella se cambia. Si otra persona la creó, cambió o quitó antes, responde 409. Orden de evaluación: 401, 403, 400, 409.
+      tags: [declaracion]
+      x-permiso: declaracion.justificar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferenciaEntrada'
+      responses:
+        '200':
+          description: La referencia creada o cambiada, o tal como estaba si no hubo cambios.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenciaDeclaracion'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /declaracion/referencias/eliminacion:
+    post:
+      operationId: quitarReferenciaDeclaracion
+      summary: Quita una referencia
+      description: |
+        Exige la versión que la persona vio. Una referencia que no existe responde 404 y una versión distinta, 409. Orden de evaluación: 401, 403, 400, 404, 409.
+      tags: [declaracion]
+      x-permiso: declaracion.justificar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferenciaQuitar'
+      responses:
+        '204':
+          description: La referencia se quitó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
         '429':
           $ref: '#/components/responses/LimiteExcedido'
         '500':
@@ -2835,7 +3458,7 @@ components:
         noAplican: {type: integer, minimum: 0}
         porDecidir: {type: integer, minimum: 0}
         sinControl: {type: integer, minimum: 0, description: Aplican y ningún control de la empresa los cubre; no impide aprobar.}
-        aprobable: {type: boolean, description: Hay filas y ninguna está por decidir.}
+        aprobable: {type: boolean, description: Hay filas, ninguna está por decidir y ningún control que aplica está sin motivo.}
     VersionDeclaracion:
       type: object
       required: [id, numero, total, aplican, noAplican, sinControl, aprobadaPor, aprobadaEn]
@@ -2851,7 +3474,7 @@ components:
         aprobadaEn: {type: string, format: date-time, maxLength: 40}
     VersionDeclaracionConFilas:
       type: object
-      required: [id, numero, total, aplican, noAplican, sinControl, aprobadaPor, aprobadaEn, alcance, filas]
+      required: [id, numero, total, aplican, noAplican, sinControl, aprobadaPor, aprobadaEn, alcance, filas, justificacion]
       additionalProperties: false
       properties:
         id: {type: string, format: uuid, maxLength: 36}
@@ -2871,9 +3494,11 @@ components:
           maxItems: 500
           items:
             $ref: '#/components/schemas/FilaDeclaracion'
+        justificacion:
+          $ref: '#/components/schemas/JustificacionVersion'
     Declaracion:
       type: object
-      required: [norma, hoy, resumen, filas, alcance, ultimaVersion]
+      required: [norma, hoy, resumen, filas, alcance, ultimaVersion, justificacion]
       additionalProperties: false
       properties:
         norma: {type: string, maxLength: 60}
@@ -2911,6 +3536,8 @@ components:
             sinControl: {type: integer, minimum: 0}
             aprobadaPor: {type: string, format: uuid, maxLength: 36}
             aprobadaEn: {type: string, format: date-time, maxLength: 40}
+        justificacion:
+          $ref: '#/components/schemas/JustificacionBorrador'
     EstadoCobertura:
       type: string
       enum: [cubierta, evidencia_vencida, sin_evidencia, sin_control, no_aplica]
@@ -3002,3 +3629,456 @@ components:
           type: array
           maxItems: 20
           items: {type: string, maxLength: 60}
+    NivelRiesgo:
+      type: string
+      enum: [bajo, medio, alto, critico]
+      description: Nivel inicial calculado de probabilidad por impacto con los cortes de `EscalaRiesgo`; la persona no lo escribe.
+    DecisionTratamiento:
+      type: string
+      enum: [mitigar, aceptar, transferir, evitar]
+      description: Equivale a modificar, retener, compartir o evitar el riesgo. «aceptar» exige responsable.
+    EstadoRiesgo:
+      type: string
+      enum: [vigente, retirado]
+    TipoMotivo:
+      type: string
+      enum: [legal, contractual, negocio, otro]
+      description: Los motivos que se registran. El motivo «riesgo» no se escribe; se deriva de los riesgos vigentes.
+    TipoReferencia:
+      type: string
+      enum: [analisis, plan]
+      description: «analisis» es el documento de análisis de riesgos; «plan» es el plan de tratamiento.
+    ViaRiesgo:
+      type: string
+      enum: [control, previsto]
+      description: «control» si lo trata un control vigente de la empresa; «previsto» si solo es un tratamiento previsto sin control propio.
+    Riesgo:
+      type: object
+      required: [id, codigo, titulo, descripcion, probabilidad, impacto, puntaje, nivel, decision, responsableId, estado, version]
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid, maxLength: 36}
+        codigo:
+          type: string
+          pattern: ^R-[0-9]{3,6}$
+          maxLength: 8
+        titulo: {type: string, maxLength: 120}
+        descripcion: {type: [string, 'null'], maxLength: 1000}
+        probabilidad: {type: integer, minimum: 1, maximum: 5}
+        impacto: {type: integer, minimum: 1, maximum: 5}
+        puntaje: {type: integer, minimum: 1, maximum: 25, description: Probabilidad por impacto.}
+        nivel:
+          $ref: '#/components/schemas/NivelRiesgo'
+        decision:
+          $ref: '#/components/schemas/DecisionTratamiento'
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        estado:
+          $ref: '#/components/schemas/EstadoRiesgo'
+        version: {type: integer, minimum: 1}
+    RiesgoListado:
+      type: object
+      required: [id, codigo, titulo, descripcion, probabilidad, impacto, puntaje, nivel, decision, responsableId, estado, version, controles, tratamientosPrevistos, sinTratamiento]
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid, maxLength: 36}
+        codigo:
+          type: string
+          pattern: ^R-[0-9]{3,6}$
+          maxLength: 8
+        titulo: {type: string, maxLength: 120}
+        descripcion: {type: [string, 'null'], maxLength: 1000}
+        probabilidad: {type: integer, minimum: 1, maximum: 5}
+        impacto: {type: integer, minimum: 1, maximum: 5}
+        puntaje: {type: integer, minimum: 1, maximum: 25}
+        nivel:
+          $ref: '#/components/schemas/NivelRiesgo'
+        decision:
+          $ref: '#/components/schemas/DecisionTratamiento'
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        estado:
+          $ref: '#/components/schemas/EstadoRiesgo'
+        version: {type: integer, minimum: 1}
+        controles: {type: integer, minimum: 0, maximum: 50, description: Controles VIGENTES de la empresa que lo tratan.}
+        tratamientosPrevistos: {type: integer, minimum: 0, maximum: 50, description: Controles del Anexo A vinculados directo.}
+        sinTratamiento: {type: boolean, description: Está vigente, su decisión es «mitigar» y no tiene ningún control vigente ni tratamiento previsto.}
+    ControlDeRiesgo:
+      type: object
+      required: [id, codigo, nombre, estado]
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid, maxLength: 36}
+        codigo:
+          type: string
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$
+          maxLength: 20
+        nombre: {type: string, maxLength: 120}
+        estado:
+          $ref: '#/components/schemas/EstadoControl'
+    TratamientoPrevisto:
+      type: object
+      required: [libreriaCodigo, idEstable, titulo]
+      additionalProperties: false
+      properties:
+        libreriaCodigo: {type: string, maxLength: 64}
+        idEstable: {type: string, maxLength: 41}
+        titulo:
+          type: [string, 'null']
+          maxLength: 200
+          description: Nulo si la entrada ya no está entre las librerías adoptadas por la empresa.
+    RiesgoDetalle:
+      type: object
+      required: [id, codigo, titulo, descripcion, probabilidad, impacto, puntaje, nivel, decision, responsableId, estado, version, controles, tratamientosPrevistos]
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid, maxLength: 36}
+        codigo:
+          type: string
+          pattern: ^R-[0-9]{3,6}$
+          maxLength: 8
+        titulo: {type: string, maxLength: 120}
+        descripcion: {type: [string, 'null'], maxLength: 1000}
+        probabilidad: {type: integer, minimum: 1, maximum: 5}
+        impacto: {type: integer, minimum: 1, maximum: 5}
+        puntaje: {type: integer, minimum: 1, maximum: 25}
+        nivel:
+          $ref: '#/components/schemas/NivelRiesgo'
+        decision:
+          $ref: '#/components/schemas/DecisionTratamiento'
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        estado:
+          $ref: '#/components/schemas/EstadoRiesgo'
+        version: {type: integer, minimum: 1}
+        controles:
+          type: array
+          maxItems: 50
+          description: Controles de la empresa que lo tratan; los retirados se marcan y el vínculo se conserva.
+          items:
+            $ref: '#/components/schemas/ControlDeRiesgo'
+        tratamientosPrevistos:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/TratamientoPrevisto'
+    RiesgoEntrada:
+      type: object
+      required: [titulo, probabilidad, impacto, decision]
+      additionalProperties: false
+      properties:
+        titulo: {type: string, minLength: 1, maxLength: 120}
+        descripcion: {type: [string, 'null'], maxLength: 1000}
+        probabilidad: {type: integer, minimum: 1, maximum: 5}
+        impacto: {type: integer, minimum: 1, maximum: 5}
+        decision:
+          $ref: '#/components/schemas/DecisionTratamiento'
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+    RiesgoCambios:
+      type: object
+      required: [versionEsperada]
+      additionalProperties: false
+      properties:
+        versionEsperada: {type: integer, minimum: 1}
+        titulo: {type: string, minLength: 1, maxLength: 120}
+        descripcion: {type: [string, 'null'], maxLength: 1000}
+        probabilidad: {type: integer, minimum: 1, maximum: 5}
+        impacto: {type: integer, minimum: 1, maximum: 5}
+        decision:
+          $ref: '#/components/schemas/DecisionTratamiento'
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+    RiesgoVersion:
+      type: object
+      required: [versionEsperada]
+      additionalProperties: false
+      properties:
+        versionEsperada: {type: integer, minimum: 1}
+    VinculoControlEntrada:
+      type: object
+      required: [controlId]
+      additionalProperties: false
+      properties:
+        controlId: {type: string, format: uuid, maxLength: 36}
+    VinculoResultado:
+      type: object
+      required: [creado]
+      additionalProperties: false
+      properties:
+        creado:
+          type: boolean
+          description: Verdadero si se creó (201); falso si ya existía (200).
+    AvisoRetiroRiesgo:
+      type: object
+      required: [riesgoId, codigo, controlesSinMotivo]
+      additionalProperties: false
+      properties:
+        riesgoId: {type: string, format: uuid, maxLength: 36}
+        codigo:
+          type: string
+          pattern: ^R-[0-9]{3,6}$
+          maxLength: 8
+        controlesSinMotivo:
+          type: array
+          maxItems: 500
+          description: Controles del Anexo A que aplican y quedarían sin motivo al retirar el riesgo. Vacío si el retiro no deja nada sin motivo.
+          items:
+            type: object
+            required: [libreriaCodigo, idEstable, titulo]
+            additionalProperties: false
+            properties:
+              libreriaCodigo: {type: string, maxLength: 64}
+              idEstable: {type: string, maxLength: 41}
+              titulo: {type: string, maxLength: 200}
+    MotivoDeclaracion:
+      type: object
+      required: [libreriaCodigo, idEstable, tipo, nota, version]
+      additionalProperties: false
+      properties:
+        libreriaCodigo: {type: string, maxLength: 64}
+        idEstable: {type: string, maxLength: 41}
+        tipo:
+          $ref: '#/components/schemas/TipoMotivo'
+        nota: {type: string, maxLength: 500, description: En palabras de la empresa; no debe llevar datos personales ni texto de las normas.}
+        version: {type: integer, minimum: 1}
+    MotivoEntrada:
+      type: object
+      required: [libreriaCodigo, idEstable, tipo, nota]
+      additionalProperties: false
+      properties:
+        libreriaCodigo:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9-]{0,63}$
+          maxLength: 64
+        idEstable:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9.-]{0,40}$
+          maxLength: 41
+        tipo:
+          $ref: '#/components/schemas/TipoMotivo'
+        nota: {type: string, minLength: 1, maxLength: 500}
+        versionEsperada: {type: integer, minimum: 1, description: Ausente = crear; presente = la versión que la persona vio.}
+    MotivoQuitar:
+      type: object
+      required: [libreriaCodigo, idEstable, tipo, versionEsperada]
+      additionalProperties: false
+      properties:
+        libreriaCodigo:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9-]{0,63}$
+          maxLength: 64
+        idEstable:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9.-]{0,40}$
+          maxLength: 41
+        tipo:
+          $ref: '#/components/schemas/TipoMotivo'
+        versionEsperada: {type: integer, minimum: 1}
+    ReferenciaDeclaracion:
+      type: object
+      required: [tipo, titulo, versionDoc, fecha, ubicacion, version]
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoReferencia'
+        titulo: {type: string, maxLength: 120}
+        versionDoc: {type: string, maxLength: 40}
+        fecha: {type: string, format: date, maxLength: 10}
+        ubicacion: {type: string, maxLength: 200, description: Dónde o con qué código conserva la empresa el documento.}
+        version: {type: integer, minimum: 1}
+    ReferenciaEntrada:
+      type: object
+      required: [tipo, titulo, versionDoc, fecha, ubicacion]
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoReferencia'
+        titulo: {type: string, minLength: 1, maxLength: 120}
+        versionDoc: {type: string, minLength: 1, maxLength: 40}
+        fecha: {type: string, format: date, maxLength: 10}
+        ubicacion: {type: string, minLength: 1, maxLength: 200}
+        versionEsperada: {type: integer, minimum: 1, description: Ausente = crear; presente = la versión que la persona vio.}
+    ReferenciaQuitar:
+      type: object
+      required: [tipo, versionEsperada]
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoReferencia'
+        versionEsperada: {type: integer, minimum: 1}
+    EscalaRiesgo:
+      type: object
+      required: [escalaMax, corteMedio, corteAlto, corteCritico]
+      additionalProperties: false
+      description: La escala de probabilidad e impacto (1 a escalaMax) y el primer puntaje de cada nivel. Es el método por omisión de la herramienta, no el criterio de aceptación de la empresa.
+      properties:
+        escalaMax: {type: integer, minimum: 2, maximum: 10}
+        corteMedio: {type: integer, minimum: 2, maximum: 100}
+        corteAlto: {type: integer, minimum: 3, maximum: 100}
+        corteCritico: {type: integer, minimum: 4, maximum: 100}
+    MotivoDeFila:
+      type: object
+      required: [tipo, nota]
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoMotivo'
+        nota: {type: string, maxLength: 500}
+    RiesgoDeFila:
+      type: object
+      required: [codigo, titulo, nivel, via]
+      additionalProperties: false
+      properties:
+        codigo:
+          type: string
+          pattern: ^R-[0-9]{3,6}$
+          maxLength: 8
+        titulo: {type: string, maxLength: 120}
+        nivel:
+          $ref: '#/components/schemas/NivelRiesgo'
+        via:
+          $ref: '#/components/schemas/ViaRiesgo'
+    FilaJustificacion:
+      type: object
+      required: [libreriaCodigo, idEstable, sinMotivo, motivos, riesgos]
+      additionalProperties: false
+      properties:
+        libreriaCodigo: {type: string, maxLength: 64}
+        idEstable: {type: string, maxLength: 41}
+        sinMotivo: {type: boolean, description: Aplica y no tiene ningún riesgo ni motivo registrado; impide aprobar.}
+        motivos:
+          type: array
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/MotivoDeFila'
+        riesgos:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/RiesgoDeFila'
+    BloqueoDeclaracion:
+      type: string
+      enum: [sin_filas, por_decidir, sin_motivo]
+    JustificacionBorrador:
+      type: object
+      required: [conMotivo, sinMotivo, riesgosVigentes, riesgosSinTratamiento, bloqueos, filas, referencias, escala, faltaPlanTratamiento]
+      additionalProperties: false
+      description: Lo que justifica el borrador, derivado en vivo de los riesgos, los motivos y las referencias.
+      properties:
+        conMotivo: {type: integer, minimum: 0, description: Controles que aplican y tienen un riesgo derivado o un motivo registrado.}
+        sinMotivo: {type: integer, minimum: 0, description: Controles que aplican y no tienen motivo; impiden aprobar.}
+        riesgosVigentes: {type: integer, minimum: 0}
+        riesgosSinTratamiento: {type: integer, minimum: 0, description: Advertencia, no bloqueo: riesgos «mitigar» sin control vigente ni tratamiento previsto.}
+        bloqueos:
+          type: array
+          maxItems: 3
+          description: Qué impide aprobar; vacío si se puede aprobar.
+          items:
+            $ref: '#/components/schemas/BloqueoDeclaracion'
+        filas:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/FilaJustificacion'
+        referencias:
+          type: array
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/ReferenciaDeclaracion'
+        escala:
+          $ref: '#/components/schemas/EscalaRiesgo'
+        faltaPlanTratamiento: {type: boolean, description: Hay riesgos «mitigar» y no hay referencia al plan de tratamiento (advierte, no bloquea).}
+    RiesgoCongelado:
+      type: object
+      required: [codigo, titulo, probabilidad, impacto, nivel, decision, responsableId, controles]
+      additionalProperties: false
+      properties:
+        codigo:
+          type: string
+          pattern: ^R-[0-9]{3,6}$
+          maxLength: 8
+        titulo: {type: string, maxLength: 120}
+        probabilidad: {type: integer, minimum: 1, maximum: 10}
+        impacto: {type: integer, minimum: 1, maximum: 10}
+        nivel:
+          $ref: '#/components/schemas/NivelRiesgo'
+        decision:
+          $ref: '#/components/schemas/DecisionTratamiento'
+        responsableId:
+          type: [string, 'null']
+          format: uuid
+          maxLength: 36
+        controles:
+          type: array
+          maxItems: 50
+          description: Códigos de los controles vigentes de la empresa que lo trataban.
+          items: {type: string, maxLength: 20}
+    JustificacionVersion:
+      type: [object, 'null']
+      required: [escala, conMotivo, riesgosVigentes, motivos, riesgos, riesgosPorFila, referencias]
+      additionalProperties: false
+      description: Lo que justificaba la versión al aprobarla, tal como se congeló. Cambiar después un riesgo, un motivo o una referencia no la altera. Nula en las versiones aprobadas antes de la Declaración justificada (sin motivos ni riesgos).
+      properties:
+        escala:
+          $ref: '#/components/schemas/EscalaRiesgo'
+        conMotivo: {type: integer, minimum: 0}
+        riesgosVigentes: {type: integer, minimum: 0}
+        motivos:
+          type: array
+          maxItems: 500
+          items:
+            type: object
+            required: [libreriaCodigo, idEstable, tipo, nota]
+            additionalProperties: false
+            properties:
+              libreriaCodigo: {type: string, maxLength: 64}
+              idEstable: {type: string, maxLength: 41}
+              tipo:
+                $ref: '#/components/schemas/TipoMotivo'
+              nota: {type: string, maxLength: 500}
+        riesgos:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/RiesgoCongelado'
+        riesgosPorFila:
+          type: array
+          maxItems: 5000
+          items:
+            type: object
+            required: [libreriaCodigo, idEstable, riesgoCodigo, via]
+            additionalProperties: false
+            properties:
+              libreriaCodigo: {type: string, maxLength: 64}
+              idEstable: {type: string, maxLength: 41}
+              riesgoCodigo:
+                type: string
+                pattern: ^R-[0-9]{3,6}$
+                maxLength: 8
+              via:
+                $ref: '#/components/schemas/ViaRiesgo'
+        referencias:
+          type: array
+          maxItems: 2
+          items:
+            type: object
+            required: [tipo, titulo, versionDoc, fecha, ubicacion]
+            additionalProperties: false
+            properties:
+              tipo:
+                $ref: '#/components/schemas/TipoReferencia'
+              titulo: {type: string, maxLength: 120}
+              versionDoc: {type: string, maxLength: 40}
+              fecha: {type: string, format: date, maxLength: 10}
+              ubicacion: {type: string, maxLength: 200}

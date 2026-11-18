@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { crearDependencias } from '../../../../../src/auth/dependencias';
-import { cargarDeclaracion, cargarVersionesDeclaracion } from '../../../../../src/certificacion/cargar';
+import { cargarDeclaracion, cargarMotivosDeclaracion, cargarVersionesDeclaracion } from '../../../../../src/certificacion/cargar';
 import { leerAvisoEscritura } from '../../../../../src/certificacion/escribir';
 import { contextoActual } from '../../../../../src/marca/servidor';
 import { PantallaDeclaracion } from '../../../../../src/pantallas/declaracion';
@@ -24,5 +24,11 @@ export default async function Page({
   if (d.tipo === 'ingresar' || v.tipo === 'ingresar') redirect(ingresar);
   if (d.tipo === 'sin_permiso' || v.tipo === 'sin_permiso') return <PantallaSinPermiso empresa={empresa} persona={persona} activo="declaracion" />;
   if (d.tipo === 'no_disponible' || v.tipo === 'no_disponible') throw new Error('No se pudo cargar la declaración');
-  return <PantallaDeclaracion empresa={empresa} persona={persona} declaracion={d.datos} versiones={v.datos} aviso={leerAvisoEscritura(await searchParams)} />;
+  // Los motivos con su versión (para cambiarlos o quitarlos) solo se piden a quien administra; la API decide de verdad.
+  let motivos: Awaited<ReturnType<typeof cargarMotivosDeclaracion>> = { tipo: 'ok', datos: [] };
+  if (persona.roles.includes('administrador_sig')) {
+    motivos = await cargarMotivosDeclaracion(base);
+    if (motivos.tipo === 'ingresar') redirect(ingresar);
+  }
+  return <PantallaDeclaracion empresa={empresa} persona={persona} declaracion={d.datos} versiones={v.datos} motivos={motivos.tipo === 'ok' ? motivos.datos : null} aviso={leerAvisoEscritura(await searchParams)} />;
 }

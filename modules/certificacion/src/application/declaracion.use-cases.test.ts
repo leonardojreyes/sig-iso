@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Alcance } from '../domain/alcance.js';
 import { Evaluacion } from '../domain/evaluacion.js';
+import { MotivoInclusion } from '../domain/motivo-inclusion.js';
+import { ReferenciaTratamiento } from '../domain/referencia-tratamiento.js';
+import { Riesgo } from '../domain/riesgo.js';
 import type { EstadoEvaluacion } from '../domain/estado-evaluacion.js';
 import { AgregarMapeoUseCase, CrearControlUseCase } from './controles.use-cases.js';
 import { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase } from './declaracion.use-cases.js';
@@ -46,10 +49,14 @@ type Montaje = ReturnType<typeof montar>;
 
 const evaluar = (m: Montaje, e: typeof POL, estado: EstadoEvaluacion, comentario: string | null = null, empresaId = A) =>
   m.estado.evaluaciones.set(`${empresaId}|${e.libreriaCodigo}|${e.idEstable}`, Evaluacion.crear({ empresaId, libreriaCodigo: e.libreriaCodigo, idEstable: e.idEstable, libreriaId: e.libreriaId, estado, comentario, version: 1 }));
+/** Un motivo registrado (como lo dejaría el caso de uso de motivos) para un control del Anexo A. */
+const motivar = (m: Montaje, e: typeof POL, tipo: 'legal' | 'contractual' | 'negocio' | 'otro' = 'negocio', nota = 'Necesidad del negocio', empresaId = A) =>
+  m.estado.motivos.set(`${empresaId}|${e.libreriaCodigo}|${e.idEstable}|${tipo}`, MotivoInclusion.crear({ empresaId, libreriaCodigo: e.libreriaCodigo, idEstable: e.idEstable, tipo, nota }));
 /** Las dos entradas evaluadas: una cumple y otra no aplica (con su justificación). */
 const completa = (m: Montaje) => {
   evaluar(m, POL, 'cumple', 'COMENTARIO-PRIVADO que no va a la declaración');
   evaluar(m, ROL, 'no_aplica', 'No hay personal propio');
+  motivar(m, POL); // todo control que aplica necesita un motivo para poder aprobar (ADR 037)
 };
 
 describe('permisos y orden de evaluación', () => {
@@ -157,6 +164,7 @@ describe('aprobar', () => {
     completa(m);
     const v1 = await m.aprobar.ejecutar(yo);
     evaluar(m, ROL, 'parcial'); // el diagnóstico cambia después de aprobar
+    motivar(m, ROL); // y ahora ROL aplica: necesita su motivo
     const v2 = await m.aprobar.ejecutar(yo);
     expect(v2.numero).toBe(2);
     expect((await m.version.ejecutar({ ...yo, id: v1.id })).filas[1]).toMatchObject({ aplicabilidad: 'no_aplica', justificacion: 'No hay personal propio' });
@@ -183,6 +191,7 @@ describe('aprobar', () => {
     const m = montar();
     completa(m);
     evaluar(m, POL, 'cumple', null, B);
+    motivar(m, POL, 'negocio', 'Necesidad del negocio de B', B);
     await m.aprobar.ejecutar(yo);
     const vb = await m.aprobar.ejecutar({ empresaId: B, usuarioId: ADMIN_B });
     expect(vb.numero).toBe(1);
@@ -250,5 +259,249 @@ describe('exportar', () => {
     m.generador.fallar = true;
     await expect(m.exportar.ejecutar(yo)).rejects.toThrow('generador no disponible');
     expect(m.estado.eventos).toEqual([]);
+  });
+});
+
+// ---- Declaración justificada (ADR 037): motivos derivados y registrados, bloqueo por falta de motivo y copia congelada.
+const RIESGO_ID = 'eeeeeeee-0000-4000-8000-000000000001';
+const sembrarRiesgo = (m: Montaje, extra: Partial<Parameters<typeof Riesgo.crear>[0]> = {}, empresaId = A) => {
+  const r = Riesgo.crear({ id: RIESGO_ID, empresaId, codigo: 'R-001', titulo: 'TITULO-RIESGO Pérdida de portátiles', probabilidad: 3, impacto: 4, decision: 'mitigar', ...extra } as never);
+  m.estado.riesgos.set(r.id, r);
+  return r;
+};
+/** Tratamiento previsto: el riesgo se vincula directo a un control del Anexo A. */
+const preverEn = (m: Montaje, e: typeof POL, riesgoId = RIESGO_ID, empresaId = A) => m.estado.vinculosEntrada.set(`${empresaId}|${riesgoId}|${e.libreriaCodigo}|${e.idEstable}`, ADMIN);
+const referenciar = (m: Montaje, tipo: 'analisis' | 'plan') =>
+  m.estado.referencias.set(`${A}|ISO/IEC 27001|${tipo}`, ReferenciaTratamiento.crear({ empresaId: A, norma: 'ISO/IEC 27001', tipo, titulo: `TITULO-REF ${tipo}`, versionDoc: '1.0', fecha: '2026-11-01', ubicacion: 'UBICACION-REF Carpeta SIG' }));
+/** POL aplica y ROL no aplica; sin ningún motivo todavía. */
+const sinMotivos = (m: Montaje) => {
+  evaluar(m, POL, 'cumple');
+  evaluar(m, ROL, 'no_aplica', 'No hay personal propio');
+};
+
+describe('el borrador justificado', () => {
+  it('muestra por fila los motivos registrados y los riesgos que la tratan, y los conteos del resumen', async () => {
+    const m = montar();
+    sinMotivos(m);
+    sembrarRiesgo(m);
+    preverEn(m, POL);
+    motivar(m, POL, 'legal', 'Ley de protección de datos');
+    const d = await m.borrador.ejecutar(yo);
+    expect(d.justificacion.filas[0]).toMatchObject({ idEstable: POL.idEstable, sinMotivo: false, motivos: [{ tipo: 'legal', nota: 'Ley de protección de datos' }], riesgos: [{ codigo: 'R-001', nivel: 'alto', via: 'previsto' }] });
+    expect(d.justificacion.filas[1]).toMatchObject({ idEstable: ROL.idEstable, sinMotivo: false, motivos: [], riesgos: [] }); // no aplica: no se pide motivo
+    expect(d.justificacion.resumen).toMatchObject({ aplican: 1, conMotivo: 1, sinMotivo: 0, riesgosVigentes: 1, riesgosSinTratamiento: 0, aprobable: true });
+    expect(d.justificacion.escala).toEqual({ escalaMax: 5, corteMedio: 5, corteAlto: 10, corteCritico: 16 });
+  });
+
+  it('un control que aplica sin motivo bloquea: el resumen saliente ya no es aprobable', async () => {
+    const m = montar();
+    sinMotivos(m);
+    const d = await m.borrador.ejecutar(yo);
+    expect(d.resumen.aprobable).toBe(false);
+    expect(d.justificacion.resumen).toMatchObject({ sinMotivo: 1, bloqueos: ['sin_motivo'] });
+    expect(d.justificacion.filas[0]?.sinMotivo).toBe(true);
+  });
+
+  it('advierte (sin bloquear) si hay riesgos «mitigar» y falta la referencia al plan de tratamiento', async () => {
+    const m = montar();
+    sinMotivos(m);
+    motivar(m, POL);
+    sembrarRiesgo(m);
+    expect((await m.borrador.ejecutar(yo)).justificacion).toMatchObject({ faltaPlanTratamiento: true, resumen: { riesgosSinTratamiento: 1, aprobable: true } });
+    referenciar(m, 'analisis');
+    expect((await m.borrador.ejecutar(yo)).justificacion.faltaPlanTratamiento).toBe(true); // el análisis no reemplaza al plan
+    referenciar(m, 'plan');
+    const d = await m.borrador.ejecutar(yo);
+    expect(d.justificacion.faltaPlanTratamiento).toBe(false);
+    expect(d.justificacion.referencias.map((r) => [r.tipo, r.titulo])).toEqual([['analisis', 'TITULO-REF analisis'], ['plan', 'TITULO-REF plan']]);
+  });
+
+  it('no usa riesgos, motivos ni referencias de otra empresa', async () => {
+    const m = montar();
+    sinMotivos(m);
+    sembrarRiesgo(m, {}, B);
+    preverEn(m, POL, RIESGO_ID, B);
+    motivar(m, POL, 'legal', 'Del B', B);
+    const d = await m.borrador.ejecutar(yo);
+    expect(d.justificacion.resumen).toMatchObject({ riesgosVigentes: 0, conMotivo: 0, sinMotivo: 1 });
+    expect(d.justificacion.filas[0]).toMatchObject({ motivos: [], riesgos: [] });
+  });
+});
+
+describe('aprobar con motivos', () => {
+  it('rechaza con «sin_motivo» si un control que aplica no tiene motivo, sin dejar versión ni hecho', async () => {
+    const m = montar();
+    sinMotivos(m);
+    await expect(m.aprobar.ejecutar(yo)).rejects.toMatchObject({ motivo: 'sin_motivo' });
+    expect(m.estado.declaraciones.size).toBe(0);
+    expect(m.estado.eventos).toEqual([]);
+    motivar(m, POL);
+    await expect(m.aprobar.ejecutar(yo)).resolves.toMatchObject({ numero: 1 });
+  });
+
+  it('«incompleta» (algo por decidir) se informa antes que la falta de motivo', async () => {
+    const m = montar();
+    evaluar(m, POL, 'cumple'); // ROL queda sin evaluar y POL sin motivo
+    await expect(m.aprobar.ejecutar(yo)).rejects.toMatchObject({ motivo: 'incompleta' });
+  });
+
+  it('un tratamiento previsto cuenta como motivo: se aprueba sin motivos registrados', async () => {
+    const m = montar();
+    sinMotivos(m);
+    sembrarRiesgo(m);
+    preverEn(m, POL);
+    await expect(m.aprobar.ejecutar(yo)).resolves.toMatchObject({ numero: 1 });
+  });
+
+  it('un riesgo retirado ya no sostiene el motivo', async () => {
+    const m = montar();
+    sinMotivos(m);
+    m.estado.riesgos.set(RIESGO_ID, sembrarRiesgo(m).retirar());
+    preverEn(m, POL);
+    await expect(m.aprobar.ejecutar(yo)).rejects.toMatchObject({ motivo: 'sin_motivo' });
+  });
+
+  it('congela motivos con su nota, riesgos tal como estaban, qué riesgos justifican cada fila, referencias y la escala', async () => {
+    const m = montar();
+    sinMotivos(m);
+    const c = await m.crearControl.ejecutar({ ...yo, codigo: 'C-001', nombre: 'Cifrado de discos' });
+    await m.agregarMapeo.ejecutar({ ...yo, controlId: c.id, libreriaCodigo: POL.libreriaCodigo, idEstable: POL.idEstable });
+    sembrarRiesgo(m, { responsableId: ADMIN });
+    m.estado.vinculosControl.set(`${A}|${RIESGO_ID}|${c.id}`, ADMIN);
+    motivar(m, POL, 'contractual', 'Cláusula 7 del contrato con el cliente');
+    referenciar(m, 'plan');
+    const v = await m.aprobar.ejecutar(yo);
+    const x = await m.version.ejecutar({ ...yo, id: v.id });
+    expect(x.justificacion).toMatchObject({
+      escala: { escalaMax: 5, corteMedio: 5, corteAlto: 10, corteCritico: 16 },
+      conMotivo: 1,
+      riesgosVigentes: 1,
+      motivos: [{ idEstable: POL.idEstable, tipo: 'contractual', nota: 'Cláusula 7 del contrato con el cliente' }],
+      riesgos: [{ codigo: 'R-001', titulo: 'TITULO-RIESGO Pérdida de portátiles', probabilidad: 3, impacto: 4, nivel: 'alto', decision: 'mitigar', responsableId: ADMIN, controles: ['C-001'] }],
+      riesgosPorFila: [{ idEstable: POL.idEstable, riesgoCodigo: 'R-001', via: 'control' }],
+      referencias: [{ tipo: 'plan', titulo: 'TITULO-REF plan', versionDoc: '1.0', fecha: '2026-11-01', ubicacion: 'UBICACION-REF Carpeta SIG' }],
+    });
+  });
+
+  it('cambiar o retirar un riesgo, un motivo o una referencia después NO altera la versión aprobada', async () => {
+    const m = montar();
+    sinMotivos(m);
+    const r = sembrarRiesgo(m);
+    preverEn(m, POL);
+    motivar(m, POL, 'legal', 'NOTA-ORIGINAL');
+    referenciar(m, 'plan');
+    const v = await m.aprobar.ejecutar(yo);
+    const antes = JSON.stringify((await m.version.ejecutar({ ...yo, id: v.id })).justificacion);
+    m.estado.riesgos.set(r.id, r.conCambios({ titulo: 'OTRO-TITULO', probabilidad: 1, impacto: 1 }).retirar());
+    motivar(m, POL, 'legal', 'NOTA-CAMBIADA');
+    m.estado.referencias.clear();
+    m.estado.vinculosEntrada.clear();
+    expect(JSON.stringify((await m.version.ejecutar({ ...yo, id: v.id })).justificacion)).toBe(antes);
+    expect(antes).toContain('NOTA-ORIGINAL');
+    expect(antes).not.toContain('OTRO-TITULO');
+  });
+
+  it('la bitácora lleva los conteos (con motivo y riesgos) y nunca textos', async () => {
+    const m = montar();
+    sinMotivos(m);
+    sembrarRiesgo(m);
+    preverEn(m, POL);
+    motivar(m, POL, 'legal', 'NOTA-PRIVADA-LEGAL');
+    referenciar(m, 'plan');
+    await m.aprobar.ejecutar(yo);
+    expect(m.estado.eventos).toEqual([expect.objectContaining({ accion: 'declaracion.aprobada', objeto: 'declaracion:v1', despues: { total: 2, aplican: 1, no_aplican: 1, sin_control: 1, con_motivo: 1, riesgos: 1 } })]);
+    expect(JSON.stringify(m.estado.eventos)).not.toMatch(/NOTA-PRIVADA|TITULO-RIESGO|TITULO-REF|UBICACION-REF/);
+  });
+
+  it('una versión aprobada antes de la Declaración justificada se sigue leyendo, sin justificación', async () => {
+    const m = montar();
+    completa(m);
+    const v = await m.aprobar.ejecutar(yo);
+    const guardada = m.estado.declaraciones.get(`${A}|${v.id}`);
+    // Como quedó en la base antes de la 0019: sin escala, sin conteos y sin copia.
+    if (!guardada) throw new Error('la versión debía existir');
+    m.estado.declaraciones.set(`${A}|${v.id}`, { empresaId: A, version: { ...guardada.version, justificacion: null }, filas: guardada.filas, copia: null });
+    const x = await m.version.ejecutar({ ...yo, id: v.id });
+    expect(x.justificacion).toBeNull();
+    expect(x.filas).toHaveLength(2);
+  });
+
+  it('aislamiento: no ve ni lee la justificación de una versión de otra empresa', async () => {
+    const m = montar();
+    completa(m);
+    const v = await m.aprobar.ejecutar(yo);
+    await expect(m.version.ejecutar({ empresaId: B, usuarioId: ADMIN_B, id: v.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+  });
+});
+
+describe('exportar con justificación (ADR 037)', () => {
+  it('el borrador lleva lo derivado hoy: motivos, riesgos vigentes, referencias y la escala', async () => {
+    const m = montar();
+    sinMotivos(m);
+    sembrarRiesgo(m, { responsableId: ADMIN });
+    preverEn(m, POL);
+    motivar(m, POL, 'legal', 'Ley de datos');
+    referenciar(m, 'plan');
+    await m.exportar.ejecutar(yo);
+    const j = m.generador.llamadas[0]?.justificacion;
+    expect(j).toMatchObject({
+      escala: { escalaMax: 5, corteMedio: 5, corteAlto: 10, corteCritico: 16 },
+      conMotivo: 1,
+      sinMotivo: 0,
+      motivos: [{ idEstable: POL.idEstable, tipo: 'legal', nota: 'Ley de datos' }],
+      riesgos: [{ codigo: 'R-001', nivel: 'alto', decision: 'mitigar', responsableId: ADMIN }],
+      riesgosPorFila: [{ idEstable: POL.idEstable, riesgoCodigo: 'R-001', via: 'previsto' }],
+      referencias: [{ tipo: 'plan' }],
+    });
+  });
+
+  it('el borrador con un control sin motivo lo cuenta (el documento lo señalará)', async () => {
+    const m = montar();
+    sinMotivos(m);
+    await m.exportar.ejecutar(yo);
+    expect(m.generador.llamadas[0]?.justificacion).toMatchObject({ conMotivo: 0, sinMotivo: 1, riesgos: [], motivos: [] });
+  });
+
+  it('una versión aprobada sale de su copia congelada, no de lo que haya hoy', async () => {
+    const m = montar();
+    sinMotivos(m);
+    const r = sembrarRiesgo(m);
+    preverEn(m, POL);
+    motivar(m, POL, 'legal', 'NOTA-ORIGINAL');
+    referenciar(m, 'plan');
+    const v = await m.aprobar.ejecutar(yo);
+    // Después de aprobar cambia todo.
+    m.estado.riesgos.set(r.id, r.conCambios({ titulo: 'OTRO-TITULO' }).retirar());
+    motivar(m, POL, 'legal', 'NOTA-CAMBIADA');
+    m.estado.referencias.clear();
+    m.estado.vinculosEntrada.clear();
+    await m.exportar.ejecutar({ ...yo, versionId: v.id });
+    const j = m.generador.llamadas[0]?.justificacion;
+    expect(j).toMatchObject({ conMotivo: 1, sinMotivo: 0, escala: { escalaMax: 5 }, riesgos: [{ codigo: 'R-001', titulo: expect.stringContaining('TITULO-RIESGO') }], referencias: [{ tipo: 'plan' }] });
+    const texto = JSON.stringify(j);
+    expect(texto).toContain('NOTA-ORIGINAL');
+    expect(texto).not.toMatch(/NOTA-CAMBIADA|OTRO-TITULO/);
+  });
+
+  it('una versión aprobada antes de la Declaración justificada sale sin justificación', async () => {
+    const m = montar();
+    completa(m);
+    const v = await m.aprobar.ejecutar(yo);
+    const guardada = m.estado.declaraciones.get(`${A}|${v.id}`);
+    if (!guardada) throw new Error('la versión debía existir');
+    m.estado.declaraciones.set(`${A}|${v.id}`, { empresaId: A, version: { ...guardada.version, justificacion: null }, filas: guardada.filas, copia: null });
+    await m.exportar.ejecutar({ ...yo, versionId: v.id });
+    expect(m.generador.llamadas[0]?.justificacion).toBeNull();
+  });
+
+  it('el hecho de exportación sigue llevando solo la huella, nunca los textos de la justificación', async () => {
+    const m = montar();
+    sinMotivos(m);
+    sembrarRiesgo(m);
+    preverEn(m, POL);
+    motivar(m, POL, 'otro', 'NOTA-PRIVADA');
+    referenciar(m, 'analisis');
+    await m.exportar.ejecutar(yo);
+    expect(JSON.stringify(m.estado.eventos)).not.toMatch(/NOTA-PRIVADA|TITULO-RIESGO|TITULO-REF|UBICACION-REF/);
   });
 });

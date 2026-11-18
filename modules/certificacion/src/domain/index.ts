@@ -1,7 +1,7 @@
 export { ALCANCE_MAX, Alcance, type DatosAlcance } from './alcance.js';
 export { Control, DESCRIPCION_CONTROL_MAX, MAPEOS_POR_CONTROL_MAX, NOMBRE_CONTROL_MAX, type CambiosControl, type DatosControl, type EstadoControl } from './control.js';
 export { calcularCobertura, type Cobertura, type CoberturaEntrada, type ControlParaCobertura, type EntradaParaCobertura, type EstadoCobertura, type EvidenciaParaCobertura, type MapeoParaCobertura, type ResumenCobertura } from './cobertura.js';
-export { CONTROLES_POR_FILA_MAX, derivarDeclaracion, type Aplicabilidad, type CoberturaParaDeclaracion, type ControlParaDeclaracion, type Declaracion, type EntradaParaDeclaracion, type EvaluacionParaDeclaracion, type FilaDeclaracion, type Implementacion, type MapeoParaDeclaracion, type ResumenDeclaracion } from './declaracion.js';
+export { CONTROLES_POR_FILA_MAX, derivarDeclaracion, efectoDeRetirarRiesgo, type ControlSinMotivo, TIPOS_MOTIVO, type Bloqueo, type FilaJustificada, type JustificacionParaDeclaracion, type MotivoDeFila, type MotivoParaDeclaracion, type RiesgoDeFila, type RiesgoParaDeclaracion, type TipoMotivo, type ViaRiesgo, type VinculoRiesgoControl, type VinculoRiesgoEntrada, type Aplicabilidad, type CoberturaParaDeclaracion, type ControlParaDeclaracion, type Declaracion, type EntradaParaDeclaracion, type EvaluacionParaDeclaracion, type FilaDeclaracion, type Implementacion, type MapeoParaDeclaracion, type ResumenDeclaracion } from './declaracion.js';
 export { detectarTipoArchivo, type LectorBytes, type MotivoRechazoArchivo, type ResultadoDeteccion } from './deteccion-archivo.js';
 export { ErrorCertificacion } from './errores.js';
 export { ESTADOS_EVIDENCIA, EVIDENCIAS_ACTIVAS_POR_CONTROL_MAX, Evidencia, TIPOS_EVIDENCIA, TITULO_EVIDENCIA_MAX, type ArchivoEvidencia, type DatosEvidencia, type EstadoEvidencia, type TipoEvidencia } from './evidencia.js';
@@ -11,3 +11,6 @@ export { COMENTARIO_MAX, Evaluacion, JUSTIFICACION_MIN, type DatosEvaluacion } f
 export { calcularMadurez, desglosar, type Desglose, type EntradaParaMadurez, type Madurez, type MadurezAgrupador } from './madurez.js';
 export { esTipoArchivo, extensionDeTipo, NOMBRE_ARCHIVO_MAX, nombreDeDescarga, normalizarNombreArchivo, TAMANO_MAX_BYTES, TIPOS_ARCHIVO, type TipoArchivo } from './tipo-archivo.js';
 export { MapeoControl, type DatosMapeoControl } from './mapeo-control.js';
+export { escalaVigente, codigoDeRiesgo, numeroDeRiesgo, CORTES_NIVEL, DECISIONES_TRATAMIENTO, DESCRIPCION_RIESGO_MAX, ESCALA_MAX, ESCALA_MIN, TITULO_RIESGO_MAX, Riesgo, calcularNivel, nombreDeNivel, type CambiosRiesgo, type CorteNivel, type DatosRiesgo, type DecisionTratamiento, type EstadoRiesgo, type NivelRiesgo } from './riesgo.js';
+export { MotivoInclusion, NOTA_MOTIVO_MAX, type DatosMotivoInclusion } from './motivo-inclusion.js';
+export { ReferenciaTratamiento, TIPOS_REFERENCIA, TITULO_REFERENCIA_MAX, UBICACION_REFERENCIA_MAX, VERSION_REFERENCIA_MAX, type DatosReferenciaTratamiento, type TipoReferencia } from './referencia-tratamiento.js';

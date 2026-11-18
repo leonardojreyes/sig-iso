@@ -5,6 +5,21 @@ import type { RegistroBitacora, ValorBitacora } from './tipos';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const OBJETO = /^[a-z_]+:[A-Za-z0-9._-]{1,100}$/;
+/**
+ * Forma exacta del identificador de los objetos de la Declaración justificada (ADR 037): solo códigos e identificadores estables, nunca
+ * un título, una nota ni otro texto de la empresa. Los demás tipos de objeto conservan la forma general.
+ */
+const FORMA_POR_TIPO: Readonly<Record<string, RegExp>> = {
+  riesgo: /^R-[0-9]{3,6}$/,
+  vinculo: /^R-[0-9]{3,6}\.[A-Za-z0-9][A-Za-z0-9._-]{0,40}$/, // un código de control puede llevar puntos (C.1.2)
+  motivo: /^[a-z0-9][a-z0-9.-]{0,40}\.(?:legal|contractual|negocio|otro)$/,
+  referencia: /^[a-z0-9][a-z0-9-]{0,59}\.(?:analisis|plan)$/,
+};
+const objetoConForma = (objeto: string): boolean => {
+  const [tipo = '', ...resto] = objeto.split(':');
+  const forma = FORMA_POR_TIPO[tipo];
+  return forma === undefined || forma.test(resto.join(':'));
+};
 const VERSION = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 const HUELLA = /^[0-9a-f]{64}$/;
 const ORIGEN = /^[A-Za-z0-9:_.-]{1,200}$/;
@@ -137,7 +152,7 @@ export const validarEvento = (entrada: unknown): RegistroBitacora => {
 
   // Objeto, versión, trazabilidad
   const objeto = entrada.objeto;
-  if (validarPresencia('objeto', objeto, def.objeto, problemas) && !(typeof objeto === 'string' && OBJETO.test(objeto))) problemas.push('objeto debe tener la forma tipo:identificador');
+  if (validarPresencia('objeto', objeto, def.objeto, problemas) && !(typeof objeto === 'string' && OBJETO.test(objeto) && objetoConForma(objeto))) problemas.push('objeto debe tener la forma tipo:identificador');
 
   const objetoVersion = entrada.objetoVersion;
   if (validarPresencia('objetoVersion', objetoVersion, def.objetoVersion, problemas) && !(typeof objetoVersion === 'string' && (VERSION.test(objetoVersion) || HUELLA.test(objetoVersion)))) {

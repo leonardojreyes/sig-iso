@@ -3,6 +3,7 @@ import type { Rol, VersionDeclaracionConFilas } from '../api/tipos';
 import { es } from '../i18n/es-EC';
 import type { Empresa } from '../marca/tipos';
 import { fechaDeAprobacion, TablaFilasDeclaracion } from './declaracion';
+import { justificacionDeLaVersion, SeccionJustificacionVersion } from './justificacion-declaracion';
 import { MarcoApp } from './marco';
 
 const t = es.declaracion;
@@ -20,7 +21,7 @@ export const PantallaVersionDeclaracion = ({ empresa, persona, version }: PropsV
   return (
     <MarcoApp empresa={empresa} activo="declaracion" persona={persona.nombre}>
       <p className="mb-2">
-        <a className="text-sm font-medium text-primary underline" href={`${base}/declaracion`}>
+        <a className={enlace} href={`${base}/declaracion`}>
           {t.volver}
         </a>
       </p>
@@ -43,7 +44,10 @@ export const PantallaVersionDeclaracion = ({ empresa, persona, version }: PropsV
       <div className="mb-2">
         <Badge tono="success">{t.versionNumero(version.numero)}</Badge>
       </div>
-      <TablaFilasDeclaracion filas={version.filas} />
+      <TablaFilasDeclaracion filas={version.filas} {...(version.justificacion ? { justificacion: justificacionDeLaVersion(version.justificacion, version.filas) } : {})} />
+      <div className="mt-8">
+        <SeccionJustificacionVersion justificacion={version.justificacion} />
+      </div>
     </MarcoApp>
   );
 };

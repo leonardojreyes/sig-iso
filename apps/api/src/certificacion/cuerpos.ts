@@ -1,4 +1,4 @@
-import type { EvaluarEntradaEntrada } from '@sig/certificacion';
+import type { DecisionTratamiento, EvaluarEntradaEntrada, TipoMotivo, TipoReferencia } from '@sig/certificacion';
 
 // Lectura TOLERANTE del cuerpo y de la consulta: aquí solo se extraen los campos conocidos (los demás se ignoran). Qué es válido
 // lo decide el caso de uso DESPUÉS de comprobar el permiso (orden 401 → 403 → 400 → 404), así que un valor de tipo equivocado
@@ -63,4 +63,38 @@ export const leerFiltrosControles = (consulta: Readonly<Record<string, unknown>>
   const r = consulta['incluirRetirados'];
   if (r !== undefined) f['incluirRetirados'] = r === 'true' ? true : r === 'false' ? false : r;
   return f as { norma?: string; incluirRetirados?: boolean };
+};
+
+// ---- Riesgos y justificación de la Declaración (ADR 037)
+// Los tipos son los que espera el caso de uso; la lectura es tolerante: un valor equivocado pasa tal cual y el caso de uso responde 400.
+
+export const leerRiesgoEntrada = (
+  cuerpo: unknown,
+): { titulo: string; descripcion?: string | null; probabilidad: number; impacto: number; decision: DecisionTratamiento; responsableId?: string | null } =>
+  elegir(campos(cuerpo), ['titulo', 'descripcion', 'probabilidad', 'impacto', 'decision', 'responsableId']) as ReturnType<typeof leerRiesgoEntrada>;
+
+export const leerRiesgoCambios = (
+  cuerpo: unknown,
+): { versionEsperada?: number; titulo?: string; descripcion?: string | null; probabilidad?: number; impacto?: number; decision?: DecisionTratamiento; responsableId?: string | null } =>
+  elegir(campos(cuerpo), ['versionEsperada', 'titulo', 'descripcion', 'probabilidad', 'impacto', 'decision', 'responsableId']);
+
+export const leerVinculoControl = (cuerpo: unknown): { controlId: string } => elegir(campos(cuerpo), ['controlId']) as { controlId: string };
+
+export const leerMotivoEntrada = (cuerpo: unknown): { libreriaCodigo: string; idEstable: string; tipo: TipoMotivo; nota: string; versionEsperada?: number } =>
+  elegir(campos(cuerpo), ['libreriaCodigo', 'idEstable', 'tipo', 'nota', 'versionEsperada']) as ReturnType<typeof leerMotivoEntrada>;
+
+export const leerMotivoQuitar = (cuerpo: unknown): { libreriaCodigo: string; idEstable: string; tipo: TipoMotivo; versionEsperada?: number } =>
+  elegir(campos(cuerpo), ['libreriaCodigo', 'idEstable', 'tipo', 'versionEsperada']) as ReturnType<typeof leerMotivoQuitar>;
+
+export const leerReferenciaEntrada = (
+  cuerpo: unknown,
+): { tipo: TipoReferencia; titulo: string; versionDoc: string; fecha: string; ubicacion: string; versionEsperada?: number } =>
+  elegir(campos(cuerpo), ['tipo', 'titulo', 'versionDoc', 'fecha', 'ubicacion', 'versionEsperada']) as ReturnType<typeof leerReferenciaEntrada>;
+
+export const leerReferenciaQuitar = (cuerpo: unknown): { tipo: TipoReferencia; versionEsperada?: number } => elegir(campos(cuerpo), ['tipo', 'versionEsperada']) as ReturnType<typeof leerReferenciaQuitar>;
+
+/** `?incluirRetirados=true|false`; cualquier otra cosa pasa tal cual y el caso de uso la rechaza con 400. */
+export const leerIncluirRetirados = (consulta: Readonly<Record<string, unknown>>): { incluirRetirados?: boolean } => {
+  const r = consulta['incluirRetirados'];
+  return r === undefined ? {} : { incluirRetirados: (r === 'true' ? true : r === 'false' ? false : r) as boolean };
 };

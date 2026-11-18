@@ -4,7 +4,7 @@ import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
 import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
-import { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
+import { AvisoRetiroRiesgoUseCase, CambiarRiesgoUseCase, CrearRiesgoUseCase, DesvincularRiesgoControlUseCase, GuardarReferenciaUseCase, ListarMotivosUseCase, ListarReferenciasUseCase, ListarRiesgosUseCase, ObtenerRiesgoUseCase, PreverTratamientoUseCase, QuitarMotivoUseCase, QuitarReferenciaUseCase, QuitarTratamientoPrevistoUseCase, RegistrarMotivoUseCase, RetirarRiesgoUseCase, RiesgosDeUnControlUseCase, VincularRiesgoControlUseCase, AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
 import { AprobarSolicitudUseCase, CambiarRolUseCase as CambiarRolPersonaUseCase, crearUnidadDeTrabajoPersonas, DarDeBajaUseCase, DescartarSolicitudUseCase, ListarPersonasUseCase, SolicitarAccesoUseCase, type UnidadDeTrabajoPersonasPort, ActualizarMarcaUseCase, crearUnidadDeTrabajoMarca, CambiarEmpresaUseCase, EmpresaActivaKysely, EmpresaKysely, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase, ResolverEmpresaActivaUseCase, type EmpresaActivaPort, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, CargarLibreriaUseCase, crearUnidadDeTrabajoCarga, LectorLibreriaYaml, type ContextoCarga, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
@@ -138,6 +138,23 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       versionesDeclaracion: new ListarVersionesDeclaracionUseCase(unidadCertificacion, autorizacion),
       versionDeclaracion: new ObtenerVersionDeclaracionUseCase(unidadCertificacion, autorizacion),
       exportarDeclaracion: new ExportarDeclaracionUseCase(unidadCertificacion, autorizacion, catalogo, new GeneradorDocumentoDocx(), reloj),
+      listarRiesgos: new ListarRiesgosUseCase(unidadCertificacion, autorizacion),
+      crearRiesgo: new CrearRiesgoUseCase(unidadCertificacion, autorizacion, reloj, () => randomUUID()),
+      obtenerRiesgo: new ObtenerRiesgoUseCase(unidadCertificacion, autorizacion, catalogo),
+      cambiarRiesgo: new CambiarRiesgoUseCase(unidadCertificacion, autorizacion, reloj),
+      avisarRetiroRiesgo: new AvisoRetiroRiesgoUseCase(unidadCertificacion, autorizacion, catalogo),
+      retirarRiesgo: new RetirarRiesgoUseCase(unidadCertificacion, autorizacion, reloj),
+      vincularRiesgoControl: new VincularRiesgoControlUseCase(unidadCertificacion, autorizacion, reloj),
+      desvincularRiesgoControl: new DesvincularRiesgoControlUseCase(unidadCertificacion, autorizacion),
+      preverTratamiento: new PreverTratamientoUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      quitarTratamientoPrevisto: new QuitarTratamientoPrevistoUseCase(unidadCertificacion, autorizacion),
+      riesgosDeControl: new RiesgosDeUnControlUseCase(unidadCertificacion, autorizacion),
+      listarMotivos: new ListarMotivosUseCase(unidadCertificacion, autorizacion),
+      registrarMotivo: new RegistrarMotivoUseCase(unidadCertificacion, autorizacion, catalogo, reloj),
+      quitarMotivo: new QuitarMotivoUseCase(unidadCertificacion, autorizacion),
+      listarReferencias: new ListarReferenciasUseCase(unidadCertificacion, autorizacion),
+      guardarReferencia: new GuardarReferenciaUseCase(unidadCertificacion, autorizacion, reloj),
+      quitarReferencia: new QuitarReferenciaUseCase(unidadCertificacion, autorizacion),
     },
     personas: {
       solicitarAcceso: new SolicitarAccesoUseCase(unidadPersonas, (n) => crypto.getRandomValues(new Uint8Array(n)), () => randomUUID()),

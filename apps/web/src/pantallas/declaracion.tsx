@@ -1,10 +1,12 @@
 import { Alert, Badge, Button, Card, CardTitle, EstadoVacio, Tabla, Td, Th } from '@sig/ui';
-import type { Declaracion, FilaDeclaracion, Rol, VersionDeclaracion } from '../api/tipos';
+import type { ReactNode } from 'react';
+import type { Declaracion, FilaDeclaracion, MotivoDeclaracion, Rol, VersionDeclaracion } from '../api/tipos';
 import type { AvisoEscritura } from '../certificacion/escribir';
 import { hoyEnEcuador } from '../certificacion/formato';
 import { es } from '../i18n/es-EC';
 import type { Empresa } from '../marca/tipos';
 import { AvisoDeEscritura } from './aviso-escritura';
+import { CeldaMotivo, EditorMotivos, justificacionDelBorrador, SeccionReferencias, type JustificacionPorFila } from './justificacion-declaracion';
 import { MarcoApp } from './marco';
 
 const t = es.declaracion;
@@ -17,7 +19,7 @@ const enlaceClase = 'inline-flex min-h-[var(--sig-density-target-min)] items-cen
 export const fechaDeAprobacion = (iso: string): string => hoyEnEcuador(new Date(iso));
 
 /** Tabla de filas de la declaración: la misma para el borrador de hoy y para una versión congelada. */
-export const TablaFilasDeclaracion = ({ filas }: { filas: readonly FilaDeclaracion[] }) => (
+export const TablaFilasDeclaracion = ({ filas, justificacion, editor }: { filas: readonly FilaDeclaracion[]; justificacion?: JustificacionPorFila; editor?: (f: FilaDeclaracion) => ReactNode }) => (
     <Tabla aria-describedby="declaracion-desc">
       <caption id="declaracion-desc" className="sr-only">
         {t.tablaDescripcion}
@@ -29,6 +31,7 @@ export const TablaFilasDeclaracion = ({ filas }: { filas: readonly FilaDeclaraci
           <Th scope="col">{t.columnas.implementacion}</Th>
           <Th scope="col">{t.columnas.controles}</Th>
           <Th scope="col">{t.columnas.evidencia}</Th>
+          {justificacion && <Th scope="col">{t.columnasMotivo}</Th>}
           <Th scope="col">{t.columnas.justificacion}</Th>
         </tr>
       </thead>
@@ -62,6 +65,12 @@ export const TablaFilasDeclaracion = ({ filas }: { filas: readonly FilaDeclaraci
             <Td>
               <Badge tono={TONO_COBERTURA[f.cobertura]}>{t.cobertura[f.cobertura]}</Badge>
             </Td>
+            {justificacion && (
+              <Td className="max-w-sm">
+                <CeldaMotivo fila={f} justificacion={justificacion.get(`${f.libreriaCodigo}|${f.idEstable}`)} />
+                {editor && f.aplicabilidad === 'aplica' ? editor(f) : null}
+              </Td>
+            )}
             <Td className="max-w-sm text-sm">{f.justificacion ?? ''}</Td>
           </tr>
         ))}
@@ -74,11 +83,13 @@ export interface PropsDeclaracion {
   readonly persona: { readonly nombre: string; readonly roles: readonly Rol[] };
   readonly declaracion: Declaracion;
   readonly versiones: readonly VersionDeclaracion[];
+  /** Los motivos registrados con su versión (solo los pide quien administra: sirven para cambiarlos o quitarlos). */
+  readonly motivos?: readonly MotivoDeclaracion[] | null;
   readonly aviso: AvisoEscritura | null;
 }
 
-export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, aviso }: PropsDeclaracion) => {
-  const { resumen } = declaracion;
+export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, motivos = [], aviso }: PropsDeclaracion) => {
+  const { resumen, justificacion } = declaracion;
   const aprueba = persona.roles.includes('administrador_sig');
   const base = `/e/${empresa.id}`;
   return (
@@ -112,13 +123,38 @@ export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, 
             </dl>
             {resumen.porDecidir > 0 && (
               <div className="mt-4">
-                <Alert tono="warning" titulo={t.incompletaTitulo}>
+                <Alert anunciar={false} tono="warning" titulo={t.incompletaTitulo}>
                   {t.incompleta(resumen.porDecidir)}
                 </Alert>
               </div>
             )}
             {resumen.sinControl > 0 && <p className="mt-4 text-sm text-fg-muted">{t.sinControlAviso(resumen.sinControl)}</p>}
+            <dl className="mt-4 grid grid-cols-2 gap-4 text-sm md:grid-cols-5">
+              {(
+                [
+                  ['conMotivo', justificacion.conMotivo],
+                  ['sinMotivo', justificacion.sinMotivo],
+                  ['riesgosVigentes', justificacion.riesgosVigentes],
+                ] as const
+              ).map(([clave, valor]) => (
+                <div key={clave}>
+                  <dt className="text-fg-muted">{t.resumenMotivo[clave]}</dt>
+                  <dd className="text-2xl font-semibold tabular-nums text-fg">{valor}</dd>
+                </div>
+              ))}
+            </dl>
+            {justificacion.sinMotivo > 0 && (
+              <div className="mt-4">
+                <Alert anunciar={false} tono="warning" titulo={t.sinMotivoTitulo}>
+                  {t.sinMotivoAviso(justificacion.sinMotivo)} {t.sinMotivoAyuda}
+                </Alert>
+              </div>
+            )}
+            {justificacion.riesgosSinTratamiento > 0 && <p className="mt-4 text-sm text-fg-muted">{t.riesgosSinTratamientoAviso(justificacion.riesgosSinTratamiento)}</p>}
+            {justificacion.faltaPlanTratamiento && <p className="mt-4 text-sm text-fg-muted">{t.faltaPlan}</p>}
           </Card>
+
+          <SeccionReferencias empresa={empresa} referencias={justificacion.referencias} puedeGestionar={aprueba} />
 
           <Card className="mb-6" aria-labelledby="declaracion-alcance">
             <CardTitle id="declaracion-alcance">{t.alcanceTitulo}</CardTitle>
@@ -131,7 +167,7 @@ export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, 
               <p className="text-sm text-fg-muted">{t.sinAlcance}</p>
             )}
             <p className="mt-3">
-              <a className="text-sm font-medium text-primary underline" href={`${base}/alcance`}>
+              <a className={enlaceClase} href={`${base}/alcance`}>
                 {t.irAlAlcance}
               </a>
             </p>
@@ -149,7 +185,7 @@ export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, 
                     {t.aprobar}
                   </Button>
                   <span id="declaracion-aprobar-ayuda" className="text-sm text-fg-muted">
-                    {resumen.aprobable ? t.aprobarAyuda : t.incompleta(resumen.porDecidir)}
+                    {resumen.aprobable ? t.aprobarAyuda : resumen.porDecidir > 0 ? t.incompleta(resumen.porDecidir) : t.aprobarSinMotivoAyuda(justificacion.sinMotivo)}
                   </span>
                 </form>
               ) : (
@@ -160,7 +196,11 @@ export const PantallaDeclaracion = ({ empresa, persona, declaracion, versiones, 
 
           <h2 className="mb-1 text-lg font-semibold text-fg">{t.borradorTitulo}</h2>
           <p className="mb-3 text-sm text-fg-muted">{t.preliminar}</p>
-          <TablaFilasDeclaracion filas={declaracion.filas} />
+          <TablaFilasDeclaracion
+            filas={declaracion.filas}
+            justificacion={justificacionDelBorrador(justificacion)}
+            {...(aprueba && motivos !== null ? { editor: (f: FilaDeclaracion) => <EditorMotivos empresa={empresa} fila={f} motivos={motivos} /> } : {})}
+          />
         </>
       )}
 

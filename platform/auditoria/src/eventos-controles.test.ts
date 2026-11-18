@@ -12,6 +12,18 @@ const ACCIONES = [
   "control.retirado",
   "mapeo.creado",
   "mapeo.eliminado",
+  // Riesgos mínimos (ADR 037): también solo el hecho y el objeto.
+  "riesgo.creado",
+  "riesgo.cambiado",
+  "riesgo.retirado",
+  "vinculo.creado",
+  "vinculo.eliminado",
+  "motivo.creado",
+  "motivo.cambiado",
+  "motivo.eliminado",
+  "referencia.creada",
+  "referencia.cambiada",
+  "referencia.eliminada",
 ] as const;
 
 describe.each(ACCIONES)("%s", (accion) => {
@@ -33,6 +45,13 @@ describe.each(ACCIONES)("%s", (accion) => {
       "comentario",
       "responsable",
       "correo",
+      "titulo",
+      "probabilidad",
+      "impacto",
+      "nota",
+      "ubicacion",
+      "version_doc",
+      "fecha",
     ]) {
       rechaza({ ...e, despues: { [clave]: "algo" } });
       rechaza({ ...e, antes: { [clave]: "algo" } });
@@ -61,5 +80,51 @@ describe("el objeto", () => {
       objeto: "control:Política de contraseñas",
     });
     rechaza({ ...ejemplos["mapeo.creado"], objeto: "mapeo:C 1.a27" });
+  });
+});
+
+describe("el objeto de un vínculo, un motivo o una referencia solo es un identificador, nunca texto de la empresa", () => {
+  it.each([
+    ["vinculo.creado", "vinculo:R-001.C-001"],
+    ["vinculo.eliminado", "vinculo:R-001.a27-5-1"],
+    ["vinculo.creado", "vinculo:R-001.C.1.2"],
+    ["motivo.creado", "motivo:a27-5-1.legal"],
+    ["motivo.cambiado", "motivo:a27-5-1.otro"],
+    ["motivo.eliminado", "motivo:a27-5-1.negocio"],
+    ["referencia.creada", "referencia:iso-iec-27001.plan"],
+    ["referencia.cambiada", "referencia:iso-iec-27001.analisis"],
+    ["referencia.eliminada", "referencia:iso-iec-27001.plan"],
+  ] as const)("%s acepta su identificador (%s)", (accion, objeto) => {
+    expect(() => validarEvento({ ...ejemplos[accion], objeto })).not.toThrow();
+  });
+
+  it.each([
+    ["vinculo.creado", "vinculo:Pérdida de portátiles.C-001"],
+    ["vinculo.creado", "vinculo:R-001."],
+    ["vinculo.eliminado", "vinculo:R 001/C 001"],
+    ["motivo.creado", "motivo:Nota con nombre y apellido.legal"],
+    ["motivo.cambiado", "motivo:Ley de datos personales de Ana Pérez"],
+    ["motivo.eliminado", "motivo:"],
+    ["referencia.creada", "referencia:título libre.plan"],
+    ["referencia.cambiada", "referencia:Plan 2026 (carpeta Calidad)"],
+    ["referencia.eliminada", "referencia:"],
+  ] as const)("%s rechaza el texto libre (%s)", (accion, objeto) => {
+    rechaza({ ...ejemplos[accion], objeto });
+  });
+
+  it("ninguna de estas acciones admite el texto en `objetoVersion`, `antes` ni `despues`", () => {
+    for (const accion of ["vinculo.creado", "motivo.creado", "referencia.creada"] as const) {
+      rechaza({ ...ejemplos[accion], despues: { nota: "texto libre" } });
+      rechaza({ ...ejemplos[accion], antes: { titulo: "texto libre" } });
+      rechaza({ ...ejemplos[accion], objetoVersion: "texto libre" });
+    }
+  });
+});
+
+describe("el objeto de un riesgo", () => {
+  it("acepta el código correlativo y rechaza lo que no es un identificador", () => {
+    expect(() => validarEvento({ ...ejemplos["riesgo.creado"], objeto: "riesgo:R-001" })).not.toThrow();
+    rechaza({ ...ejemplos["riesgo.creado"], objeto: "riesgo:Pérdida de portátiles" });
+    rechaza({ ...ejemplos["riesgo.creado"], objeto: "riesgo:" });
   });
 });

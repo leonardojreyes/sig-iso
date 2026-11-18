@@ -1,3 +1,6 @@
+// Fakes en memoria para las pruebas de los casos de uso. Separan los datos por empresa con claves `${empresaId}|…` y revierten si la acción
+// falla, pero NO emulan las claves foráneas compuestas, las políticas RLS ni los privilegios de la base: eso solo lo demuestran las
+// pruebas con PostgreSQL real (`*.integration.test.ts` y `platform/db`). No las tomes como prueba de aislamiento a nivel de datos.
 import { validarEvento, type EventoBitacora } from '@sig/auditoria';
 import { crearEmpresaId, type EmpresaId } from '@sig/tenancy';
 import type { Alcance } from '../../domain/alcance.js';
@@ -5,6 +8,9 @@ import type { Control } from '../../domain/control.js';
 import type { LectorBytes } from '../../domain/deteccion-archivo.js';
 import { sha256Hex } from './archivos.js';
 import type { FilaDeclaracion } from '../../domain/declaracion.js';
+import type { MotivoInclusion } from '../../domain/motivo-inclusion.js';
+import type { ReferenciaTratamiento } from '../../domain/referencia-tratamiento.js';
+import type { Riesgo } from '../../domain/riesgo.js';
 import type { MapeoControl } from '../../domain/mapeo-control.js';
 import type { Evaluacion } from '../../domain/evaluacion.js';
 import type { AlmacenArchivosPort, ResultadoGuardado } from '../almacen-archivos.port.js';
@@ -12,7 +18,7 @@ import type { AutorizacionPort, Permiso } from '../autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from '../catalogo-lectura.port.js';
 import type { ContextoCertificacion } from '../contexto.js';
 import type { DocumentoDeclaracion, DocumentoGenerado, GeneradorDocumentoPort } from '../generador-documento.port.js';
-import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, MapeoRepositoryPort, VersionDeclaracion } from '../repositorios.port.js';
+import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, CopiaJustificacion, MapeoRepositoryPort, MotivoRepositoryPort, ReferenciaRepositoryPort, RiesgoRepositoryPort, VersionDeclaracion, VinculoRiesgoRepositoryPort } from '../repositorios.port.js';
 import type { UnidadDeTrabajoPort } from '../unidad-de-trabajo.port.js';
 
 export const A: EmpresaId = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000f1');
@@ -34,9 +40,18 @@ export class EstadoFalso {
   alcances = new Map<string, Alcance>();
   controles = new Map<string, Control>();
   mapeos = new Map<string, MapeoControl>();
+  riesgos = new Map<string, Riesgo>();
+  /** `empresa|riesgoId|controlId` → quién lo vinculó. */
+  vinculosControl = new Map<string, string>();
+  /** `empresa|riesgoId|libreria|idEstable` → quién lo vinculó. */
+  vinculosEntrada = new Map<string, string>();
+  /** `empresa|librería|idEstable|tipo` → motivo. */
+  motivos = new Map<string, MotivoInclusion>();
+  /** `empresa|norma|tipo` → referencia. */
+  referencias = new Map<string, ReferenciaTratamiento>();
   evidencias = new Map<string, FilaEvidencia>();
   /** Versiones aprobadas de la declaración, por `empresa|id`. */
-  declaraciones = new Map<string, { empresaId: EmpresaId; version: VersionDeclaracion; filas: readonly FilaDeclaracion[] }>();
+  declaraciones = new Map<string, { empresaId: EmpresaId; version: VersionDeclaracion; filas: readonly FilaDeclaracion[]; copia: CopiaJustificacion | null }>();
   eventos: EventoBitacora[] = [];
   /** Entradas adoptadas por empresa. */
   catalogoPorEmpresa = new Map<EmpresaId, readonly EntradaCatalogo[]>();
@@ -63,7 +78,7 @@ export const crearCatalogoFalso = (estado: EstadoFalso): CatalogoLecturaPort => 
 export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<ContextoCertificacion> => ({
   ejecutar: async (empresaId, fn) => {
     const clave = (c: string) => `${empresaId}|${c}`;
-    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), evi: new Map(estado.evidencias), de: new Map(estado.declaraciones), ex: [...estado.eventos] };
+    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), ri: new Map(estado.riesgos), vc: new Map(estado.vinculosControl), ve: new Map(estado.vinculosEntrada), mo: new Map(estado.motivos), rf: new Map(estado.referencias), evi: new Map(estado.evidencias), de: new Map(estado.declaraciones), ex: [...estado.eventos] };
     const evaluaciones: EvaluacionRepositoryPort = {
       listar: async () => [...estado.evaluaciones.entries()].filter(([k]) => k.startsWith(`${empresaId}|`)).map(([, v]) => v),
       obtener: async (codigo, id) => estado.evaluaciones.get(clave(`${codigo}|${id}`)) ?? null,
@@ -110,6 +125,85 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       },
       quitar: async (m) => estado.mapeos.delete(`${empresaId}|${m.clave}`),
     };
+    const riesgos: RiesgoRepositoryPort = {
+      listar: async () => propios(estado.riesgos).sort((a, b) => a.codigo.localeCompare(b.codigo, 'es', { numeric: true })),
+      obtener: async (id) => propios(estado.riesgos).find((r) => r.id === id) ?? null,
+      siguienteNumero: async () => Math.max(0, ...propios(estado.riesgos).map((r) => Number(r.codigo.slice(2)))) + 1,
+      crear: async (r) => {
+        if (estado.carrera || propios(estado.riesgos).some((x) => x.codigo === r.codigo)) return false;
+        estado.riesgos.set(r.id, r);
+        return true;
+      },
+      actualizar: async (r, _u, _a, esperada) => {
+        const actual = propios(estado.riesgos).find((x) => x.id === r.id);
+        if (estado.carrera || !actual || actual.version !== esperada) return false;
+        estado.riesgos.set(r.id, r);
+        return true;
+      },
+    };
+    const claveVC = (r: string, c: string) => `${empresaId}|${r}|${c}`;
+    const claveVE = (r: string, l: string, i: string) => `${empresaId}|${r}|${l}|${i}`;
+    const vinculosRiesgo: VinculoRiesgoRepositoryPort = {
+      listarControles: async () =>
+        [...estado.vinculosControl.keys()].filter((k) => k.startsWith(`${empresaId}|`)).map((k) => k.split('|')).map(([, riesgoId, controlId]) => ({ riesgoId: riesgoId as string, controlId: controlId as string })),
+      listarEntradas: async () =>
+        [...estado.vinculosEntrada.keys()].filter((k) => k.startsWith(`${empresaId}|`)).map((k) => k.split('|')).map(([, riesgoId, libreriaCodigo, idEstable]) => ({ riesgoId: riesgoId as string, libreriaCodigo: libreriaCodigo as string, idEstable: idEstable as string })),
+      contar: async (riesgoId) => [...estado.vinculosControl.keys(), ...estado.vinculosEntrada.keys()].filter((k) => k.startsWith(`${empresaId}|${riesgoId}|`)).length,
+      agregarControl: async (r, c, u) => {
+        if (estado.vinculosControl.has(claveVC(r, c))) return false;
+        estado.vinculosControl.set(claveVC(r, c), u);
+        return true;
+      },
+      quitarControl: async (r, c) => estado.vinculosControl.delete(claveVC(r, c)),
+      agregarEntrada: async (r, l, i, u) => {
+        if (estado.vinculosEntrada.has(claveVE(r, l, i))) return false;
+        estado.vinculosEntrada.set(claveVE(r, l, i), u);
+        return true;
+      },
+      quitarEntrada: async (r, l, i) => estado.vinculosEntrada.delete(claveVE(r, l, i)),
+    };
+    const claveMo = (l: string, i: string, tipo: string) => `${empresaId}|${l}|${i}|${tipo}`;
+    const motivos: MotivoRepositoryPort = {
+      listar: async () => propios(estado.motivos).sort((a, b) => a.clave.localeCompare(b.clave)),
+      obtener: async (l, i, tipo) => estado.motivos.get(claveMo(l, i, tipo)) ?? null,
+      crear: async (m) => {
+        if (estado.carrera || estado.motivos.has(claveMo(m.libreriaCodigo, m.idEstable, m.tipo))) return false;
+        estado.motivos.set(claveMo(m.libreriaCodigo, m.idEstable, m.tipo), m);
+        return true;
+      },
+      actualizar: async (m, _u, _a, esperada) => {
+        const actual = estado.motivos.get(claveMo(m.libreriaCodigo, m.idEstable, m.tipo));
+        if (estado.carrera || !actual || actual.version !== esperada) return false;
+        estado.motivos.set(claveMo(m.libreriaCodigo, m.idEstable, m.tipo), m);
+        return true;
+      },
+      eliminar: async (l, i, tipo, esperada) => {
+        const actual = estado.motivos.get(claveMo(l, i, tipo));
+        if (estado.carrera || !actual || actual.version !== esperada) return false;
+        return estado.motivos.delete(claveMo(l, i, tipo));
+      },
+    };
+    const claveRf = (norma: string, tipo: string) => `${empresaId}|${norma}|${tipo}`;
+    const referencias: ReferenciaRepositoryPort = {
+      listar: async (norma) => propios(estado.referencias).filter((r) => r.norma === norma),
+      obtener: async (norma, tipo) => estado.referencias.get(claveRf(norma, tipo)) ?? null,
+      crear: async (r) => {
+        if (estado.carrera || estado.referencias.has(claveRf(r.norma, r.tipo))) return false;
+        estado.referencias.set(claveRf(r.norma, r.tipo), r);
+        return true;
+      },
+      actualizar: async (r, _u, _a, esperada) => {
+        const actual = estado.referencias.get(claveRf(r.norma, r.tipo));
+        if (estado.carrera || !actual || actual.version !== esperada) return false;
+        estado.referencias.set(claveRf(r.norma, r.tipo), r);
+        return true;
+      },
+      eliminar: async (norma, tipo, esperada) => {
+        const actual = estado.referencias.get(claveRf(norma, tipo));
+        if (estado.carrera || !actual || actual.version !== esperada) return false;
+        return estado.referencias.delete(claveRf(norma, tipo));
+      },
+    };
     const propiasEvi = (): FilaEvidencia[] => [...estado.evidencias.values()].filter((f) => f.evidencia.empresaId === empresaId);
     const evidencias: EvidenciaRepositoryPort = {
       obtener: async (id) => estado.evidencias.get(`${empresaId}|${id}`) ?? null,
@@ -134,15 +228,15 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
     const propiasDecl = () => [...estado.declaraciones.values()].filter((d) => d.empresaId === empresaId);
     const declaraciones: DeclaracionRepositoryPort = {
       ultimoNumero: async () => Math.max(0, ...propiasDecl().map((d) => d.version.numero)),
-      crear: async (version, filas) => {
+      crear: async (version, filas, copia) => {
         if (estado.carrera || propiasDecl().some((d) => d.version.numero === version.numero)) return false;
-        estado.declaraciones.set(`${empresaId}|${version.id}`, { empresaId, version, filas });
+        estado.declaraciones.set(`${empresaId}|${version.id}`, { empresaId, version, filas, copia: copia ?? null });
         return true;
       },
       listarVersiones: async () => propiasDecl().map((d) => d.version).sort((a, b) => b.numero - a.numero),
       obtener: async (id) => {
         const d = estado.declaraciones.get(`${empresaId}|${id}`);
-        return d ? { version: d.version, filas: d.filas } : null;
+        return d ? { version: d.version, filas: d.filas, copia: d.copia } : null;
       },
     };
     const contexto: ContextoCertificacion = {
@@ -152,6 +246,10 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       alcances,
       controles,
       mapeos,
+      riesgos,
+      vinculosRiesgo,
+      motivos,
+      referencias,
       bitacora: {
         registrar: async (evento) => {
           if (estado.fallarBitacora) throw new Error('bitácora no disponible');
@@ -167,6 +265,11 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       estado.alcances = copia.al;
       estado.controles = copia.co;
       estado.mapeos = copia.ma;
+      estado.riesgos = copia.ri;
+      estado.vinculosControl = copia.vc;
+      estado.vinculosEntrada = copia.ve;
+      estado.motivos = copia.mo;
+      estado.referencias = copia.rf;
       estado.evidencias = copia.evi;
       estado.declaraciones = copia.de;
       estado.eventos = copia.ex;

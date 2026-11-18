@@ -33,6 +33,16 @@ export type AvisoEscritura =
   | 'persona_dada_de_baja'
   | 'personas_conflicto'
   | 'sin_cambios'
+  | 'motivo_guardado'
+  | 'motivo_quitado'
+  | 'referencia_guardada'
+  | 'referencia_quitada'
+  | 'riesgo_creado'
+  | 'riesgo_retirado'
+  | 'vinculado'
+  | 'desvinculado'
+  | 'tratamiento_previsto'
+  | 'tratamiento_quitado'
   | 'sin_permiso'
   | 'no_valido'
   | 'archivo_grande'
@@ -59,6 +69,16 @@ const AVISOS: readonly string[] = [
   'persona_dada_de_baja',
   'personas_conflicto',
   'sin_cambios',
+  'motivo_guardado',
+  'motivo_quitado',
+  'referencia_guardada',
+  'referencia_quitada',
+  'riesgo_creado',
+  'riesgo_retirado',
+  'vinculado',
+  'desvinculado',
+  'tratamiento_previsto',
+  'tratamiento_quitado',
   'sin_permiso',
   'no_valido',
   'archivo_grande',
@@ -85,7 +105,7 @@ const SIN_CUERPO = Symbol('sin_cuerpo');
 type Cuerpo = Record<string, unknown> | FormData | typeof SIN_CUERPO | 'archivo_grande' | null;
 interface Operacion {
   /** Pantalla a la que se vuelve (`/e/<empresa>/<pantalla>`). */
-  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion' | 'personas';
+  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion' | 'personas' | 'riesgos';
   /** Ruta (tras `/e/<empresa>/`) a la que se vuelve si no es `pantalla`; recibe el formulario (si se pudo leer) y el recurso de la dirección. */
   readonly volverA?: (f: FormData | null, id: string | null) => string;
   readonly metodoApi: 'PUT' | 'POST';
@@ -676,5 +696,216 @@ export const darDeBajaPersona = (peticion: Request, entrada: Entrada): Promise<R
     cuerpo: (f) => {
       const version = versionControl(f);
       return version === null ? null : { versionEsperada: version };
+    },
+  });
+
+// ---- Riesgos mínimos y sus vínculos (ADR 037)
+
+const idRiesgo = (f: FormData): string | null => {
+  const id = campo(f, 'riesgoId');
+  return id && UUID.test(id) ? id.toLowerCase() : null;
+};
+/** Se vuelve al detalle del riesgo si el formulario trae uno válido; si no, a la lista. */
+const volverARiesgo = (f: FormData | null): string => {
+  const id = f ? idRiesgo(f) : null;
+  return id ? `riesgos/${id}` : 'riesgos';
+};
+const versionRiesgo = (f: FormData): number | null => {
+  const v = campo(f, 'version');
+  return v !== null && /^\d{1,9}$/.test(v) && Number(v) >= 1 ? Number(v) : null;
+};
+const DECISIONES = ['mitigar', 'aceptar', 'transferir', 'evitar'];
+/** Un valor de 1 a 5 (probabilidad o impacto). */
+const unoACinco = (f: FormData, nombre: string): number | null => {
+  const v = campo(f, nombre);
+  return v !== null && /^[1-5]$/.test(v) ? Number(v) : null;
+};
+/** Los campos de un riesgo (nuevo o cambiado), ya validados; `null` si algo no cumple. El responsable vacío se envía como `null` (se quita). */
+const datosRiesgo = (f: FormData): Record<string, unknown> | null => {
+  const titulo = campo(f, 'titulo')?.trim();
+  const probabilidad = unoACinco(f, 'probabilidad');
+  const impacto = unoACinco(f, 'impacto');
+  const decision = campo(f, 'decision');
+  const responsable = opcional(f, 'responsableId');
+  if (!titulo || titulo.length > 120 || probabilidad === null || impacto === null || !decision || !DECISIONES.includes(decision)) return null;
+  if (responsable !== null && !UUID.test(responsable)) return null;
+  const descripcion = opcional(f, 'descripcion');
+  if (descripcion !== null && descripcion.length > 1000) return null;
+  return { titulo, descripcion, probabilidad, impacto, decision, responsableId: responsable };
+};
+
+export const crearRiesgo = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'riesgos',
+    volverA: () => 'riesgos',
+    metodoApi: 'POST',
+    rutaApi: '/riesgos',
+    exito: 'riesgo_creado',
+    conservar: (f) => (campo(f, 'f_retirados') === 'true' ? 'retirados=true' : ''),
+    cuerpo: datosRiesgo,
+  });
+
+export const cambiarRiesgo = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'riesgos',
+    volverA: volverARiesgo,
+    metodoApi: 'PUT',
+    rutaApi: (f) => {
+      const id = idRiesgo(f);
+      return id ? `/riesgos/${id}` : null;
+    },
+    exito: 'guardado',
+    cuerpo: (f) => {
+      const version = versionRiesgo(f);
+      const datos = datosRiesgo(f);
+      return version === null || datos === null ? null : { versionEsperada: version, ...datos };
+    },
+  });
+
+export const retirarRiesgo = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'riesgos',
+    volverA: () => 'riesgos',
+    metodoApi: 'POST',
+    rutaApi: (f) => {
+      const id = idRiesgo(f);
+      return id ? `/riesgos/${id}/retiro` : null;
+    },
+    exito: 'riesgo_retirado',
+    cuerpo: (f) => {
+      const version = versionRiesgo(f);
+      return version === null ? null : { versionEsperada: version };
+    },
+  });
+
+const controlDeVinculo = (f: FormData): { controlId: string } | null => {
+  const id = campo(f, 'controlId');
+  return id && UUID.test(id) ? { controlId: id.toLowerCase() } : null;
+};
+
+export const vincularRiesgoControl = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'riesgos',
+    volverA: volverARiesgo,
+    metodoApi: 'POST',
+    rutaApi: (f) => {
+      const id = idRiesgo(f);
+      return id ? `/riesgos/${id}/controles` : null;
+    },
+    // 201 = se creó; 200 = ya existía (no es un error).
+    exito: (estado) => (estado === 201 ? 'vinculado' : 'sin_cambios'),
+    cuerpo: controlDeVinculo,
+  });
+
+export const desvincularRiesgoControl = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'riesgos',
+    volverA: volverARiesgo,
+    metodoApi: 'POST',
+    rutaApi: (f) => {
+      const id = idRiesgo(f);
+      return id ? `/riesgos/${id}/controles/eliminacion` : null;
+    },
+    exito: 'desvinculado',
+    cuerpo: controlDeVinculo,
+  });
+
+export const preverTratamientoRiesgo = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'riesgos',
+    volverA: volverARiesgo,
+    metodoApi: 'POST',
+    rutaApi: (f) => {
+      const id = idRiesgo(f);
+      return id ? `/riesgos/${id}/tratamientos` : null;
+    },
+    exito: (estado) => (estado === 201 ? 'tratamiento_previsto' : 'sin_cambios'),
+    cuerpo: entradaDeMapeo,
+  });
+
+export const quitarTratamientoRiesgo = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'riesgos',
+    volverA: volverARiesgo,
+    metodoApi: 'POST',
+    rutaApi: (f) => {
+      const id = idRiesgo(f);
+      return id ? `/riesgos/${id}/tratamientos/eliminacion` : null;
+    },
+    exito: 'tratamiento_quitado',
+    cuerpo: entradaDeMapeo,
+  });
+
+// ---- Motivos de inclusión y referencias al tratamiento de la Declaración (ADR 037)
+
+const TIPOS_MOTIVO = ['legal', 'contractual', 'negocio', 'otro'];
+const TIPOS_REFERENCIA = ['analisis', 'plan'];
+/** La versión que se vio, opcional: ausente = crear; presente (>= 1) = cambiar. `undefined` si no es un entero válido. */
+const versionOpcional = (f: FormData): number | null | undefined => {
+  const v = campo(f, 'version');
+  if (v === null || v === '') return null;
+  return /^\d{1,9}$/.test(v) && Number(v) >= 1 ? Number(v) : undefined;
+};
+
+export const guardarMotivoDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'declaracion',
+    metodoApi: 'PUT',
+    rutaApi: '/declaracion/motivos',
+    exito: 'motivo_guardado',
+    cuerpo: (f) => {
+      const control = entradaDeMapeo(f);
+      const tipo = campo(f, 'tipo');
+      const nota = campo(f, 'nota')?.trim();
+      const version = versionOpcional(f);
+      if (!control || !tipo || !TIPOS_MOTIVO.includes(tipo) || !nota || nota.length > 500 || version === undefined) return null;
+      return { ...control, tipo, nota, ...(version === null ? {} : { versionEsperada: version }) };
+    },
+  });
+
+export const quitarMotivoDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'declaracion',
+    metodoApi: 'POST',
+    rutaApi: '/declaracion/motivos/eliminacion',
+    exito: 'motivo_quitado',
+    cuerpo: (f) => {
+      const control = entradaDeMapeo(f);
+      const tipo = campo(f, 'tipo');
+      const version = versionOpcional(f);
+      if (!control || !tipo || !TIPOS_MOTIVO.includes(tipo) || typeof version !== 'number') return null;
+      return { ...control, tipo, versionEsperada: version };
+    },
+  });
+
+export const guardarReferenciaDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'declaracion',
+    metodoApi: 'PUT',
+    rutaApi: '/declaracion/referencias',
+    exito: 'referencia_guardada',
+    cuerpo: (f) => {
+      const tipo = campo(f, 'tipo');
+      const titulo = campo(f, 'titulo')?.trim();
+      const versionDoc = campo(f, 'versionDoc')?.trim();
+      const fecha = campo(f, 'fecha')?.trim();
+      const ubicacion = campo(f, 'ubicacion')?.trim();
+      const version = versionOpcional(f);
+      if (!tipo || !TIPOS_REFERENCIA.includes(tipo) || !titulo || titulo.length > 120 || !versionDoc || versionDoc.length > 40) return null;
+      if (!fecha || !FECHA.test(fecha) || !ubicacion || ubicacion.length > 200 || version === undefined) return null;
+      return { tipo, titulo, versionDoc, fecha, ubicacion, ...(version === null ? {} : { versionEsperada: version }) };
+    },
+  });
+
+export const quitarReferenciaDeclaracion = (peticion: Request, entrada: Entrada): Promise<Response> =>
+  reenviar(peticion, entrada, {
+    pantalla: 'declaracion',
+    metodoApi: 'POST',
+    rutaApi: '/declaracion/referencias/eliminacion',
+    exito: 'referencia_quitada',
+    cuerpo: (f) => {
+      const tipo = campo(f, 'tipo');
+      const version = versionOpcional(f);
+      return tipo && TIPOS_REFERENCIA.includes(tipo) && typeof version === 'number' ? { tipo, versionEsperada: version } : null;
     },
   });

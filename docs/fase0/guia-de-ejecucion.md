@@ -54,8 +54,11 @@ El consultor es **una sola cuenta** que pertenece a las dos empresas y cambia en
 | `alcance`     | Alcance por norma, con aprobación                                                                     | según permiso             |
 | `diagnostico` | Estado por cláusula y control, madurez                                                                | según permiso             |
 | `controles`   | Controles de la empresa, mapeos con las normas y **evidencias con archivo**                           | según permiso             |
+| `riesgos`     | **Riesgos** mínimos: nivel calculado, vínculos con controles, tratamiento previsto con el Anexo A, aviso antes de retirar | administrador SIG         |
 | `cobertura`   | Qué entradas de la norma cubren los controles y las evidencias vigentes                               | solo lectura              |
-| `declaracion` | **Declaración de Aplicabilidad**: borrador, aprobar (versión congelada), historial y descarga en Word | administrador SIG aprueba |
+| `declaracion` | **Declaración de Aplicabilidad**: borrador, **motivos de inclusión** y referencias al tratamiento, aprobar (versión congelada con su justificación), historial y descarga en Word | administrador SIG aprueba y justifica |
+
+**Riesgos y Declaración justificada (ADR 037).** Cada control del Anexo A que **aplica** necesita un **motivo de inclusión** para poder aprobar la Declaración: o un riesgo vigente que se trate con él (por un control de la empresa o como «tratamiento previsto» desde el detalle del riesgo), o un motivo registrado (legal, contractual, de negocio u otro, con su nota) en la propia fila. Sin motivo, «Aprobar» queda deshabilitado y la pantalla dice cuáles faltan. Retirar un riesgo avisa **antes** qué controles quedarían sin motivo. La versión aprobada congela los motivos, los riesgos tal como estaban, las referencias y la escala; cambiar algo después no la altera. El Word lleva la sección «Tratamiento de riesgos» y avisos fijos de lo que **no** cubre (riesgo residual, controles adicionales, activos de información).
 
 La librería de una empresa (`normas`) se sube como YAML con el esquema v3, sin texto de la norma, con un código que empiece por `propia-`; cada versión es inmutable. Pide la plantilla con el botón «Descargar plantilla».
 
@@ -71,7 +74,8 @@ Con los servicios en marcha (Keycloak, `pnpm dev`). Cada una usa cuentas reales 
 | `pnpm web:verify-diagnostico`                | Alcance y diagnóstico de punta a punta                                                 |
 | `pnpm web:verify-controles`                  | Controles y mapeos                                                                     |
 | `pnpm web:verify-evidencias`                 | Evidencias con archivo y cobertura                                                     |
-| `pnpm web:verify-declaracion`                | Declaración: derivar, aprobar, versión congelada y Word                                |
+| `pnpm web:verify-declaracion`                | Declaración: derivar, aprobar, versión congelada y Word (registra y **quita** un motivo por control) |
+| `pnpm web:verify-riesgos`                    | Riesgos, vínculos, motivos, referencias, bloqueo sin motivo, versión congelada y Word; **tarda ~3 min** y limpia lo que crea |
 | `pnpm web:verify-normas`                     | Subir librerías propias, rechazos explicados, adopción, aislamiento                    |
 | `pnpm web:verify-multiempresa`               | Una cuenta en dos empresas: selector, cambio, rol por empresa, sesiones independientes |
 | `pnpm web:verify-marca`                      | Editar color y logo; **restaura** la marca de A al terminar                            |
@@ -81,7 +85,7 @@ Con los servicios en marcha (Keycloak, `pnpm dev`). Cada una usa cuentas reales 
 | `pnpm test:hooks`                            | Reglas del hook de Bash de Claude Code                                                 |
 | `pnpm ram:report`                            | Memoria de la pila (ver abajo)                                                         |
 
-**Antes de correr varias verificaciones seguidas:** la API limita las peticiones por persona (120 por minuto) y por empresa (600). Si encadenas varias con las mismas cuentas sin esperar, algunas pantallas devuelven 503 y los ingresos no emiten sesión; **espera un minuto entre una y otra**. Casi todas **escriben en tu base de desarrollo** y no se puede deshacer (quedan controles `VERIF-…`, librerías `propia-verif-…`, versiones aprobadas y la bitácora, que es inmutable); `web:verify-marca` es la única que restaura lo que cambia.
+**Antes de correr varias verificaciones seguidas:** la API limita las peticiones por persona (120 por minuto) y por empresa (600). Si encadenas varias con las mismas cuentas sin esperar, algunas pantallas devuelven 503 y los ingresos no emiten sesión; **espera un minuto entre una y otra**. Las dos de la Declaración registran un motivo por cada control del Anexo A (93), uno cada 0,9 s para no pasar el límite, y por eso tardan unos minutos. Casi todas **escriben en tu base de desarrollo** y no se puede deshacer (quedan controles `VERIF-…`, riesgos `VERIF-…` retirados, librerías `propia-verif-…`, versiones aprobadas y la bitácora, que es inmutable); `web:verify-marca` es la única que restaura lo que cambia.
 
 Estado de las verificaciones: `web:verify-listado` espera exactamente 21 entradas y A tiene 114 desde que adoptó el Anexo A; el script está desactualizado y falla por eso (no por un defecto del sistema).
 
