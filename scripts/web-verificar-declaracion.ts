@@ -6,6 +6,9 @@
 // ADOPTADA por A (pnpm libraries:load y, por ejemplo, pnpm web:verify-listado).
 // OJO: escribe en tu base local de desarrollo y NO se puede deshacer: si quedan controles del Anexo A sin evaluar, el script los evalúa
 // como «Parcial» (con la marca «VERIF-») para poder aprobar, y crea versiones aprobadas de la declaración de A (nada se borra).
+// Desde la Declaración justificada (ADR 037) no se puede aprobar si un control que aplica no tiene motivo de inclusión: el script
+// registra un motivo «Otro» con la marca «VERIF-» en cada control que lo necesite y los QUITA al terminar (las versiones aprobadas
+// conservan su copia congelada).
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +24,8 @@ const entorno: EntornoWeb = {
 };
 
 let fallos = 0;
+/** Controles (`libreria|id`) a los que el script les registró un motivo: se quitan al terminar. */
+const motivosCreados: string[] = [];
 const comprobar = (descripcion: string, ok: boolean, detalle = '') => {
   if (!ok) fallos += 1;
   console.log(`${ok ? '✔' : '✖'} ${descripcion}${ok || !detalle ? '' : ` — ${detalle}`}`);
@@ -65,9 +70,13 @@ const filasDeclaracion = (html: string) =>
     .split('<tr')
     .filter((f) => f.includes('class="font-mono"'))
     .map((f) => f.split('</tr>')[0] ?? f)
-    .map((f) => ({ id: /class="font-mono">([^<]+)</.exec(f)?.[1] ?? '', porDecidir: f.includes('>Por decidir<'), texto: f }));
+    .map((f) => ({ id: /class="font-mono">([^<]+)</.exec(f)?.[1] ?? '', porDecidir: f.includes('>Por decidir<'), sinMotivo: f.includes('>Sin motivo<'), entrada: /name="entrada" value="([^"]+)"/.exec(f)?.[1] ?? null, texto: f }));
 const formsEvaluar = (html: string) =>
   [...html.matchAll(/<form[^>]*action="\/e\/empresa-a\/diagnostico\/evaluar"[^>]*>([\s\S]*?)<\/form>/g)].map((m) => ({ libreriaCodigo: campo(m[1]!, 'libreriaCodigo') ?? '', idEstable: campo(m[1]!, 'idEstable') ?? '', version: campo(m[1]!, 'version') }));
+/** El botón «Aprobar» está deshabilitado (el atributo, no la variante `disabled:` de las clases de Tailwind). */
+const aprobarDeshabilitado = (html: string): boolean => /<button(?=[^>]*\sdisabled(?:=""|\s|>))[^>]*>Aprobar la declaración/.test(html);
+/** La API limita a 120 peticiones por minuto por persona: las escrituras en serie van más despacio para no toparse con ese límite. */
+const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const idsDeVersiones = (html: string) => [...html.matchAll(new RegExp(`href="/e/empresa-a/declaracion/versiones/(${UUID})"`, 'g'))].map((m) => m[1]!).filter((v, i, a) => a.indexOf(v) === i);
 
 try {
@@ -125,7 +134,7 @@ try {
   // ---- Con controles por decidir no se puede aprobar; después se completan
   const pendientes = filas.filter((f) => f.porDecidir);
   if (pendientes.length > 0) {
-    comprobar('con controles por decidir, la pantalla lo avisa y «Aprobar» queda deshabilitado', p0.texto.includes('Todavía no se puede aprobar') && /<button[^>]*disabled[^>]*>Aprobar la declaración/.test(p0.texto));
+    comprobar('con controles por decidir, la pantalla lo avisa y «Aprobar» queda deshabilitado', p0.texto.includes('Todavía no se puede aprobar') && aprobarDeshabilitado(p0.texto));
     const r = await enviar('adminA', `${A}/declaracion/aprobar`);
     comprobar('aprobar de todos modos (por otra vía): aviso «declaracion_no_aprobada» y no se crea ninguna versión', r.estado === 303 && r.parametros.get('aviso') === 'declaracion_no_aprobada' && idsDeVersiones((await ver('adminA', `${A}/declaracion`)).texto).length === antes.length, r.destino ?? '');
     const diag = await ver('adminA', `${A}/diagnostico`);
@@ -140,8 +149,30 @@ try {
     aviso(`se evaluaron ${hechas} de ${pendientes.length} controles como «Parcial»`);
     const p1 = await ver('adminA', `${A}/declaracion`);
     filas = filasDeclaracion(p1.texto);
-    comprobar('tras evaluar todo, ya no queda nada por decidir y se puede aprobar', filas.every((f) => !f.porDecidir) && !p1.texto.includes('Todavía no se puede aprobar') && !/<button[^>]*disabled[^>]*>Aprobar la declaración/.test(p1.texto));
+    comprobar('tras evaluar todo, ya no queda nada por decidir y se puede aprobar', filas.every((f) => !f.porDecidir) && !p1.texto.includes('Todavía no se puede aprobar') && !aprobarDeshabilitado(p1.texto));
   } else aviso('no había controles por decidir: se omite la comprobación de «no se puede aprobar»');
+
+  // ---- Sin motivo de inclusión no se puede aprobar (ADR 037): se registra uno «Otro» en cada control que aplica y no lo tiene
+  const pM = await ver('adminA', `${A}/declaracion`);
+  const sinMotivo = filasDeclaracion(pM.texto).filter((f) => f.sinMotivo && f.entrada);
+  aviso(`${sinMotivo.length} control(es) que aplican sin motivo de inclusión`);
+  if (sinMotivo.length > 0) {
+    comprobar('con controles sin motivo la pantalla lo avisa y «Aprobar» queda deshabilitado', pM.texto.includes('Faltan motivos de inclusión') && aprobarDeshabilitado(pM.texto));
+    const rechazo = await enviar('adminA', `${A}/declaracion/aprobar`);
+    comprobar('aprobar de todos modos (por otra vía): «declaracion_no_aprobada» y ninguna versión nueva', rechazo.estado === 303 && rechazo.parametros.get('aviso') === 'declaracion_no_aprobada' && idsDeVersiones((await ver('adminA', `${A}/declaracion`)).texto).length === antes.length, rechazo.destino ?? '');
+    let registrados = 0;
+    for (const f of sinMotivo) {
+      const m = await enviar('adminA', `${A}/declaracion/motivo/guardar`, { cuerpo: { entrada: f.entrada!, tipo: 'otro', nota: `${MARCA} motivo de prueba` } });
+      if (m.estado === 303 && m.parametros.get('aviso') === 'motivo_guardado') {
+        registrados += 1;
+        motivosCreados.push(f.entrada!);
+      }
+      await esperar(900);
+    }
+    comprobar(`se registró un motivo en cada uno de los ${sinMotivo.length} controles`, registrados === sinMotivo.length, `${registrados} de ${sinMotivo.length}`);
+    const pOk = await ver('adminA', `${A}/declaracion`);
+    comprobar('con todos los motivos, ya no hay aviso de faltantes y se puede aprobar', !pOk.texto.includes('Faltan motivos de inclusión') && !aprobarDeshabilitado(pOk.texto));
+  }
 
   // ---- Aprobar
   const ap = await enviar('adminA', `${A}/declaracion/aprobar`);
@@ -201,6 +232,29 @@ try {
 } catch (error) {
   fallos += 1;
   console.error(`✖ ${error instanceof Error ? error.message : String(error)}`);
+}
+
+// ---- Limpieza: se quitan los motivos de prueba (las versiones aprobadas conservan su copia congelada)
+if (motivosCreados.length > 0) {
+  try {
+    const sesionAdmin = await iniciarSesionWeb(entorno, 'admin-a', `${A}/declaracion`);
+    const pagina = await paginaWeb(entorno, `${A}/declaracion`, sesionAdmin);
+    let quitados = 0;
+    // Los motivos de ESTA ejecución se reconocen por su marca en la nota (el formulario de «guardar» de un motivo ya registrado trae su versión).
+    for (const f of filasDeclaracion(pagina.texto)) {
+      for (const m of f.texto.matchAll(/<form[^>]*action="\/e\/empresa-a\/declaracion\/motivo\/guardar"[^>]*>([\s\S]*?)<\/form>/g)) {
+        const version = campo(m[1]!, 'version');
+        if (!version || !m[1]!.includes(MARCA)) continue;
+        const q = await enviarWeb(entorno, `${A}/declaracion/motivo/quitar`, sesionAdmin, { cuerpo: { entrada: campo(m[1]!, 'entrada') ?? '', tipo: campo(m[1]!, 'tipo') ?? '', version } });
+        if (q.estado === 303 && q.parametros.get('aviso') === 'motivo_quitado') quitados += 1;
+        await esperar(900);
+      }
+    }
+    comprobar(`limpieza: se quitaron los ${motivosCreados.length} motivos de prueba`, quitados === motivosCreados.length, `${quitados} de ${motivosCreados.length}`);
+  } catch (error) {
+    fallos += 1;
+    console.error(`✖ limpieza: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 if (fallos > 0) {
   console.error(`\n${fallos} comprobación(es) fallaron.`);
