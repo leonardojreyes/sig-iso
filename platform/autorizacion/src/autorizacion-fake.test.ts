@@ -286,3 +286,22 @@ describe('permisos de la declaración de aplicabilidad (MVP, M5)', () => {
     }
   });
 });
+
+describe('permisos del control documental (ADR 039)', () => {
+  it('el colaborador consulta, redacta y confirma su lectura, pero no aprueba ni gestiona', async () => {
+    const f = montar();
+    for (const p of ['documentos.ver', 'documentos.redactar', 'documentos.leer'] as const) expect(await f.puede(COLAB, p, A), p).toBe(true);
+    for (const p of ['documentos.aprobar', 'documentos.gestionar'] as const) expect(await f.puede(COLAB, p, A), p).toBe(false);
+  });
+  it('el administrador SIG tiene todos', async () => {
+    const f = montar();
+    for (const p of ['documentos.ver', 'documentos.redactar', 'documentos.aprobar', 'documentos.gestionar', 'documentos.leer'] as const) expect(await f.puede(ADMIN, p, A), p).toBe(true);
+  });
+  it('ningún rol sin permisos puede nada, y no hay permiso en otra empresa', async () => {
+    const f = montar();
+    for (const p of ['documentos.ver', 'documentos.leer'] as const) {
+      expect(await f.puede(OTRO, p, A), p).toBe(false);
+      expect(await f.puede(ADMIN, p, B), p).toBe(false);
+    }
+  });
+});

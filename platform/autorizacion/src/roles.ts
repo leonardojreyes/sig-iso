@@ -5,10 +5,10 @@ export const ROLES = Object.freeze(['administrador_sig', 'dueno_proceso', 'audit
 export type Rol = (typeof ROLES)[number];
 
 /** Permisos formales. `librerias.adoptar` es el `x-permiso` del contrato OpenAPI (POST /librerias/{id}/adopcion). */
-export const PERMISOS = Object.freeze(['librerias.adoptar', 'librerias.ver', 'requisitos.ver', 'marca.ver', 'diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver', 'alcance.gestionar', 'alcance.aprobar', 'controles.ver', 'controles.gestionar', 'riesgos.ver', 'riesgos.gestionar', 'evidencias.ver', 'evidencias.registrar', 'evidencias.eliminar', 'declaracion.ver', 'declaracion.exportar', 'declaracion.aprobar', 'declaracion.justificar', 'normas.cargar', 'marca.editar', 'personas.ver', 'personas.gestionar'] as const);
+export const PERMISOS = Object.freeze(['librerias.adoptar', 'librerias.ver', 'requisitos.ver', 'marca.ver', 'diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver', 'alcance.gestionar', 'alcance.aprobar', 'controles.ver', 'controles.gestionar', 'riesgos.ver', 'riesgos.gestionar', 'evidencias.ver', 'evidencias.registrar', 'evidencias.eliminar', 'declaracion.ver', 'declaracion.exportar', 'declaracion.aprobar', 'declaracion.justificar', 'documentos.ver', 'documentos.redactar', 'documentos.aprobar', 'documentos.gestionar', 'documentos.leer', 'normas.cargar', 'marca.editar', 'personas.ver', 'personas.gestionar'] as const);
 export type Permiso = (typeof PERMISOS)[number];
 
-const CONSULTA: readonly Permiso[] = Object.freeze(['librerias.ver', 'requisitos.ver', 'marca.ver', 'diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver', 'controles.ver', 'riesgos.ver', 'evidencias.ver', 'evidencias.registrar', 'declaracion.ver', 'declaracion.exportar']);
+const CONSULTA: readonly Permiso[] = Object.freeze(['librerias.ver', 'requisitos.ver', 'marca.ver', 'diagnostico.ver', 'diagnostico.evaluar', 'alcance.ver', 'controles.ver', 'riesgos.ver', 'evidencias.ver', 'evidencias.registrar', 'declaracion.ver', 'declaracion.exportar', 'documentos.ver', 'documentos.redactar', 'documentos.leer']);
 
 const MATRIZ: ReadonlyMap<Rol, readonly Permiso[]> = new Map<Rol, readonly Permiso[]>([
   ['administrador_sig', PERMISOS],
