@@ -2,6 +2,9 @@
 // un parámetro. Si algo falla no se muestra nada a medias.
 import { consultarApi } from '../api/cliente';
 import type {
+  AvisoRetiroRiesgo,
+  RiesgoDetalle,
+  RiesgoListado,
   Alcance,
   Cobertura,
   Declaracion,
@@ -12,6 +15,9 @@ import type {
   VersionDeclaracionConFilas,
 } from '../api/tipos';
 import {
+  validarAvisoRetiroRiesgo,
+  validarRiesgoDetalle,
+  validarRiesgos,
   validarAlcances,
   validarCobertura,
   validarDeclaracion,
@@ -22,6 +28,7 @@ import {
   validarVersionesDeclaracion,
 } from '../api/validadores';
 import { construirConsulta, type FiltrosDiagnostico } from './filtros';
+import { construirConsultaRiesgos, type FiltrosRiesgos } from './filtros-riesgos';
 import { construirConsultaControles, type FiltrosControles } from './filtros-controles';
 import { UUID } from '../validacion/patrones';
 
@@ -172,5 +179,37 @@ export const cargarVersionDeclaracion = async (
           ? { tipo: 'no_encontrado' }
           : { tipo: 'no_disponible' };
   const datos = validarVersionDeclaracionConFilas(r.json);
+  return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
+};
+
+const fallo = (motivo: string): { readonly tipo: 'ingresar' } | { readonly tipo: 'sin_permiso' } | { readonly tipo: 'no_encontrado' } | { readonly tipo: 'no_disponible' } =>
+  motivo === 'no_autenticado' ? { tipo: 'ingresar' } : motivo === 'sin_permiso' ? { tipo: 'sin_permiso' } : motivo === 'no_encontrado' ? { tipo: 'no_encontrado' } : { tipo: 'no_disponible' };
+
+/** Los riesgos de la empresa (por omisión solo los vigentes), cada uno con cuánto tratamiento tiene. */
+export const cargarRiesgos = async (p: Base & { filtros: FiltrosRiesgos }): Promise<ResultadoCarga<RiesgoListado[]>> => {
+  const r = await consultarApi({ acceso: p.acceso, apiUrl: p.apiUrl, fetchFn: p.fetchFn, ruta: `/riesgos${construirConsultaRiesgos(p.filtros)}` });
+  if (!r.ok) {
+    const f = fallo(r.motivo);
+    return f.tipo === 'no_encontrado' ? { tipo: 'no_disponible' } : f;
+  }
+  const datos = validarRiesgos(r.json);
+  return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
+};
+
+/** Un riesgo con los controles que lo tratan (404 si no existe o es de otra empresa). El identificador se valida antes de armar la ruta. */
+export const cargarRiesgo = async (p: Base & { id: string }): Promise<{ readonly tipo: 'ok'; readonly datos: RiesgoDetalle } | Fallo> => {
+  if (!UUID.test(p.id)) return { tipo: 'no_encontrado' };
+  const r = await consultarApi({ acceso: p.acceso, apiUrl: p.apiUrl, fetchFn: p.fetchFn, ruta: `/riesgos/${p.id.toLowerCase()}` });
+  if (!r.ok) return fallo(r.motivo);
+  const datos = validarRiesgoDetalle(r.json);
+  return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
+};
+
+/** Qué controles quedarían sin motivo si se retira el riesgo (solo para quien puede retirar). */
+export const cargarAvisoRetiroRiesgo = async (p: Base & { id: string }): Promise<{ readonly tipo: 'ok'; readonly datos: AvisoRetiroRiesgo } | Fallo> => {
+  if (!UUID.test(p.id)) return { tipo: 'no_encontrado' };
+  const r = await consultarApi({ acceso: p.acceso, apiUrl: p.apiUrl, fetchFn: p.fetchFn, ruta: `/riesgos/${p.id.toLowerCase()}/aviso-retiro` });
+  if (!r.ok) return fallo(r.motivo);
+  const datos = validarAvisoRetiroRiesgo(r.json);
   return datos ? { tipo: 'ok', datos } : { tipo: 'no_disponible' };
 };

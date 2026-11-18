@@ -33,6 +33,10 @@ import type {
   JustificacionBorrador,
   JustificacionVersion,
   ReferenciaDeclaracion,
+  AvisoRetiroRiesgo,
+  Riesgo,
+  RiesgoDetalle,
+  RiesgoListado,
 } from './tipos';
 import { UUID } from '../validacion/patrones';
 import type { Personas, PersonaDeLaEmpresa, SolicitudDeAcceso } from './tipos';
@@ -787,3 +791,75 @@ export const validarPersonas = (cuerpo: unknown): Personas | null => {
   }
   return { personas, solicitudes };
 };
+
+// ---- Riesgos mínimos (ADR 037)
+const CAMPOS_RIESGO = ['id', 'codigo', 'titulo', 'descripcion', 'probabilidad', 'impacto', 'puntaje', 'nivel', 'decision', 'responsableId', 'estado', 'version'] as const;
+
+/** Un riesgo: forma exacta, rangos del contrato y coherencia (puntaje = probabilidad × impacto; «aceptar» trae responsable). */
+const riesgoValido = (r: Record<string, unknown>): boolean =>
+  texto(r.id, 36, UUID) &&
+  texto(r.codigo, 8, CODIGO_RIESGO_RE) &&
+  texto(r.titulo, 120, undefined, 1) &&
+  (r.descripcion === null || texto(r.descripcion, 1000, undefined, 1)) &&
+  entero(r.probabilidad, 1) && r.probabilidad <= 5 &&
+  entero(r.impacto, 1) && r.impacto <= 5 &&
+  r.puntaje === r.probabilidad * r.impacto &&
+  enLista(r.nivel, NIVELES_RIESGO) &&
+  enLista(r.decision, DECISIONES_RIESGO) &&
+  (r.responsableId === null || texto(r.responsableId, 36, UUID)) &&
+  (r.estado === 'vigente' || r.estado === 'retirado') &&
+  entero(r.version, 1) &&
+  (r.decision !== 'aceptar' || r.responsableId !== null);
+
+export const validarRiesgos = (cuerpo: unknown): RiesgoListado[] | null => {
+  if (!Array.isArray(cuerpo) || cuerpo.length > 500) return null;
+  const vistos = new Set<string>();
+  for (const item of cuerpo) {
+    const r = objeto(item);
+    if (!r || !claves(r, [...CAMPOS_RIESGO, 'controles', 'tratamientosPrevistos', 'sinTratamiento']) || !riesgoValido(r)) return null;
+    if (!entero(r.controles) || r.controles > 50 || !entero(r.tratamientosPrevistos) || r.tratamientosPrevistos > 50 || typeof r.sinTratamiento !== 'boolean') return null;
+    // «Sin tratamiento» solo puede ser cierto para un riesgo vigente que se mitiga y no tiene ningún vínculo.
+    if (r.sinTratamiento !== (r.estado === 'vigente' && r.decision === 'mitigar' && r.controles === 0 && r.tratamientosPrevistos === 0)) return null;
+    if (vistos.has(r.codigo as string)) return null;
+    vistos.add(r.codigo as string);
+  }
+  return cuerpo as RiesgoListado[];
+};
+
+export const validarRiesgoDetalle = (cuerpo: unknown): RiesgoDetalle | null => {
+  const r = objeto(cuerpo);
+  if (!r || !claves(r, [...CAMPOS_RIESGO, 'controles', 'tratamientosPrevistos']) || !riesgoValido(r)) return null;
+  if (!Array.isArray(r.controles) || r.controles.length > 50 || !Array.isArray(r.tratamientosPrevistos) || r.tratamientosPrevistos.length > 50) return null;
+  const ids = new Set<string>();
+  for (const item of r.controles) {
+    const c = objeto(item);
+    if (!c || !claves(c, ['id', 'codigo', 'nombre', 'estado']) || !texto(c.id, 36, UUID) || ids.has(c.id) || !texto(c.codigo, 20, CONTROL_RE) || !texto(c.nombre, 120, undefined, 1) || (c.estado !== 'vigente' && c.estado !== 'retirado')) return null;
+    ids.add(c.id);
+  }
+  const vistos = new Set<string>();
+  for (const item of r.tratamientosPrevistos) {
+    const x = objeto(item);
+    if (!x || !claves(x, ['libreriaCodigo', 'idEstable', 'titulo']) || !claveFila(x) || (x.titulo !== null && !texto(x.titulo, 200, undefined, 1))) return null;
+    const k = claveFila(x) as string;
+    if (vistos.has(k)) return null;
+    vistos.add(k);
+  }
+  return r as unknown as RiesgoDetalle;
+};
+
+export const validarAvisoRetiroRiesgo = (cuerpo: unknown): AvisoRetiroRiesgo | null => {
+  const a = objeto(cuerpo);
+  if (!a || !claves(a, ['riesgoId', 'codigo', 'controlesSinMotivo']) || !texto(a.riesgoId, 36, UUID) || !texto(a.codigo, 8, CODIGO_RIESGO_RE)) return null;
+  if (!Array.isArray(a.controlesSinMotivo) || a.controlesSinMotivo.length > 500) return null;
+  const vistos = new Set<string>();
+  for (const item of a.controlesSinMotivo) {
+    const c = objeto(item);
+    if (!c || !claves(c, ['libreriaCodigo', 'idEstable', 'titulo']) || !claveFila(c) || !texto(c.titulo, 200, undefined, 1)) return null;
+    const k = claveFila(c) as string;
+    if (vistos.has(k)) return null;
+    vistos.add(k);
+  }
+  return a as unknown as AvisoRetiroRiesgo;
+};
+
+export type { Riesgo };

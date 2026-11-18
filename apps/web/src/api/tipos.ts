@@ -372,3 +372,46 @@ export interface Personas {
   readonly personas: readonly PersonaDeLaEmpresa[];
   readonly solicitudes: readonly SolicitudDeAcceso[];
 }
+
+// ---- Riesgos mínimos (ADR 037)
+export interface Riesgo {
+  readonly id: string;
+  readonly codigo: string;
+  readonly titulo: string;
+  readonly descripcion: string | null;
+  readonly probabilidad: number;
+  readonly impacto: number;
+  readonly puntaje: number;
+  readonly nivel: NivelRiesgo;
+  readonly decision: DecisionTratamiento;
+  readonly responsableId: string | null;
+  readonly estado: 'vigente' | 'retirado';
+  readonly version: number;
+}
+/** Un riesgo de la lista, con cuánto tratamiento tiene. */
+export interface RiesgoListado extends Riesgo {
+  readonly controles: number;
+  readonly tratamientosPrevistos: number;
+  readonly sinTratamiento: boolean;
+}
+export interface ControlDeRiesgo {
+  readonly id: string;
+  readonly codigo: string;
+  readonly nombre: string;
+  readonly estado: 'vigente' | 'retirado';
+}
+export interface TratamientoPrevisto {
+  readonly libreriaCodigo: string;
+  readonly idEstable: string;
+  /** Nulo si la entrada ya no está entre las librerías adoptadas. */
+  readonly titulo: string | null;
+}
+export interface RiesgoDetalle extends Riesgo {
+  readonly controles: readonly ControlDeRiesgo[];
+  readonly tratamientosPrevistos: readonly TratamientoPrevisto[];
+}
+export interface AvisoRetiroRiesgo {
+  readonly riesgoId: string;
+  readonly codigo: string;
+  readonly controlesSinMotivo: readonly { readonly libreriaCodigo: string; readonly idEstable: string; readonly titulo: string }[];
+}
