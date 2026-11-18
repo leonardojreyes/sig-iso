@@ -1,7 +1,7 @@
 # Tareas — Declaración de Aplicabilidad justificada
 
 - **Spec:** [spec.md](spec.md) · **Plan:** no hay; el proceso es ágil (una rama por rebanada, PR por hito, un solo `/review` al final) y las decisiones de diseño van en el ADR de la tarea 1.
-- **Estado:** spec **aprobado el 2026-11-17**. **20 tareas** en 6 fases; en curso desde la 1.
+- **Estado:** spec **aprobado el 2026-11-17**. **20 tareas** en 6 fases: **todas hechas el 2026-11-18** (rama `feature/declaracion-justificada`, PR por abrir).
 
 ## Cómo leer este documento
 
@@ -59,7 +59,7 @@
 | 17  | ✅ `pnpm web:verify-riesgos` con todo real (Keycloak, API, PostgreSQL y web): crear riesgos y vínculos, motivos, **bloqueo sin motivo**, aprobar, versión congelada intacta tras cambiar un riesgo, Word, permisos y aislamiento; ajustar `web:verify-declaracion`; repetible y limpio | 14 a 16 |
 | 18  | ✅ Documentación de seguridad: STRIDE del hito, clasificación de datos y los insumos nuevos del ADR 028 (riesgos, notas y referencias); guía de ejecución ‖                                                                                                                            | 17      |
 | 19  | ✅ `/review` completo (arquitecto, multiempresa, seguridad, accesibilidad, cumplimiento y `experto-iso` sobre el documento) y sus correcciones                                                                                                                                         | 17, 18  |
-| 20  | PR del hito, `estado.md` al día y cierre del hueco 1 del M6; dejar anotado lo que sigue fuera (controles adicionales, responsable por control, riesgo residual)                                                                                                                     | 19      |
+| 20  | ✅ PR del hito, `estado.md` al día y cierre del hueco 1 del M6; dejar anotado lo que sigue fuera (controles adicionales, responsable por control, riesgo residual)                                                                                                                     | 19      |
 
 ## Lo que queda fuera (no son tareas de esta lista)
 

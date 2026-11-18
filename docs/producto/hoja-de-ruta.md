@@ -1,12 +1,12 @@
 # Hoja de ruta del SIG-ISO
 
-- **Actualizado:** 2026-11-17 · **Responsable:** Ing. Leonardo J. Reyes B., MBA
+- **Actualizado:** 2026-11-18 · **Responsable:** Ing. Leonardo J. Reyes B., MBA
 - **Fuente:** documento «SIG-ISO — Qué tengo y qué me falta» (claude.ai, 2026-11-17). Desde ahora **este archivo es la referencia oficial**: Claude Code lo mantiene al día y marca cada módulo como hecho en el mismo PR que lo cierra.
 
 ## Cómo se nombra el avance
 
-- **Etapa** (A a E) → **módulo** → **paso X de Y del módulo** (las fases internas del `tasks.md` de cada módulo).
-- Ejemplo de reporte: «Etapa A · Declaración justificada · paso 3 de 6 (API)».
+- **Etapa** (A a E) → **módulo** → **tarea X de Y** (con su **fase N de M**, las del `tasks.md` de cada módulo).
+- Ejemplo de reporte: «Etapa A · Declaración justificada y riesgos básicos · tarea 13 de 20 (fase 3 de 6: Contrato y API)».
 - «Fase 0» y los hitos M1 a M7 son historia (cimientos y MVP); no se usan para el trabajo nuevo.
 
 ## Orden recomendado
@@ -32,7 +32,7 @@ Estados: `Hecho` · `En curso` · `Pendiente` · `Por definir`. Estimaciones en 
 
 | Módulo | Qué aporta | Estimación | Estado |
 | --- | --- | --- | --- |
-| Declaración justificada y riesgos básicos | Motivo de inclusión por control, vínculo con riesgos, referencia al tratamiento en el Word (`docs/specs/declaracion-justificada/`) | ~1 día | En curso |
+| Declaración justificada y riesgos básicos | Motivo de inclusión por control, vínculo con riesgos, referencia al tratamiento en el Word (`docs/specs/declaracion-justificada/`; `/review` en `docs/revisiones/2026-11-18-review-declaracion-justificada.md`) | ~1 día | **Hecho** (2026-11-18) |
 | Gestión de riesgos completa | Activos de información, evaluación, plan de tratamiento y riesgo residual | 1,5 a 2 días | Pendiente |
 | Control documental | Políticas y procedimientos con versiones, aprobación, lectura confirmada y retención | ~2 días | Pendiente |
 | Auditoría interna | Programa anual, plan, listas de verificación desde los requisitos, hallazgos, independencia del auditor | ~2 días | Pendiente |
