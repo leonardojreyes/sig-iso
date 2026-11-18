@@ -15,7 +15,7 @@ import type { AutorizacionPort, Permiso } from '../autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from '../catalogo-lectura.port.js';
 import type { ContextoCertificacion } from '../contexto.js';
 import type { DocumentoDeclaracion, DocumentoGenerado, GeneradorDocumentoPort } from '../generador-documento.port.js';
-import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, MapeoRepositoryPort, MotivoRepositoryPort, ReferenciaRepositoryPort, RiesgoRepositoryPort, VersionDeclaracion, VinculoRiesgoRepositoryPort } from '../repositorios.port.js';
+import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, CopiaJustificacion, MapeoRepositoryPort, MotivoRepositoryPort, ReferenciaRepositoryPort, RiesgoRepositoryPort, VersionDeclaracion, VinculoRiesgoRepositoryPort } from '../repositorios.port.js';
 import type { UnidadDeTrabajoPort } from '../unidad-de-trabajo.port.js';
 
 export const A: EmpresaId = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000f1');
@@ -48,7 +48,7 @@ export class EstadoFalso {
   referencias = new Map<string, ReferenciaTratamiento>();
   evidencias = new Map<string, FilaEvidencia>();
   /** Versiones aprobadas de la declaración, por `empresa|id`. */
-  declaraciones = new Map<string, { empresaId: EmpresaId; version: VersionDeclaracion; filas: readonly FilaDeclaracion[] }>();
+  declaraciones = new Map<string, { empresaId: EmpresaId; version: VersionDeclaracion; filas: readonly FilaDeclaracion[]; copia: CopiaJustificacion | null }>();
   eventos: EventoBitacora[] = [];
   /** Entradas adoptadas por empresa. */
   catalogoPorEmpresa = new Map<EmpresaId, readonly EntradaCatalogo[]>();
@@ -225,15 +225,15 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
     const propiasDecl = () => [...estado.declaraciones.values()].filter((d) => d.empresaId === empresaId);
     const declaraciones: DeclaracionRepositoryPort = {
       ultimoNumero: async () => Math.max(0, ...propiasDecl().map((d) => d.version.numero)),
-      crear: async (version, filas) => {
+      crear: async (version, filas, copia) => {
         if (estado.carrera || propiasDecl().some((d) => d.version.numero === version.numero)) return false;
-        estado.declaraciones.set(`${empresaId}|${version.id}`, { empresaId, version, filas });
+        estado.declaraciones.set(`${empresaId}|${version.id}`, { empresaId, version, filas, copia: copia ?? null });
         return true;
       },
       listarVersiones: async () => propiasDecl().map((d) => d.version).sort((a, b) => b.numero - a.numero),
       obtener: async (id) => {
         const d = estado.declaraciones.get(`${empresaId}|${id}`);
-        return d ? { version: d.version, filas: d.filas } : null;
+        return d ? { version: d.version, filas: d.filas, copia: d.copia } : null;
       },
     };
     const contexto: ContextoCertificacion = {

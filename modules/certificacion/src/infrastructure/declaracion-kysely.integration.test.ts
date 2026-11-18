@@ -6,6 +6,9 @@ import type { AutorizacionPort } from '../application/autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from '../application/catalogo-lectura.port.js';
 import { AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase } from '../application/declaracion.use-cases.js';
 import { ConflictoError, EntradaNoEncontradaError } from '../application/errores.js';
+import { GuardarReferenciaUseCase, RegistrarMotivoUseCase } from '../application/motivos.use-cases.js';
+import { CambiarRiesgoUseCase, CrearRiesgoUseCase, RetirarRiesgoUseCase } from '../application/riesgos.use-cases.js';
+import { PreverTratamientoUseCase } from '../application/vinculos-riesgo.use-cases.js';
 import { EvaluarEntradaUseCase } from '../application/evaluar-entrada.use-case.js';
 import { detectarTipoArchivo } from '../domain/deteccion-archivo.js';
 import { DeclaracionKysely } from './declaracion-kysely.adapter.js';
@@ -44,17 +47,19 @@ describe.skipIf(!hayBase)('declaración de aplicabilidad sobre PostgreSQL real',
   const versiones = () => new ListarVersionesDeclaracionUseCase(unidad(), permitir);
   const version = () => new ObtenerVersionDeclaracionUseCase(unidad(), permitir);
   const exportar = () => new ExportarDeclaracionUseCase(unidad(), permitir, catalogo, new GeneradorDocumentoDocx(), reloj);
+  const motivo = () => new RegistrarMotivoUseCase(unidad(), permitir, catalogo, reloj);
   const yo = { empresaId: A, usuarioId: UA };
   const completar = async (empresa: typeof A, usuario: string) => {
     await evaluar().ejecutar({ empresaId: empresa, usuarioId: usuario, libreriaCodigo: CODIGO, idEstable: 'a27-5-1', estado: 'cumple', comentario: 'COMENTARIO-PRIVADO' });
     await evaluar().ejecutar({ empresaId: empresa, usuarioId: usuario, libreriaCodigo: CODIGO, idEstable: 'a27-5-2', estado: 'no_aplica', comentario: 'No hay personal propio' });
+    // Todo control que aplica necesita un motivo para poder aprobar (ADR 037).
+    await motivo().ejecutar({ empresaId: empresa, usuarioId: usuario, libreriaCodigo: CODIGO, idEstable: 'a27-5-1', tipo: 'negocio', nota: 'Necesidad del negocio' });
   };
 
   const limpiar = async (id: typeof A) => {
     await conTenant(owner(), id, async (trx) => {
-      await sql`delete from declaracion_fila where empresa_id = ${id}`.execute(trx);
-      await sql`delete from declaracion_version where empresa_id = ${id}`.execute(trx);
-      await sql`delete from evaluacion where empresa_id = ${id}`.execute(trx);
+      for (const tabla of ['declaracion_fila_riesgo', 'declaracion_motivo', 'declaracion_referencia', 'declaracion_riesgo', 'declaracion_fila', 'declaracion_version', 'motivo_inclusion', 'referencia_tratamiento', 'riesgo_entrada', 'riesgo_control', 'riesgo', 'evaluacion'])
+        await sql`delete from ${sql.table(tabla)} where empresa_id = ${id}`.execute(trx);
       await sql`delete from usuario where empresa_id = ${id}`.execute(trx);
       await sql`delete from empresa where id = ${id}`.execute(trx);
     });
@@ -109,12 +114,13 @@ describe.skipIf(!hayBase)('declaración de aplicabilidad sobre PostgreSQL real',
     ]);
     const h = await hechos(A);
     expect(h).toHaveLength(1);
-    expect(h[0]).toMatchObject({ accion: 'declaracion.aprobada', objeto: 'declaracion:v1', despues: { total: 2, aplican: 1, no_aplican: 1, sin_control: 1 } });
+    expect(h[0]).toMatchObject({ accion: 'declaracion.aprobada', objeto: 'declaracion:v1', despues: { total: 2, aplican: 1, no_aplican: 1, sin_control: 1, con_motivo: 1, riesgos: 0 } });
     expect(JSON.stringify(h)).not.toMatch(/COMENTARIO-PRIVADO|No hay personal/);
   });
 
   it('una segunda aprobación crea la versión 2 y la 1 no cambia aunque el diagnóstico cambie', async () => {
     await evaluar().ejecutar({ empresaId: A, usuarioId: UA, libreriaCodigo: CODIGO, idEstable: 'a27-5-2', estado: 'parcial', versionEsperada: 1 });
+    await motivo().ejecutar({ ...yo, libreriaCodigo: CODIGO, idEstable: 'a27-5-2', tipo: 'otro', nota: 'Política propia de la empresa' });
     const v2 = await aprobar().ejecutar(yo);
     expect(v2.numero).toBe(2);
     const lista = await versiones().ejecutar(yo);
@@ -166,5 +172,45 @@ describe.skipIf(!hayBase)('declaración de aplicabilidad sobre PostgreSQL real',
     expect(lectura).toBeNull();
     const intento = await conTenant(pools.db('app'), B, (trx) => new DeclaracionKysely(trx, A).obtener(v!.id));
     expect(intento).toBeNull();
+  });
+
+  it('JUSTIFICACIÓN: congela motivos, riesgos, vínculos, referencias y escala; cambiar un riesgo después no altera la versión', async () => {
+    const riesgos = () => new CrearRiesgoUseCase(unidad(), permitir, reloj, nuevoId);
+    const r = await riesgos().ejecutar({ ...yo, titulo: 'TITULO-ORIGINAL Fuga de datos', probabilidad: 4, impacto: 5, decision: 'mitigar' });
+    await new PreverTratamientoUseCase(unidad(), permitir, catalogo, reloj).ejecutar({ ...yo, riesgoId: r.id, libreriaCodigo: CODIGO, idEstable: 'a27-5-2' });
+    await new GuardarReferenciaUseCase(unidad(), permitir, reloj).ejecutar({ ...yo, tipo: 'plan', titulo: 'Plan de tratamiento 2026', versionDoc: '1.0', fecha: '2026-11-01', ubicacion: 'SIG-PL-004' });
+    const v = await aprobar().ejecutar(yo);
+    const congelada = await version().ejecutar({ ...yo, id: v.id });
+    expect(congelada.justificacion).toMatchObject({
+      escala: { escalaMax: 5, corteMedio: 5, corteAlto: 10, corteCritico: 16 },
+      conMotivo: 2,
+      riesgosVigentes: 1,
+      motivos: [{ idEstable: 'a27-5-1', tipo: 'negocio' }, { idEstable: 'a27-5-2', tipo: 'otro' }],
+      riesgos: [{ codigo: expect.stringMatching(/^R-\d{3}$/), titulo: 'TITULO-ORIGINAL Fuga de datos', probabilidad: 4, impacto: 5, nivel: 'critico', decision: 'mitigar', controles: [] }],
+      riesgosPorFila: [{ idEstable: 'a27-5-2', via: 'previsto' }],
+      referencias: [{ tipo: 'plan', titulo: 'Plan de tratamiento 2026', versionDoc: '1.0', fecha: '2026-11-01', ubicacion: 'SIG-PL-004' }],
+    });
+    const antes = JSON.stringify(congelada.justificacion);
+    // Después: se cambia y se retira el riesgo, se cambia el motivo y la referencia.
+    const cambiado = await new CambiarRiesgoUseCase(unidad(), permitir, reloj).ejecutar({ ...yo, id: r.id, versionEsperada: 1, titulo: 'TITULO-NUEVO', probabilidad: 1, impacto: 1 });
+    await new RetirarRiesgoUseCase(unidad(), permitir, reloj).ejecutar({ ...yo, id: r.id, versionEsperada: cambiado.version });
+    await motivo().ejecutar({ ...yo, libreriaCodigo: CODIGO, idEstable: 'a27-5-1', tipo: 'negocio', nota: 'NOTA-CAMBIADA', versionEsperada: 1 });
+    await new GuardarReferenciaUseCase(unidad(), permitir, reloj).ejecutar({ ...yo, tipo: 'plan', titulo: 'TITULO-NUEVO', versionDoc: '2.0', fecha: '2026-11-02', ubicacion: 'OTRA', versionEsperada: 1 });
+    expect(JSON.stringify((await version().ejecutar({ ...yo, id: v.id })).justificacion)).toBe(antes);
+    // La bitácora de la aprobación lleva conteos y ningún texto.
+    const h = (await hechos(A)).filter((f) => f.accion === 'declaracion.aprobada').at(-1);
+    expect(h?.despues).toMatchObject({ con_motivo: 2, riesgos: 1 });
+    expect(JSON.stringify(h)).not.toMatch(/TITULO-ORIGINAL|Plan de tratamiento|SIG-PL-004|Necesidad del negocio/);
+  });
+
+  it('JUSTIFICACIÓN: una versión aprobada antes de la 0019 (sin escala ni copia) se sigue leyendo, sin justificación', async () => {
+    const id = crypto.randomUUID();
+    await conTenant(owner(), A, async (trx) => {
+      await sql`insert into declaracion_version (id, empresa_id, numero, total, aplican, no_aplican, sin_control, aprobada_por) values (${id}, ${A}, 900, 1, 1, 0, 0, ${UA})`.execute(trx);
+      await sql`insert into declaracion_fila (empresa_id, version_id, libreria_codigo, id_estable, orden, titulo, aplicabilidad, implementacion, controles, cobertura) values (${A}, ${id}, ${CODIGO}, 'a27-5-1', 1, 'Control', 'aplica', 'implementado', '{}', 'sin_control')`.execute(trx);
+    });
+    const x = await version().ejecutar({ ...yo, id });
+    expect(x.justificacion).toBeNull();
+    expect(x.filas).toHaveLength(1);
   });
 });

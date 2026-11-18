@@ -2,7 +2,8 @@ import type { Alcance } from '../domain/alcance.js';
 import type { Control } from '../domain/control.js';
 import type { Evaluacion } from '../domain/evaluacion.js';
 import type { Evidencia } from '../domain/evidencia.js';
-import type { FilaDeclaracion } from '../domain/declaracion.js';
+import type { FilaDeclaracion, ViaRiesgo } from '../domain/declaracion.js';
+import type { DecisionTratamiento, NivelRiesgo } from '../domain/riesgo.js';
 import type { MotivoInclusion } from '../domain/motivo-inclusion.js';
 import type { ReferenciaTratamiento, TipoReferencia } from '../domain/referencia-tratamiento.js';
 import type { TipoMotivo } from '../domain/declaracion.js';
@@ -96,6 +97,42 @@ export interface VersionDeclaracion {
   readonly sinControl: number;
   readonly aprobadaPor: string;
   readonly aprobadaEn: Date;
+  /** Lo que justifica la versión. Ausente o nulo en las aprobadas antes de la Declaración justificada (ADR 037). */
+  readonly justificacion?: JustificacionVersion | null;
+}
+
+/** La escala y los cortes del nivel de riesgo usados al aprobar. Se congelan: cambiarlos después no altera la versión. */
+export interface EscalaCongelada {
+  readonly escalaMax: number;
+  /** Primer puntaje de los niveles medio, alto y crítico. */
+  readonly corteMedio: number;
+  readonly corteAlto: number;
+  readonly corteCritico: number;
+}
+export interface JustificacionVersion {
+  readonly escala: EscalaCongelada;
+  /** Controles que aplican y tenían motivo al aprobar. */
+  readonly conMotivo: number;
+  readonly riesgosVigentes: number;
+}
+
+/** Copia inmutable de lo que justifica una versión aprobada: motivos, riesgos tal como estaban, vínculos fila–riesgo y referencias. */
+export interface CopiaJustificacion {
+  readonly motivos: readonly { readonly libreriaCodigo: string; readonly idEstable: string; readonly tipo: TipoMotivo; readonly nota: string }[];
+  readonly riesgos: readonly {
+    readonly codigo: string;
+    readonly titulo: string;
+    readonly probabilidad: number;
+    readonly impacto: number;
+    readonly nivel: NivelRiesgo;
+    readonly decision: DecisionTratamiento;
+    readonly responsableId: string | null;
+    /** Códigos de los controles vigentes de la empresa que lo trataban. */
+    readonly controles: readonly string[];
+  }[];
+  /** Qué riesgos justificaban cada fila y de qué manera. */
+  readonly riesgosPorFila: readonly { readonly libreriaCodigo: string; readonly idEstable: string; readonly riesgoCodigo: string; readonly via: ViaRiesgo }[];
+  readonly referencias: readonly { readonly tipo: TipoReferencia; readonly titulo: string; readonly versionDoc: string; readonly fecha: string; readonly ubicacion: string }[];
 }
 
 /** Repositorio de versiones aprobadas de la declaración, ligado a la empresa y la transacción. Inmutable: solo se agrega. */
@@ -103,10 +140,11 @@ export interface DeclaracionRepositoryPort {
   /** El mayor número de versión de la empresa (0 si no hay ninguna). */
   ultimoNumero(): Promise<number>;
   /** Guarda la versión con todas sus filas. Falso si ese número ya existe (otra persona aprobó entre la lectura y la escritura). */
-  crear(version: VersionDeclaracion, filas: readonly FilaDeclaracion[]): Promise<boolean>;
+  crear(version: VersionDeclaracion, filas: readonly FilaDeclaracion[], copia?: CopiaJustificacion): Promise<boolean>;
   /** De la más nueva a la más antigua. */
   listarVersiones(): Promise<readonly VersionDeclaracion[]>;
-  obtener(id: string): Promise<{ readonly version: VersionDeclaracion; readonly filas: readonly FilaDeclaracion[] } | null>;
+  /** La copia es nula en las versiones aprobadas antes de la Declaración justificada. */
+  obtener(id: string): Promise<{ readonly version: VersionDeclaracion; readonly filas: readonly FilaDeclaracion[]; readonly copia: CopiaJustificacion | null } | null>;
 }
 
 /** Un riesgo tratado con un control de la empresa. */

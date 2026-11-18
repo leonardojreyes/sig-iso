@@ -40,6 +40,14 @@ export const CORTES_NIVEL: readonly CorteNivel[] = Object.freeze([
   Object.freeze({ nivel: 'critico', nombre: 'crítico', desde: 16, hasta: 25 }),
 ]);
 
+/** Escala y cortes que se congelan en cada versión aprobada (los cortes son el primer puntaje de cada nivel). */
+export const escalaVigente = (): { readonly escalaMax: number; readonly corteMedio: number; readonly corteAlto: number; readonly corteCritico: number } => ({
+  escalaMax: ESCALA_MAX,
+  corteMedio: (CORTES_NIVEL.find((c) => c.nivel === 'medio') as CorteNivel).desde,
+  corteAlto: (CORTES_NIVEL.find((c) => c.nivel === 'alto') as CorteNivel).desde,
+  corteCritico: (CORTES_NIVEL.find((c) => c.nivel === 'critico') as CorteNivel).desde,
+});
+
 export const DECISIONES_TRATAMIENTO = Object.freeze(['mitigar', 'aceptar', 'transferir', 'evitar'] as const);
 export type DecisionTratamiento = (typeof DECISIONES_TRATAMIENTO)[number];
 

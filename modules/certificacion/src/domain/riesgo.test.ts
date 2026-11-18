@@ -1,7 +1,7 @@
 import { crearEmpresaId } from '@sig/tenancy';
 import { describe, expect, it } from 'vitest';
 import { ErrorCertificacion } from './errores.js';
-import { codigoDeRiesgo, numeroDeRiesgo, CORTES_NIVEL, DECISIONES_TRATAMIENTO, ESCALA_MAX, ESCALA_MIN, calcularNivel, nombreDeNivel, Riesgo } from './riesgo.js';
+import { escalaVigente, codigoDeRiesgo, numeroDeRiesgo, CORTES_NIVEL, DECISIONES_TRATAMIENTO, ESCALA_MAX, ESCALA_MIN, calcularNivel, nombreDeNivel, Riesgo } from './riesgo.js';
 
 const EMPRESA = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000e1');
 const ID = 'cccccccc-1111-4111-8111-111111111111';
@@ -153,5 +153,16 @@ describe('código correlativo', () => {
   it('rechaza números fuera de rango y códigos mal formados', () => {
     for (const n of [0, -1, 1.5, 1_000_000, Number.NaN]) expect(() => codigoDeRiesgo(n)).toThrow(ErrorCertificacion);
     for (const c of ['R-1', 'r-001', 'R-001x', '', 'C-001']) expect(() => numeroDeRiesgo(c)).toThrow(ErrorCertificacion);
+  });
+});
+
+describe('escalaVigente', () => {
+  it('da la escala y el primer puntaje de cada nivel, coherentes con los cortes', () => {
+    expect(escalaVigente()).toEqual({ escalaMax: 5, corteMedio: 5, corteAlto: 10, corteCritico: 16 });
+    const e = escalaVigente();
+    expect(calcularNivel(1, e.corteMedio).nivel).toBe('medio');
+    expect(calcularNivel(1, e.corteMedio - 1).nivel).toBe('bajo');
+    expect(calcularNivel(2, e.corteAlto / 2).nivel).toBe('alto');
+    expect(calcularNivel(4, e.corteCritico / 4).nivel).toBe('critico');
   });
 });

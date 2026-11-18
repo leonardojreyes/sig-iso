@@ -68,7 +68,8 @@ export class DeclaracionController {
   @RespuestasProblema(400, 401, 403, 404, 429, 500)
   async unaVersion(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada): Promise<VersionDeclaracionConFilasResponse> {
     const v = await this.version.ejecutar({ empresaId: identidad.empresaId, usuarioId: identidad.usuarioId, id });
-    return { ...v, filas: v.filas.map((f) => ({ ...f, controles: [...f.controles] })) };
+    // La justificación (motivos, riesgos, referencias) se expone con el contrato en la tarea 13 del spec «declaración justificada».
+    return { id: v.id, numero: v.numero, total: v.total, aplican: v.aplican, noAplican: v.noAplican, sinControl: v.sinControl, aprobadaPor: v.aprobadaPor, aprobadaEn: v.aprobadaEn, alcance: v.alcance, filas: v.filas.map((f) => ({ ...f, controles: [...f.controles] })) };
   }
 
   @Get('versiones/:id/documento')

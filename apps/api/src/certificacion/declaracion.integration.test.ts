@@ -1,4 +1,4 @@
-import { AlmacenArchivosLocal, Evaluacion } from '@sig/certificacion';
+import { AlmacenArchivosLocal, Evaluacion, MotivoInclusion } from '@sig/certificacion';
 import { A, ADMIN, B, COLAB, EstadoFalso, entradas, sha256Hex } from '@sig/certificacion/prueba';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -48,7 +48,7 @@ describe('declaración de aplicabilidad (MVP M5, paso 4)', () => {
     await rm(raiz, { recursive: true, force: true });
   });
   beforeEach(() => {
-    for (const m of [estado.controles, estado.mapeos, estado.evaluaciones, estado.alcances, estado.evidencias, estado.declaraciones]) m.clear();
+    for (const m of [estado.controles, estado.mapeos, estado.evaluaciones, estado.alcances, estado.evidencias, estado.declaraciones, estado.riesgos, estado.vinculosControl, estado.vinculosEntrada, estado.motivos, estado.referencias]) m.clear();
     estado.eventos = [];
     estado.permisos.clear();
     estado.carrera = false;
@@ -75,9 +75,13 @@ describe('declaración de aplicabilidad (MVP M5, paso 4)', () => {
   };
   const evaluar = (e: typeof POL, est: 'cumple' | 'parcial' | 'no_cumple' | 'no_aplica', comentario: string | null = null, empresa = A) =>
     estado.evaluaciones.set(`${empresa}|${e.libreriaCodigo}|${e.idEstable}`, Evaluacion.crear({ empresaId: empresa, libreriaCodigo: e.libreriaCodigo, idEstable: e.idEstable, libreriaId: e.libreriaId, estado: est, comentario, version: 1 }));
+  /** Un motivo registrado: todo control que aplica lo necesita para poder aprobar (ADR 037). */
+  const motivar = (e: typeof POL, empresa = A) =>
+    estado.motivos.set(`${empresa}|${e.libreriaCodigo}|${e.idEstable}|negocio`, MotivoInclusion.crear({ empresaId: empresa, libreriaCodigo: e.libreriaCodigo, idEstable: e.idEstable, tipo: 'negocio', nota: 'Necesidad del negocio' }));
   const completa = () => {
     evaluar(POL, 'cumple', 'COMENTARIO-PRIVADO');
     evaluar(ROL, 'no_aplica', 'No hay personal propio');
+    motivar(POL);
   };
   const aprobar = async (t?: string) => arnes.pedir('/declaracion/aprobacion', t ?? (await tAdmin()), 'POST');
   const bytesDe = async (r: Response) => new Uint8Array(await r.arrayBuffer());
@@ -180,6 +184,7 @@ describe('declaración de aplicabilidad (MVP M5, paso 4)', () => {
       completa();
       const v1 = await cuerpo(await aprobar());
       evaluar(ROL, 'parcial'); // el diagnóstico cambia después
+      motivar(ROL); // y ahora ROL aplica: necesita su motivo
       await aprobar();
       const lista = (await (await arnes.pedir('/declaracion/versiones', await tColab())).json()) as Cuerpo[];
       expect(lista.map((v) => v.numero)).toEqual([2, 1]);

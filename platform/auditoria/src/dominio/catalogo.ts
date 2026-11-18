@@ -195,7 +195,7 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   'evidencia.subida_rechazada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['tipo_no_permitido', 'tamano_excedido', 'firma_invalida'], objeto: 'obligatorio', objetoVersion: 'opcional' },
   // Declaración de Aplicabilidad (M5). La aprobación guarda solo el número de versión (objeto `declaracion:v<n>`) y los conteos; la
   // exportación fija la HUELLA SHA-256 del documento entregado (objeto `declaracion:v<n>` o `declaracion:borrador`). Ningún texto.
-  'declaracion.aprobada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', despues: { total: 'entero', aplican: 'entero', no_aplican: 'entero', sin_control: 'entero' } },
+  'declaracion.aprobada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', despues: { total: 'entero', aplican: 'entero', no_aplican: 'entero', sin_control: 'entero', con_motivo: 'entero', riesgos: 'entero' } },
   'declaracion.exportada': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio', objetoVersion: 'obligatorio' },
   'acceso.denegado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['sin_permiso'], objeto: 'opcional' },
   'acceso.cruzado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['rechazado'], motivo: 'obligatorio', motivos: ['empresa_distinta'], objeto: 'opcional' },
