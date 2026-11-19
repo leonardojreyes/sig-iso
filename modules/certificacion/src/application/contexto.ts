@@ -1,4 +1,5 @@
 import type { EventoBitacora } from '@sig/auditoria';
+import type { DestinatarioRepositoryPort, DirectorioPersonasPort, DocumentoRepositoryPort, LecturaRepositoryPort, RetencionRepositoryPort, VersionDocumentoRepositoryPort, VinculoDocumentoRepositoryPort } from './documentos.port.js';
 import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, MapeoRepositoryPort, MotivoRepositoryPort, ReferenciaRepositoryPort, RiesgoRepositoryPort, VinculoRiesgoRepositoryPort } from './repositorios.port.js';
 
 /** Registra un hecho en la bitácora DENTRO de la misma unidad de trabajo que la acción (si falla, la acción se revierte). */
@@ -18,6 +19,14 @@ export interface ContextoCertificacion {
   readonly referencias: ReferenciaRepositoryPort;
   readonly evidencias: EvidenciaRepositoryPort;
   readonly declaraciones: DeclaracionRepositoryPort;
+  // Control documental (ADR 039)
+  readonly documentos: DocumentoRepositoryPort;
+  readonly versionesDocumento: VersionDocumentoRepositoryPort;
+  readonly destinatarios: DestinatarioRepositoryPort;
+  readonly lecturas: LecturaRepositoryPort;
+  readonly vinculosDocumento: VinculoDocumentoRepositoryPort;
+  readonly retenciones: RetencionRepositoryPort;
+  readonly personas: DirectorioPersonasPort;
   readonly bitacora: RegistradorBitacora;
 }
 

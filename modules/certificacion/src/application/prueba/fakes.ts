@@ -20,6 +20,7 @@ import type { ContextoCertificacion } from '../contexto.js';
 import type { DocumentoDeclaracion, DocumentoGenerado, GeneradorDocumentoPort } from '../generador-documento.port.js';
 import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, CopiaJustificacion, MapeoRepositoryPort, MotivoRepositoryPort, ReferenciaRepositoryPort, RiesgoRepositoryPort, VersionDeclaracion, VinculoRiesgoRepositoryPort } from '../repositorios.port.js';
 import type { UnidadDeTrabajoPort } from '../unidad-de-trabajo.port.js';
+import { crearRepositoriosDocumentosFalsos, EstadoDocumentosFalso } from './fakes-documentos.js';
 
 export const A: EmpresaId = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000f1');
 export const B: EmpresaId = crearEmpresaId('bbbbbbbb-0000-4000-8000-0000000000f2');
@@ -36,6 +37,8 @@ export const entradas = {
 } satisfies Record<string, EntradaCatalogo>;
 
 export class EstadoFalso {
+  /** Datos del control documental (ADR 039). */
+  documentosEstado = new EstadoDocumentosFalso();
   evaluaciones = new Map<string, Evaluacion & { _por?: string }>();
   alcances = new Map<string, Alcance>();
   controles = new Map<string, Control>();
@@ -78,7 +81,7 @@ export const crearCatalogoFalso = (estado: EstadoFalso): CatalogoLecturaPort => 
 export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<ContextoCertificacion> => ({
   ejecutar: async (empresaId, fn) => {
     const clave = (c: string) => `${empresaId}|${c}`;
-    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), ri: new Map(estado.riesgos), vc: new Map(estado.vinculosControl), ve: new Map(estado.vinculosEntrada), mo: new Map(estado.motivos), rf: new Map(estado.referencias), evi: new Map(estado.evidencias), de: new Map(estado.declaraciones), ex: [...estado.eventos] };
+    const copia = { ev: new Map(estado.evaluaciones), al: new Map(estado.alcances), co: new Map(estado.controles), ma: new Map(estado.mapeos), ri: new Map(estado.riesgos), vc: new Map(estado.vinculosControl), ve: new Map(estado.vinculosEntrada), mo: new Map(estado.motivos), rf: new Map(estado.referencias), evi: new Map(estado.evidencias), de: new Map(estado.declaraciones), ex: [...estado.eventos], doc: estado.documentosEstado.copiar() };
     const evaluaciones: EvaluacionRepositoryPort = {
       listar: async () => [...estado.evaluaciones.entries()].filter(([k]) => k.startsWith(`${empresaId}|`)).map(([, v]) => v),
       obtener: async (codigo, id) => estado.evaluaciones.get(clave(`${codigo}|${id}`)) ?? null,
@@ -241,6 +244,7 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
     };
     const contexto: ContextoCertificacion = {
       declaraciones,
+      ...crearRepositoriosDocumentosFalsos(estado.documentosEstado, empresaId),
       evidencias,
       evaluaciones,
       alcances,
@@ -273,6 +277,7 @@ export const crearUnidadFalsa = (estado: EstadoFalso): UnidadDeTrabajoPort<Conte
       estado.evidencias = copia.evi;
       estado.declaraciones = copia.de;
       estado.eventos = copia.ex;
+      estado.documentosEstado.restaurar(copia.doc);
       throw e;
     }
   },
