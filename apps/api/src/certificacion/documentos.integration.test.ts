@@ -315,9 +315,9 @@ describe('controladores del control documental (ADR 039)', () => {
     await problema(await pedir('/retencion', await tAdmin(), 'PUT', { tipo: 'politica', anios: 3, motivo: 'x' }), 409, 'conflicto');
     const personas = await json(await pedir('/certificacion/personas', await tColab()));
     expect(personas.map((p: J) => Object.keys(p).sort())).toEqual([
-      ['activa', 'id', 'nombre'],
-      ['activa', 'id', 'nombre'],
-      ['activa', 'id', 'nombre'],
+      ['activa', 'id', 'nombre', 'puedeAprobar'],
+      ['activa', 'id', 'nombre', 'puedeAprobar'],
+      ['activa', 'id', 'nombre', 'puedeAprobar'],
     ]);
     personas.forEach((p: unknown) => valida('PersonaDirectorio', p));
   });
