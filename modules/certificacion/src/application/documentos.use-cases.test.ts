@@ -431,6 +431,24 @@ describe('descargar una versión', () => {
   });
 });
 
+describe('borradores y envío a revisión', () => {
+  it('un borrador o una versión en revisión solo lo descargan su autor, quien debe aprobarla y quien gestiona', async () => {
+    const { m, d } = await conDocumento();
+    const v = await subida(m, d.id, yo); // la redacta ADMIN
+    await expect(m.descargar.ejecutar({ ...colab, id: v.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    expect((await m.descargar.ejecutar({ ...yo, id: v.id })).vigente).toBe(false);
+    expect((await m.descargar.ejecutar({ empresaId: A, usuarioId: ADMIN2, id: v.id })).vigente).toBe(false); // gestiona
+    await m.enviar.ejecutar({ ...yo, id: v.id, aprobadorId: ADMIN2 });
+    await expect(m.descargar.ejecutar({ ...colab, id: v.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+  });
+  it('quien envía el borrador de otra persona no puede nombrarse a sí mismo si hay más de un administrador', async () => {
+    const { m, d } = await conDocumento();
+    const v = await subida(m, d.id, colab);
+    await expect(m.enviar.ejecutar({ ...yo, id: v.id, aprobadorId: ADMIN })).rejects.toBeInstanceOf(ParametroInvalidoError);
+    expect((await m.enviar.ejecutar({ ...yo, id: v.id, aprobadorId: ADMIN2 })).estado).toBe('en_revision');
+  });
+});
+
 describe('aislamiento entre empresas', () => {
   it('un documento o una versión de A responde como inexistente desde B, en todas las operaciones', async () => {
     const { m, d } = await conDocumento();

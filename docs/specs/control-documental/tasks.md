@@ -1,7 +1,7 @@
 # Tareas — Control documental
 
 - **Spec:** [spec.md](spec.md) (con los ajustes de la sección 11) · **Rama:** `feature/control-documental` · **Plan:** no hay; proceso ágil, las decisiones van en el ADR de la tarea 1.
-- **Estado:** **22 tareas** en 5 fases, **~2 días** (estimación de la hoja de ruta). Ninguna hecha. Un solo PR al final.
+- **Estado:** **22 tareas** en 5 fases, **~2 días** (estimación de la hoja de ruta). **Todas hechas el 2026-11-19** (rama `feature/control-documental`, PR por abrir).
 
 ## Cómo leer este documento
 
@@ -30,34 +30,34 @@
 | 7   | Casos de uso de versiones: subir borrador (tipos y límite de M4, huella, nota obligatoria), descartar y enviar a revisión nombrando aprobador                                                                                        | 6       |
 | 8   | Aprobar (distinto del autor, o excepción con motivo) y devolver con motivo; la anterior pasa a obsoleta en la misma transacción; revisión sin cambios; descarga con bitácora **antes** de entregar y leyenda «no vigente»            | 7       |
 | 9   | Distribución y lecturas: destinatarios por persona y «agregar por rol» (resuelve al momento), lecturas pendientes al aprobar, confirmar (solo la propia persona), «requiere nueva lectura», conteo por versión, baja de la persona ‖ | 8       |
-| 10  | Vínculos con entradas adoptadas y controles de la empresa, filtro «entradas sin documento vigente» y retención por tipo con su motivo ‖                                                                                              | 6       |
-| 11  | Adaptadores de PostgreSQL de 6 a 10 y pruebas de integración con la base real: **aislamiento** (incluida la descarga), rollback si falla la bitácora, carrera de dos aprobaciones (una sola vigente), versión inmutable              | 6 a 10  |
+| 10  | ✅ Vínculos con entradas adoptadas y controles de la empresa, filtro «entradas sin documento vigente» y retención por tipo con su motivo ‖                                                                                              | 6       |
+| 11  | ✅ Adaptadores de PostgreSQL de 6 a 10 y pruebas de integración con la base real: **aislamiento** (incluida la descarga), rollback si falla la bitácora, carrera de dos aprobaciones (una sola vigente), versión inmutable              | 6 a 10  |
 
 ## Fase 3 — Contrato y API
 
 | ID  | Tarea                                                                                                                                                                                                                  | Depende |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 12  | Contrato OpenAPI de documentos, versiones, flujo, distribución, lecturas, vínculos y retención; **guardas de privacidad** con textos libres acotados (`maxLength`); tipos generados                                    | 6 a 10  |
-| 13  | Controladores de documentos, versiones y flujo (subida multipart con 413 y 415, aprobar, devolver, descarga): 401 → 403 → 400 → 404 → 409, la empresa del token manda, 404 indistinguible, conformidad con el contrato | 11, 12  |
-| 14  | Controladores de distribución, lecturas, vínculos, cobertura y retención + conformidad                                                                                                                                 | 11, 12  |
+| 12  | ✅ Contrato OpenAPI de documentos, versiones, flujo, distribución, lecturas, vínculos y retención; **guardas de privacidad** con textos libres acotados (`maxLength`); tipos generados                                    | 6 a 10  |
+| 13  | ✅ Controladores de documentos, versiones y flujo (subida multipart con 413 y 415, aprobar, devolver, descarga): 401 → 403 → 400 → 404 → 409, la empresa del token manda, 404 indistinguible, conformidad con el contrato | 11, 12  |
+| 14  | ✅ Controladores de distribución, lecturas, vínculos, cobertura y retención + conformidad                                                                                                                                 | 11, 12  |
 
 ## Fase 4 — Interfaz web
 
 | ID  | Tarea                                                                                                                                                                                  | Depende |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 15  | Pantalla **Documentos**: lista con filtros y marcas (sin vigente, revisión vencida, lecturas pendientes), alta, detalle con historial y versión vigente; navegación; textos es-EC; axe | 13      |
-| 16  | Versiones y flujo: subir versión, enviar a revisión, aprobar y devolver (con la excepción del único administrador), descarga con rótulo «no vigente»; formularios por la guardia común | 13, 15  |
-| 17  | **Mis lecturas pendientes** y confirmar; panel de distribución y conteo «N de M» por versión (frase «constancia de conocimiento, no capacitación») ‖                                   | 14, 15  |
-| 18  | Revisión periódica, retención por tipo y vínculos con requisitos y controles; filtro «entradas sin documento vigente»; axe ‖                                                           | 14, 15  |
+| 15  | ✅ Pantalla **Documentos**: lista con filtros y marcas (sin vigente, revisión vencida, lecturas pendientes), alta, detalle con historial y versión vigente; navegación; textos es-EC; axe | 13      |
+| 16  | ✅ Versiones y flujo: subir versión, enviar a revisión, aprobar y devolver (con la excepción del único administrador), descarga con rótulo «no vigente»; formularios por la guardia común | 13, 15  |
+| 17  | ✅ **Mis lecturas pendientes** y confirmar; panel de distribución y conteo «N de M» por versión (frase «constancia de conocimiento, no capacitación») ‖                                   | 14, 15  |
+| 18  | ✅ Revisión periódica, retención por tipo y vínculos con requisitos y controles; filtro «entradas sin documento vigente»; axe ‖                                                           | 14, 15  |
 
 ## Fase 5 — Verificación y cierre
 
 | ID  | Tarea                                                                                                                                                                                                                                                   | Depende |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 19  | `pnpm web:verify-documentos` con todo real: flujo completo (redactar, revisar, aprobar, leer), una sola vigente, separación de funciones, permisos por rol, descarga y aislamiento con la empresa B; repetible, limpio y bajo 120 peticiones por minuto | 16 a 18 |
-| 20  | STRIDE, clasificación de datos y los insumos nuevos del ADR 028 (lecturas y archivos con datos personales); guía de ejecución ‖                                                                                                                         | 19      |
-| 21  | `/review` completo (arquitecto, multiempresa, seguridad, accesibilidad, cumplimiento y `experto-iso`) y sus correcciones                                                                                                                                | 19, 20  |
-| 22  | PR del módulo; ADR 039 «Aprobado»; `hoja-de-ruta.md` y `docs/fase0/estado.md` al día **en el mismo PR**                                                                                                                                                 | 21      |
+| 19  | ✅ `pnpm web:verify-documentos` con todo real: flujo completo (redactar, revisar, aprobar, leer), una sola vigente, separación de funciones, permisos por rol, descarga y aislamiento con la empresa B; repetible, limpio y bajo 120 peticiones por minuto | 16 a 18 |
+| 20  | ✅ STRIDE, clasificación de datos y los insumos nuevos del ADR 028 (lecturas y archivos con datos personales); guía de ejecución ‖                                                                                                                         | 19      |
+| 21  | ✅ `/review` completo (arquitecto, multiempresa, seguridad, accesibilidad, cumplimiento y `experto-iso`) y sus correcciones                                                                                                                                | 19, 20  |
+| 22  | ✅ PR del módulo; ADR 039 «Aprobado»; `hoja-de-ruta.md` y `docs/fase0/estado.md` al día **en el mismo PR**                                                                                                                                                 | 21      |
 
 ## Fuera de esta lista
 

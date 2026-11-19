@@ -179,7 +179,7 @@ export class EnviarARevisionUseCase {
       const d = await exigirDocumentoActivo(c, v.documentoId);
       await exigirAutorOGestor(this.autorizacion, v, usuarioId, empresaId);
       const personas = await exigirPersonaActiva(c, aprobadorId, 'aprobadorId');
-      if (!puedeNombrarseAprobador(v.autorId, aprobadorId, administradoresActivos(personas)))
+      if (!puedeNombrarseAprobador(v.autorId, aprobadorId, administradoresActivos(personas)) || !puedeNombrarseAprobador(usuarioId, aprobadorId, administradoresActivos(personas)))
         throw new ParametroInvalidoError('aprobadorId');
       const cambios = traducirDominio(() => enviarARevision(v, aprobadorId));
       if (
@@ -387,9 +387,12 @@ export class DescargarVersionUseCase {
     const { empresaId, usuarioId } = identificar(e.empresaId, e.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, 'documentos.ver', empresaId);
     const id = validarUuid(e.id, 'id');
+    const gestiona = await this.autorizacion.puede(usuarioId, 'documentos.gestionar', empresaId);
     const v = await this.unidad.ejecutar(empresaId, async (c) => {
       const fila = await exigirVersion(c, id);
       if (fila.estado === 'descartada') throw new EntradaNoEncontradaError();
+      // Un borrador o una versión en revisión no es información vigente: solo su autor, quien debe aprobarla o quien gestiona la ven.
+      if ((fila.estado === 'borrador' || fila.estado === 'en_revision') && fila.autorId !== usuarioId && fila.aprobadorId !== usuarioId && !gestiona) throw new EntradaNoEncontradaError();
       const d = await c.documentos.obtener(fila.documentoId);
       if (!d) throw new EntradaNoEncontradaError();
       await c.bitacora.registrar({
