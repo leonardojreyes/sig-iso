@@ -335,9 +335,18 @@ describe('controladores del control documental (ADR 039)', () => {
       ['POST', `/versiones/${v.id}/aprobacion`, {}],
       ['POST', `/versiones/${v.id}/lectura`, undefined],
       ['GET', `/versiones/${v.id}/archivo`, undefined],
+      ['POST', `/documentos/${d.id}/vinculos`, { controlId: ID_FALSO }],
+      ['POST', `/documentos/${d.id}/vinculos/eliminacion`, { controlId: ID_FALSO }],
+      ['POST', `/documentos/${d.id}/revision`, {}],
+      ['POST', `/versiones/${v.id}/devolucion`, { motivo: 'incompleta' }],
+      ['POST', `/versiones/${v.id}/descarte`, undefined],
     ] as [string, string, unknown][])
       await problema(await pedir(ruta, tb, metodo, cuerpo), 404, 'no_encontrado');
     expect((await json(await pedir('/documentos', tb))).documentos).toEqual([]);
+    await problema(await pedir(`/documentos/${d.id}/versiones`, tb, 'POST', formulario('x', pdf())), 404, 'no_encontrado');
+    expect(await json(await pedir('/lecturas/pendientes', tb))).toEqual([]);
+    expect((await json(await pedir('/certificacion/personas', tb))).map((p: J) => p.id)).toEqual([ADMIN_B]);
+    expect((await json(await pedir('/cobertura-documental', tb))).cubiertas).toBe(0);
     expect(await enDisco(B)).toEqual([]);
     expect((await json(await pedir('/documentos', tb, 'POST', { ...DOC, responsableId: ADMIN_B, empresaId: A }))).codigo).toBe('POL-001');
   });

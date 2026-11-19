@@ -442,6 +442,13 @@ describe('aislamiento entre empresas', () => {
     await expect(m.aprobar.ejecutar({ ...b, id: v.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
     await expect(m.confirmar.ejecutar({ ...b, id: v.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
     await expect(m.distribuir.ejecutar({ ...b, id: d.id, usuarioIds: [] })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    await expect(m.cambiar.ejecutar({ ...b, id: d.id, titulo: 'x', versionEsperada: 1 })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    await expect(m.revisar.ejecutar({ ...b, id: d.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    await expect(m.enviar.ejecutar({ ...b, id: v.id, aprobadorId: ADMIN_B })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    await expect(m.devolver.ejecutar({ ...b, id: v.id, motivo: 'incompleta' })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    await expect(m.descartar.ejecutar({ ...b, id: v.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    await expect(m.vincular.ejecutar({ ...b, id: d.id, libreriaCodigo: entradas.politicas.libreriaCodigo, idEstable: entradas.politicas.idEstable })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    await expect(m.desvincular.ejecutar({ ...b, id: d.id, controlId: '00000000-0000-4000-8000-000000000999' })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
     await expect(subida(m, d.id, b as typeof colab)).rejects.toBeInstanceOf(EntradaNoEncontradaError);
     expect((await m.listar.ejecutar(b)).documentos).toEqual([]);
     expect((await m.crear.ejecutar({ ...b, ...nuevo, responsableId: ADMIN_B })).codigo).toBe('POL-001'); // su propia secuencia

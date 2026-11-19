@@ -37,7 +37,7 @@ Todo es **«Confidencial de la empresa»**, con `empresa_id` y RLS forzada (7 ta
 
 | Cat. | Amenaza y mitigación | Riesgo que queda |
 | --- | --- | --- |
-| S/E | Solo aprueba la persona **nombrada** al enviar, con permiso de aprobar y **distinta del autor**. Excepción: con **un solo administrador activo** puede aprobar su versión con **motivo obligatorio**; queda marcada («aprobada por su autor») y es visible en el historial y en el Word futuro. Con dos o más administradores la regla es estricta (probado). Una persona dada de baja no se nombra ni aprueba. | MEDIO: la excepción puede abusarse si la empresa deja a propósito un solo administrador; queda el rastro visible y el motivo, pero no hay segunda firma. |
+| S/E | Solo aprueba la persona **nombrada** al enviar, con permiso de aprobar y **distinta del autor**. Excepción: con **un solo administrador activo** puede aprobar su versión con **motivo obligatorio**; queda marcada («aprobada por su autor») y es visible en el historial de versiones. Con dos o más administradores la regla es estricta (probado). Una persona dada de baja no se nombra ni aprueba. | MEDIO: la excepción puede abusarse si la empresa deja a propósito un solo administrador; queda el rastro visible y el motivo, pero no hay segunda firma. |
 | T | La versión aprobada rige desde la aprobación (**no hay vigencia futura**): no hay estado intermedio que deje un documento sin versión vigente. | |
 | R | `version.aprobada` lleva solo valores cerrados (`por_su_autor`, `requiere_lectura`, `destinatarios`) y la huella; el motivo de la excepción vive en la base, no en la bitácora. | |
 
@@ -60,4 +60,5 @@ La eliminación de archivos (disposición) es **irreversible** y se **difirió**
 3. **Lecturas** como constancia declarada y sin plazo de conservación definido.
 4. **Directorio** con nombres visibles para quien consulta.
 5. Sin **antivirus**, **cuota por empresa** ni **verificación de la huella al descargar** (igual que las evidencias).
-6. **Clasificación informativa:** un documento «restringido» lo ve toda persona con permiso de consulta de la empresa.
+6. **Clasificación informativa:** un documento «restringido» lo ve toda persona con permiso de consulta de la empresa (decisión del responsable, Q9; con datos reales habrá que revisarla).
+7. **Recomendaciones de la revisión no aplicadas** (decisiones de producto ya tomadas, a retomar): pedir la lectura por omisión en versiones nuevas y crear la pendiente a quien se suma a la distribución después de aprobar; motivo obligatorio al retirar un documento; edición de la fuente por versión en documentos externos; clasificación con efecto sobre el acceso.

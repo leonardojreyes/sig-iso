@@ -1,6 +1,6 @@
 # ADR 039 — Control documental: versiones, aprobación y lectura confirmada
 
-- **Estado:** Propuesto (2026-11-18); pasa a «Aprobado» al integrar el PR del módulo. Spec aprobado por el responsable con la propuesta por omisión (`docs/specs/control-documental/spec.md`, sección 11). **No contradice** ningún ADR; reutiliza el almacén de archivos del ADR 032 y la autorización por rol del ADR 029.
+- **Estado:** Aprobado (2026-11-19) al integrar el PR del módulo. Spec aprobado por el responsable con la propuesta por omisión (`docs/specs/control-documental/spec.md`, sección 11). **No contradice** ningún ADR; reutiliza el almacén de archivos del ADR 032 y la autorización por rol del ADR 029.
 - **Fecha:** 2026-11-18
 - **Decide:** Ing. Leonardo J. Reyes B.
 
@@ -31,4 +31,6 @@ Las normas piden que la información documentada de la empresa esté identificad
 - Reutiliza el almacén, la detección de tipo y la descarga protegida de M4; sin dependencias nuevas.
 - Las empresas con un solo administrador pueden operar, con rastro visible de que aprobó su propia versión.
 - **Solo datos de prueba** hasta que el asesor legal valide el ADR 028: los archivos pueden contener datos personales y las lecturas son datos personales seudonimizados (insumos nuevos para el asesor).
+- **Retención:** aplica a las **versiones obsoletas de documentos** (información documentada que se mantiene); los **registros** (evidencias, actas) se conservan por su fecha y se gobiernan en las evidencias (ADR 032). «Elegible para disposición» no es una política de retención completa.
+- **Base de tratamiento (hipótesis a validar con el asesor legal, ADR 028 insumo 13):** cumplimiento de la obligación documental de la empresa para versiones y lecturas.
 - Pendiente para después: disposición con confirmación, clasificación con efecto, recordatorios, editor y comparación de versiones.
