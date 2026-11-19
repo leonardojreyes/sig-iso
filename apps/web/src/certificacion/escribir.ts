@@ -43,6 +43,20 @@ export type AvisoEscritura =
   | 'desvinculado'
   | 'tratamiento_previsto'
   | 'tratamiento_quitado'
+  | 'documento_creado'
+  | 'documento_guardado'
+  | 'documento_retirado'
+  | 'documento_revisado'
+  | 'distribucion_guardada'
+  | 'documento_vinculado'
+  | 'documento_desvinculado'
+  | 'version_subida'
+  | 'version_enviada'
+  | 'version_devuelta'
+  | 'version_aprobada'
+  | 'version_descartada'
+  | 'lectura_confirmada'
+  | 'retencion_guardada'
   | 'sin_permiso'
   | 'no_valido'
   | 'archivo_grande'
@@ -79,6 +93,20 @@ const AVISOS: readonly string[] = [
   'desvinculado',
   'tratamiento_previsto',
   'tratamiento_quitado',
+  'documento_creado',
+  'documento_guardado',
+  'documento_retirado',
+  'documento_revisado',
+  'distribucion_guardada',
+  'documento_vinculado',
+  'documento_desvinculado',
+  'version_subida',
+  'version_enviada',
+  'version_devuelta',
+  'version_aprobada',
+  'version_descartada',
+  'lectura_confirmada',
+  'retencion_guardada',
   'sin_permiso',
   'no_valido',
   'archivo_grande',
@@ -92,20 +120,20 @@ const AVISOS: readonly string[] = [
 export const leerAvisoEscritura = (sp: Readonly<Record<string, string | readonly string[] | undefined>>): AvisoEscritura | null =>
   typeof sp.aviso === 'string' && AVISOS.includes(sp.aviso) ? (sp.aviso as AvisoEscritura) : null;
 
-interface Entrada extends EntradaDeEmpresa {
+export interface Entrada extends EntradaDeEmpresa {
   readonly deps: DependenciasSesion;
   /** El recurso de la dirección (por ejemplo, el control o la evidencia): se exige un UUID o responde 404, como una empresa distinta. */
   readonly id?: string;
 }
 
 /** 25 MB: lo que acepta la API por archivo. */
-const ARCHIVO_MAX = 26_214_400;
+export const ARCHIVO_MAX = 26_214_400;
 /** Un cuerpo vacío a propósito (la operación de la API no lleva cuerpo). */
-const SIN_CUERPO = Symbol('sin_cuerpo');
+export const SIN_CUERPO = Symbol('sin_cuerpo');
 type Cuerpo = Record<string, unknown> | FormData | typeof SIN_CUERPO | 'archivo_grande' | null;
-interface Operacion {
+export interface Operacion {
   /** Pantalla a la que se vuelve (`/e/<empresa>/<pantalla>`). */
-  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion' | 'personas' | 'riesgos';
+  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion' | 'personas' | 'riesgos' | 'documentos';
   /** Ruta (tras `/e/<empresa>/`) a la que se vuelve si no es `pantalla`; recibe el formulario (si se pudo leer) y el recurso de la dirección. */
   readonly volverA?: (f: FormData | null, id: string | null) => string;
   readonly metodoApi: 'PUT' | 'POST';
@@ -132,16 +160,16 @@ interface Operacion {
   readonly conservar?: (f: FormData) => string;
 }
 
-const campo = (f: FormData, nombre: string): string | null => {
+export const campo = (f: FormData, nombre: string): string | null => {
   const v = f.get(nombre);
   return typeof v === 'string' ? v : null;
 };
-const opcional = (f: FormData, nombre: string): string | null => {
+export const opcional = (f: FormData, nombre: string): string | null => {
   const v = campo(f, nombre)?.trim();
   return v ? v : null;
 };
 
-const reenviar = async (peticion: Request, entrada: Entrada, op: Operacion): Promise<Response> => {
+export const reenviar = async (peticion: Request, entrada: Entrada, op: Operacion): Promise<Response> => {
   const { config } = entrada.deps;
   const rechazo = rechazoDeEscritura(peticion, config.origen, entrada);
   if (rechazo) return rechazo;
@@ -492,7 +520,7 @@ export const eliminarEvidencia = (peticion: Request, entrada: Entrada): Promise<
     cuerpo: () => SIN_CUERPO,
   });
 
-const TIPOS_DESCARGA: readonly string[] = [
+export const TIPOS_DESCARGA: readonly string[] = [
   'application/pdf',
   'image/png',
   'image/jpeg',
@@ -502,7 +530,7 @@ const TIPOS_DESCARGA: readonly string[] = [
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ];
 
-interface ParametrosDescarga {
+export interface ParametrosDescarga {
   /** La dirección debe traer un UUID (`entrada.id`); si no, 404. */
   readonly conId: boolean;
   /** Ruta de la API; recibe el UUID ya validado (o nulo si no se exige). */
@@ -519,7 +547,7 @@ interface ParametrosDescarga {
  * entrega a la persona, siempre como adjunto. Del archivo solo se reenvían cabeceras de una lista cerrada y ya validadas: el tipo
  * debe ser uno de los permitidos para esa descarga y la disposición siempre es de adjunto, pase lo que pase con lo que diga la API.
  */
-const descargar = async (peticion: Request, entrada: Entrada, p: ParametrosDescarga): Promise<Response> => {
+export const descargar = async (peticion: Request, entrada: Entrada, p: ParametrosDescarga): Promise<Response> => {
   const { config } = entrada.deps;
   const rechazo = rechazoDeMetodo(peticion, 'GET') ?? rechazoDeEmpresa(entrada);
   if (rechazo) return rechazo;

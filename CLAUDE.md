@@ -9,13 +9,13 @@ Plataforma multiempresa para el ciclo de certificación ISO 9001, 27001:2022 y 4
 
 ## Mapa
 
-| Ruta | Contenido |
-| --- | --- |
-| `apps/api` · `apps/web` · `apps/worker` | NestJS (3001) · Next.js (3000) · tareas |
-| `modules/<modulo>/src/{domain,application,infrastructure,interface}` | Monolito modular, hexagonal |
-| `platform/` · `packages/` | Transversal (tenancy, auth, ia-gateway, auditoría) · compartido (contracts, ui, tokens, prompts) |
-| `libraries/normas/` | Librerías de normas en YAML, **sin texto de las normas** |
-| `docs/` | `fase0/` (estado, base técnica) · `adr/` · `specs/` · `producto/` · `security/` · `design/` |
+| Ruta                                                                 | Contenido                                                                                        |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `apps/api` · `apps/web` · `apps/worker`                              | NestJS (3001) · Next.js (3000) · tareas                                                          |
+| `modules/<modulo>/src/{domain,application,infrastructure,interface}` | Monolito modular, hexagonal                                                                      |
+| `platform/` · `packages/`                                            | Transversal (tenancy, auth, ia-gateway, auditoría) · compartido (contracts, ui, tokens, prompts) |
+| `libraries/normas/`                                                  | Librerías de normas en YAML, **sin texto de las normas**                                         |
+| `docs/`                                                              | `fase0/` (estado, base técnica) · `adr/` · `specs/` · `producto/` · `security/` · `design/`      |
 
 Base técnica completa: `docs/fase0/base-tecnica.md`. Visión y dominio: `docs/producto/`. Decisiones: `docs/adr/README.md` (lee los ADR relevantes antes de proponer cambios). Prompt de la Fase 0: `FASE0.md`.
 
@@ -53,6 +53,10 @@ Scripts siempre en Node (no bash). Debe funcionar igual en macOS y Windows. Gest
 ## Flujo por funcionalidad
 
 `/spec` → `/plan` (modo plan) → `/tasks` → `/implement` (una tarea por sesión, TDD) → `/review` (subagentes en paralelo) → PR con controles en verde y aprobación humana. Subagentes en `.claude/agents/`, comandos en `.claude/commands/`.
+
+## Modelos
+
+Haiku para tareas mecánicas (docs, UI con tokens, replicar patrones); Sonnet para RLS, migraciones, dominio, seguridad y revisiones. Si una tarea cambia de tipo, avisa para hacer `/model`. Los subagentes ya fijan su modelo en `.claude/agents/`.
 
 ## Restricciones del entorno
 

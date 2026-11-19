@@ -26,6 +26,7 @@
     "web:verify-aislamiento": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-aislamiento.ts",
     "web:verify-listado": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-listado.ts",
     "web:verify-riesgos": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-riesgos.ts",
+    "web:verify-documentos": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-documentos.ts",
     "web:verify-declaracion": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-declaracion.ts",
     "web:verify-personas": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-personas.ts",
     "web:verify-marca": "node --env-file-if-exists=.env.local --import tsx scripts/web-verificar-marca.ts",

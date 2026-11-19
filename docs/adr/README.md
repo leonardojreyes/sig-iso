@@ -39,3 +39,4 @@ Formato MADR breve. Se crean con el comando `/adr`. Aprobados el 2026-11-04 (pas
 | [035](035-empresa-activa-por-sesion.md) | Empresa activa por sesión | una persona en varias empresas; `POST /sesion/empresa` valida pertenencia y guarda la empresa activa del `sid` | Aprobado |
 | [036](036-alta-baja-y-rol-de-personas.md) | Alta, baja y rol de personas | solicitud de acceso con código corto; sin credenciales de administración de Keycloak; baja = rol nulo | Aprobado |
 | [037](037-riesgos-minimos-y-motivos-de-inclusion-derivados.md) | Riesgos mínimos y motivos de inclusión derivados | motivo «riesgo» siempre derivado; tratamiento previsto directo; escala y cortes congelados en la versión; aprobar exige motivo | Propuesto |
+| [039](039-control-documental.md) | Control documental | documento con versiones (una sola vigente), aprobación distinta del autor (excepción del único administrador), lectura confirmada, retención sin disposición | Aprobado |

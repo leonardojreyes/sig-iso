@@ -86,7 +86,7 @@ describe('cargarEmpresaActual (marca de la sesión para las pantallas internas)'
     expect(r).toEqual({
       tipo: 'ok',
       empresa: { id: 'empresa-a', nombre: 'Empresa A (prueba)', primario: '#0b5fff', logoUrl: undefined },
-      persona: { nombre: 'Persona de prueba', roles: ['administrador_sig'] },
+      persona: { id: expect.any(String), nombre: 'Persona de prueba', roles: ['administrador_sig'] },
       acceso: 'acceso-inicial',
     });
     expect([...llamadas].sort()).toEqual(['API/empresa/marca', 'API/me', 'API/sesion/empresas']);

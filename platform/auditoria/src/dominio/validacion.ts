@@ -14,6 +14,9 @@ const FORMA_POR_TIPO: Readonly<Record<string, RegExp>> = {
   vinculo: /^R-[0-9]{3,6}\.[A-Za-z0-9][A-Za-z0-9._-]{0,40}$/, // un código de control puede llevar puntos (C.1.2)
   motivo: /^[a-z0-9][a-z0-9.-]{0,40}\.(?:legal|contractual|negocio|otro)$/,
   referencia: /^[a-z0-9][a-z0-9-]{0,59}\.(?:analisis|plan)$/,
+  documento: /^[A-Z]{3}-[0-9]{3,6}$/,
+  version: /^[A-Z]{3}-[0-9]{3,6}\.v[0-9]{1,4}$/,
+  retencion: /^(?:politica|procedimiento|instructivo|formato|manual|externo|otro)$/,
 };
 const objetoConForma = (objeto: string): boolean => {
   const [tipo = '', ...resto] = objeto.split(':');

@@ -100,26 +100,33 @@ const exigirControlVigente = async (c: ContextoCertificacion, controlId: string)
   return control;
 };
 
-type Rechazo = 'tipo_no_permitido' | 'tamano_excedido' | 'firma_invalida';
+export type Rechazo = 'tipo_no_permitido' | 'tamano_excedido' | 'firma_invalida';
 
 /**
  * Recibe el flujo, calcula su huella y decide su tipo por el CONTENIDO. Si no se acepta deja el rechazo en la bitácora, borra lo
  * recibido y lanza `ArchivoRechazadoError`. Si todo va bien devuelve el temporal y el tipo detectado.
  */
-const recibirArchivo = async (
+export const recibirArchivo = async (
   almacen: AlmacenArchivosPort,
   unidad: Unidad,
-  p: { empresaId: Parameters<AlmacenArchivosPort['guardarTemporal']>[0]; usuarioId: string; controlCodigo: string; flujo: AsyncIterable<Uint8Array> },
+  p: {
+    empresaId: Parameters<AlmacenArchivosPort['guardarTemporal']>[0];
+    usuarioId: string;
+    controlCodigo: string;
+    flujo: AsyncIterable<Uint8Array>;
+    /** Qué hecho de bitácora deja un rechazo y sobre qué objeto (por omisión, una evidencia rechazada sobre su control). */
+    rechazo?: { accion: 'evidencia.subida_rechazada' | 'version.subida_rechazada'; objeto: string };
+  },
 ): Promise<{ temporal: ArchivoTemporal; tipo: TipoArchivo }> => {
   const registrarRechazo = (motivo: Rechazo, sha256?: string): Promise<void> =>
     unidad.ejecutar(p.empresaId, (c) =>
       c.bitacora.registrar({
         empresaId: p.empresaId,
         actor: { tipo: 'usuario', usuarioId: p.usuarioId },
-        accion: 'evidencia.subida_rechazada',
+        accion: p.rechazo?.accion ?? 'evidencia.subida_rechazada',
         resultado: 'rechazado',
         motivo,
-        objeto: `control:${p.controlCodigo}`,
+        objeto: p.rechazo?.objeto ?? `control:${p.controlCodigo}`,
         ...(sha256 ? { objetoVersion: sha256 } : {}),
       }),
     );

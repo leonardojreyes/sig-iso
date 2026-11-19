@@ -2,8 +2,14 @@
 // control, el tipo (por el contenido), la huella y la transacción. Lo importante aquí es el ORDEN: la API no lee un solo byte del
 // archivo hasta que el caso de uso lo pide, y eso ocurre después de decidir el permiso y los datos.
 import { Injectable, PayloadTooLargeException, type CallHandler, type ExecutionContext, type NestInterceptor } from '@nestjs/common';
-import { TAMANO_MAX_BYTES, type SubidaPendiente } from '@sig/certificacion';
+import { TAMANO_MAX_BYTES } from '@sig/certificacion';
 import { catchError, from, mergeMap, throwError, type Observable } from 'rxjs';
+
+/** Una subida a medias (evidencias o versiones de documentos): confirmar abre la transacción; descartar borra el temporal. */
+export interface SubidaPendiente {
+  confirmar(): Promise<unknown>;
+  descartar(): Promise<void>;
+}
 
 /** Lo que llega de multer por cada archivo: el flujo todavía sin leer. */
 export interface ArchivoEntrante {
