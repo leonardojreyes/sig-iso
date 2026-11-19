@@ -846,6 +846,8 @@ export interface PersonaDirectorioDto {
   readonly id: string;
   readonly nombre: string;
   readonly activa: boolean;
+  /** Puede aprobar documentos (administrador SIG activo): para elegir a quién enviar una versión a revisión. */
+  readonly puedeAprobar: boolean;
 }
 
 /** Quién es quién en la empresa (solo identificador, nombre y si sigue activa), para mostrar responsables sin pedir más datos. */
@@ -860,6 +862,6 @@ export class ListarDirectorioUseCase {
     const { empresaId, usuarioId } = identificar(e.empresaId, e.usuarioId);
     await exigirPermiso(this.autorizacion, usuarioId, this.permiso, empresaId);
     const personas = await this.unidad.ejecutar(empresaId, (c) => c.personas.listar());
-    return personas.map((p) => ({ id: p.id, nombre: p.nombre, activa: p.activa })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    return personas.map((p) => ({ id: p.id, nombre: p.nombre, activa: p.activa, puedeAprobar: p.activa && p.rol === 'administrador_sig' })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }
 }

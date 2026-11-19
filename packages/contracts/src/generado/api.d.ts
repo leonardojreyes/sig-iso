@@ -2582,12 +2582,14 @@ export interface components {
             motivo: string;
             versionEsperada?: number;
         };
-        /** @description Solo para mostrar responsables: sin correo ni rol. */
+        /** @description Solo para mostrar responsables y elegir a quién enviar una versión a revisión: sin correo ni rol. */
         PersonaDirectorio: {
             /** Format: uuid */
             id: string;
             nombre: string;
             activa: boolean;
+            /** @description Es una persona activa con permiso de aprobar documentos. */
+            puedeAprobar: boolean;
         };
     };
     responses: {

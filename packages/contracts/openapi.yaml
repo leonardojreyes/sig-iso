@@ -2275,17 +2275,18 @@ paths:
       - name: sinVigente
         in: query
         required: false
-        schema: &id001
+        schema:
           type: boolean
       - name: revisionVencida
         in: query
         required: false
-        schema: *id001
+        schema:
+          type: boolean
       responses:
         '200':
           description: La lista.
           headers:
-            Cache-Control: &id002
+            Cache-Control:
               $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
@@ -2318,7 +2319,8 @@ paths:
         '201':
           description: El documento creado.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2344,13 +2346,13 @@ paths:
       - documentos
       x-permiso: documentos.ver
       parameters:
-      - &id003
-        $ref: '#/components/parameters/IdRuta'
+      - $ref: '#/components/parameters/IdRuta'
       responses:
         '200':
           description: El documento.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2375,7 +2377,7 @@ paths:
       - documentos
       x-permiso: documentos.redactar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       requestBody:
         required: true
         content:
@@ -2386,7 +2388,8 @@ paths:
         '200':
           description: El documento cambiado.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2414,12 +2417,13 @@ paths:
       - documentos
       x-permiso: documentos.gestionar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       responses:
         '204':
           description: El documento se retiró.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
         '400':
           $ref: '#/components/responses/ParametrosInvalidos'
         '401':
@@ -2443,7 +2447,7 @@ paths:
       - documentos
       x-permiso: documentos.redactar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       requestBody:
         required: true
         content:
@@ -2454,7 +2458,8 @@ paths:
         '200':
           description: El documento con la nueva fecha.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2482,7 +2487,7 @@ paths:
       - documentos
       x-permiso: documentos.gestionar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       requestBody:
         required: true
         content:
@@ -2493,7 +2498,8 @@ paths:
         '200':
           description: Los destinatarios.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2521,7 +2527,7 @@ paths:
       - documentos
       x-permiso: documentos.gestionar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       requestBody:
         required: true
         content:
@@ -2532,7 +2538,8 @@ paths:
         '200':
           description: El vínculo ya existía.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2540,7 +2547,8 @@ paths:
         '201':
           description: El vínculo se creó.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2568,7 +2576,7 @@ paths:
       - documentos
       x-permiso: documentos.gestionar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       requestBody:
         required: true
         content:
@@ -2579,7 +2587,8 @@ paths:
         '204':
           description: El vínculo se quitó.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
         '400':
           $ref: '#/components/responses/ParametrosInvalidos'
         '401':
@@ -2601,7 +2610,7 @@ paths:
       - documentos
       x-permiso: documentos.redactar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       requestBody:
         required: true
         content:
@@ -2612,7 +2621,8 @@ paths:
         '201':
           description: La versión creada, en borrador.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2644,7 +2654,7 @@ paths:
       - documentos
       x-permiso: documentos.redactar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       requestBody:
         required: true
         content:
@@ -2655,7 +2665,8 @@ paths:
         '200':
           description: La versión en revisión.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2683,7 +2694,7 @@ paths:
       - documentos
       x-permiso: documentos.aprobar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       requestBody:
         required: true
         content:
@@ -2694,7 +2705,8 @@ paths:
         '200':
           description: La versión, de vuelta en borrador.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2722,7 +2734,7 @@ paths:
       - documentos
       x-permiso: documentos.aprobar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       requestBody:
         required: true
         content:
@@ -2733,7 +2745,8 @@ paths:
         '200':
           description: La versión aprobada.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2761,12 +2774,13 @@ paths:
       - documentos
       x-permiso: documentos.redactar
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       responses:
         '204':
           description: El borrador se descartó.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
         '400':
           $ref: '#/components/responses/ParametrosInvalidos'
         '401':
@@ -2790,12 +2804,13 @@ paths:
       - documentos
       x-permiso: documentos.ver
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       responses:
         '200':
           description: El archivo, como adjunto.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
             Content-Disposition:
               description: Siempre `attachment`, con el nombre normalizado y la extensión del tipo detectado.
               schema:
@@ -2856,12 +2871,13 @@ paths:
       - documentos
       x-permiso: documentos.leer
       parameters:
-      - *id003
+      - $ref: '#/components/parameters/IdRuta'
       responses:
         '204':
           description: La lectura quedó confirmada.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
         '400':
           $ref: '#/components/responses/ParametrosInvalidos'
         '401':
@@ -2888,7 +2904,8 @@ paths:
         '200':
           description: Las lecturas pendientes.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2924,12 +2941,14 @@ paths:
       - name: soloSinDocumento
         in: query
         required: false
-        schema: *id001
+        schema:
+          type: boolean
       responses:
         '200':
           description: La cobertura.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2956,7 +2975,8 @@ paths:
         '200':
           description: Las retenciones definidas.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -2989,7 +3009,8 @@ paths:
         '200':
           description: La retención guardada.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -3018,7 +3039,8 @@ paths:
         '200':
           description: Las personas de la empresa.
           headers:
-            Cache-Control: *id002
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
@@ -4972,59 +4994,62 @@ components:
       - version
       additionalProperties: false
       properties:
-        id: &id001
+        id:
           type: string
           format: uuid
           maxLength: 36
-        codigo: &id006
+        codigo:
           type: string
           maxLength: 10
           pattern: ^[A-Z]{3}-[0-9]{3,6}$
-        tipo: &id007
+        tipo:
           $ref: '#/components/schemas/TipoDocumento'
-        titulo: &id008
+        titulo:
           type: string
           maxLength: 120
-        area: &id009
+        area:
           type:
           - string
           - 'null'
           maxLength: 60
-        clasificacion: &id010
+        clasificacion:
           $ref: '#/components/schemas/ClasificacionDocumento'
-        responsableId: *id001
-        emisor: &id011
+        responsableId:
+          type: string
+          format: uuid
+          maxLength: 36
+        emisor:
           type:
           - string
           - 'null'
           maxLength: 120
-        edicionFuente: &id012
+        edicionFuente:
           type:
           - string
           - 'null'
           maxLength: 60
-        estado: &id013
+        estado:
           type: string
           enum:
           - activo
           - retirado
-        proximaRevision: &id014
+        proximaRevision:
           type:
           - string
           - 'null'
           format: date
           maxLength: 10
-        revision: &id015
+        revision:
           oneOf:
           - $ref: '#/components/schemas/EstadoRevision'
           - type: 'null'
-        ultimaRevisionEn: &id004
+        ultimaRevisionEn:
           type:
           - string
           - 'null'
           format: date-time
           maxLength: 40
-        vigente: &id016
+        vigente:
           oneOf:
           - type: object
             required:
@@ -5033,25 +5058,28 @@ components:
             - aprobadaEn
             additionalProperties: false
             properties:
-              versionId: *id001
+              versionId:
+                type: string
+                format: uuid
+                maxLength: 36
               numero:
                 type: integer
                 minimum: 1
-              aprobadaEn: &id005
+              aprobadaEn:
                 type: string
                 format: date-time
                 maxLength: 40
           - type: 'null'
-        sinVigente: &id002
+        sinVigente:
           type: boolean
-        lecturas: &id017
+        lecturas:
           oneOf:
           - $ref: '#/components/schemas/LecturasDocumento'
           - type: 'null'
-        lecturaPendiente: &id018
+        lecturaPendiente:
           type: boolean
           description: La persona que consulta tiene una lectura pendiente de la versión vigente.
-        version: &id019
+        version:
           type: integer
           minimum: 1
     ListaDocumentos:
@@ -5061,7 +5089,7 @@ components:
       - documentos
       additionalProperties: false
       properties:
-        hoy: &id020
+        hoy:
           type: string
           format: date
           maxLength: 10
@@ -5095,14 +5123,21 @@ components:
       - creadaEn
       additionalProperties: false
       properties:
-        id: *id001
-        documentoId: *id001
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        documentoId:
+          type: string
+          format: uuid
+          maxLength: 36
         numero:
           type: integer
           minimum: 1
         estado:
           $ref: '#/components/schemas/EstadoVersionDocumento'
-        vigente: *id002
+        vigente:
+          type: boolean
         nota:
           type: string
           maxLength: 500
@@ -5129,15 +5164,28 @@ components:
               type: string
               maxLength: 64
               pattern: ^[0-9a-f]{64}$
-        autorId: *id001
-        aprobadorId: &id003
+        autorId:
+          type: string
+          format: uuid
+          maxLength: 36
+        aprobadorId:
           type:
           - string
           - 'null'
           format: uuid
           maxLength: 36
-        aprobadaPor: *id003
-        aprobadaEn: *id004
+        aprobadaPor:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          maxLength: 36
+        aprobadaEn:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
         porSuAutor:
           type: boolean
           description: 'Aprobada por su propio autor (único administrador): queda marcada en el historial.'
@@ -5146,7 +5194,8 @@ components:
           - string
           - 'null'
           maxLength: 300
-        requiereLectura: *id002
+        requiereLectura:
+          type: boolean
         devueltaMotivo:
           oneOf:
           - $ref: '#/components/schemas/MotivoDevolucion'
@@ -5156,7 +5205,12 @@ components:
           - string
           - 'null'
           maxLength: 300
-        obsoletaEn: *id004
+        obsoletaEn:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
         elegibleParaDisposicion:
           type: boolean
           description: 'Solo marca: el sistema no borra nada (ADR 039).'
@@ -5164,7 +5218,10 @@ components:
           oneOf:
           - $ref: '#/components/schemas/LecturasDocumento'
           - type: 'null'
-        creadaEn: *id005
+        creadaEn:
+          type: string
+          format: date-time
+          maxLength: 40
     DocumentoDetalle:
       type: object
       required:
@@ -5194,24 +5251,94 @@ components:
       - unicoAdministrador
       additionalProperties: false
       properties:
-        id: *id001
-        codigo: *id006
-        tipo: *id007
-        titulo: *id008
-        area: *id009
-        clasificacion: *id010
-        responsableId: *id001
-        emisor: *id011
-        edicionFuente: *id012
-        estado: *id013
-        proximaRevision: *id014
-        revision: *id015
-        ultimaRevisionEn: *id004
-        vigente: *id016
-        sinVigente: *id002
-        lecturas: *id017
-        lecturaPendiente: *id018
-        version: *id019
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          maxLength: 10
+          pattern: ^[A-Z]{3}-[0-9]{3,6}$
+        tipo:
+          $ref: '#/components/schemas/TipoDocumento'
+        titulo:
+          type: string
+          maxLength: 120
+        area:
+          type:
+          - string
+          - 'null'
+          maxLength: 60
+        clasificacion:
+          $ref: '#/components/schemas/ClasificacionDocumento'
+        responsableId:
+          type: string
+          format: uuid
+          maxLength: 36
+        emisor:
+          type:
+          - string
+          - 'null'
+          maxLength: 120
+        edicionFuente:
+          type:
+          - string
+          - 'null'
+          maxLength: 60
+        estado:
+          type: string
+          enum:
+          - activo
+          - retirado
+        proximaRevision:
+          type:
+          - string
+          - 'null'
+          format: date
+          maxLength: 10
+        revision:
+          oneOf:
+          - $ref: '#/components/schemas/EstadoRevision'
+          - type: 'null'
+        ultimaRevisionEn:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
+        vigente:
+          oneOf:
+          - type: object
+            required:
+            - versionId
+            - numero
+            - aprobadaEn
+            additionalProperties: false
+            properties:
+              versionId:
+                type: string
+                format: uuid
+                maxLength: 36
+              numero:
+                type: integer
+                minimum: 1
+              aprobadaEn:
+                type: string
+                format: date-time
+                maxLength: 40
+          - type: 'null'
+        sinVigente:
+          type: boolean
+        lecturas:
+          oneOf:
+          - $ref: '#/components/schemas/LecturasDocumento'
+          - type: 'null'
+        lecturaPendiente:
+          type: boolean
+          description: La persona que consulta tiene una lectura pendiente de la versión vigente.
+        version:
+          type: integer
+          minimum: 1
         versiones:
           type: array
           maxItems: 500
@@ -5220,11 +5347,17 @@ components:
         destinatarios:
           type: array
           maxItems: 500
-          items: *id001
+          items:
+            type: string
+            format: uuid
+            maxLength: 36
         controles:
           type: array
           maxItems: 50
-          items: *id001
+          items:
+            type: string
+            format: uuid
+            maxLength: 36
         entradas:
           type: array
           maxItems: 50
@@ -5281,7 +5414,10 @@ components:
           maxLength: 60
         clasificacion:
           $ref: '#/components/schemas/ClasificacionDocumento'
-        responsableId: *id001
+        responsableId:
+          type: string
+          format: uuid
+          maxLength: 36
         emisor:
           type: string
           maxLength: 120
@@ -5306,7 +5442,10 @@ components:
           maxLength: 60
         clasificacion:
           $ref: '#/components/schemas/ClasificacionDocumento'
-        responsableId: *id001
+        responsableId:
+          type: string
+          format: uuid
+          maxLength: 36
         emisor:
           type:
           - string
@@ -5328,7 +5467,10 @@ components:
       properties:
         motivo:
           $ref: '#/components/schemas/MotivoRevision'
-        proximaRevision: *id020
+        proximaRevision:
+          type: string
+          format: date
+          maxLength: 10
     DistribucionEntrada:
       type: object
       description: 'Personas y/o «todas las personas de un rol»: el rol se resuelve en este momento y no se guarda.'
@@ -5338,7 +5480,10 @@ components:
         usuarioIds:
           type: array
           maxItems: 500
-          items: *id001
+          items:
+            type: string
+            format: uuid
+            maxLength: 36
         roles:
           type: array
           maxItems: 10
@@ -5355,14 +5500,20 @@ components:
         destinatarios:
           type: array
           maxItems: 500
-          items: *id001
+          items:
+            type: string
+            format: uuid
+            maxLength: 36
     VinculoDocumentoEntrada:
       type: object
       description: Un control de la empresa (`controlId`) o una entrada de una librería adoptada (`libreriaCodigo` e `idEstable`), no ambos.
       required: []
       additionalProperties: false
       properties:
-        controlId: *id001
+        controlId:
+          type: string
+          format: uuid
+          maxLength: 36
         libreriaCodigo:
           type: string
           maxLength: 64
@@ -5377,7 +5528,8 @@ components:
       - creado
       additionalProperties: false
       properties:
-        creado: *id002
+        creado:
+          type: boolean
     VersionSubida:
       type: object
       description: La nota va antes del archivo.
@@ -5400,7 +5552,10 @@ components:
       - aprobadorId
       additionalProperties: false
       properties:
-        aprobadorId: *id001
+        aprobadorId:
+          type: string
+          format: uuid
+          maxLength: 36
     DevolucionVersion:
       type: object
       required:
@@ -5418,8 +5573,12 @@ components:
       required: []
       additionalProperties: false
       properties:
-        proximaRevision: *id020
-        requiereLectura: *id002
+        proximaRevision:
+          type: string
+          format: date
+          maxLength: 10
+        requiereLectura:
+          type: boolean
         motivoExcepcion:
           type: string
           maxLength: 300
@@ -5433,9 +5592,18 @@ components:
       - numeroVersion
       additionalProperties: false
       properties:
-        versionId: *id001
-        documentoId: *id001
-        codigo: *id006
+        versionId:
+          type: string
+          format: uuid
+          maxLength: 36
+        documentoId:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          maxLength: 10
+          pattern: ^[A-Z]{3}-[0-9]{3,6}$
         titulo:
           type: string
           maxLength: 120
@@ -5509,9 +5677,16 @@ components:
                   - codigo
                   additionalProperties: false
                   properties:
-                    id: *id001
-                    codigo: *id006
-              cubierta: *id002
+                    id:
+                      type: string
+                      format: uuid
+                      maxLength: 36
+                    codigo:
+                      type: string
+                      maxLength: 10
+                      pattern: ^[A-Z]{3}-[0-9]{3,6}$
+              cubierta:
+                type: boolean
     Retencion:
       type: object
       required:
@@ -5557,15 +5732,23 @@ components:
           minimum: 1
     PersonaDirectorio:
       type: object
-      description: 'Solo para mostrar responsables: sin correo ni rol.'
+      description: 'Solo para mostrar responsables y elegir a quién enviar una versión a revisión: sin correo ni rol.'
       required:
       - id
       - nombre
       - activa
+      - puedeAprobar
       additionalProperties: false
       properties:
-        id: *id001
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
         nombre:
           type: string
           maxLength: 120
-        activa: *id002
+        activa:
+          type: boolean
+        puedeAprobar:
+          type: boolean
+          description: Es una persona activa con permiso de aprobar documentos.

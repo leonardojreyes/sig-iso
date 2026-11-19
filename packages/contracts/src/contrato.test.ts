@@ -576,8 +576,8 @@ describe('control documental (ADR 039)', () => {
     expect(props('Documento')).toEqual(['area', 'clasificacion', 'codigo', 'edicionFuente', 'emisor', 'estado', 'id', 'lecturaPendiente', 'lecturas', 'proximaRevision', 'responsableId', 'revision', 'sinVigente', 'tipo', 'titulo', 'ultimaRevisionEn', 'version', 'vigente']);
     expect(props('DocumentoDetalle')).toEqual([...props('Documento'), 'controles', 'destinatarios', 'entradas', 'retencion', 'unicoAdministrador', 'versiones'].sort());
     expect(props('VersionDocumento')).toEqual(['aprobadaEn', 'aprobadaPor', 'aprobadorId', 'archivo', 'autorId', 'creadaEn', 'devueltaMotivo', 'devueltaNota', 'documentoId', 'elegibleParaDisposicion', 'estado', 'id', 'lecturas', 'motivoExcepcion', 'nota', 'numero', 'obsoletaEn', 'porSuAutor', 'requiereLectura', 'vigente']);
-    // El directorio solo trae para qué sirve: identificador, nombre y si sigue activa (sin correo ni rol).
-    expect(props('PersonaDirectorio')).toEqual(['activa', 'id', 'nombre']);
+    // El directorio solo trae para qué sirve: identificador, nombre, si sigue activa y si puede aprobar (sin correo ni rol).
+    expect(props('PersonaDirectorio')).toEqual(['activa', 'id', 'nombre', 'puedeAprobar']);
     expect(props('LecturaPendiente')).toEqual(['codigo', 'documentoId', 'numeroVersion', 'titulo', 'versionId']);
     expect(props('Retencion')).toEqual(['anios', 'motivo', 'tipo', 'version']);
   });

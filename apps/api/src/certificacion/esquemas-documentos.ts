@@ -112,4 +112,4 @@ export const COBERTURA_DOCUMENTAL = objeto({
 });
 export const RETENCION = objeto({ tipo: enumerado(TIPOS_DOCUMENTO_API), anios: entero(1, 100), motivo: texto(200), version: entero(1) });
 export const RETENCIONES = lista(RETENCION, 7);
-export const DIRECTORIO_PERSONAS = lista(objeto({ id: UUID, nombre: texto(120), activa: { type: 'boolean' } }), 1000);
+export const DIRECTORIO_PERSONAS = lista(objeto({ id: UUID, nombre: texto(120), activa: { type: 'boolean' }, puedeAprobar: { type: 'boolean' } }), 1000);

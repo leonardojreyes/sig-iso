@@ -568,7 +568,8 @@ describe('directorio de personas', () => {
     const m = montar();
     const r = await m.directorio.ejecutar(colab);
     expect(r.map((p) => p.nombre)).toEqual(['Ana Admin', 'Beto Admin', 'Carla Colaboradora', 'Dario Retirado']);
-    expect(Object.keys(r[0] ?? {}).sort()).toEqual(['activa', 'id', 'nombre']);
+    expect(Object.keys(r[0] ?? {}).sort()).toEqual(['activa', 'id', 'nombre', 'puedeAprobar']);
+    expect(r.filter((p) => p.puedeAprobar).map((p) => p.nombre)).toEqual(['Ana Admin', 'Beto Admin']);
     expect(r.find((p) => p.id === RETIRADO)?.activa).toBe(false);
     expect((await m.directorio.ejecutar({ empresaId: B, usuarioId: ADMIN_B })).map((p) => p.id)).toEqual([ADMIN_B]);
     await expect(m.directorio.ejecutar({ empresaId: A, usuarioId: SIN_PERMISOS })).rejects.toBeInstanceOf(SinPermisoError);
