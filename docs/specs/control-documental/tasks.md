@@ -9,27 +9,27 @@
 - Todas incluyen `pnpm lint`, `pnpm typecheck` y `pnpm test` en verde y un commit en inglés con Conventional Commits.
 - «Aislamiento» = prueba que intenta leer o cambiar datos de otra empresa y **debe fallar**; toda tabla nueva se declara en los tres sitios de `privilegios.integration.test.ts`.
 - **Contrato primero**; bitácora con acciones nuevas en el catálogo (objeto de forma exacta, sin texto libre) y en la misma transacción.
-- Migraciones `0027` en adelante (`0021`–`0026` quedan reservadas a «Gestión de riesgos completa»); se renumeran si cambia el orden.
+- Migraciones `0021` y `0022` (las de «Gestión de riesgos completa» se renumeran desde la `0023`).
 - Reutiliza el almacén de archivos de M4 (`AlmacenArchivosPort`, ADR 032) y la guardia común de formularios de la web.
 
 ## Fase 1 — Decisión, base de datos y dominio
 
 | ID  | Tarea                                                                                                                                                                                                                                                                             | Depende |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 1   | **ADR 039** «Control documental» (versión única vigente, separación de funciones y excepción del único administrador, clasificación informativa, lectura como constancia, retención sin disposición) + glosario y `modelo-dominio.md`                                             | —       |
-| 2   | Permisos `documentos.ver\|redactar\|aprobar\|leer` y matriz (colaborador redacta y consulta; solo el administrador aprueba); acciones de bitácora (`documento.*`, `version.*`, `lectura.*`) con ejemplos y pruebas ‖                                                              | 1       |
-| 3   | Migración `0027`: `documento` (código correlativo por tipo, tipo con «externo», emisor y edición opcionales, área, clasificación, responsable, estado) y `documento_version` (archivo, huella, nota, estado, autor, aprobador, fechas); RLS forzada, **aislamiento**, privilegios | 1       |
-| 4   | Migración `0028`: `documento_destinatario`, `documento_lectura` (por versión y persona), `documento_vinculo` (entradas adoptadas y controles de la empresa) y `retencion_tipo` (años y motivo); RLS, **aislamiento**, privilegios ‖                                               | 1       |
-| 5   | Dominio puro: documento y versión, máquina de estados (borrador, revisión, aprobada, obsoleta), una sola vigente, separación de funciones y excepción registrada, revisión vencida o por vencer, «elegible para disposición» + pruebas (≥ 80 %) ‖                                 | 1       |
+| 1   | ✅ **ADR 039** «Control documental» (versión única vigente, separación de funciones y excepción del único administrador, clasificación informativa, lectura como constancia, retención sin disposición) + glosario y `modelo-dominio.md`                                             | —       |
+| 2   | ✅ Permisos `documentos.ver\|redactar\|aprobar\|leer` y matriz (colaborador redacta y consulta; solo el administrador aprueba); acciones de bitácora (`documento.*`, `version.*`, `lectura.*`) con ejemplos y pruebas ‖                                                              | 1       |
+| 3   | ✅ Migración `0021`: `documento` (código correlativo por tipo, tipo con «externo», emisor y edición opcionales, área, clasificación, responsable, estado) y `documento_version` (archivo, huella, nota, estado, autor, aprobador, fechas); RLS forzada, **aislamiento**, privilegios | 1       |
+| 4   | ✅ Migración `0022`: `documento_destinatario`, `documento_lectura` (por versión y persona), `documento_vinculo` (entradas adoptadas y controles de la empresa) y `retencion_tipo` (años y motivo); RLS, **aislamiento**, privilegios ‖                                               | 1       |
+| 5   | ✅ Dominio puro: documento y versión, máquina de estados (borrador, revisión, aprobada, obsoleta), una sola vigente, separación de funciones y excepción registrada, revisión vencida o por vencer, «elegible para disposición» + pruebas (≥ 80 %) ‖                                 | 1       |
 
 ## Fase 2 — Casos de uso y adaptadores
 
 | ID  | Tarea                                                                                                                                                                                                                                | Depende |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
-| 6   | Casos de uso del documento: crear (código por tipo), cambiar, retirar, listar con filtros (tipo, estado, responsable, área, norma, sin vigente, revisión vencida) y ver con historial                                                | 2, 3, 5 |
-| 7   | Casos de uso de versiones: subir borrador (tipos y límite de M4, huella, nota obligatoria), descartar y enviar a revisión nombrando aprobador                                                                                        | 6       |
-| 8   | Aprobar (distinto del autor, o excepción con motivo) y devolver con motivo; la anterior pasa a obsoleta en la misma transacción; revisión sin cambios; descarga con bitácora **antes** de entregar y leyenda «no vigente»            | 7       |
-| 9   | Distribución y lecturas: destinatarios por persona y «agregar por rol» (resuelve al momento), lecturas pendientes al aprobar, confirmar (solo la propia persona), «requiere nueva lectura», conteo por versión, baja de la persona ‖ | 8       |
+| 6   | ✅ Casos de uso del documento: crear (código por tipo), cambiar, retirar, listar con filtros (tipo, estado, responsable, área, norma, sin vigente, revisión vencida) y ver con historial                                                | 2, 3, 5 |
+| 7   | ✅ Casos de uso de versiones: subir borrador (tipos y límite de M4, huella, nota obligatoria), descartar y enviar a revisión nombrando aprobador                                                                                        | 6       |
+| 8   | ✅ Aprobar (distinto del autor, o excepción con motivo) y devolver con motivo; la anterior pasa a obsoleta en la misma transacción; revisión sin cambios; descarga con bitácora **antes** de entregar y leyenda «no vigente»            | 7       |
+| 9   | ✅ Distribución y lecturas: destinatarios por persona y «agregar por rol» (resuelve al momento), lecturas pendientes al aprobar, confirmar (solo la propia persona), «requiere nueva lectura», conteo por versión, baja de la persona ‖ | 8       |
 | 10  | ✅ Vínculos con entradas adoptadas y controles de la empresa, filtro «entradas sin documento vigente» y retención por tipo con su motivo ‖                                                                                              | 6       |
 | 11  | ✅ Adaptadores de PostgreSQL de 6 a 10 y pruebas de integración con la base real: **aislamiento** (incluida la descarga), rollback si falla la bitácora, carrera de dos aprobaciones (una sola vigente), versión inmutable              | 6 a 10  |
 
