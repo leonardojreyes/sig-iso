@@ -264,6 +264,8 @@ export const confirmarLectura = (peticion: Request, entrada: Entrada): Promise<R
     metodoApi: 'POST',
     rutaApi: (_f, id) => (id ? `/versiones/${id}/lectura` : null),
     exito: 'lectura_confirmada',
+    // No usa ningún campo del formulario: un POST vacío, sin tipo de contenido, también vale.
+    sinFormulario: true,
     cuerpo: () => SIN_CUERPO,
   });
 
