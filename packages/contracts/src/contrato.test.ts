@@ -113,7 +113,7 @@ describe('documento', () => {
 describe('operaciones del corte 0.6', () => {
   it('son exactamente las del plan', () => {
     expect(operaciones.map((o) => o.id).sort()).toEqual(
-      ['POST /acceso/solicitud', 'GET /personas', 'POST /personas/solicitudes/{id}/aprobacion', 'POST /personas/solicitudes/{id}/descarte', 'PUT /personas/{id}/rol', 'POST /personas/{id}/baja', 'GET /health', 'GET /me', 'GET /empresa/marca', 'PUT /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /sesion/empresas', 'POST /sesion/empresa', 'GET /librerias', 'POST /librerias/carga', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}', 'GET /alcances', 'PUT /alcances', 'POST /alcances/aprobacion', 'GET /diagnostico', 'PUT /diagnostico/evaluaciones', 'GET /controles', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'GET /controles/{id}/evidencias', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo', 'POST /evidencias/{id}/eliminacion', 'GET /evidencias/{id}/archivo', 'GET /cobertura', 'GET /declaracion', 'POST /declaracion/aprobacion', 'GET /declaracion/versiones', 'GET /declaracion/versiones/{id}', 'GET /declaracion/documento', 'GET /declaracion/versiones/{id}/documento', 'GET /riesgos', 'POST /riesgos', 'GET /riesgos/{id}', 'PUT /riesgos/{id}', 'GET /riesgos/{id}/aviso-retiro', 'POST /riesgos/{id}/retiro', 'POST /riesgos/{id}/controles', 'POST /riesgos/{id}/controles/eliminacion', 'POST /riesgos/{id}/tratamientos', 'POST /riesgos/{id}/tratamientos/eliminacion', 'GET /controles/{id}/riesgos', 'GET /declaracion/motivos', 'PUT /declaracion/motivos', 'POST /declaracion/motivos/eliminacion', 'GET /declaracion/referencias', 'PUT /declaracion/referencias', 'POST /declaracion/referencias/eliminacion'].sort(),
+      ['POST /acceso/solicitud', 'GET /personas', 'POST /personas/solicitudes/{id}/aprobacion', 'POST /personas/solicitudes/{id}/descarte', 'PUT /personas/{id}/rol', 'POST /personas/{id}/baja', 'GET /health', 'GET /me', 'GET /empresa/marca', 'PUT /empresa/marca', 'POST /sesion/inicio', 'POST /sesion/cierre', 'GET /sesion/empresas', 'POST /sesion/empresa', 'GET /librerias', 'POST /librerias/carga', 'POST /librerias/{id}/adopcion', 'GET /requisitos', 'GET /requisitos/{id}', 'GET /alcances', 'PUT /alcances', 'POST /alcances/aprobacion', 'GET /diagnostico', 'PUT /diagnostico/evaluaciones', 'GET /controles', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'GET /controles/{id}/evidencias', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo', 'POST /evidencias/{id}/eliminacion', 'GET /evidencias/{id}/archivo', 'GET /cobertura', 'GET /declaracion', 'POST /declaracion/aprobacion', 'GET /declaracion/versiones', 'GET /declaracion/versiones/{id}', 'GET /declaracion/documento', 'GET /declaracion/versiones/{id}/documento', 'GET /riesgos', 'POST /riesgos', 'GET /riesgos/{id}', 'PUT /riesgos/{id}', 'GET /riesgos/{id}/aviso-retiro', 'POST /riesgos/{id}/retiro', 'POST /riesgos/{id}/controles', 'POST /riesgos/{id}/controles/eliminacion', 'POST /riesgos/{id}/tratamientos', 'POST /riesgos/{id}/tratamientos/eliminacion', 'GET /controles/{id}/riesgos', 'GET /declaracion/motivos', 'PUT /declaracion/motivos', 'POST /declaracion/motivos/eliminacion', 'GET /declaracion/referencias', 'PUT /declaracion/referencias', 'POST /declaracion/referencias/eliminacion', 'GET /documentos', 'POST /documentos', 'GET /documentos/{id}', 'PUT /documentos/{id}', 'POST /documentos/{id}/retiro', 'POST /documentos/{id}/revision', 'PUT /documentos/{id}/distribucion', 'POST /documentos/{id}/vinculos', 'POST /documentos/{id}/vinculos/eliminacion', 'POST /documentos/{id}/versiones', 'POST /versiones/{id}/envio', 'POST /versiones/{id}/devolucion', 'POST /versiones/{id}/aprobacion', 'POST /versiones/{id}/descarte', 'GET /versiones/{id}/archivo', 'POST /versiones/{id}/lectura', 'GET /lecturas/pendientes', 'GET /cobertura-documental', 'GET /retencion', 'PUT /retencion', 'GET /certificacion/personas'].sort(),
     );
   });
 
@@ -206,9 +206,31 @@ describe('seguridad', () => {
       'GET /declaracion/referencias': [],
       'PUT /declaracion/referencias': [],
       'POST /declaracion/referencias/eliminacion': [],
+      // Control documental (ADR 039): la empresa y la persona salen del token; solo el identificador del recurso va en la ruta.
+      'GET /documentos': ['query:area', 'query:estado', 'query:norma', 'query:responsableId', 'query:revisionVencida', 'query:sinVigente', 'query:tipo'],
+      'POST /documentos': [],
+      'GET /documentos/{id}': ['path:id'],
+      'PUT /documentos/{id}': ['path:id'],
+      'POST /documentos/{id}/retiro': ['path:id'],
+      'POST /documentos/{id}/revision': ['path:id'],
+      'PUT /documentos/{id}/distribucion': ['path:id'],
+      'POST /documentos/{id}/vinculos': ['path:id'],
+      'POST /documentos/{id}/vinculos/eliminacion': ['path:id'],
+      'POST /documentos/{id}/versiones': ['path:id'],
+      'POST /versiones/{id}/envio': ['path:id'],
+      'POST /versiones/{id}/devolucion': ['path:id'],
+      'POST /versiones/{id}/aprobacion': ['path:id'],
+      'POST /versiones/{id}/descarte': ['path:id'],
+      'GET /versiones/{id}/archivo': ['path:id'],
+      'POST /versiones/{id}/lectura': ['path:id'],
+      'GET /lecturas/pendientes': [],
+      'GET /cobertura-documental': ['query:norma', 'query:soloSinDocumento'],
+      'GET /retencion': [],
+      'PUT /retencion': [],
+      'GET /certificacion/personas': [],
     };
     // Solo estas tres reciben cuerpo, y su esquema es cerrado y sin campos de empresa (la empresa sale del token).
-    const conCuerpo = ['POST /personas/solicitudes/{id}/aprobacion', 'PUT /personas/{id}/rol', 'POST /personas/{id}/baja', 'PUT /empresa/marca', 'POST /sesion/empresa', 'POST /librerias/carga', 'PUT /alcances', 'POST /alcances/aprobacion', 'PUT /diagnostico/evaluaciones', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo', 'POST /riesgos', 'PUT /riesgos/{id}', 'POST /riesgos/{id}/retiro', 'POST /riesgos/{id}/controles', 'POST /riesgos/{id}/controles/eliminacion', 'POST /riesgos/{id}/tratamientos', 'POST /riesgos/{id}/tratamientos/eliminacion', 'PUT /declaracion/motivos', 'POST /declaracion/motivos/eliminacion', 'PUT /declaracion/referencias', 'POST /declaracion/referencias/eliminacion'];
+    const conCuerpo = ['POST /personas/solicitudes/{id}/aprobacion', 'PUT /personas/{id}/rol', 'POST /personas/{id}/baja', 'PUT /empresa/marca', 'POST /sesion/empresa', 'POST /librerias/carga', 'PUT /alcances', 'POST /alcances/aprobacion', 'PUT /diagnostico/evaluaciones', 'POST /controles', 'PUT /controles/{id}', 'POST /controles/{id}/retiro', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /evidencias/{id}/reemplazo', 'POST /riesgos', 'PUT /riesgos/{id}', 'POST /riesgos/{id}/retiro', 'POST /riesgos/{id}/controles', 'POST /riesgos/{id}/controles/eliminacion', 'POST /riesgos/{id}/tratamientos', 'POST /riesgos/{id}/tratamientos/eliminacion', 'PUT /declaracion/motivos', 'POST /declaracion/motivos/eliminacion', 'PUT /declaracion/referencias', 'POST /declaracion/referencias/eliminacion', 'POST /documentos', 'PUT /documentos/{id}', 'POST /documentos/{id}/revision', 'PUT /documentos/{id}/distribucion', 'POST /documentos/{id}/vinculos', 'POST /documentos/{id}/vinculos/eliminacion', 'POST /documentos/{id}/versiones', 'POST /versiones/{id}/envio', 'POST /versiones/{id}/devolucion', 'POST /versiones/{id}/aprobacion', 'PUT /retencion'];
     for (const o of operaciones) {
       const parametros = [...((doc.paths[o.ruta]!.parameters ?? []) as Obj[]), ...((o.op.parameters ?? []) as Obj[])].map((p: any) => (p.$ref ? resolver(p.$ref)! : p));
       expect(parametros.map((p: any) => `${p.in}:${p.name}`).sort(), o.id).toEqual(esperados[o.id]);
@@ -231,7 +253,7 @@ describe('seguridad', () => {
 
   it('solo las acciones restringidas declaran un permiso formal (x-permiso) y el 403', () => {
     expect(operaciones.filter((o) => o.op['x-permiso']).map((o) => [o.id, o.op['x-permiso']]).sort()).toEqual(
-      [['GET /personas', 'personas.ver'], ['POST /personas/solicitudes/{id}/aprobacion', 'personas.gestionar'], ['POST /personas/solicitudes/{id}/descarte', 'personas.gestionar'], ['PUT /personas/{id}/rol', 'personas.gestionar'], ['POST /personas/{id}/baja', 'personas.gestionar'], ['POST /librerias/carga', 'normas.cargar'], ['PUT /empresa/marca', 'marca.editar'], ['POST /librerias/{id}/adopcion', 'administrador_sig'], ['GET /alcances', 'alcance.ver'], ['PUT /alcances', 'alcance.gestionar'], ['POST /alcances/aprobacion', 'alcance.aprobar'], ['GET /diagnostico', 'diagnostico.ver'], ['PUT /diagnostico/evaluaciones', 'diagnostico.evaluar'], ['GET /controles', 'controles.ver'], ['POST /controles', 'controles.gestionar'], ['PUT /controles/{id}', 'controles.gestionar'], ['POST /controles/{id}/retiro', 'controles.gestionar'], ['POST /controles/{id}/mapeos', 'controles.gestionar'], ['POST /controles/{id}/mapeos/eliminacion', 'controles.gestionar'], ['GET /controles/{id}/evidencias', 'evidencias.ver'], ['POST /controles/{id}/evidencias', 'evidencias.registrar'], ['POST /evidencias/{id}/reemplazo', 'evidencias.registrar'], ['POST /evidencias/{id}/eliminacion', 'evidencias.eliminar'], ['GET /evidencias/{id}/archivo', 'evidencias.ver'], ['GET /cobertura', 'evidencias.ver'], ['GET /declaracion', 'declaracion.ver'], ['POST /declaracion/aprobacion', 'declaracion.aprobar'], ['GET /declaracion/versiones', 'declaracion.ver'], ['GET /declaracion/versiones/{id}', 'declaracion.ver'], ['GET /declaracion/documento', 'declaracion.exportar'], ['GET /declaracion/versiones/{id}/documento', 'declaracion.exportar'], ['GET /riesgos', 'riesgos.ver'], ['POST /riesgos', 'riesgos.gestionar'], ['GET /riesgos/{id}', 'riesgos.ver'], ['PUT /riesgos/{id}', 'riesgos.gestionar'], ['GET /riesgos/{id}/aviso-retiro', 'riesgos.gestionar'], ['POST /riesgos/{id}/retiro', 'riesgos.gestionar'], ['POST /riesgos/{id}/controles', 'riesgos.gestionar'], ['POST /riesgos/{id}/controles/eliminacion', 'riesgos.gestionar'], ['POST /riesgos/{id}/tratamientos', 'riesgos.gestionar'], ['POST /riesgos/{id}/tratamientos/eliminacion', 'riesgos.gestionar'], ['GET /controles/{id}/riesgos', 'riesgos.ver'], ['GET /declaracion/motivos', 'declaracion.ver'], ['PUT /declaracion/motivos', 'declaracion.justificar'], ['POST /declaracion/motivos/eliminacion', 'declaracion.justificar'], ['GET /declaracion/referencias', 'declaracion.ver'], ['PUT /declaracion/referencias', 'declaracion.justificar'], ['POST /declaracion/referencias/eliminacion', 'declaracion.justificar']].sort(),
+      [['GET /personas', 'personas.ver'], ['POST /personas/solicitudes/{id}/aprobacion', 'personas.gestionar'], ['POST /personas/solicitudes/{id}/descarte', 'personas.gestionar'], ['PUT /personas/{id}/rol', 'personas.gestionar'], ['POST /personas/{id}/baja', 'personas.gestionar'], ['POST /librerias/carga', 'normas.cargar'], ['PUT /empresa/marca', 'marca.editar'], ['POST /librerias/{id}/adopcion', 'administrador_sig'], ['GET /alcances', 'alcance.ver'], ['PUT /alcances', 'alcance.gestionar'], ['POST /alcances/aprobacion', 'alcance.aprobar'], ['GET /diagnostico', 'diagnostico.ver'], ['PUT /diagnostico/evaluaciones', 'diagnostico.evaluar'], ['GET /controles', 'controles.ver'], ['POST /controles', 'controles.gestionar'], ['PUT /controles/{id}', 'controles.gestionar'], ['POST /controles/{id}/retiro', 'controles.gestionar'], ['POST /controles/{id}/mapeos', 'controles.gestionar'], ['POST /controles/{id}/mapeos/eliminacion', 'controles.gestionar'], ['GET /controles/{id}/evidencias', 'evidencias.ver'], ['POST /controles/{id}/evidencias', 'evidencias.registrar'], ['POST /evidencias/{id}/reemplazo', 'evidencias.registrar'], ['POST /evidencias/{id}/eliminacion', 'evidencias.eliminar'], ['GET /evidencias/{id}/archivo', 'evidencias.ver'], ['GET /cobertura', 'evidencias.ver'], ['GET /declaracion', 'declaracion.ver'], ['POST /declaracion/aprobacion', 'declaracion.aprobar'], ['GET /declaracion/versiones', 'declaracion.ver'], ['GET /declaracion/versiones/{id}', 'declaracion.ver'], ['GET /declaracion/documento', 'declaracion.exportar'], ['GET /declaracion/versiones/{id}/documento', 'declaracion.exportar'], ['GET /riesgos', 'riesgos.ver'], ['POST /riesgos', 'riesgos.gestionar'], ['GET /riesgos/{id}', 'riesgos.ver'], ['PUT /riesgos/{id}', 'riesgos.gestionar'], ['GET /riesgos/{id}/aviso-retiro', 'riesgos.gestionar'], ['POST /riesgos/{id}/retiro', 'riesgos.gestionar'], ['POST /riesgos/{id}/controles', 'riesgos.gestionar'], ['POST /riesgos/{id}/controles/eliminacion', 'riesgos.gestionar'], ['POST /riesgos/{id}/tratamientos', 'riesgos.gestionar'], ['POST /riesgos/{id}/tratamientos/eliminacion', 'riesgos.gestionar'], ['GET /controles/{id}/riesgos', 'riesgos.ver'], ['GET /declaracion/motivos', 'declaracion.ver'], ['PUT /declaracion/motivos', 'declaracion.justificar'], ['POST /declaracion/motivos/eliminacion', 'declaracion.justificar'], ['GET /declaracion/referencias', 'declaracion.ver'], ['PUT /declaracion/referencias', 'declaracion.justificar'], ['POST /declaracion/referencias/eliminacion', 'declaracion.justificar'], ['GET /documentos', 'documentos.ver'], ['POST /documentos', 'documentos.redactar'], ['GET /documentos/{id}', 'documentos.ver'], ['PUT /documentos/{id}', 'documentos.redactar'], ['POST /documentos/{id}/retiro', 'documentos.gestionar'], ['POST /documentos/{id}/revision', 'documentos.redactar'], ['PUT /documentos/{id}/distribucion', 'documentos.gestionar'], ['POST /documentos/{id}/vinculos', 'documentos.gestionar'], ['POST /documentos/{id}/vinculos/eliminacion', 'documentos.gestionar'], ['POST /documentos/{id}/versiones', 'documentos.redactar'], ['POST /versiones/{id}/envio', 'documentos.redactar'], ['POST /versiones/{id}/devolucion', 'documentos.aprobar'], ['POST /versiones/{id}/aprobacion', 'documentos.aprobar'], ['POST /versiones/{id}/descarte', 'documentos.redactar'], ['GET /versiones/{id}/archivo', 'documentos.ver'], ['POST /versiones/{id}/lectura', 'documentos.leer'], ['GET /lecturas/pendientes', 'documentos.leer'], ['GET /cobertura-documental', 'documentos.ver'], ['GET /retencion', 'documentos.ver'], ['PUT /retencion', 'documentos.gestionar'], ['GET /certificacion/personas', 'documentos.ver']].sort(),
     );
     expect(op('POST /librerias/{id}/adopcion').responses['403']).toBeDefined();
   });
@@ -246,7 +268,7 @@ describe('seguridad', () => {
 describe('errores que no filtran datos', () => {
   it('hay una sola respuesta 404 y todas la reutilizan: «no existe», «es de otra empresa» y «librería no adoptada» son indistinguibles', () => {
     const cuatrocientoscuatro = operaciones.filter((o) => o.op.responses['404']);
-    expect(cuatrocientoscuatro.map((o) => o.id).sort()).toEqual(['POST /personas/solicitudes/{id}/aprobacion', 'POST /personas/solicitudes/{id}/descarte', 'PUT /personas/{id}/rol', 'POST /personas/{id}/baja', 'GET /requisitos/{id}', 'POST /alcances/aprobacion', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /controles/{id}/retiro', 'POST /evidencias/{id}/eliminacion', 'POST /evidencias/{id}/reemplazo', 'GET /controles/{id}/evidencias', 'GET /evidencias/{id}/archivo', 'GET /declaracion/versiones/{id}', 'GET /declaracion/versiones/{id}/documento', 'POST /librerias/{id}/adopcion', 'PUT /alcances', 'PUT /controles/{id}', 'PUT /diagnostico/evaluaciones', 'POST /sesion/empresa', 'GET /riesgos/{id}', 'PUT /riesgos/{id}', 'GET /riesgos/{id}/aviso-retiro', 'POST /riesgos/{id}/retiro', 'POST /riesgos/{id}/controles', 'POST /riesgos/{id}/controles/eliminacion', 'POST /riesgos/{id}/tratamientos', 'POST /riesgos/{id}/tratamientos/eliminacion', 'GET /controles/{id}/riesgos', 'POST /declaracion/motivos/eliminacion', 'PUT /declaracion/motivos', 'POST /declaracion/referencias/eliminacion'].sort());
+    expect(cuatrocientoscuatro.map((o) => o.id).sort()).toEqual(['POST /personas/solicitudes/{id}/aprobacion', 'POST /personas/solicitudes/{id}/descarte', 'PUT /personas/{id}/rol', 'POST /personas/{id}/baja', 'GET /requisitos/{id}', 'POST /alcances/aprobacion', 'POST /controles/{id}/mapeos', 'POST /controles/{id}/mapeos/eliminacion', 'POST /controles/{id}/evidencias', 'POST /controles/{id}/retiro', 'POST /evidencias/{id}/eliminacion', 'POST /evidencias/{id}/reemplazo', 'GET /controles/{id}/evidencias', 'GET /evidencias/{id}/archivo', 'GET /declaracion/versiones/{id}', 'GET /declaracion/versiones/{id}/documento', 'POST /librerias/{id}/adopcion', 'PUT /alcances', 'PUT /controles/{id}', 'PUT /diagnostico/evaluaciones', 'POST /sesion/empresa', 'GET /riesgos/{id}', 'PUT /riesgos/{id}', 'GET /riesgos/{id}/aviso-retiro', 'POST /riesgos/{id}/retiro', 'POST /riesgos/{id}/controles', 'POST /riesgos/{id}/controles/eliminacion', 'POST /riesgos/{id}/tratamientos', 'POST /riesgos/{id}/tratamientos/eliminacion', 'GET /controles/{id}/riesgos', 'POST /declaracion/motivos/eliminacion', 'PUT /declaracion/motivos', 'POST /declaracion/referencias/eliminacion', 'GET /documentos/{id}', 'PUT /documentos/{id}', 'POST /documentos/{id}/retiro', 'POST /documentos/{id}/revision', 'PUT /documentos/{id}/distribucion', 'POST /documentos/{id}/vinculos', 'POST /documentos/{id}/vinculos/eliminacion', 'POST /documentos/{id}/versiones', 'POST /versiones/{id}/envio', 'POST /versiones/{id}/devolucion', 'POST /versiones/{id}/aprobacion', 'POST /versiones/{id}/descarte', 'GET /versiones/{id}/archivo', 'POST /versiones/{id}/lectura'].sort());
     for (const o of cuatrocientoscuatro) expect(o.op.responses['404'].$ref, o.id).toBe('#/components/responses/NoEncontrado');
     const r = doc.components.responses.NoEncontrado!;
     expect(r.description).toMatch(/indistinguible/i);
@@ -516,5 +538,79 @@ describe('riesgos mínimos y justificación de la Declaración (ADR 037)', () =>
     expect(resolver('#/components/schemas/ReferenciaQuitar')!.required).toContain('versionEsperada');
     expect(resolver('#/components/schemas/MotivoEntrada')!.required).not.toContain('versionEsperada'); // ausente = crear
     expect(resolver('#/components/schemas/ReferenciaEntrada')!.required).not.toContain('versionEsperada');
+  });
+});
+
+describe('control documental (ADR 039)', () => {
+  const props = (n: string) => Object.keys(doc.components.schemas[n]!.properties).sort();
+  const cuerpo = (id: string): Obj => {
+    const contenido = op(id).requestBody.content;
+    return resolver((contenido['application/json'] ?? contenido['multipart/form-data']).schema.$ref)!;
+  };
+
+  it('los textos libres de la empresa son EXACTAMENTE estos y todos están acotados', () => {
+    // Títulos, áreas, notas y motivos son textos de la empresa: la pantalla avisa que no deben llevar datos personales ni texto de las
+    // normas y la bitácora NUNCA los guarda. Cualquier campo de texto libre nuevo en un cuerpo debe agregarse aquí a propósito.
+    const esperados: Record<string, string[]> = {
+      'POST /documentos': ['area', 'edicionFuente', 'emisor', 'titulo'],
+      'PUT /documentos/{id}': ['area', 'edicionFuente', 'emisor', 'titulo'],
+      'POST /documentos/{id}/versiones': ['nota'],
+      'POST /versiones/{id}/devolucion': ['nota'],
+      'POST /versiones/{id}/aprobacion': ['motivoExcepcion'],
+      'PUT /retencion': ['motivo'],
+    };
+    const LIBRES = ['POST /documentos', 'PUT /documentos/{id}', 'POST /documentos/{id}/revision', 'PUT /documentos/{id}/distribucion', 'POST /documentos/{id}/vinculos', 'POST /documentos/{id}/vinculos/eliminacion', 'POST /documentos/{id}/versiones', 'POST /versiones/{id}/envio', 'POST /versiones/{id}/devolucion', 'POST /versiones/{id}/aprobacion', 'PUT /retencion'];
+    for (const id of LIBRES) {
+      const esquema = cuerpo(id);
+      const libres = Object.entries<any>(esquema.properties).filter(([, p]) => (p.type === 'string' || (Array.isArray(p.type) && p.type.includes('string'))) && !p.format && !p.pattern && !p.enum && !p.$ref).map(([k]) => k).sort();
+      expect(libres, id).toEqual(esperados[id] ?? []);
+      for (const k of libres) expect(esquema.properties[k].maxLength, `${id} ${k}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('el código y el estado los asigna el sistema: ningún cuerpo los envía, y la empresa tampoco', () => {
+    for (const id of ['POST /documentos', 'PUT /documentos/{id}']) expect(Object.keys(cuerpo(id).properties).filter((k) => /codigo|estado|empresa|vigente/i.test(k)), id).toEqual([]);
+  });
+
+  it('conjunto exacto de propiedades de los esquemas', () => {
+    expect(props('Documento')).toEqual(['area', 'clasificacion', 'codigo', 'edicionFuente', 'emisor', 'estado', 'id', 'lecturaPendiente', 'lecturas', 'proximaRevision', 'responsableId', 'revision', 'sinVigente', 'tipo', 'titulo', 'ultimaRevisionEn', 'version', 'vigente']);
+    expect(props('DocumentoDetalle')).toEqual([...props('Documento'), 'controles', 'destinatarios', 'entradas', 'retencion', 'unicoAdministrador', 'versiones'].sort());
+    expect(props('VersionDocumento')).toEqual(['aprobadaEn', 'aprobadaPor', 'aprobadorId', 'archivo', 'autorId', 'creadaEn', 'devueltaMotivo', 'devueltaNota', 'documentoId', 'elegibleParaDisposicion', 'estado', 'id', 'lecturas', 'motivoExcepcion', 'nota', 'numero', 'obsoletaEn', 'porSuAutor', 'requiereLectura', 'vigente']);
+    // El directorio solo trae para qué sirve: identificador, nombre y si sigue activa (sin correo ni rol).
+    expect(props('PersonaDirectorio')).toEqual(['activa', 'id', 'nombre']);
+    expect(props('LecturaPendiente')).toEqual(['codigo', 'documentoId', 'numeroVersion', 'titulo', 'versionId']);
+    expect(props('Retencion')).toEqual(['anios', 'motivo', 'tipo', 'version']);
+  });
+
+  it('las listas cerradas coinciden con las del dominio', () => {
+    const e = (n: string) => doc.components.schemas[n]!.enum;
+    expect(e('TipoDocumento')).toEqual(['politica', 'procedimiento', 'instructivo', 'formato', 'manual', 'externo', 'otro']);
+    expect(e('ClasificacionDocumento')).toEqual(['publica', 'interna', 'confidencial', 'restringida']);
+    expect(e('EstadoVersionDocumento')).toEqual(['borrador', 'en_revision', 'aprobada', 'obsoleta', 'descartada']);
+    expect(e('MotivoDevolucion')).toEqual(['incompleta', 'incorrecta', 'otro']);
+    expect(e('MotivoRevision')).toEqual(['periodica', 'auditoria', 'cambio_de_contexto']);
+    expect(e('EstadoRevision')).toEqual(['vencida', 'por_vencer', 'al_dia']);
+  });
+
+  it('las operaciones que cambian algo con versión la exigen o la aceptan para distinguir crear de cambiar', () => {
+    expect(resolver('#/components/schemas/DocumentoCambios')!.required).toContain('versionEsperada');
+    expect(resolver('#/components/schemas/RetencionEntrada')!.required).not.toContain('versionEsperada'); // ausente = crear
+  });
+
+  it('la subida de una versión es multipart con la nota ANTES del archivo, y la descarga siempre es un adjunto sin caché', () => {
+    const o = op('POST /documentos/{id}/versiones');
+    expect(Object.keys(o.requestBody.content)).toEqual(['multipart/form-data']);
+    expect(Object.keys(resolver('#/components/schemas/VersionSubida')!.properties)).toEqual(['nota', 'archivo']);
+    expect(Object.keys(o.responses).sort()).toEqual(['201', '400', '401', '403', '404', '409', '413', '415', '429', '500']);
+    const d = op('GET /versiones/{id}/archivo').responses['200'];
+    expect(d.headers['X-Content-Type-Options'].schema.enum).toEqual(['nosniff']);
+    expect(d.headers['Cache-Control'].$ref).toBe('#/components/headers/CacheControlNoStore');
+  });
+
+  it('solo quien aprueba devuelve o aprueba, y la lectura es de la propia persona', () => {
+    expect(op('POST /versiones/{id}/aprobacion')['x-permiso']).toBe('documentos.aprobar');
+    expect(op('POST /versiones/{id}/devolucion')['x-permiso']).toBe('documentos.aprobar');
+    expect(op('POST /versiones/{id}/lectura')['x-permiso']).toBe('documentos.leer');
+    expect(op('POST /versiones/{id}/lectura').requestBody).toBeUndefined(); // la persona sale del token: no se envía
   });
 });

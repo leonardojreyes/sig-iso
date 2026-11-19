@@ -38,6 +38,8 @@ tags:
     description: Personas de la empresa, solicitudes de acceso y roles
   - name: riesgos
     description: Riesgos mínimos de la empresa y sus vínculos con controles (ADR 037)
+  - name: documentos
+    description: Control documental, versiones, aprobación, lectura confirmada y retención (ADR 039)
 security:
   - bearerAuth: []
 paths:
@@ -2225,6 +2227,813 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /documentos:
+    get:
+      operationId: listarDocumentos
+      summary: Documentos de la empresa
+      description: 'Con filtros opcionales. Marca los que no tienen versión vigente, con revisión vencida o por vencer en 30 días y con lecturas pendientes. Orden de evaluación: 401, 403, 400.'
+      tags:
+      - documentos
+      x-permiso: documentos.ver
+      parameters:
+      - name: tipo
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/TipoDocumento'
+      - name: estado
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - activo
+          - retirado
+      - name: responsableId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+          maxLength: 36
+      - name: area
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 60
+        description: Texto contenido en el área o proceso.
+      - name: norma
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 60
+          minLength: 1
+          pattern: ^[A-Za-z0-9 :./-]+$
+        description: Solo documentos ligados a entradas de esta norma.
+      - name: sinVigente
+        in: query
+        required: false
+        schema: &id001
+          type: boolean
+      - name: revisionVencida
+        in: query
+        required: false
+        schema: *id001
+      responses:
+        '200':
+          description: La lista.
+          headers:
+            Cache-Control: &id002
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaDocumentos'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      operationId: crearDocumento
+      summary: Crea un documento
+      description: 'El código lo asigna el sistema por tipo (POL-001). No tiene versión vigente hasta aprobar la primera. El responsable debe ser una persona activa de la empresa. Orden de evaluación: 401, 403, 400, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.redactar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentoEntrada'
+      responses:
+        '201':
+          description: El documento creado.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Documento'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /documentos/{id}:
+    get:
+      operationId: obtenerDocumento
+      summary: Un documento con sus versiones, distribución y vínculos
+      description: 'Trae el historial completo de versiones (quién redactó, quién aprobó, cuándo, huella), la distribución, los vínculos y la retención del tipo. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.ver
+      parameters:
+      - &id003
+        $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El documento.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentoDetalle'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: cambiarDocumento
+      summary: Cambia los datos de un documento
+      description: 'Lo cambia quien gestiona documentos o su responsable. Exige la versión que la persona vio (409 si otra persona cambió antes). Un documento retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.redactar
+      parameters:
+      - *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentoCambios'
+      responses:
+        '200':
+          description: El documento cambiado.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Documento'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /documentos/{id}/retiro:
+    post:
+      operationId: retirarDocumento
+      summary: Retira un documento
+      description: 'Queda sin versión vigente (la aprobada pasa a obsoleta) y conserva su historia y su código; nada se borra. Un documento ya retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.gestionar
+      parameters:
+      - *id003
+      responses:
+        '204':
+          description: El documento se retiró.
+          headers:
+            Cache-Control: *id002
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /documentos/{id}/revision:
+    post:
+      operationId: revisarDocumento
+      summary: Registra «revisado sin cambios»
+      description: 'Lo registra el responsable del documento o quien gestiona. Reinicia la fecha de próxima revisión sin crear versión. Sin versión vigente responde 409. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.redactar
+      parameters:
+      - *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevisionDocumento'
+      responses:
+        '200':
+          description: El documento con la nueva fecha.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Documento'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /documentos/{id}/distribucion:
+    put:
+      operationId: cambiarDistribucion
+      summary: Define los destinatarios del documento
+      description: 'Reemplaza la lista. «Todas las personas de un rol» se resuelve en este momento. Solo cuentan personas activas de la empresa (400 si no). Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.gestionar
+      parameters:
+      - *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DistribucionEntrada'
+      responses:
+        '200':
+          description: Los destinatarios.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Distribucion'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /documentos/{id}/vinculos:
+    post:
+      operationId: vincularDocumento
+      summary: Liga el documento a un control o a una entrada de una norma adoptada
+      description: 'Crea el vínculo (201) o responde 200 si ya existía. Una entrada de una librería no adoptada, o un control de otra empresa, responde 404. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.gestionar
+      parameters:
+      - *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VinculoDocumentoEntrada'
+      responses:
+        '200':
+          description: El vínculo ya existía.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VinculoDocumentoResultado'
+        '201':
+          description: El vínculo se creó.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VinculoDocumentoResultado'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /documentos/{id}/vinculos/eliminacion:
+    post:
+      operationId: desvincularDocumento
+      summary: Quita un vínculo del documento
+      description: 'Un vínculo que no existe responde 404. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.gestionar
+      parameters:
+      - *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VinculoDocumentoEntrada'
+      responses:
+        '204':
+          description: El vínculo se quitó.
+          headers:
+            Cache-Control: *id002
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /documentos/{id}/versiones:
+    post:
+      operationId: subirVersion
+      summary: Sube una versión nueva (borrador) de un documento
+      description: '`multipart/form-data` con la nota y **un solo archivo** (campo `archivo`) de hasta 25 MB. **La nota va ANTES del archivo**: la API decide permiso, datos y documento antes de leer un solo byte. El tipo se decide por el **contenido** (PDF, PNG, JPEG, TXT, DOCX, XLSX o PPTX; sin macros ni SVG ni HTML): otro tipo responde 415 y más de 25 MB, 413. Solo puede haber una versión abierta (borrador o en revisión) a la vez: otra responde 409. Orden de evaluación: 401, 403, 400, 404, 409, 413 o 415.'
+      tags:
+      - documentos
+      x-permiso: documentos.redactar
+      parameters:
+      - *id003
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VersionSubida'
+      responses:
+        '201':
+          description: La versión creada, en borrador.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDocumento'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '413':
+          $ref: '#/components/responses/ArchivoDemasiadoGrande'
+        '415':
+          $ref: '#/components/responses/TipoNoPermitido'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /versiones/{id}/envio:
+    post:
+      operationId: enviarARevision
+      summary: Envía un borrador a revisión
+      description: 'Lo envía su autor o quien gestiona documentos, nombrando quién lo aprueba: una persona activa con permiso de aprobar y distinta del autor (salvo el único administrador). Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.redactar
+      parameters:
+      - *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnvioRevision'
+      responses:
+        '200':
+          description: La versión en revisión.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDocumento'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /versiones/{id}/devolucion:
+    post:
+      operationId: devolverVersion
+      summary: Devuelve una versión en revisión a borrador
+      description: 'Solo la persona nombrada como aprobadora, con un motivo de lista cerrada y una nota breve opcional. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.aprobar
+      parameters:
+      - *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevolucionVersion'
+      responses:
+        '200':
+          description: La versión, de vuelta en borrador.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDocumento'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /versiones/{id}/aprobacion:
+    post:
+      operationId: aprobarVersion
+      summary: Aprueba una versión en revisión
+      description: 'Solo la persona nombrada como aprobadora, **distinta del autor**. Con un solo administrador activo puede aprobar la suya con `motivoExcepcion` obligatorio; queda marcada. La versión anterior pasa a obsoleta en el mismo acto: siempre una sola vigente. Rige desde ahora (no hay vigencia futura). Crea las lecturas pendientes de los destinatarios: siempre en la primera versión y, en las siguientes, solo con `requiereLectura`. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.aprobar
+      parameters:
+      - *id003
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AprobacionVersion'
+      responses:
+        '200':
+          description: La versión aprobada.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionDocumento'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /versiones/{id}/descarte:
+    post:
+      operationId: descartarVersion
+      summary: Descarta un borrador
+      description: 'Queda registrado, no se borra. Solo su autor o quien gestiona documentos. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.redactar
+      parameters:
+      - *id003
+      responses:
+        '204':
+          description: El borrador se descartó.
+          headers:
+            Cache-Control: *id002
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /versiones/{id}/archivo:
+    get:
+      operationId: descargarVersion
+      summary: Descarga el archivo de una versión
+      description: 'Siempre como **adjunto**, con el tipo detectado al subir, `X-Content-Type-Options: nosniff` y sin caché. La descarga **queda en la bitácora antes** de entregar el archivo y, si no se puede registrar, no se entrega. Una versión obsoleta o en borrador se descarga; la pantalla la rotula «no vigente» (el archivo no se altera). Una descartada no se descarga (404). Orden de evaluación: 401, 403, 400, 404.'
+      tags:
+      - documentos
+      x-permiso: documentos.ver
+      parameters:
+      - *id003
+      responses:
+        '200':
+          description: El archivo, como adjunto.
+          headers:
+            Cache-Control: *id002
+            Content-Disposition:
+              description: Siempre `attachment`, con el nombre normalizado y la extensión del tipo detectado.
+              schema:
+                type: string
+                maxLength: 300
+            X-Content-Type-Options:
+              schema:
+                type: string
+                enum:
+                - nosniff
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.presentationml.presentation:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /versiones/{id}/lectura:
+    post:
+      operationId: confirmarLectura
+      summary: Confirma que leyó la versión vigente
+      description: 'Solo la propia persona; nadie confirma por otra. Es una constancia de conocimiento, no una capacitación. Una versión que ya no rige, una lectura inexistente o ya confirmada responde 409. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.leer
+      parameters:
+      - *id003
+      responses:
+        '204':
+          description: La lectura quedó confirmada.
+          headers:
+            Cache-Control: *id002
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /lecturas/pendientes:
+    get:
+      operationId: listarLecturasPendientes
+      summary: Mis lecturas pendientes
+      description: 'Versiones vigentes que la persona aún no confirmó. Orden de evaluación: 401, 403.'
+      tags:
+      - documentos
+      x-permiso: documentos.leer
+      responses:
+        '200':
+          description: Las lecturas pendientes.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1000
+                items:
+                  $ref: '#/components/schemas/LecturaPendiente'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /cobertura-documental:
+    get:
+      operationId: obtenerCoberturaDocumental
+      summary: Entradas de las normas adoptadas con y sin documento vigente
+      description: 'Informativa: no bloquea nada y es distinta de la cobertura de evidencias. Orden de evaluación: 401, 403, 400.'
+      tags:
+      - documentos
+      x-permiso: documentos.ver
+      parameters:
+      - name: norma
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 60
+          minLength: 1
+          pattern: ^[A-Za-z0-9 :./-]+$
+      - name: soloSinDocumento
+        in: query
+        required: false
+        schema: *id001
+      responses:
+        '200':
+          description: La cobertura.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoberturaDocumental'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /retencion:
+    get:
+      operationId: listarRetencion
+      summary: Período de conservación por tipo de documento
+      description: 'Solo los tipos que la empresa definió: sin valor por omisión (la pantalla muestra «retención no definida»). Orden de evaluación: 401, 403.'
+      tags:
+      - documentos
+      x-permiso: documentos.ver
+      responses:
+        '200':
+          description: Las retenciones definidas.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 7
+                items:
+                  $ref: '#/components/schemas/Retencion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: guardarRetencion
+      summary: Fija los años y el motivo de conservación de un tipo
+      description: 'Sin `versionEsperada` crea; con ella cambia (409 si otra persona cambió antes). Pasado el período, una versión obsoleta solo se **marca** como elegible: el sistema no borra nada. Orden de evaluación: 401, 403, 400, 409.'
+      tags:
+      - documentos
+      x-permiso: documentos.gestionar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetencionEntrada'
+      responses:
+        '200':
+          description: La retención guardada.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Retencion'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /certificacion/personas:
+    get:
+      operationId: listarDirectorioPersonas
+      summary: Directorio de personas de la empresa
+      description: 'Solo identificador, nombre y si sigue activa, para mostrar responsables sin pedir más datos. Sin correo ni rol. Orden de evaluación: 401, 403.'
+      tags:
+      - documentos
+      x-permiso: documentos.ver
+      responses:
+        '200':
+          description: Las personas de la empresa.
+          headers:
+            Cache-Control: *id002
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1000
+                items:
+                  $ref: '#/components/schemas/PersonaDirectorio'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearerAuth:
@@ -4082,3 +4891,681 @@ components:
               versionDoc: {type: string, maxLength: 40}
               fecha: {type: string, format: date, maxLength: 10}
               ubicacion: {type: string, maxLength: 200}
+    TipoDocumento:
+      type: string
+      enum:
+      - politica
+      - procedimiento
+      - instructivo
+      - formato
+      - manual
+      - externo
+      - otro
+    ClasificacionDocumento:
+      type: string
+      enum:
+      - publica
+      - interna
+      - confidencial
+      - restringida
+    EstadoVersionDocumento:
+      type: string
+      enum:
+      - borrador
+      - en_revision
+      - aprobada
+      - obsoleta
+      - descartada
+    MotivoDevolucion:
+      type: string
+      enum:
+      - incompleta
+      - incorrecta
+      - otro
+    MotivoRevision:
+      type: string
+      enum:
+      - periodica
+      - auditoria
+      - cambio_de_contexto
+    EstadoRevision:
+      type: string
+      enum:
+      - vencida
+      - por_vencer
+      - al_dia
+    LecturasDocumento:
+      type: object
+      description: '«12 de 15»: solo cuentan las personas que siguen en la empresa. Es una constancia de conocimiento, no una capacitación.'
+      required:
+      - confirmadas
+      - total
+      additionalProperties: false
+      properties:
+        confirmadas:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+    Documento:
+      type: object
+      description: 'La clasificación es informativa: no limita quién lee (ADR 039).'
+      required:
+      - id
+      - codigo
+      - tipo
+      - titulo
+      - area
+      - clasificacion
+      - responsableId
+      - emisor
+      - edicionFuente
+      - estado
+      - proximaRevision
+      - revision
+      - ultimaRevisionEn
+      - vigente
+      - sinVigente
+      - lecturas
+      - lecturaPendiente
+      - version
+      additionalProperties: false
+      properties:
+        id: &id001
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo: &id006
+          type: string
+          maxLength: 10
+          pattern: ^[A-Z]{3}-[0-9]{3,6}$
+        tipo: &id007
+          $ref: '#/components/schemas/TipoDocumento'
+        titulo: &id008
+          type: string
+          maxLength: 120
+        area: &id009
+          type:
+          - string
+          - 'null'
+          maxLength: 60
+        clasificacion: &id010
+          $ref: '#/components/schemas/ClasificacionDocumento'
+        responsableId: *id001
+        emisor: &id011
+          type:
+          - string
+          - 'null'
+          maxLength: 120
+        edicionFuente: &id012
+          type:
+          - string
+          - 'null'
+          maxLength: 60
+        estado: &id013
+          type: string
+          enum:
+          - activo
+          - retirado
+        proximaRevision: &id014
+          type:
+          - string
+          - 'null'
+          format: date
+          maxLength: 10
+        revision: &id015
+          oneOf:
+          - $ref: '#/components/schemas/EstadoRevision'
+          - type: 'null'
+        ultimaRevisionEn: &id004
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
+        vigente: &id016
+          oneOf:
+          - type: object
+            required:
+            - versionId
+            - numero
+            - aprobadaEn
+            additionalProperties: false
+            properties:
+              versionId: *id001
+              numero:
+                type: integer
+                minimum: 1
+              aprobadaEn: &id005
+                type: string
+                format: date-time
+                maxLength: 40
+          - type: 'null'
+        sinVigente: &id002
+          type: boolean
+        lecturas: &id017
+          oneOf:
+          - $ref: '#/components/schemas/LecturasDocumento'
+          - type: 'null'
+        lecturaPendiente: &id018
+          type: boolean
+          description: La persona que consulta tiene una lectura pendiente de la versión vigente.
+        version: &id019
+          type: integer
+          minimum: 1
+    ListaDocumentos:
+      type: object
+      required:
+      - hoy
+      - documentos
+      additionalProperties: false
+      properties:
+        hoy: &id020
+          type: string
+          format: date
+          maxLength: 10
+        documentos:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/Documento'
+    VersionDocumento:
+      type: object
+      required:
+      - id
+      - documentoId
+      - numero
+      - estado
+      - vigente
+      - nota
+      - archivo
+      - autorId
+      - aprobadorId
+      - aprobadaPor
+      - aprobadaEn
+      - porSuAutor
+      - motivoExcepcion
+      - requiereLectura
+      - devueltaMotivo
+      - devueltaNota
+      - obsoletaEn
+      - elegibleParaDisposicion
+      - lecturas
+      - creadaEn
+      additionalProperties: false
+      properties:
+        id: *id001
+        documentoId: *id001
+        numero:
+          type: integer
+          minimum: 1
+        estado:
+          $ref: '#/components/schemas/EstadoVersionDocumento'
+        vigente: *id002
+        nota:
+          type: string
+          maxLength: 500
+        archivo:
+          type: object
+          required:
+          - nombre
+          - tipo
+          - bytes
+          - sha256
+          additionalProperties: false
+          properties:
+            nombre:
+              type: string
+              maxLength: 120
+            tipo:
+              type: string
+              maxLength: 120
+            bytes:
+              type: integer
+              minimum: 1
+              maximum: 26214400
+            sha256:
+              type: string
+              maxLength: 64
+              pattern: ^[0-9a-f]{64}$
+        autorId: *id001
+        aprobadorId: &id003
+          type:
+          - string
+          - 'null'
+          format: uuid
+          maxLength: 36
+        aprobadaPor: *id003
+        aprobadaEn: *id004
+        porSuAutor:
+          type: boolean
+          description: 'Aprobada por su propio autor (único administrador): queda marcada en el historial.'
+        motivoExcepcion:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+        requiereLectura: *id002
+        devueltaMotivo:
+          oneOf:
+          - $ref: '#/components/schemas/MotivoDevolucion'
+          - type: 'null'
+        devueltaNota:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+        obsoletaEn: *id004
+        elegibleParaDisposicion:
+          type: boolean
+          description: 'Solo marca: el sistema no borra nada (ADR 039).'
+        lecturas:
+          oneOf:
+          - $ref: '#/components/schemas/LecturasDocumento'
+          - type: 'null'
+        creadaEn: *id005
+    DocumentoDetalle:
+      type: object
+      required:
+      - id
+      - codigo
+      - tipo
+      - titulo
+      - area
+      - clasificacion
+      - responsableId
+      - emisor
+      - edicionFuente
+      - estado
+      - proximaRevision
+      - revision
+      - ultimaRevisionEn
+      - vigente
+      - sinVigente
+      - lecturas
+      - lecturaPendiente
+      - version
+      - versiones
+      - destinatarios
+      - controles
+      - entradas
+      - retencion
+      - unicoAdministrador
+      additionalProperties: false
+      properties:
+        id: *id001
+        codigo: *id006
+        tipo: *id007
+        titulo: *id008
+        area: *id009
+        clasificacion: *id010
+        responsableId: *id001
+        emisor: *id011
+        edicionFuente: *id012
+        estado: *id013
+        proximaRevision: *id014
+        revision: *id015
+        ultimaRevisionEn: *id004
+        vigente: *id016
+        sinVigente: *id002
+        lecturas: *id017
+        lecturaPendiente: *id018
+        version: *id019
+        versiones:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/VersionDocumento'
+        destinatarios:
+          type: array
+          maxItems: 500
+          items: *id001
+        controles:
+          type: array
+          maxItems: 50
+          items: *id001
+        entradas:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required:
+            - libreriaCodigo
+            - idEstable
+            additionalProperties: false
+            properties:
+              libreriaCodigo:
+                type: string
+                maxLength: 64
+              idEstable:
+                type: string
+                maxLength: 41
+        retencion:
+          oneOf:
+          - type: object
+            required:
+            - anios
+            - motivo
+            additionalProperties: false
+            properties:
+              anios:
+                type: integer
+                minimum: 1
+                maximum: 100
+              motivo:
+                type: string
+                maxLength: 200
+          - type: 'null'
+        unicoAdministrador:
+          type: boolean
+          description: 'La empresa tiene un solo administrador activo: puede aprobar su propia versión con motivo.'
+    DocumentoEntrada:
+      type: object
+      description: Solo un documento de tipo «externo» lleva emisor y edición de la fuente. El código lo asigna el sistema.
+      required:
+      - tipo
+      - titulo
+      - clasificacion
+      - responsableId
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoDocumento'
+        titulo:
+          type: string
+          maxLength: 120
+          minLength: 1
+        area:
+          type: string
+          maxLength: 60
+        clasificacion:
+          $ref: '#/components/schemas/ClasificacionDocumento'
+        responsableId: *id001
+        emisor:
+          type: string
+          maxLength: 120
+        edicionFuente:
+          type: string
+          maxLength: 60
+    DocumentoCambios:
+      type: object
+      description: El tipo y el código no cambian. Lo ausente no se toca; `null` borra el área, el emisor o la edición.
+      required:
+      - versionEsperada
+      additionalProperties: false
+      properties:
+        titulo:
+          type: string
+          maxLength: 120
+          minLength: 1
+        area:
+          type:
+          - string
+          - 'null'
+          maxLength: 60
+        clasificacion:
+          $ref: '#/components/schemas/ClasificacionDocumento'
+        responsableId: *id001
+        emisor:
+          type:
+          - string
+          - 'null'
+          maxLength: 120
+        edicionFuente:
+          type:
+          - string
+          - 'null'
+          maxLength: 60
+        versionEsperada:
+          type: integer
+          minimum: 1
+    RevisionDocumento:
+      type: object
+      description: Revisado sin cambios. Sin fecha, un año después de hoy.
+      required: []
+      additionalProperties: false
+      properties:
+        motivo:
+          $ref: '#/components/schemas/MotivoRevision'
+        proximaRevision: *id020
+    DistribucionEntrada:
+      type: object
+      description: 'Personas y/o «todas las personas de un rol»: el rol se resuelve en este momento y no se guarda.'
+      required: []
+      additionalProperties: false
+      properties:
+        usuarioIds:
+          type: array
+          maxItems: 500
+          items: *id001
+        roles:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+            maxLength: 30
+            pattern: ^[a-z_]{3,30}$
+    Distribucion:
+      type: object
+      required:
+      - destinatarios
+      additionalProperties: false
+      properties:
+        destinatarios:
+          type: array
+          maxItems: 500
+          items: *id001
+    VinculoDocumentoEntrada:
+      type: object
+      description: Un control de la empresa (`controlId`) o una entrada de una librería adoptada (`libreriaCodigo` e `idEstable`), no ambos.
+      required: []
+      additionalProperties: false
+      properties:
+        controlId: *id001
+        libreriaCodigo:
+          type: string
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9-]{0,63}$
+        idEstable:
+          type: string
+          maxLength: 41
+          pattern: ^[a-z0-9][a-z0-9.-]{0,40}$
+    VinculoDocumentoResultado:
+      type: object
+      required:
+      - creado
+      additionalProperties: false
+      properties:
+        creado: *id002
+    VersionSubida:
+      type: object
+      description: La nota va antes del archivo.
+      required:
+      - nota
+      - archivo
+      additionalProperties: false
+      properties:
+        nota:
+          type: string
+          maxLength: 500
+          minLength: 1
+        archivo:
+          type: string
+          format: binary
+    EnvioRevision:
+      type: object
+      description: Una persona activa con permiso de aprobar, distinta del autor (salvo el único administrador).
+      required:
+      - aprobadorId
+      additionalProperties: false
+      properties:
+        aprobadorId: *id001
+    DevolucionVersion:
+      type: object
+      required:
+      - motivo
+      additionalProperties: false
+      properties:
+        motivo:
+          $ref: '#/components/schemas/MotivoDevolucion'
+        nota:
+          type: string
+          maxLength: 300
+    AprobacionVersion:
+      type: object
+      description: '`motivoExcepcion` solo aplica al único administrador que aprueba su propia versión y es obligatorio entonces.'
+      required: []
+      additionalProperties: false
+      properties:
+        proximaRevision: *id020
+        requiereLectura: *id002
+        motivoExcepcion:
+          type: string
+          maxLength: 300
+    LecturaPendiente:
+      type: object
+      required:
+      - versionId
+      - documentoId
+      - codigo
+      - titulo
+      - numeroVersion
+      additionalProperties: false
+      properties:
+        versionId: *id001
+        documentoId: *id001
+        codigo: *id006
+        titulo:
+          type: string
+          maxLength: 120
+        numeroVersion:
+          type: integer
+          minimum: 1
+    CoberturaDocumental:
+      type: object
+      description: 'Informativa: no bloquea nada. Solo cuenta documentos con versión vigente.'
+      required:
+      - normas
+      - total
+      - cubiertas
+      - entradas
+      additionalProperties: false
+      properties:
+        normas:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            maxLength: 60
+        total:
+          type: integer
+          minimum: 0
+        cubiertas:
+          type: integer
+          minimum: 0
+        entradas:
+          type: array
+          maxItems: 500
+          items:
+            type: object
+            required:
+            - libreriaCodigo
+            - idEstable
+            - tipo
+            - titulo
+            - normas
+            - documentos
+            - cubierta
+            additionalProperties: false
+            properties:
+              libreriaCodigo:
+                type: string
+                maxLength: 64
+              idEstable:
+                type: string
+                maxLength: 41
+              tipo:
+                type: string
+                enum:
+                - clausula
+                - control
+              titulo:
+                type: string
+                maxLength: 200
+              normas:
+                type: array
+                maxItems: 20
+                items:
+                  type: string
+                  maxLength: 60
+              documentos:
+                type: array
+                maxItems: 50
+                items:
+                  type: object
+                  required:
+                  - id
+                  - codigo
+                  additionalProperties: false
+                  properties:
+                    id: *id001
+                    codigo: *id006
+              cubierta: *id002
+    Retencion:
+      type: object
+      required:
+      - tipo
+      - anios
+      - motivo
+      - version
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoDocumento'
+        anios:
+          type: integer
+          minimum: 1
+          maximum: 100
+        motivo:
+          type: string
+          maxLength: 200
+        version:
+          type: integer
+          minimum: 1
+    RetencionEntrada:
+      type: object
+      description: Sin `versionEsperada` crea; con ella cambia (409 si otra persona cambió antes).
+      required:
+      - tipo
+      - anios
+      - motivo
+      additionalProperties: false
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoDocumento'
+        anios:
+          type: integer
+          minimum: 1
+          maximum: 100
+        motivo:
+          type: string
+          maxLength: 200
+          minLength: 1
+        versionEsperada:
+          type: integer
+          minimum: 1
+    PersonaDirectorio:
+      type: object
+      description: 'Solo para mostrar responsables: sin correo ni rol.'
+      required:
+      - id
+      - nombre
+      - activa
+      additionalProperties: false
+      properties:
+        id: *id001
+        nombre:
+          type: string
+          maxLength: 120
+        activa: *id002

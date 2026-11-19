@@ -1130,6 +1130,378 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/documentos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Documentos de la empresa
+         * @description Con filtros opcionales. Marca los que no tienen versión vigente, con revisión vencida o por vencer en 30 días y con lecturas pendientes. Orden de evaluación: 401, 403, 400.
+         */
+        get: operations["listarDocumentos"];
+        put?: never;
+        /**
+         * Crea un documento
+         * @description El código lo asigna el sistema por tipo (POL-001). No tiene versión vigente hasta aprobar la primera. El responsable debe ser una persona activa de la empresa. Orden de evaluación: 401, 403, 400, 409.
+         */
+        post: operations["crearDocumento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documentos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Un documento con sus versiones, distribución y vínculos
+         * @description Trae el historial completo de versiones (quién redactó, quién aprobó, cuándo, huella), la distribución, los vínculos y la retención del tipo. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        get: operations["obtenerDocumento"];
+        /**
+         * Cambia los datos de un documento
+         * @description Lo cambia quien gestiona documentos o su responsable. Exige la versión que la persona vio (409 si otra persona cambió antes). Un documento retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["cambiarDocumento"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documentos/{id}/retiro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retira un documento
+         * @description Queda sin versión vigente (la aprobada pasa a obsoleta) y conserva su historia y su código; nada se borra. Un documento ya retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["retirarDocumento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documentos/{id}/revision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Registra «revisado sin cambios»
+         * @description Lo registra el responsable del documento o quien gestiona. Reinicia la fecha de próxima revisión sin crear versión. Sin versión vigente responde 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["revisarDocumento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documentos/{id}/distribucion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Define los destinatarios del documento
+         * @description Reemplaza la lista. «Todas las personas de un rol» se resuelve en este momento. Solo cuentan personas activas de la empresa (400 si no). Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["cambiarDistribucion"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documentos/{id}/vinculos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Liga el documento a un control o a una entrada de una norma adoptada
+         * @description Crea el vínculo (201) o responde 200 si ya existía. Una entrada de una librería no adoptada, o un control de otra empresa, responde 404. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["vincularDocumento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documentos/{id}/vinculos/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita un vínculo del documento
+         * @description Un vínculo que no existe responde 404. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["desvincularDocumento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documentos/{id}/versiones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sube una versión nueva (borrador) de un documento
+         * @description `multipart/form-data` con la nota y **un solo archivo** (campo `archivo`) de hasta 25 MB. **La nota va ANTES del archivo**: la API decide permiso, datos y documento antes de leer un solo byte. El tipo se decide por el **contenido** (PDF, PNG, JPEG, TXT, DOCX, XLSX o PPTX; sin macros ni SVG ni HTML): otro tipo responde 415 y más de 25 MB, 413. Solo puede haber una versión abierta (borrador o en revisión) a la vez: otra responde 409. Orden de evaluación: 401, 403, 400, 404, 409, 413 o 415.
+         */
+        post: operations["subirVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/versiones/{id}/envio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Envía un borrador a revisión
+         * @description Lo envía su autor o quien gestiona documentos, nombrando quién lo aprueba: una persona activa con permiso de aprobar y distinta del autor (salvo el único administrador). Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["enviarARevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/versiones/{id}/devolucion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Devuelve una versión en revisión a borrador
+         * @description Solo la persona nombrada como aprobadora, con un motivo de lista cerrada y una nota breve opcional. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["devolverVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/versiones/{id}/aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprueba una versión en revisión
+         * @description Solo la persona nombrada como aprobadora, **distinta del autor**. Con un solo administrador activo puede aprobar la suya con `motivoExcepcion` obligatorio; queda marcada. La versión anterior pasa a obsoleta en el mismo acto: siempre una sola vigente. Rige desde ahora (no hay vigencia futura). Crea las lecturas pendientes de los destinatarios: siempre en la primera versión y, en las siguientes, solo con `requiereLectura`. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["aprobarVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/versiones/{id}/descarte": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Descarta un borrador
+         * @description Queda registrado, no se borra. Solo su autor o quien gestiona documentos. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["descartarVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/versiones/{id}/archivo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descarga el archivo de una versión
+         * @description Siempre como **adjunto**, con el tipo detectado al subir, `X-Content-Type-Options: nosniff` y sin caché. La descarga **queda en la bitácora antes** de entregar el archivo y, si no se puede registrar, no se entrega. Una versión obsoleta o en borrador se descarga; la pantalla la rotula «no vigente» (el archivo no se altera). Una descartada no se descarga (404). Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["descargarVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/versiones/{id}/lectura": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirma que leyó la versión vigente
+         * @description Solo la propia persona; nadie confirma por otra. Es una constancia de conocimiento, no una capacitación. Una versión que ya no rige, una lectura inexistente o ya confirmada responde 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["confirmarLectura"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lecturas/pendientes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mis lecturas pendientes
+         * @description Versiones vigentes que la persona aún no confirmó. Orden de evaluación: 401, 403.
+         */
+        get: operations["listarLecturasPendientes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cobertura-documental": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Entradas de las normas adoptadas con y sin documento vigente
+         * @description Informativa: no bloquea nada y es distinta de la cobertura de evidencias. Orden de evaluación: 401, 403, 400.
+         */
+        get: operations["obtenerCoberturaDocumental"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/retencion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Período de conservación por tipo de documento
+         * @description Solo los tipos que la empresa definió: sin valor por omisión (la pantalla muestra «retención no definida»). Orden de evaluación: 401, 403.
+         */
+        get: operations["listarRetencion"];
+        /**
+         * Fija los años y el motivo de conservación de un tipo
+         * @description Sin `versionEsperada` crea; con ella cambia (409 si otra persona cambió antes). Pasado el período, una versión obsoleta solo se **marca** como elegible: el sistema no borra nada. Orden de evaluación: 401, 403, 400, 409.
+         */
+        put: operations["guardarRetencion"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/certificacion/personas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Directorio de personas de la empresa
+         * @description Solo identificador, nombre y si sigue activa, para mostrar responsables sin pedir más datos. Sin correo ni rol. Orden de evaluación: 401, 403.
+         */
+        get: operations["listarDirectorioPersonas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1963,6 +2335,260 @@ export interface components {
                 ubicacion: string;
             }[];
         } | null;
+        /** @enum {string} */
+        TipoDocumento: "politica" | "procedimiento" | "instructivo" | "formato" | "manual" | "externo" | "otro";
+        /** @enum {string} */
+        ClasificacionDocumento: "publica" | "interna" | "confidencial" | "restringida";
+        /** @enum {string} */
+        EstadoVersionDocumento: "borrador" | "en_revision" | "aprobada" | "obsoleta" | "descartada";
+        /** @enum {string} */
+        MotivoDevolucion: "incompleta" | "incorrecta" | "otro";
+        /** @enum {string} */
+        MotivoRevision: "periodica" | "auditoria" | "cambio_de_contexto";
+        /** @enum {string} */
+        EstadoRevision: "vencida" | "por_vencer" | "al_dia";
+        /** @description «12 de 15»: solo cuentan las personas que siguen en la empresa. Es una constancia de conocimiento, no una capacitación. */
+        LecturasDocumento: {
+            confirmadas: number;
+            total: number;
+        };
+        /** @description La clasificación es informativa: no limita quién lee (ADR 039). */
+        Documento: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            tipo: components["schemas"]["TipoDocumento"];
+            titulo: string;
+            area: string | null;
+            clasificacion: components["schemas"]["ClasificacionDocumento"];
+            /** Format: uuid */
+            responsableId: string;
+            emisor: string | null;
+            edicionFuente: string | null;
+            /** @enum {string} */
+            estado: "activo" | "retirado";
+            /** Format: date */
+            proximaRevision: string | null;
+            revision: components["schemas"]["EstadoRevision"] | null;
+            /** Format: date-time */
+            ultimaRevisionEn: string | null;
+            vigente: {
+                /** Format: uuid */
+                versionId: string;
+                numero: number;
+                /** Format: date-time */
+                aprobadaEn: string;
+            } | null;
+            sinVigente: boolean;
+            lecturas: components["schemas"]["LecturasDocumento"] | null;
+            /** @description La persona que consulta tiene una lectura pendiente de la versión vigente. */
+            lecturaPendiente: boolean;
+            version: number;
+        };
+        ListaDocumentos: {
+            /** Format: date */
+            hoy: string;
+            documentos: components["schemas"]["Documento"][];
+        };
+        VersionDocumento: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            documentoId: string;
+            numero: number;
+            estado: components["schemas"]["EstadoVersionDocumento"];
+            vigente: boolean;
+            nota: string;
+            archivo: {
+                nombre: string;
+                tipo: string;
+                bytes: number;
+                sha256: string;
+            };
+            /** Format: uuid */
+            autorId: string;
+            /** Format: uuid */
+            aprobadorId: string | null;
+            /** Format: uuid */
+            aprobadaPor: string | null;
+            /** Format: date-time */
+            aprobadaEn: string | null;
+            /** @description Aprobada por su propio autor (único administrador): queda marcada en el historial. */
+            porSuAutor: boolean;
+            motivoExcepcion: string | null;
+            requiereLectura: boolean;
+            devueltaMotivo: components["schemas"]["MotivoDevolucion"] | null;
+            devueltaNota: string | null;
+            /** Format: date-time */
+            obsoletaEn: string | null;
+            /** @description Solo marca: el sistema no borra nada (ADR 039). */
+            elegibleParaDisposicion: boolean;
+            lecturas: components["schemas"]["LecturasDocumento"] | null;
+            /** Format: date-time */
+            creadaEn: string;
+        };
+        DocumentoDetalle: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            tipo: components["schemas"]["TipoDocumento"];
+            titulo: string;
+            area: string | null;
+            clasificacion: components["schemas"]["ClasificacionDocumento"];
+            /** Format: uuid */
+            responsableId: string;
+            emisor: string | null;
+            edicionFuente: string | null;
+            /** @enum {string} */
+            estado: "activo" | "retirado";
+            /** Format: date */
+            proximaRevision: string | null;
+            revision: components["schemas"]["EstadoRevision"] | null;
+            /** Format: date-time */
+            ultimaRevisionEn: string | null;
+            vigente: {
+                /** Format: uuid */
+                versionId: string;
+                numero: number;
+                /** Format: date-time */
+                aprobadaEn: string;
+            } | null;
+            sinVigente: boolean;
+            lecturas: components["schemas"]["LecturasDocumento"] | null;
+            /** @description La persona que consulta tiene una lectura pendiente de la versión vigente. */
+            lecturaPendiente: boolean;
+            version: number;
+            versiones: components["schemas"]["VersionDocumento"][];
+            destinatarios: string[];
+            controles: string[];
+            entradas: {
+                libreriaCodigo: string;
+                idEstable: string;
+            }[];
+            retencion: {
+                anios: number;
+                motivo: string;
+            } | null;
+            /** @description La empresa tiene un solo administrador activo: puede aprobar su propia versión con motivo. */
+            unicoAdministrador: boolean;
+        };
+        /** @description Solo un documento de tipo «externo» lleva emisor y edición de la fuente. El código lo asigna el sistema. */
+        DocumentoEntrada: {
+            tipo: components["schemas"]["TipoDocumento"];
+            titulo: string;
+            area?: string;
+            clasificacion: components["schemas"]["ClasificacionDocumento"];
+            /** Format: uuid */
+            responsableId: string;
+            emisor?: string;
+            edicionFuente?: string;
+        };
+        /** @description El tipo y el código no cambian. Lo ausente no se toca; `null` borra el área, el emisor o la edición. */
+        DocumentoCambios: {
+            titulo?: string;
+            area?: string | null;
+            clasificacion?: components["schemas"]["ClasificacionDocumento"];
+            /** Format: uuid */
+            responsableId?: string;
+            emisor?: string | null;
+            edicionFuente?: string | null;
+            versionEsperada: number;
+        };
+        /** @description Revisado sin cambios. Sin fecha, un año después de hoy. */
+        RevisionDocumento: {
+            motivo?: components["schemas"]["MotivoRevision"];
+            /** Format: date */
+            proximaRevision?: string;
+        };
+        /** @description Personas y/o «todas las personas de un rol»: el rol se resuelve en este momento y no se guarda. */
+        DistribucionEntrada: {
+            usuarioIds?: string[];
+            roles?: string[];
+        };
+        Distribucion: {
+            destinatarios: string[];
+        };
+        /** @description Un control de la empresa (`controlId`) o una entrada de una librería adoptada (`libreriaCodigo` e `idEstable`), no ambos. */
+        VinculoDocumentoEntrada: {
+            /** Format: uuid */
+            controlId?: string;
+            libreriaCodigo?: string;
+            idEstable?: string;
+        };
+        VinculoDocumentoResultado: {
+            creado: boolean;
+        };
+        /** @description La nota va antes del archivo. */
+        VersionSubida: {
+            nota: string;
+            /** Format: binary */
+            archivo: string;
+        };
+        /** @description Una persona activa con permiso de aprobar, distinta del autor (salvo el único administrador). */
+        EnvioRevision: {
+            /** Format: uuid */
+            aprobadorId: string;
+        };
+        DevolucionVersion: {
+            motivo: components["schemas"]["MotivoDevolucion"];
+            nota?: string;
+        };
+        /** @description `motivoExcepcion` solo aplica al único administrador que aprueba su propia versión y es obligatorio entonces. */
+        AprobacionVersion: {
+            /** Format: date */
+            proximaRevision?: string;
+            requiereLectura?: boolean;
+            motivoExcepcion?: string;
+        };
+        LecturaPendiente: {
+            /** Format: uuid */
+            versionId: string;
+            /** Format: uuid */
+            documentoId: string;
+            codigo: string;
+            titulo: string;
+            numeroVersion: number;
+        };
+        /** @description Informativa: no bloquea nada. Solo cuenta documentos con versión vigente. */
+        CoberturaDocumental: {
+            normas: string[];
+            total: number;
+            cubiertas: number;
+            entradas: {
+                libreriaCodigo: string;
+                idEstable: string;
+                /** @enum {string} */
+                tipo: "clausula" | "control";
+                titulo: string;
+                normas: string[];
+                documentos: {
+                    /** Format: uuid */
+                    id: string;
+                    codigo: string;
+                }[];
+                cubierta: boolean;
+            }[];
+        };
+        Retencion: {
+            tipo: components["schemas"]["TipoDocumento"];
+            anios: number;
+            motivo: string;
+            version: number;
+        };
+        /** @description Sin `versionEsperada` crea; con ella cambia (409 si otra persona cambió antes). */
+        RetencionEntrada: {
+            tipo: components["schemas"]["TipoDocumento"];
+            anios: number;
+            motivo: string;
+            versionEsperada?: number;
+        };
+        /** @description Solo para mostrar responsables: sin correo ni rol. */
+        PersonaDirectorio: {
+            /** Format: uuid */
+            id: string;
+            nombre: string;
+            activa: boolean;
+        };
     };
     responses: {
         /** @description Falta el token, está vencido, alterado o no trae empresa. */
@@ -4000,6 +4626,688 @@ export interface operations {
             403: components["responses"]["SinPermiso"];
             404: components["responses"]["NoEncontrado"];
             409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarDocumentos: {
+        parameters: {
+            query?: {
+                tipo?: components["schemas"]["TipoDocumento"];
+                estado?: "activo" | "retirado";
+                responsableId?: string;
+                /** @description Texto contenido en el área o proceso. */
+                area?: string;
+                /** @description Solo documentos ligados a entradas de esta norma. */
+                norma?: string;
+                sinVigente?: boolean;
+                revisionVencida?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La lista. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaDocumentos"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    crearDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El documento creado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Documento"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El documento. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentoDetalle"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentoCambios"];
+            };
+        };
+        responses: {
+            /** @description El documento cambiado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Documento"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    retirarDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El documento se retiró. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    revisarDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisionDocumento"];
+            };
+        };
+        responses: {
+            /** @description El documento con la nueva fecha. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Documento"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarDistribucion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DistribucionEntrada"];
+            };
+        };
+        responses: {
+            /** @description Los destinatarios. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Distribucion"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    vincularDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculoDocumentoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El vínculo ya existía. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinculoDocumentoResultado"];
+                };
+            };
+            /** @description El vínculo se creó. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinculoDocumentoResultado"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    desvincularDocumento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VinculoDocumentoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El vínculo se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    subirVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["VersionSubida"];
+            };
+        };
+        responses: {
+            /** @description La versión creada, en borrador. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDocumento"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            413: components["responses"]["ArchivoDemasiadoGrande"];
+            415: components["responses"]["TipoNoPermitido"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    enviarARevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvioRevision"];
+            };
+        };
+        responses: {
+            /** @description La versión en revisión. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDocumento"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    devolverVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevolucionVersion"];
+            };
+        };
+        responses: {
+            /** @description La versión, de vuelta en borrador. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDocumento"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    aprobarVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AprobacionVersion"];
+            };
+        };
+        responses: {
+            /** @description La versión aprobada. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionDocumento"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    descartarVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El borrador se descartó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    descargarVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El archivo, como adjunto. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Siempre `attachment`, con el nombre normalizado y la extensión del tipo detectado. */
+                    "Content-Disposition"?: string;
+                    "X-Content-Type-Options"?: "nosniff";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "text/plain": string;
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation": string;
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    confirmarLectura: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La lectura quedó confirmada. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarLecturasPendientes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las lecturas pendientes. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LecturaPendiente"][];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerCoberturaDocumental: {
+        parameters: {
+            query?: {
+                norma?: string;
+                soloSinDocumento?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La cobertura. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoberturaDocumental"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarRetencion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las retenciones definidas. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Retencion"][];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    guardarRetencion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetencionEntrada"];
+            };
+        };
+        responses: {
+            /** @description La retención guardada. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Retencion"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarDirectorioPersonas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las personas de la empresa. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonaDirectorio"][];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };
