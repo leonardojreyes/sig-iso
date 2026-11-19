@@ -55,6 +55,13 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   riesgo: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas (migración 0020), sin DELETE: un riesgo se retira (0017)
   riesgo_control: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro, nunca se actualiza (migración 0017)
   riesgo_entrada: { app: ["SELECT", "INSERT", "DELETE"] }, // tratamiento previsto; igual que control_mapeo (migración 0017)
+  documento: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE: un documento se retira (migración 0021)
+  documento_version: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas de estado; el archivo y la huella no cambian (migración 0021)
+  documento_destinatario: { app: ["SELECT", "INSERT", "DELETE"] }, // configuración editable (migración 0022)
+  documento_lectura: { app: ["SELECT", "INSERT"] }, // UPDATE solo de la fecha de confirmación, sin DELETE (migración 0022)
+  documento_control: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro (migración 0022)
+  documento_entrada: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro (migración 0022)
+  retencion_tipo: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE (migración 0022)
   bitacora: { app: ["SELECT"] }, // INSERT solo por columna (app y plataforma); ver la prueba de columnas de la bitácora
   bitacora_ancla: {}, // solo el dueño lee y añade; nadie modifica ni borra
   kysely_migration: {},
@@ -362,6 +369,11 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         riesgo: { si: ["titulo", "descripcion", "probabilidad", "impacto", "decision", "responsable_id", "estado", "version", "actualizado_por", "actualizado_en"], no: ["id", "empresa_id", "numero", "codigo", "creado_por", "creado_en"] },
         motivo_inclusion: { si: ["nota", "version", "actualizado_por", "actualizado_en"], no: ["empresa_id", "libreria_codigo", "id_estable", "tipo", "creado_por", "creado_en"] },
         referencia_tratamiento: { si: ["titulo", "version_doc", "fecha", "ubicacion", "version", "actualizado_por", "actualizado_en"], no: ["empresa_id", "norma", "tipo"] },
+        // control documental (0021 y 0022): nunca el código, el tipo, el archivo, la huella, la nota ni la autoría de una versión.
+        documento: { si: ["titulo", "area", "clasificacion", "responsable_id", "emisor", "edicion_fuente", "estado", "proxima_revision", "ultima_revision_en", "ultima_revision_por", "version", "actualizado_por", "actualizado_en"], no: ["id", "empresa_id", "tipo", "numero", "codigo", "creado_por", "creado_en"] },
+        documento_version: { si: ["estado", "aprobador_id", "enviada_en", "aprobada_por", "aprobada_en", "por_su_autor", "motivo_excepcion", "requiere_lectura", "devuelta_motivo", "devuelta_nota", "obsoleta_en", "version", "actualizado_por", "actualizado_en"], no: ["id", "empresa_id", "documento_id", "numero", "nota", "archivo_id", "archivo_nombre", "archivo_tipo", "archivo_bytes", "archivo_sha256", "autor_id", "creado_por", "creado_en"] },
+        documento_lectura: { si: ["confirmada_en"], no: ["empresa_id", "version_id", "usuario_id", "creado_en"] },
+        retencion_tipo: { si: ["anios", "motivo", "version", "actualizado_por", "actualizado_en"], no: ["empresa_id", "tipo"] },
       };
       for (const [tabla, { si, no }] of Object.entries(COLUMNAS_ACTUALIZABLES)) {
         for (const c of si) expect({ tabla, c, ok: await col("sigiso_app", tabla, c) }).toEqual({ tabla, c, ok: true });
@@ -381,6 +393,10 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
             "referencia_tratamiento",
             "evidencia",
             "solicitud_acceso",
+            "documento",
+            "documento_version",
+            "documento_lectura",
+            "retencion_tipo",
           ].includes(x),
       )) {
         const r = await sql<{
@@ -397,7 +413,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_motivo', 'declaracion_riesgo', 'declaracion_fila_riesgo', 'declaracion_referencia', 'motivo_inclusion', 'referencia_tratamiento', 'riesgo', 'riesgo_control', 'riesgo_entrada', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma', 'solicitud_acceso') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_motivo', 'declaracion_riesgo', 'declaracion_fila_riesgo', 'declaracion_referencia', 'motivo_inclusion', 'referencia_tratamiento', 'riesgo', 'riesgo_control', 'riesgo_entrada', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma', 'solicitud_acceso', 'documento', 'documento_version', 'documento_destinatario', 'documento_lectura', 'documento_control', 'documento_entrada', 'retencion_tipo') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
@@ -410,6 +426,12 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         "declaracion_referencia",
         "declaracion_riesgo",
         "declaracion_version",
+        "documento",
+        "documento_control",
+        "documento_destinatario",
+        "documento_entrada",
+        "documento_lectura",
+        "documento_version",
         "empresa",
         "empresa_activa",
         "empresa_libreria",
@@ -420,6 +442,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         "libreria_entrada_norma",
         "motivo_inclusion",
         "referencia_tratamiento",
+        "retencion_tipo",
         "riesgo",
         "riesgo_control",
         "riesgo_entrada",
