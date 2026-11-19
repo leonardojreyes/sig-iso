@@ -212,7 +212,7 @@ describe('distribución, vínculos y retención', () => {
     await enviar(guardarRetencion, 'retencion', { tipo: 'politica', anios: '5', motivo: ' política de la empresa ' });
     await enviar(guardarRetencion, 'retencion', { tipo: 'manual', anios: '7', motivo: 'ley', version: '2' });
     expect(llamadas.map((l) => l.cuerpo)).toEqual([{ tipo: 'politica', anios: 5, motivo: 'política de la empresa' }, { tipo: 'manual', anios: 7, motivo: 'ley', versionEsperada: 2 }]);
-    for (const mal of [{ tipo: 'carta' }, { anios: 'cinco' }, { anios: '' }, { motivo: '' }, { version: '0' }]) expect(aviso(await enviar(guardarRetencion, 'retencion', { tipo: 'politica', anios: '5', motivo: 'x', ...mal })), JSON.stringify(mal)).toBe('no_valido');
+    for (const mal of [{ tipo: 'carta' }, { anios: 'cinco' }, { anios: '' }, { motivo: '' }, { version: '0' }] as Record<string, string>[]) expect(aviso(await enviar(guardarRetencion, 'retencion', { tipo: 'politica', anios: '5', motivo: 'x', ...mal })), JSON.stringify(mal)).toBe('no_valido');
   });
 });
 

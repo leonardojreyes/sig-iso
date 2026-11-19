@@ -27,7 +27,8 @@ describe('documento y lista', () => {
   });
   it('rechaza campos de más o de menos, tipos y listas cerradas', () => {
     expect(validarDocumento({ ...doc(), extra: 1 })).toBeNull();
-    const { titulo: _t, ...sin } = doc();
+    const sin: Record<string, unknown> = doc();
+    delete sin['titulo'];
     expect(validarDocumento(sin)).toBeNull();
     for (const mal of [{ tipo: 'carta' }, { clasificacion: 'secreta' }, { codigo: 'pol-1' }, { estado: 'borrado' }, { revision: 'tarde' }, { version: 0 }, { titulo: '' }, { responsableId: 'x' }]) expect(validarDocumento(doc(mal)), JSON.stringify(mal)).toBeNull();
     expect(validarListaDocumentos({ hoy: '18/11/2026', documentos: [] })).toBeNull();
