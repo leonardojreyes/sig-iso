@@ -29,19 +29,35 @@ export const leerFiltrosDocumentos = (sp: Parametros): { filtros: FiltrosDocumen
     return v;
   };
   const tipo = uno('tipo');
-  if (tipo !== undefined) (TIPOS_DOCUMENTO as readonly string[]).includes(tipo) ? (f.tipo = tipo as TipoDocumento) : (invalidos = true);
+  if (tipo !== undefined) {
+    if ((TIPOS_DOCUMENTO as readonly string[]).includes(tipo)) f.tipo = tipo as TipoDocumento;
+    else invalidos = true;
+  }
   const estado = uno('estado');
-  if (estado !== undefined) estado === 'activo' || estado === 'retirado' ? (f.estado = estado) : (invalidos = true);
+  if (estado !== undefined) {
+    if (estado === 'activo' || estado === 'retirado') f.estado = estado;
+    else invalidos = true;
+  }
   const responsable = uno('responsable');
-  if (responsable !== undefined) UUID.test(responsable) ? (f.responsableId = responsable.toLowerCase()) : (invalidos = true);
+  if (responsable !== undefined) {
+    if (UUID.test(responsable)) f.responsableId = responsable.toLowerCase();
+    else invalidos = true;
+  }
   const area = uno('area');
-  if (area !== undefined) area.trim().length >= 1 && area.length <= 60 ? (f.area = area.trim()) : (invalidos = true);
+  if (area !== undefined) {
+    if (area.trim().length >= 1 && area.length <= 60) f.area = area.trim();
+    else invalidos = true;
+  }
   const norma = uno('norma');
-  if (norma !== undefined) NORMA.test(norma) ? (f.norma = norma) : (invalidos = true);
+  if (norma !== undefined) {
+    if (NORMA.test(norma)) f.norma = norma;
+    else invalidos = true;
+  }
   for (const k of ['sinVigente', 'revisionVencida'] as const) {
     const v = uno(k);
     if (v === undefined || v === 'false') continue;
-    v === 'true' ? (f[k] = true) : (invalidos = true);
+    if (v === 'true') f[k] = true;
+    else invalidos = true;
   }
   return { filtros: f, invalidos };
 };

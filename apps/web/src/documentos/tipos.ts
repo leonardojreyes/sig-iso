@@ -108,4 +108,6 @@ export interface PersonaDirectorio {
   readonly id: string;
   readonly nombre: string;
   readonly activa: boolean;
+  /** Persona activa con permiso de aprobar documentos. */
+  readonly puedeAprobar: boolean;
 }

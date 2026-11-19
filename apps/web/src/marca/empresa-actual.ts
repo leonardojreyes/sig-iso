@@ -11,6 +11,8 @@ import { cargarMarca } from './marca';
 import type { Empresa } from './tipos';
 
 export interface PersonaActual {
+  /** Identificador de la persona (el `sub` del token): sirve para saber si es la responsable de algo; nunca se muestra. */
+  readonly id?: string;
   readonly nombre: string;
   readonly roles: readonly Rol[];
 }
@@ -63,7 +65,7 @@ export const cargarEmpresaActual = async (
   return {
     tipo: 'ok',
     empresa: otras.length > 0 ? { ...marca.empresa, otrasEmpresas: otras } : marca.empresa,
-    persona: { nombre: identidad.nombre, roles: identidad.roles },
+    persona: { id: identidad.usuarioId, nombre: identidad.nombre, roles: identidad.roles },
     acceso: acceso.acceso,
   };
 };

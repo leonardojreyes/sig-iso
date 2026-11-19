@@ -162,7 +162,7 @@ export const validarDirectorio = (cuerpo: unknown): PersonaDirectorio[] | null =
   const vistos = new Set<string>();
   for (const item of cuerpo) {
     const p = objeto(item);
-    if (!p || !claves(p, ['id', 'nombre', 'activa']) || !uuid(p.id) || vistos.has(p.id) || !texto(p.nombre, 120, undefined, 1) || typeof p.activa !== 'boolean') return null;
+    if (!p || !claves(p, ['id', 'nombre', 'activa', 'puedeAprobar']) || !uuid(p.id) || vistos.has(p.id) || !texto(p.nombre, 120, undefined, 1) || typeof p.activa !== 'boolean' || typeof p.puedeAprobar !== 'boolean' || (p.puedeAprobar && !p.activa)) return null;
     vistos.add(p.id);
   }
   return cuerpo as PersonaDirectorio[];
