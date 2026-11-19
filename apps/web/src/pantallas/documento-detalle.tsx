@@ -95,15 +95,18 @@ export const PantallaDocumentoDetalle = ({ empresa, persona, personaId, document
           {/* La nota va ANTES del archivo: la API decide antes de leer un solo byte. */}
           <form method="post" action={`${base}/${d.id}/subir`} encType="multipart/form-data" className="grid max-w-3xl gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="subir-nota">{t.subirNota}</Label>
+              <Label htmlFor="subir-nota">{`${t.subirNota} ${t.obligatorio}`}</Label>
               <Textarea id="subir-nota" name="nota" required maxLength={500} aria-describedby="subir-nota-ayuda" className="min-h-20" />
               <p id="subir-nota-ayuda" className="text-sm text-fg-muted">
                 {t.subirNotaAyuda}
               </p>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="subir-archivo">{t.subirArchivo}</Label>
-              <Input id="subir-archivo" name="archivo" type="file" required accept=".pdf,.png,.jpg,.jpeg,.txt,.docx,.xlsx,.pptx" />
+              <Label htmlFor="subir-archivo">{`${t.subirArchivo} ${t.obligatorio}`}</Label>
+              <Input id="subir-archivo" name="archivo" type="file" required aria-describedby="subir-archivo-ayuda" accept=".pdf,.png,.jpg,.jpeg,.txt,.docx,.xlsx,.pptx" />
+              <p id="subir-archivo-ayuda" className="text-sm text-fg-muted">
+                {t.subirArchivoAyuda}
+              </p>
             </div>
             <div>
               <Button type="submit">{t.subir}</Button>
@@ -179,7 +182,7 @@ export const PantallaDocumentoDetalle = ({ empresa, persona, personaId, document
                       <Label htmlFor={`env-${v.id}`}>{t.enviarAprobador}</Label>
                       <Select id={`env-${v.id}`} name="aprobadorId" required defaultValue="" aria-describedby={`env-${v.id}-ayuda`}>
                         <option value="" disabled>
-                          —
+                          {t.seleccione}
                         </option>
                         {aprobadores.map((p) => (
                           <option key={p.id} value={p.id}>
@@ -411,26 +414,29 @@ export const PantallaDocumentoDetalle = ({ empresa, persona, personaId, document
         </ul>
         {esAdmin && d.estado === 'activo' && (
           <div className="grid max-w-3xl gap-4 md:grid-cols-2">
-            <form method="post" action={`${base}/${d.id}/vincular`} className="grid gap-2" aria-label={t.vincular}>
+            <form method="post" action={`${base}/${d.id}/vincular`} className="grid gap-2" aria-label={t.vincularEntrada}>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="vin-lib">{t.vinculoLibreria}</Label>
-                <Input id="vin-lib" name="libreriaCodigo" required maxLength={64} pattern="[a-z0-9][a-z0-9\-]*" />
+                <Input id="vin-lib" name="libreriaCodigo" required maxLength={64} pattern="[a-z0-9][a-z0-9\-]*" aria-describedby="vin-formato" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="vin-id">{t.vinculoId}</Label>
-                <Input id="vin-id" name="idEstable" required maxLength={41} pattern="[a-z0-9][a-z0-9.\-]*" />
+                <Input id="vin-id" name="idEstable" required maxLength={41} pattern="[a-z0-9][a-z0-9.\-]*" aria-describedby="vin-formato" />
+              <p id="vin-formato" className="text-sm text-fg-muted">
+                {t.vinculoFormato}
+              </p>
               </div>
               <div>
-                <Button type="submit">{t.vincular}</Button>
+                <Button type="submit" aria-label={t.vincularEntrada}>{t.vincular}</Button>
               </div>
             </form>
             {controles.length > 0 && (
-              <form method="post" action={`${base}/${d.id}/vincular`} className="grid gap-2" aria-label={t.vinculoControl}>
+              <form method="post" action={`${base}/${d.id}/vincular`} className="grid gap-2" aria-label={t.vincularControl}>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="vin-control">{t.vinculoControl}</Label>
                   <Select id="vin-control" name="controlId" required defaultValue="">
                     <option value="" disabled>
-                      —
+                      {t.seleccione}
                     </option>
                     {controles.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -440,7 +446,7 @@ export const PantallaDocumentoDetalle = ({ empresa, persona, personaId, document
                   </Select>
                 </div>
                 <div>
-                  <Button type="submit">{t.vincular}</Button>
+                  <Button type="submit" aria-label={t.vincularControl}>{t.vincular}</Button>
                 </div>
               </form>
             )}

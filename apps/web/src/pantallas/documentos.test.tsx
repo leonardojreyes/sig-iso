@@ -72,7 +72,7 @@ describe('PantallaDocumentos', () => {
     expect(container.querySelector('a[aria-label="Descargar POL-001, versión 1"]')).not.toBeNull();
     const confirmar = container.querySelector('form[action="/e/empresa-a/documentos/versiones/' + V1 + '/confirmar"]');
     expect(confirmar?.getAttribute('method')).toBe('post');
-    expect(confirmar?.querySelector('button')?.getAttribute('aria-label')).toBe('Confirmar la lectura de POL-001, versión 1');
+    expect(confirmar?.querySelector('button')?.getAttribute('aria-label')).toBe('Confirmo que leí esta versión: POL-001, versión 1');
   });
   it('el formulario de alta y la retención solo los ve quien puede; los formularios son POST a rutas propias', () => {
     const a = render(<PantallaDocumentos {...baseLista} />).container;
@@ -86,7 +86,7 @@ describe('PantallaDocumentos', () => {
   });
   it('cada documento enlaza a su detalle con un nombre accesible', () => {
     const { container } = render(<PantallaDocumentos {...baseLista} />);
-    expect(container.querySelector(`a[href="/e/empresa-a/documentos/${D1}"]`)?.getAttribute('aria-label')).toBe('Ver el documento POL-001');
+    expect(container.querySelector(`a[href="/e/empresa-a/documentos/${D1}"]`)?.getAttribute('aria-label')).toBe('Ver documento POL-001');
   });
 });
 
@@ -169,7 +169,7 @@ describe('PantallaDocumentoDetalle', () => {
   });
   it('cada versión se descarga con un nombre accesible; los formularios de cambio son POST', () => {
     const { container } = render(<PantallaDocumentoDetalle {...baseDetalle} documento={conVersiones()} />);
-    expect(container.querySelector(`a[aria-label="Descargar el archivo de la versión 2"]`)?.getAttribute('href')).toBe(`/e/empresa-a/documentos/versiones/${V2}/descargar`);
+    expect(container.querySelector(`a[aria-label="Descargar archivo, versión 2"]`)?.getAttribute('href')).toBe(`/e/empresa-a/documentos/versiones/${V2}/descargar`);
     for (const f of container.querySelectorAll('form')) if (f.getAttribute('method') !== 'get') expect(f.getAttribute('method')).toBe('post');
   });
 });

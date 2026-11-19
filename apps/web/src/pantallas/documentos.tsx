@@ -23,7 +23,7 @@ export interface PropsDocumentos {
 const t = es.documentos;
 export const nombreDe = (personas: readonly PersonaDirectorio[], id: string): string => {
   const p = personas.find((x) => x.id === id);
-  return p && p.activa ? p.nombre : p ? `${p.nombre} (${t.personaDeBaja.toLowerCase()})` : t.personaDeBaja;
+  return p && p.activa ? p.nombre : p ? `${p.nombre} (${t.personaDeBajaMinuscula})` : t.personaDeBaja;
 };
 export const dia = (iso: string): string => iso.slice(0, 10);
 const enlaceClase = 'inline-flex min-h-[var(--sig-density-target-min)] items-center text-sm font-medium text-primary underline';
@@ -49,7 +49,7 @@ const CamposNuevo = ({ personas }: { personas: readonly PersonaDirectorio[] }) =
       </Select>
     </div>
     <div className="flex flex-col gap-1.5 md:col-span-2">
-      <Label htmlFor="nuevo-titulo">{t.campoTitulo}</Label>
+      <Label htmlFor="nuevo-titulo">{`${t.campoTitulo} ${t.obligatorio}`}</Label>
       <Input id="nuevo-titulo" name="titulo" required maxLength={120} />
     </div>
     <div className="flex flex-col gap-1.5">
@@ -66,10 +66,10 @@ const CamposNuevo = ({ personas }: { personas: readonly PersonaDirectorio[] }) =
       </p>
     </div>
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor="nuevo-responsable">{t.campoResponsable}</Label>
+      <Label htmlFor="nuevo-responsable">{`${t.campoResponsable} ${t.obligatorio}`}</Label>
       <Select id="nuevo-responsable" name="responsableId" required defaultValue="">
         <option value="" disabled>
-          —
+          {t.seleccione}
         </option>
         {personas
           .filter((p) => p.activa)
@@ -150,6 +150,7 @@ export const PantallaDocumentos = ({ empresa, persona, documentos, personas, pen
         <Card className="mb-6" aria-labelledby="nuevo-documento">
           <CardTitle id="nuevo-documento">{t.nuevo}</CardTitle>
           <form method="post" action={`${base}/crear`} className="grid max-w-3xl gap-3 md:grid-cols-3">
+            <p className="text-sm text-fg-muted md:col-span-3">{t.obligatorios}</p>
             <CamposNuevo personas={personas} />
             <div className="md:col-span-3">
               <Button type="submit">{t.crear}</Button>
@@ -181,7 +182,7 @@ export const PantallaDocumentos = ({ empresa, persona, documentos, personas, pen
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="f-estado">{t.columnas.documento}</Label>
+                <Label htmlFor="f-estado">{t.filtroEstado}</Label>
                 <Select id="f-estado" name="estado" defaultValue={filtros.estado ?? ''}>
                   <option value="">{t.filtroTodos}</option>
                   <option value="activo">{t.estadosDocumento.activo}</option>
@@ -285,7 +286,7 @@ export const PantallaDocumentos = ({ empresa, persona, documentos, personas, pen
               const r = retenciones.find((x) => x.tipo === tipo);
               return (
                 <li key={tipo}>
-                  <form method="post" action={`${base}/retencion`} className="grid items-end gap-3 md:grid-cols-[10rem_6rem_1fr_auto]">
+                  <form method="post" action={`${base}/retencion`} aria-label={t.tipos[tipo]} className="grid items-end gap-3 md:grid-cols-4">
                     <input type="hidden" name="tipo" value={tipo} />
                     {r && <input type="hidden" name="version" value={r.version} />}
                     <p className="font-medium text-fg">{t.tipos[tipo]}</p>
