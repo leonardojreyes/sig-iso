@@ -106,11 +106,12 @@ export class SubirVersionUseCase {
         usada = true;
         try {
           return await this.unidad.ejecutar(empresaId, async (c) => {
+            // Primero se bloquea el documento (siguienteNumero toma el bloqueo): dos subidas a la vez se turnan y la segunda ve la primera.
+            const numero = await c.versionesDocumento.siguienteNumero(documentoId);
             const d = await exigirDocumentoActivo(c, documentoId);
             if ((await c.versionesDocumento.listarDeDocumento(documentoId)).some((v) => ESTADOS_ABIERTOS.includes(v.estado)))
               throw new ConflictoError('version_abierta');
             const ahora = this.reloj();
-            const numero = await c.versionesDocumento.siguienteNumero(documentoId);
             const id = this.nuevoId();
             const archivo = {
               id: this.nuevoId(),
