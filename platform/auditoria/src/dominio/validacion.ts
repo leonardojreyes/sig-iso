@@ -17,6 +17,17 @@ const FORMA_POR_TIPO: Readonly<Record<string, RegExp>> = {
   documento: /^[A-Z]{3}-[0-9]{3,6}$/,
   version: /^[A-Z]{3}-[0-9]{3,6}\.v[0-9]{1,4}$/,
   retencion: /^(?:politica|procedimiento|instructivo|formato|manual|externo|otro)$/,
+  // Auditoría interna (ADR 040): solo códigos e identificadores estables, nunca un nombre, una nota, una evidencia ni un enunciado.
+  proceso: /^PR-[0-9]{3,6}$/,
+  relacion: /^PR-[0-9]{3,6}$/,
+  programa: /^[0-9]{4}$/,
+  exclusion: /^[0-9]{4}\.(?:PR-[0-9]{3,6}|capitulo)$/,
+  auditoria: /^AI-[0-9]{4}-[0-9]{2,3}$/,
+  equipo: /^AI-[0-9]{4}-[0-9]{2,3}$/,
+  lista: /^AI-[0-9]{4}-[0-9]{2,3}$/,
+  item: /^AI-[0-9]{4}-[0-9]{2,3}\.[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/,
+  hallazgo: /^AI-[0-9]{4}-[0-9]{2,3}\.H-[0-9]{3,6}$/,
+  informe: /^AI-[0-9]{4}-[0-9]{2,3}$/,
 };
 const objetoConForma = (objeto: string): boolean => {
   const [tipo = '', ...resto] = objeto.split(':');
