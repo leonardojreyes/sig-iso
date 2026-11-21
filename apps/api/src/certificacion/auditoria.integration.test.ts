@@ -1,4 +1,4 @@
-import { A, ADMIN, B, COLAB, EstadoFalso } from '@sig/certificacion/prueba';
+import { A, ADMIN, B, COLAB, EstadoFalso, entradas } from '@sig/certificacion/prueba';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { crearArnes, hechosEnMemoria, type Arnes } from '../autenticacion/prueba/arnes.js';
 import { erroresDeEsquema } from '../autenticacion/prueba/contrato.js';
@@ -26,6 +26,13 @@ const RUTAS: [string, string, unknown][] = [
   ['GET', `/procesos/${ID_FALSO}/relaciones`, undefined],
   ['POST', `/procesos/${ID_FALSO}/relaciones`, { personaId: ADMIN, relacion: 'participa' }],
   ['POST', `/procesos/${ID_FALSO}/relaciones/eliminacion`, { personaId: ADMIN, relacion: 'participa' }],
+  ['GET', '/programas', undefined],
+  ['POST', '/programas', { anio: 2027, objetivo: 'x', normas: ['ejemplo-ha'] }],
+  ['GET', `/programas/${ID_FALSO}`, undefined],
+  ['PUT', `/programas/${ID_FALSO}`, { versionEsperada: 1, objetivo: 'x' }],
+  ['POST', `/programas/${ID_FALSO}/aprobacion`, { versionEsperada: 1 }],
+  ['POST', `/programas/${ID_FALSO}/exclusiones`, { tipo: 'proceso', procesoId: ID_FALSO, motivo: 'x' }],
+  ['POST', `/programas/${ID_FALSO}/exclusiones/eliminacion`, { exclusionId: ID_FALSO }],
 ];
 
 describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
@@ -57,8 +64,10 @@ describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
     await rm(raiz, { recursive: true, force: true });
   });
   beforeEach(() => {
-    estado.auditoriaEstado.procesos.clear();
-    estado.auditoriaEstado.relaciones.clear();
+    estado.auditoriaEstado.limpiar();
+    estado.catalogoPorEmpresa.clear();
+    estado.catalogoPorEmpresa.set(A, [entradas.contexto, entradas.politicas, entradas.roles]);
+    estado.catalogoPorEmpresa.set(B, [entradas.politicas]);
     estado.eventos = [];
     estado.permisos.clear();
     estado.fallarBitacora = false;
@@ -200,5 +209,71 @@ describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
     expect(r.status).toBe(500);
     estado.fallarBitacora = false;
     expect(estado.auditoriaEstado.procesos.size).toBe(0);
+  });
+
+  describe('programa anual', () => {
+    const programa = async (extra: Record<string, unknown> = {}) => {
+      const r = await pedir('/programas', await tAdmin(), 'POST', { anio: 2027, objetivo: 'OBJETIVO-PRIVADO Verificar el SGSI', normas: ['ejemplo-ha', 'iso-27001-2022-anexo-a'], ...extra });
+      expect(r.status).toBe(201);
+      return json(r);
+    };
+
+    it('crea, lista y muestra el detalle con lo pendiente; cada respuesta cumple el contrato', async () => {
+      const proceso = await crear();
+      const p = await programa();
+      valida('Programa', p);
+      expect(p).toMatchObject({ anio: 2027, estado: 'sin_aprobar', aprobadoPor: null, version: 1, normas: ['ejemplo-ha', 'iso-27001-2022-anexo-a'] });
+      const lista = await json(await pedir('/programas', await tColab()));
+      valida('ListaProgramas', lista);
+      expect(lista.programas).toHaveLength(1);
+      const d = await json(await pedir(`/programas/${p.id}`, await tColab()));
+      valida('DetallePrograma', d);
+      expect(d.pendientes.procesos).toEqual([proceso.id]);
+      expect(d.pendientes.capitulos).toHaveLength(2);
+      await problema(await pedir('/programas', await tAdmin(), 'POST', { anio: 2027, objetivo: 'x', normas: ['ejemplo-ha'] }), 409, 'conflicto');
+      for (const mal of [{}, { anio: 1999, objetivo: 'x', normas: ['ejemplo-ha'] }, { anio: 2028, objetivo: 'x', normas: ['no-adoptada'] }, { anio: 2028, objetivo: 'x', normas: [] }])
+        await problema(await pedir('/programas', await tAdmin(), 'POST', mal), 400, 'parametro_invalido');
+    });
+
+    it('motivos, aprobación y cambio: 409 hasta justificar, 200 al aprobar y vuelve a «sin aprobar» al cambiar', async () => {
+      const proceso = await crear();
+      const p = await programa();
+      await problema(await pedir(`/programas/${p.id}/aprobacion`, await tAdmin(), 'POST', { versionEsperada: 1 }), 409, 'conflicto');
+      const base = `/programas/${p.id}/exclusiones`;
+      const x1 = await pedir(base, await tAdmin(), 'POST', { tipo: 'proceso', procesoId: proceso.id, motivo: 'MOTIVO-PRIVADO auditado el año pasado' });
+      expect(x1.status).toBe(201);
+      const x = await json(x1);
+      valida('ExclusionPrograma', x);
+      await problema(await pedir(base, await tAdmin(), 'POST', { tipo: 'proceso', procesoId: proceso.id, motivo: 'otra vez' }), 409, 'conflicto');
+      for (const [libreriaCodigo, capitulo] of [['ejemplo-ha', '4'], ['iso-27001-2022-anexo-a', 'Organizacionales']])
+        expect((await pedir(base, await tAdmin(), 'POST', { tipo: 'capitulo', libreriaCodigo, capitulo, motivo: 'riesgo bajo' })).status).toBe(201);
+      const ap = await pedir(`/programas/${p.id}/aprobacion`, await tAdmin(), 'POST', { versionEsperada: 1 });
+      expect(ap.status).toBe(200);
+      const aprobado = await json(ap);
+      valida('Programa', aprobado);
+      expect(aprobado).toMatchObject({ estado: 'aprobado', aprobadoPor: ADMIN, version: 2 });
+      await problema(await pedir(`${base}/eliminacion`, await tAdmin(), 'POST', { exclusionId: x.id }), 409, 'conflicto');
+      const cambio = await pedir(`/programas/${p.id}`, await tAdmin(), 'PUT', { versionEsperada: 2, objetivo: 'Otro objetivo' });
+      expect(cambio.status).toBe(200);
+      expect(await json(cambio)).toMatchObject({ estado: 'sin_aprobar', aprobadoPor: null, version: 3 });
+      await problema(await pedir(`/programas/${p.id}`, await tAdmin(), 'PUT', { versionEsperada: 2, objetivo: 'viejo' }), 409, 'conflicto');
+      expect((await pedir(`${base}/eliminacion`, await tAdmin(), 'POST', { exclusionId: x.id })).status).toBe(204);
+      await problema(await pedir(`${base}/eliminacion`, await tAdmin(), 'POST', { exclusionId: x.id }), 404, 'no_encontrado');
+      const hechos = JSON.stringify(estado.eventos);
+      for (const secreto of ['OBJETIVO-PRIVADO', 'MOTIVO-PRIVADO', 'Otro objetivo', 'riesgo bajo']) expect(hechos).not.toContain(secreto);
+      expect(estado.eventos.map((e) => e.accion)).toEqual(expect.arrayContaining(['programa.creado', 'exclusion.creada', 'programa.aprobado', 'programa.cambiado', 'exclusion.eliminada']));
+    });
+
+    it('un programa de otra empresa es un 404 indistinguible del inexistente', async () => {
+      const p = await programa();
+      for (const [m, ruta, cuerpo] of RUTAS.filter(([, r]) => r.includes('/programas/dddd'))) {
+        const cruzada = await pedir(ruta.replace(ID_FALSO, p.id), await tAdminB(), m, cuerpo);
+        const inexistente = await pedir(ruta, await tAdminB(), m, cuerpo);
+        expect([cruzada.status, inexistente.status], `${m} ${ruta}`).toEqual([404, 404]);
+        expect(await json(cruzada)).toEqual(await json(inexistente));
+      }
+      expect((await json(await pedir('/programas', await tAdminB()))).programas).toEqual([]);
+      expect(estado.auditoriaEstado.programas.get(p.id)).toMatchObject({ version: 1, estado: 'sin_aprobar' });
+    });
   });
 });

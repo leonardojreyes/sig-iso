@@ -48,3 +48,6 @@ export { ActualizarProcesoUseCase, AgregarRelacionUseCase, CrearGestionSigUseCas
 export type { ProcesoRepositoryPort, RelacionRepositoryPort } from './application/auditoria.port.js';
 export { CAMBIOS_RELEVANTES, codigoDeProceso, ESTADOS_PROCESO, FRECUENCIAS_PROCESO, IMPORTANCIAS_PROCESO, NOMBRE_GESTION_SIG, RELACIONES_POR_PROCESO_MAX } from './domain/proceso.js';
 export { RELACIONES_PROCESO } from './domain/independencia.js';
+export { AgregarExclusionUseCase, AprobarProgramaUseCase, CambiarProgramaUseCase, CrearProgramaUseCase, ListarProgramasUseCase, ObtenerProgramaUseCase, QuitarExclusionUseCase, type AuditoriaDeProgramaDto, type DetalleProgramaDto, type ExclusionDto, type ProcesoDeProgramaDto, type ProgramaDto } from './application/programas.use-cases.js';
+export type { AuditoriaRepositoryPort, AyudasRepositoryPort, ProgramaRepositoryPort } from './application/auditoria.port.js';
+export { calcularPendientesDePrograma, EXCLUSIONES_POR_PROGRAMA_MAX, NORMAS_POR_PROGRAMA_MAX, NOTA_EXCLUSION_MAX } from './domain/auditoria-programa.js';

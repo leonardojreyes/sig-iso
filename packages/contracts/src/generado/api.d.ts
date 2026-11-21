@@ -1630,6 +1630,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/programas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Programas anuales de auditoría de la empresa
+         * @description Uno por año, con su estado y las normas que cubre. Orden de evaluación: 401, 403.
+         */
+        get: operations["listarProgramas"];
+        put?: never;
+        /**
+         * Crea el programa anual de un año
+         * @description Uno por año y empresa (409 si ya existe). Las normas deben ser librerías que la empresa adoptó. Nace «sin aprobar». Orden de evaluación: 401, 403, 400, 409.
+         */
+        post: operations["crearPrograma"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Un programa con sus auditorías, motivos y ayudas
+         * @description Trae las auditorías del año (con su trimestre), los motivos de lo que no entra, lo que falta por incluir o justificar y, por proceso, la importancia, la frecuencia prevista, la última auditoría cerrada y los hallazgos abiertos. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["obtenerPrograma"];
+        /**
+         * Cambia el objetivo o las normas de un programa
+         * @description Exige `versionEsperada`. Cambiar el objetivo o las normas de un programa aprobado lo devuelve a «sin aprobar». Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["cambiarPrograma"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programas/{id}/aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprueba el programa
+         * @description Solo el administrador SIG. Cada proceso vigente y cada capítulo o tema de las normas del programa debe estar en alguna auditoría del año o llevar un motivo de por qué no entra; si falta alguno responde 409. Deja constancia de quién y cuándo. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["aprobarPrograma"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programas/{id}/exclusiones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Registra por qué un proceso o capítulo no entra en el año
+         * @description Un proceso (por su identificador) o un capítulo o tema de una de las normas del programa, con su motivo (por ejemplo «auditado el año pasado sin hallazgos»). Solo mientras el programa no está aprobado (409). Uno por proceso o capítulo. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["agregarExclusionPrograma"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/programas/{id}/exclusiones/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita un motivo de exclusión
+         * @description Solo mientras el programa no está aprobado (409). Con rastro en la bitácora. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["quitarExclusionPrograma"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2801,6 +2909,114 @@ export interface components {
         };
         ListaRelaciones: {
             relaciones: components["schemas"]["RelacionProceso"][];
+        };
+        /** @enum {string} */
+        EstadoPrograma: "sin_aprobar" | "aprobado";
+        /** @enum {string} */
+        EstadoAuditoria: "planificada" | "en_preparacion" | "en_ejecucion" | "informe_emitido" | "cerrada" | "cancelada";
+        ProgramaEntrada: {
+            anio: number;
+            objetivo: string;
+            /** @description Códigos de librerías que la empresa adoptó. */
+            normas: string[];
+        };
+        ProgramaCambios: {
+            versionEsperada: number;
+            objetivo?: string;
+            normas?: string[];
+        };
+        ProgramaVersion: {
+            versionEsperada: number;
+        };
+        Programa: {
+            /** Format: uuid */
+            id: string;
+            anio: number;
+            objetivo: string;
+            estado: components["schemas"]["EstadoPrograma"];
+            aprobadoPor: string | null;
+            aprobadoEn: string | null;
+            version: number;
+            normas: string[];
+        };
+        ListaProgramas: {
+            programas: components["schemas"]["Programa"][];
+        };
+        ExclusionEntrada: {
+            /** @enum {string} */
+            tipo: "proceso" | "capitulo";
+            /**
+             * Format: uuid
+             * @description Solo con tipo «proceso».
+             */
+            procesoId?: string;
+            /** @description Solo con tipo «capitulo»: una de las normas del programa. */
+            libreriaCodigo?: string;
+            /** @description Solo con tipo «capitulo»: capítulo (`9`) o tema del Anexo A. */
+            capitulo?: string;
+            motivo: string;
+        };
+        ExclusionQuitar: {
+            /** Format: uuid */
+            exclusionId: string;
+        };
+        ExclusionPrograma: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            tipo: "proceso" | "capitulo";
+            procesoId: string | null;
+            libreriaCodigo: string | null;
+            capitulo: string | null;
+            motivo: string;
+        };
+        AuditoriaDePrograma: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            objetivo: string;
+            estado: components["schemas"]["EstadoAuditoria"];
+            /** Format: date */
+            inicio: string;
+            /** Format: date */
+            fin: string;
+            trimestre: number;
+            normas: string[];
+            /** @description Los criterios abarcan más de una norma. */
+            combinada: boolean;
+            procesosIds: string[];
+            liderId: string | null;
+        };
+        ProcesoDePrograma: {
+            /** Format: uuid */
+            procesoId: string;
+            codigo: string;
+            nombre: string;
+            importancia: components["schemas"]["ImportanciaProceso"];
+            frecuencia: components["schemas"]["FrecuenciaProceso"];
+            cambioRelevante: components["schemas"]["CambioRelevanteProceso"] | null;
+            /** @description Fin de la última auditoría cerrada que incluyó el proceso. */
+            ultimaAuditoria: string | null;
+            hallazgosAbiertos: number;
+            /** @description Alguna auditoría no cancelada del programa lo incluye. */
+            incluido: boolean;
+        };
+        PendientesPrograma: {
+            /** @description Procesos vigentes que ninguna auditoría incluye y que no tienen motivo. */
+            procesos: string[];
+            capitulos: {
+                libreriaCodigo: string;
+                capitulo: string;
+            }[];
+            procesosIncluidos: number;
+            capitulosIncluidos: number;
+        };
+        DetallePrograma: {
+            programa: components["schemas"]["Programa"];
+            auditorias: components["schemas"]["AuditoriaDePrograma"][];
+            exclusiones: components["schemas"]["ExclusionPrograma"][];
+            procesos: components["schemas"]["ProcesoDePrograma"][];
+            pendientes: components["schemas"]["PendientesPrograma"];
         };
     };
     responses: {
@@ -5763,6 +5979,230 @@ export interface operations {
         };
         responses: {
             /** @description La relación se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarProgramas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La lista. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaProgramas"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    crearPrograma: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramaEntrada"];
+            };
+        };
+        responses: {
+            /** @description El programa creado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Programa"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerPrograma: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El detalle. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetallePrograma"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarPrograma: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramaCambios"];
+            };
+        };
+        responses: {
+            /** @description El programa actualizado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Programa"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    aprobarPrograma: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgramaVersion"];
+            };
+        };
+        responses: {
+            /** @description El programa aprobado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Programa"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    agregarExclusionPrograma: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExclusionEntrada"];
+            };
+        };
+        responses: {
+            /** @description El motivo registrado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExclusionPrograma"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    quitarExclusionPrograma: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExclusionQuitar"];
+            };
+        };
+        responses: {
+            /** @description El motivo se quitó. */
             204: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControlNoStore"];

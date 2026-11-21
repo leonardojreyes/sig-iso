@@ -4,8 +4,8 @@ import type { IdentidadVerificada } from '@sig/autenticacion';
 import { Identidad } from '../autenticacion/identidad.js';
 import { ParametroIdRuta, RespuestasProblema } from '../documentacion.js';
 import { AUDITORIA, type CasosAuditoria } from './auditoria.casos.js';
-import { CuerpoProcesoCambios, CuerpoProcesoEntrada, CuerpoRelacionEntrada } from './cuerpos-auditoria.dto.js';
-import { LISTA_PROCESOS, LISTA_RELACIONES, PROCESO, RELACION_PROCESO } from './esquemas-auditoria.js';
+import { CuerpoExclusionEntrada, CuerpoExclusionQuitar, CuerpoProcesoCambios, CuerpoProcesoEntrada, CuerpoProgramaCambios, CuerpoProgramaEntrada, CuerpoProgramaVersion, CuerpoRelacionEntrada } from './cuerpos-auditoria.dto.js';
+import { DETALLE_PROGRAMA, EXCLUSION_PROGRAMA, LISTA_PROCESOS, LISTA_PROGRAMAS, LISTA_RELACIONES, PROCESO, PROGRAMA, RELACION_PROCESO } from './esquemas-auditoria.js';
 
 type Cuerpo = Record<string, unknown>;
 type Respuesta = { status(codigo: number): unknown };
@@ -120,5 +120,79 @@ export class AuditoriaController {
   @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
   async quitarRelacion(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown): Promise<void> {
     await this.c.quitarRelacion.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['personaId', 'relacion']) });
+  }
+
+  @Get('programas')
+  @ApiOperation({ operationId: 'listarProgramas' })
+  @ApiOkResponse({ schema: LISTA_PROGRAMAS })
+  @RespuestasProblema(401, 403, 429, 500)
+  async listarProgramas(@Identidad() identidad: IdentidadVerificada) {
+    return this.c.listarProgramas.ejecutar(this.ids(identidad));
+  }
+
+  @Post('programas')
+  @HttpCode(201)
+  @ApiOperation({ operationId: 'crearPrograma' })
+  @ApiBody({ type: CuerpoProgramaEntrada })
+  @ApiCreatedResponse({ schema: PROGRAMA })
+  @RespuestasProblema(400, 401, 403, 409, 429, 500)
+  async crearPrograma(@Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.crearPrograma.ejecutar({ ...this.ids(identidad), ...elegir(cuerpo, ['anio', 'objetivo', 'normas']) });
+  }
+
+  @Get('programas/:id')
+  @ApiOperation({ operationId: 'obtenerPrograma' })
+  @ParametroIdRuta()
+  @ApiOkResponse({ schema: DETALLE_PROGRAMA })
+  @RespuestasProblema(400, 401, 403, 404, 429, 500)
+  async obtenerPrograma(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada) {
+    return this.c.obtenerPrograma.ejecutar({ ...this.ids(identidad), id });
+  }
+
+  @Put('programas/:id')
+  @ApiOperation({ operationId: 'cambiarPrograma' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoProgramaCambios })
+  @ApiOkResponse({ schema: PROGRAMA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async cambiarPrograma(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.cambiarPrograma.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['versionEsperada', 'objetivo', 'normas']) });
+  }
+
+  @Post('programas/:id/aprobacion')
+  @HttpCode(200)
+  @ApiOperation({ operationId: 'aprobarPrograma' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoProgramaVersion })
+  @ApiOkResponse({ schema: PROGRAMA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async aprobarPrograma(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.aprobarPrograma.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['versionEsperada']) });
+  }
+
+  @Post('programas/:id/exclusiones')
+  @HttpCode(201)
+  @ApiOperation({ operationId: 'agregarExclusionPrograma' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoExclusionEntrada })
+  @ApiCreatedResponse({ schema: EXCLUSION_PROGRAMA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async agregarExclusion(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.agregarExclusion.ejecutar({
+      ...this.ids(identidad),
+      id,
+      ...elegir(cuerpo, ['tipo', 'procesoId', 'libreriaCodigo', 'capitulo', 'motivo']),
+    });
+  }
+
+  @Post('programas/:id/exclusiones/eliminacion')
+  @HttpCode(204)
+  @ApiOperation({ operationId: 'quitarExclusionPrograma' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoExclusionQuitar })
+  @ApiNoContentResponse()
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async quitarExclusion(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown): Promise<void> {
+    await this.c.quitarExclusion.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['exclusionId']) });
   }
 }

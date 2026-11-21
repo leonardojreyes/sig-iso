@@ -37,3 +37,68 @@ export const PROCESO = objeto({
 export const LISTA_PROCESOS = objeto({ procesos: lista(PROCESO, 200), gestionSigVigente: { type: 'boolean' } });
 export const RELACION_PROCESO = objeto({ procesoId: UUID, personaId: UUID, relacion: enumerado(RELACIONES_API) });
 export const LISTA_RELACIONES = objeto({ relaciones: lista(RELACION_PROCESO, 100) });
+
+const NORMA = texto(80, { pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$' });
+const FECHA = texto(10, { format: 'date' });
+const ESTADOS_AUDITORIA_API = ['planificada', 'en_preparacion', 'en_ejecucion', 'informe_emitido', 'cerrada', 'cancelada'];
+
+export const PROGRAMA = objeto({
+  id: UUID,
+  anio: entero(2000, 2100),
+  objetivo: texto(500),
+  estado: enumerado(['sin_aprobar', 'aprobado']),
+  aprobadoPor: oUnNulo(UUID),
+  aprobadoEn: oUnNulo(texto(40, { format: 'date-time' })),
+  version: entero(1),
+  normas: lista(NORMA, 10),
+});
+export const LISTA_PROGRAMAS = objeto({ programas: lista(PROGRAMA, 100) });
+export const EXCLUSION_PROGRAMA = objeto({
+  id: UUID,
+  tipo: enumerado(['proceso', 'capitulo']),
+  procesoId: oUnNulo(UUID),
+  libreriaCodigo: oUnNulo(NORMA),
+  capitulo: nulo(texto(60)),
+  motivo: texto(300),
+});
+export const DETALLE_PROGRAMA = objeto({
+  programa: PROGRAMA,
+  auditorias: lista(
+    objeto({
+      id: UUID,
+      codigo: texto(12, { pattern: '^AI-[0-9]{4}-[0-9]{2,3}$' }),
+      objetivo: texto(500),
+      estado: enumerado(ESTADOS_AUDITORIA_API),
+      inicio: FECHA,
+      fin: FECHA,
+      trimestre: entero(1, 4),
+      normas: lista(NORMA, 10),
+      combinada: { type: 'boolean' },
+      procesosIds: lista(UUID, 200),
+      liderId: oUnNulo(UUID),
+    }),
+    200,
+  ),
+  exclusiones: lista(EXCLUSION_PROGRAMA, 500),
+  procesos: lista(
+    objeto({
+      procesoId: UUID,
+      codigo: texto(9, { pattern: '^PR-[0-9]{3,6}$' }),
+      nombre: texto(120),
+      importancia: enumerado(IMPORTANCIAS_API),
+      frecuencia: enumerado(FRECUENCIAS_API),
+      cambioRelevante: oUnNulo(enumerado(CAMBIOS_RELEVANTES_API)),
+      ultimaAuditoria: oUnNulo(FECHA),
+      hallazgosAbiertos: entero(0),
+      incluido: { type: 'boolean' },
+    }),
+    200,
+  ),
+  pendientes: objeto({
+    procesos: lista(UUID, 200),
+    capitulos: lista(objeto({ libreriaCodigo: NORMA, capitulo: texto(60) }), 500),
+    procesosIncluidos: entero(0),
+    capitulosIncluidos: entero(0),
+  }),
+});
+export const TIPOS_EXCLUSION_API = ['proceso', 'capitulo'];

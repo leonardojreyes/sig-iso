@@ -1,6 +1,28 @@
 import type { EmpresaId } from '@sig/tenancy';
 import { sql, type Kysely, type RawBuilder } from 'kysely';
-import type { CambiosProceso, FilaProceso, FilaRelacion, NuevoProceso, ProcesoRepositoryPort, RelacionRepositoryPort } from '../application/auditoria.port.js';
+import type {
+  AlcanceDeAuditoriaEscribible,
+  AuditoriaRepositoryPort,
+  AyudaDeProceso,
+  AyudasRepositoryPort,
+  CambiosAuditoria,
+  CambiosPrograma,
+  CambiosProceso,
+  CapituloDeAlcance,
+  FilaAuditoria,
+  FilaExclusion,
+  FilaPrograma,
+  FilaProceso,
+  FilaRelacion,
+  MiembroEquipo,
+  NuevaAuditoria,
+  NuevaExclusion,
+  NuevoProceso,
+  ProcesoRepositoryPort,
+  ProgramaRepositoryPort,
+  RelacionRepositoryPort,
+} from '../application/auditoria.port.js';
+import type { EstadoAuditoria, EstadoPrograma, MotivoCambioAuditoria } from '../domain/auditoria.js';
 import type { RelacionProceso } from '../domain/independencia.js';
 import type { CambioRelevante, EstadoProceso, FrecuenciaProceso, ImportanciaProceso } from '../domain/proceso.js';
 
@@ -137,5 +159,300 @@ export class RelacionKysely implements RelacionRepositoryPort {
       await sql`delete from persona_proceso where empresa_id = ${this.empresaId} and proceso_id = ${r.procesoId}
                         and usuario_id = ${r.usuarioId} and relacion = ${r.relacion}`.execute(this.db);
     return (x.numAffectedRows ?? 0n) === 1n;
+  }
+}
+
+// --- Programa anual -----------------------------------------------------------------------------------------------------------------
+
+interface FilaG {
+  id: string;
+  anio: number;
+  objetivo: string;
+  estado: string;
+  aprobado_por: string | null;
+  aprobado_en: Date | null;
+  version: number;
+  creado_por: string;
+  creado_en: Date;
+}
+const COLS_PROGRAMA: Readonly<Record<keyof CambiosPrograma, string>> = {
+  objetivo: 'objetivo',
+  estado: 'estado',
+  aprobadoPor: 'aprobado_por',
+  aprobadoEn: 'aprobado_en',
+};
+
+export class ProgramaKysely implements ProgramaRepositoryPort {
+  constructor(
+    private readonly db: Kysely<unknown>,
+    private readonly empresaId: EmpresaId,
+  ) {}
+
+  private aDominio(f: FilaG): FilaPrograma {
+    return {
+      id: f.id,
+      anio: f.anio,
+      objetivo: f.objetivo,
+      estado: f.estado as EstadoPrograma,
+      aprobadoPor: f.aprobado_por,
+      aprobadoEn: f.aprobado_en,
+      version: f.version,
+      creadoPor: f.creado_por,
+      creadoEn: f.creado_en,
+    };
+  }
+
+  async listar(): Promise<readonly FilaPrograma[]> {
+    const r = await sql<FilaG>`select id, anio, objetivo, estado, aprobado_por, aprobado_en, version, creado_por, creado_en
+      from programa_auditoria where empresa_id = ${this.empresaId} order by anio`.execute(this.db);
+    return r.rows.map((f) => this.aDominio(f));
+  }
+
+  async obtener(id: string): Promise<FilaPrograma | null> {
+    const r = await sql<FilaG>`select id, anio, objetivo, estado, aprobado_por, aprobado_en, version, creado_por, creado_en
+      from programa_auditoria where empresa_id = ${this.empresaId} and id = ${id}`.execute(this.db);
+    return r.rows[0] ? this.aDominio(r.rows[0]) : null;
+  }
+
+  async crear(p: { id: string; anio: number; objetivo: string }, usuarioId: string, ahora: Date): Promise<boolean> {
+    const r =
+      await sql`insert into programa_auditoria (id, empresa_id, anio, objetivo, creado_por, creado_en, actualizado_por, actualizado_en)
+                        values (${p.id}, ${this.empresaId}, ${p.anio}, ${p.objetivo}, ${usuarioId}, ${ahora}, ${usuarioId}, ${ahora})
+                        on conflict do nothing`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+
+  async actualizar(id: string, cambios: CambiosPrograma, versionEsperada: number, usuarioId: string, ahora: Date): Promise<boolean> {
+    const sets = asignaciones(cambios as Record<string, unknown>, COLS_PROGRAMA);
+    const r =
+      await sql`update programa_auditoria set ${sql.join([...sets, sql`version = version + 1`, sql`actualizado_por = ${usuarioId}`, sql`actualizado_en = ${ahora}`])}
+                          where empresa_id = ${this.empresaId} and id = ${id} and version = ${versionEsperada}`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+
+  async normas(programaId: string): Promise<readonly string[]> {
+    const r = await sql<{ libreria_codigo: string }>`select libreria_codigo from programa_norma where empresa_id = ${this.empresaId}
+      and programa_id = ${programaId} order by libreria_codigo`.execute(this.db);
+    return r.rows.map((f) => f.libreria_codigo);
+  }
+
+  async fijarNormas(programaId: string, normas: readonly string[], usuarioId: string, ahora: Date): Promise<void> {
+    await sql`delete from programa_norma where empresa_id = ${this.empresaId} and programa_id = ${programaId}`.execute(this.db);
+    for (const n of normas)
+      await sql`insert into programa_norma (empresa_id, programa_id, libreria_codigo, creado_por, creado_en)
+        values (${this.empresaId}, ${programaId}, ${n}, ${usuarioId}, ${ahora}) on conflict do nothing`.execute(this.db);
+  }
+
+  async exclusiones(programaId: string): Promise<readonly FilaExclusion[]> {
+    const r = await sql<{ id: string; programa_id: string; tipo: string; proceso_id: string | null; libreria_codigo: string | null; capitulo: string | null; motivo: string }>`
+      select id, programa_id, tipo, proceso_id, libreria_codigo, capitulo, motivo from programa_exclusion
+      where empresa_id = ${this.empresaId} and programa_id = ${programaId} order by creado_en, id`.execute(this.db);
+    return r.rows.map((f) => ({
+      id: f.id,
+      programaId: f.programa_id,
+      tipo: f.tipo as 'proceso' | 'capitulo',
+      procesoId: f.proceso_id,
+      libreriaCodigo: f.libreria_codigo,
+      capitulo: f.capitulo,
+      motivo: f.motivo,
+    }));
+  }
+
+  async agregarExclusion(e: NuevaExclusion, usuarioId: string, ahora: Date): Promise<boolean> {
+    const r =
+      await sql`insert into programa_exclusion (id, empresa_id, programa_id, tipo, proceso_id, libreria_codigo, capitulo, motivo, creado_por, creado_en)
+                        values (${e.id}, ${this.empresaId}, ${e.programaId}, ${e.tipo}, ${e.procesoId}, ${e.libreriaCodigo}, ${e.capitulo}, ${e.motivo}, ${usuarioId}, ${ahora})
+                        on conflict do nothing`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+
+  async quitarExclusion(programaId: string, id: string): Promise<boolean> {
+    const r = await sql`delete from programa_exclusion where empresa_id = ${this.empresaId} and programa_id = ${programaId} and id = ${id}`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+}
+
+// --- Auditorías ---------------------------------------------------------------------------------------------------------------------
+
+interface FilaA {
+  id: string;
+  programa_id: string;
+  anio: number;
+  numero: number;
+  codigo: string;
+  objetivo: string;
+  estado: string;
+  inicio: string;
+  fin: string;
+  reunion_apertura: string | null;
+  reunion_cierre: string | null;
+  reprogramaciones: number;
+  cancelacion_motivo: string | null;
+  informe_emitido_en: Date | null;
+  cerrada_en: Date | null;
+  version: number;
+  creado_por: string;
+}
+// Las fechas salen ya como AAAA-MM-DD (to_char) para no depender de la zona horaria del servidor.
+const COLUMNAS_A = sql`id, programa_id, anio, numero, codigo, objetivo, estado, to_char(inicio, 'YYYY-MM-DD') as inicio, to_char(fin, 'YYYY-MM-DD') as fin,
+  to_char(reunion_apertura, 'YYYY-MM-DD') as reunion_apertura, to_char(reunion_cierre, 'YYYY-MM-DD') as reunion_cierre, reprogramaciones,
+  cancelacion_motivo, informe_emitido_en, cerrada_en, version, creado_por`;
+
+const COLS_AUDITORIA: Readonly<Record<keyof CambiosAuditoria, string>> = {
+  objetivo: 'objetivo',
+  estado: 'estado',
+  inicio: 'inicio',
+  fin: 'fin',
+  reunionApertura: 'reunion_apertura',
+  reunionCierre: 'reunion_cierre',
+  reprogramaciones: 'reprogramaciones',
+  cancelacionMotivo: 'cancelacion_motivo',
+  cancelacionNota: 'cancelacion_nota',
+  informeEmitidoPor: 'informe_emitido_por',
+  informeEmitidoEn: 'informe_emitido_en',
+  cerradaPor: 'cerrada_por',
+  cerradaEn: 'cerrada_en',
+};
+
+export class AuditoriaKysely implements AuditoriaRepositoryPort {
+  constructor(
+    private readonly db: Kysely<unknown>,
+    private readonly empresaId: EmpresaId,
+  ) {}
+
+  private async armar(filas: readonly FilaA[]): Promise<readonly FilaAuditoria[]> {
+    if (filas.length === 0) return [];
+    const ids = filas.map((f) => f.id);
+    const e = this.empresaId;
+    const [normas, procesos, capitulos, equipo] = await Promise.all([
+      sql<{ auditoria_id: string; libreria_codigo: string }>`select auditoria_id, libreria_codigo from auditoria_norma where empresa_id = ${e} and auditoria_id = any(${ids}::uuid[])`.execute(this.db),
+      sql<{ auditoria_id: string; proceso_id: string }>`select auditoria_id, proceso_id from auditoria_proceso where empresa_id = ${e} and auditoria_id = any(${ids}::uuid[])`.execute(this.db),
+      sql<{ auditoria_id: string; libreria_codigo: string; capitulo: string }>`select auditoria_id, libreria_codigo, capitulo from auditoria_capitulo where empresa_id = ${e} and auditoria_id = any(${ids}::uuid[]) order by libreria_codigo, capitulo`.execute(this.db),
+      sql<{
+        auditoria_id: string;
+        usuario_id: string;
+        rol: string;
+        excepcion: boolean;
+        excepcion_motivo: string | null;
+        excepcion_medida: string | null;
+        excepcion_autorizada_por: string | null;
+        autoautorizada: boolean;
+      }>`select auditoria_id, usuario_id, rol, excepcion, excepcion_motivo, excepcion_medida, excepcion_autorizada_por, autoautorizada
+        from auditoria_equipo where empresa_id = ${e} and auditoria_id = any(${ids}::uuid[]) order by rol desc, creado_en, usuario_id`.execute(this.db),
+    ]);
+    return filas.map((f) => ({
+      id: f.id,
+      programaId: f.programa_id,
+      anio: f.anio,
+      numero: f.numero,
+      codigo: f.codigo,
+      objetivo: f.objetivo,
+      estado: f.estado as EstadoAuditoria,
+      inicio: f.inicio,
+      fin: f.fin,
+      reunionApertura: f.reunion_apertura,
+      reunionCierre: f.reunion_cierre,
+      reprogramaciones: f.reprogramaciones,
+      cancelacionMotivo: f.cancelacion_motivo as MotivoCambioAuditoria | null,
+      informeEmitidoEn: f.informe_emitido_en,
+      cerradaEn: f.cerrada_en,
+      version: f.version,
+      creadoPor: f.creado_por,
+      normas: normas.rows.filter((x) => x.auditoria_id === f.id).map((x) => x.libreria_codigo).sort(),
+      procesosIds: procesos.rows.filter((x) => x.auditoria_id === f.id).map((x) => x.proceso_id).sort(),
+      capitulos: capitulos.rows.filter((x) => x.auditoria_id === f.id).map((x): CapituloDeAlcance => ({ libreriaCodigo: x.libreria_codigo, capitulo: x.capitulo })),
+      equipo: equipo.rows
+        .filter((x) => x.auditoria_id === f.id)
+        .map(
+          (x): MiembroEquipo => ({
+            usuarioId: x.usuario_id,
+            rol: x.rol as 'lider' | 'auditor',
+            excepcion: x.excepcion,
+            excepcionMotivo: x.excepcion_motivo,
+            excepcionMedida: x.excepcion_medida,
+            excepcionAutorizadaPor: x.excepcion_autorizada_por,
+            autoautorizada: x.autoautorizada,
+          }),
+        ),
+    }));
+  }
+
+  async listar(programaId?: string): Promise<readonly FilaAuditoria[]> {
+    const filtro = programaId === undefined ? sql`` : sql`and programa_id = ${programaId}`;
+    const r = await sql<FilaA>`select ${COLUMNAS_A} from auditoria where empresa_id = ${this.empresaId} ${filtro} order by anio, numero`.execute(this.db);
+    return this.armar(r.rows);
+  }
+
+  async obtener(id: string): Promise<FilaAuditoria | null> {
+    const r = await sql<FilaA>`select ${COLUMNAS_A} from auditoria where empresa_id = ${this.empresaId} and id = ${id}`.execute(this.db);
+    return (await this.armar(r.rows))[0] ?? null;
+  }
+
+  async siguienteNumero(anio: number): Promise<number> {
+    const r = await sql<{ n: number }>`select coalesce(max(numero), 0)::int + 1 as n from auditoria where empresa_id = ${this.empresaId} and anio = ${anio}`.execute(this.db);
+    return r.rows[0]?.n ?? 1;
+  }
+
+  async crear(a: NuevaAuditoria, usuarioId: string, ahora: Date): Promise<boolean> {
+    const r =
+      await sql`insert into auditoria (id, empresa_id, programa_id, anio, numero, objetivo, inicio, fin, reunion_apertura, reunion_cierre,
+                          creado_por, creado_en, actualizado_por, actualizado_en)
+                        values (${a.id}, ${this.empresaId}, ${a.programaId}, ${a.anio}, ${a.numero}, ${a.objetivo}, ${a.inicio}, ${a.fin}, ${a.reunionApertura}, ${a.reunionCierre},
+                          ${usuarioId}, ${ahora}, ${usuarioId}, ${ahora})
+                        on conflict do nothing`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+
+  async actualizar(id: string, cambios: CambiosAuditoria, versionEsperada: number, usuarioId: string, ahora: Date): Promise<boolean> {
+    const sets = asignaciones(cambios as Record<string, unknown>, COLS_AUDITORIA);
+    const r =
+      await sql`update auditoria set ${sql.join([...sets, sql`version = version + 1`, sql`actualizado_por = ${usuarioId}`, sql`actualizado_en = ${ahora}`])}
+                          where empresa_id = ${this.empresaId} and id = ${id} and version = ${versionEsperada}`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+
+  async fijarAlcance(id: string, alcance: AlcanceDeAuditoriaEscribible, usuarioId: string, ahora: Date): Promise<void> {
+    const e = this.empresaId;
+    await sql`delete from auditoria_norma where empresa_id = ${e} and auditoria_id = ${id}`.execute(this.db);
+    await sql`delete from auditoria_proceso where empresa_id = ${e} and auditoria_id = ${id}`.execute(this.db);
+    await sql`delete from auditoria_capitulo where empresa_id = ${e} and auditoria_id = ${id}`.execute(this.db);
+    for (const n of alcance.normas)
+      await sql`insert into auditoria_norma (empresa_id, auditoria_id, libreria_codigo, creado_por, creado_en) values (${e}, ${id}, ${n}, ${usuarioId}, ${ahora}) on conflict do nothing`.execute(this.db);
+    for (const p of alcance.procesosIds)
+      await sql`insert into auditoria_proceso (empresa_id, auditoria_id, proceso_id, creado_por, creado_en) values (${e}, ${id}, ${p}, ${usuarioId}, ${ahora}) on conflict do nothing`.execute(this.db);
+    for (const c of alcance.capitulos)
+      await sql`insert into auditoria_capitulo (empresa_id, auditoria_id, libreria_codigo, capitulo, creado_por, creado_en) values (${e}, ${id}, ${c.libreriaCodigo}, ${c.capitulo}, ${usuarioId}, ${ahora}) on conflict do nothing`.execute(this.db);
+  }
+
+  async agregarMiembro(auditoriaId: string, m: MiembroEquipo, usuarioId: string, ahora: Date): Promise<boolean> {
+    const r =
+      await sql`insert into auditoria_equipo (empresa_id, auditoria_id, usuario_id, rol, excepcion, excepcion_motivo, excepcion_medida,
+                          excepcion_autorizada_por, autoautorizada, creado_por, creado_en)
+                        values (${this.empresaId}, ${auditoriaId}, ${m.usuarioId}, ${m.rol}, ${m.excepcion}, ${m.excepcionMotivo}, ${m.excepcionMedida},
+                          ${m.excepcionAutorizadaPor}, ${m.autoautorizada}, ${usuarioId}, ${ahora})
+                        on conflict do nothing`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+
+  async quitarMiembro(auditoriaId: string, personaId: string): Promise<boolean> {
+    const r = await sql`delete from auditoria_equipo where empresa_id = ${this.empresaId} and auditoria_id = ${auditoriaId} and usuario_id = ${personaId}`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+}
+
+export class AyudasKysely implements AyudasRepositoryPort {
+  constructor(
+    private readonly db: Kysely<unknown>,
+    private readonly empresaId: EmpresaId,
+  ) {}
+
+  async porProceso(): Promise<readonly AyudaDeProceso[]> {
+    const r = await sql<{ proceso_id: string; ultima: string | null; abiertos: number }>`
+      select p.id as proceso_id,
+        (select to_char(max(a.fin), 'YYYY-MM-DD') from auditoria a join auditoria_proceso ap on ap.empresa_id = a.empresa_id and ap.auditoria_id = a.id
+          where a.empresa_id = p.empresa_id and ap.proceso_id = p.id and a.estado = 'cerrada') as ultima,
+        (select count(*)::int from hallazgo h where h.empresa_id = p.empresa_id and h.proceso_id = p.id and h.estado = 'abierto') as abiertos
+      from proceso p where p.empresa_id = ${this.empresaId} and p.estado = 'vigente' order by p.numero`.execute(this.db);
+    return r.rows.map((f) => ({ procesoId: f.proceso_id, ultimaAuditoria: f.ultima, hallazgosAbiertos: f.abiertos }));
   }
 }

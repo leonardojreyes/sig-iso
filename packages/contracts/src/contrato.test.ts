@@ -121,6 +121,13 @@ const AUDITORIA_INTERNA: readonly (readonly [string, string, string[], boolean, 
   ['GET /procesos/{id}/relaciones', 'auditoria.ver', ['path:id'], false, true],
   ['POST /procesos/{id}/relaciones', 'auditoria.gestionar', ['path:id'], true, true],
   ['POST /procesos/{id}/relaciones/eliminacion', 'auditoria.gestionar', ['path:id'], true, true],
+  ['GET /programas', 'auditoria.ver', [], false, false],
+  ['POST /programas', 'auditoria.planificar', [], true, false],
+  ['GET /programas/{id}', 'auditoria.ver', ['path:id'], false, true],
+  ['PUT /programas/{id}', 'auditoria.planificar', ['path:id'], true, true],
+  ['POST /programas/{id}/aprobacion', 'auditoria.aprobar', ['path:id'], true, true],
+  ['POST /programas/{id}/exclusiones', 'auditoria.planificar', ['path:id'], true, true],
+  ['POST /programas/{id}/exclusiones/eliminacion', 'auditoria.planificar', ['path:id'], true, true],
 ];
 const OPS_AUDITORIA = AUDITORIA_INTERNA.map((x) => x[0]);
 
@@ -640,8 +647,22 @@ describe('auditoría interna (ADR 040)', () => {
     const esperados: Record<string, string[]> = {
       'POST /procesos': ['descripcion', 'nombre'],
       'PUT /procesos/{id}': ['descripcion', 'nombre'],
+      'POST /programas': ['objetivo'],
+      'PUT /programas/{id}': ['objetivo'],
+      'POST /programas/{id}/exclusiones': ['capitulo', 'motivo'],
     };
-    for (const id of ['POST /procesos', 'PUT /procesos/{id}', 'POST /procesos/{id}/relaciones', 'POST /procesos/{id}/relaciones/eliminacion']) {
+    const LIBRES = [
+      'POST /procesos',
+      'PUT /procesos/{id}',
+      'POST /procesos/{id}/relaciones',
+      'POST /procesos/{id}/relaciones/eliminacion',
+      'POST /programas',
+      'PUT /programas/{id}',
+      'POST /programas/{id}/aprobacion',
+      'POST /programas/{id}/exclusiones',
+      'POST /programas/{id}/exclusiones/eliminacion',
+    ];
+    for (const id of LIBRES) {
       const esquema = resolver(op(id).requestBody.content['application/json'].schema.$ref)!;
       const libres = Object.entries<any>(esquema.properties)
         .filter(([, p]) => (p.type === 'string' || (Array.isArray(p.type) && p.type.includes('string'))) && !p.format && !p.pattern && !p.enum && !p.$ref)
@@ -657,6 +678,13 @@ describe('auditoría interna (ADR 040)', () => {
     expect(props('ProcesoEntrada')).toEqual(['descripcion', 'duenaId', 'frecuencia', 'importancia', 'nombre']);
     expect(props('ProcesoCambios')).toEqual(['cambioRelevante', 'descripcion', 'duenaId', 'frecuencia', 'importancia', 'nombre', 'versionEsperada']);
     expect(props('RelacionEntrada')).toEqual(['personaId', 'relacion']);
+    expect(props('Programa')).toEqual(['anio', 'aprobadoEn', 'aprobadoPor', 'estado', 'id', 'normas', 'objetivo', 'version']);
+    expect(props('ProgramaEntrada')).toEqual(['anio', 'normas', 'objetivo']);
+    expect(props('ProgramaCambios')).toEqual(['normas', 'objetivo', 'versionEsperada']);
+    expect(props('ExclusionEntrada')).toEqual(['capitulo', 'libreriaCodigo', 'motivo', 'procesoId', 'tipo']);
+    expect(props('DetallePrograma')).toEqual(['auditorias', 'exclusiones', 'pendientes', 'procesos', 'programa']);
+    expect(props('AuditoriaDePrograma')).toEqual(['codigo', 'combinada', 'estado', 'fin', 'id', 'inicio', 'liderId', 'normas', 'objetivo', 'procesosIds', 'trimestre']);
+    expect(props('ProcesoDePrograma')).toEqual(['cambioRelevante', 'codigo', 'frecuencia', 'hallazgosAbiertos', 'importancia', 'incluido', 'nombre', 'procesoId', 'ultimaAuditoria']);
   });
 
   it('las listas cerradas coinciden con las del dominio', () => {
@@ -666,11 +694,15 @@ describe('auditoría interna (ADR 040)', () => {
     expect(e('TipoRelacionProceso')).toEqual(['duena', 'participa', 'diseno', 'supervisa']);
     expect(e('CambioRelevanteProceso')).toEqual(['cambio', 'incidente']);
     expect(e('AvisoProceso')).toEqual(['sin_relaciones', 'duena_inactiva']);
+    expect(e('EstadoPrograma')).toEqual(['sin_aprobar', 'aprobado']);
+    expect(e('EstadoAuditoria')).toEqual(['planificada', 'en_preparacion', 'en_ejecucion', 'informe_emitido', 'cerrada', 'cancelada']);
   });
 
   it('cambiar un proceso exige `versionEsperada`; la empresa y el código nunca se envían', () => {
     expect(resolver('#/components/schemas/ProcesoCambios')!.required).toEqual(['versionEsperada']);
-    for (const n of ['ProcesoEntrada', 'ProcesoCambios', 'RelacionEntrada']) expect(props(n).filter((k) => /empresa|codigo|transversal|estado/i.test(k)), n).toEqual([]);
+    expect(resolver('#/components/schemas/ProgramaCambios')!.required).toEqual(['versionEsperada']);
+    expect(resolver('#/components/schemas/ProgramaVersion')!.required).toEqual(['versionEsperada']);
+    for (const n of ['ProcesoEntrada', 'ProcesoCambios', 'RelacionEntrada', 'ProgramaEntrada', 'ProgramaCambios', 'ProgramaVersion', 'ExclusionEntrada']) expect(props(n).filter((k) => k !== 'libreriaCodigo' && /empresa|codigo|transversal|estado/i.test(k)), n).toEqual([]);
   });
 
   it('solo el administrador SIG escribe; consultar es de «auditoria.ver»', () => {
