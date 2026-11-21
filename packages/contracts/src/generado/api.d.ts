@@ -1502,6 +1502,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/procesos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Procesos de la empresa
+         * @description Con su dueña, importancia, frecuencia prevista, cuántas personas están relacionadas y avisos (sin relaciones registradas o dueña dada de baja). Orden de evaluación: 401, 403.
+         */
+        get: operations["listarProcesos"];
+        put?: never;
+        /**
+         * Crea un proceso
+         * @description El código lo asigna el sistema (PR-001). La dueña debe ser una persona activa de la empresa y queda con la relación «dueña». Orden de evaluación: 401, 403, 400, 409.
+         */
+        post: operations["crearProceso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/procesos/gestion-sig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Crea el proceso transversal «Gestión del SIG»
+         * @description Quien llama queda como dueña. Entra al alcance de toda auditoría que cubra las cláusulas 4 a 10. Solo puede haber uno vigente (409). Orden de evaluación: 401, 403, 409.
+         */
+        post: operations["crearProcesoGestionSig"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/procesos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Cambia un proceso
+         * @description Lo ausente no se toca. Exige `versionEsperada` (si otra persona lo cambió antes, 409). Un proceso retirado no se cambia. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["cambiarProceso"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/procesos/{id}/retiro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retira un proceso
+         * @description Queda fuera de las nuevas auditorías y conserva su historia y su código; nada se borra. Un proceso ya retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["retirarProceso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/procesos/{id}/relaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Personas relacionadas con un proceso
+         * @description Las relaciones registradas (dueña, participa, diseñó, supervisa); con ellas se comprueba la independencia de quien audita. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["listarRelacionesProceso"];
+        put?: never;
+        /**
+         * Relaciona una persona con un proceso
+         * @description Idempotente: 201 si se creó y 200 si ya existía. La persona debe estar activa en la empresa. Un proceso retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["agregarRelacionProceso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/procesos/{id}/relaciones/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita la relación de una persona con un proceso
+         * @description Con rastro en la bitácora. La dueña vigente conserva su relación «dueña» (409): primero se cambia la dueña del proceso. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["quitarRelacionProceso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2590,6 +2718,89 @@ export interface components {
             activa: boolean;
             /** @description Es una persona activa con permiso de aprobar documentos. */
             puedeAprobar: boolean;
+        };
+        /** @enum {string} */
+        ImportanciaProceso: "alta" | "media" | "baja";
+        /**
+         * @description Cada cuánto conviene auditar el proceso (ayuda para armar el programa).
+         * @enum {string}
+         */
+        FrecuenciaProceso: "semestral" | "anual" | "cada_dos_anios" | "cada_tres_anios";
+        /**
+         * @description Marca manual del administrador: el proceso cambió o tuvo un incidente.
+         * @enum {string}
+         */
+        CambioRelevanteProceso: "cambio" | "incidente";
+        /**
+         * @description Relación de una persona con un proceso: quien la tiene no puede auditarlo.
+         * @enum {string}
+         */
+        TipoRelacionProceso: "duena" | "participa" | "diseno" | "supervisa";
+        /** @enum {string} */
+        AvisoProceso: "sin_relaciones" | "duena_inactiva";
+        ProcesoEntrada: {
+            nombre: string;
+            descripcion?: string | null;
+            /**
+             * Format: uuid
+             * @description Persona activa de la empresa.
+             */
+            duenaId: string;
+            importancia?: components["schemas"]["ImportanciaProceso"];
+            frecuencia?: components["schemas"]["FrecuenciaProceso"];
+        };
+        ProcesoCambios: {
+            versionEsperada: number;
+            nombre?: string;
+            descripcion?: string | null;
+            /** Format: uuid */
+            duenaId?: string;
+            importancia?: components["schemas"]["ImportanciaProceso"];
+            frecuencia?: components["schemas"]["FrecuenciaProceso"];
+            /** @description Nulo quita la marca. */
+            cambioRelevante?: components["schemas"]["CambioRelevanteProceso"] | null;
+        };
+        Proceso: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            nombre: string;
+            descripcion: string | null;
+            /** Format: uuid */
+            duenaId: string;
+            importancia: components["schemas"]["ImportanciaProceso"];
+            frecuencia: components["schemas"]["FrecuenciaProceso"];
+            /** @description «Gestión del SIG»: entra al alcance de toda auditoría que cubra las cláusulas 4 a 10. */
+            transversal: boolean;
+            cambioRelevante: components["schemas"]["CambioRelevanteProceso"] | null;
+            /** @enum {string} */
+            estado: "vigente" | "retirado";
+            version: number;
+            personasRelacionadas: number;
+            avisos: components["schemas"]["AvisoProceso"][];
+        };
+        ListaProcesos: {
+            procesos: components["schemas"]["Proceso"][];
+            /** @description Ya hay un proceso «Gestión del SIG» vigente (si no, la pantalla ofrece crearlo). */
+            gestionSigVigente: boolean;
+        };
+        RelacionEntrada: {
+            /**
+             * Format: uuid
+             * @description Persona activa de la empresa.
+             */
+            personaId: string;
+            relacion: components["schemas"]["TipoRelacionProceso"];
+        };
+        RelacionProceso: {
+            /** Format: uuid */
+            procesoId: string;
+            /** Format: uuid */
+            personaId: string;
+            relacion: components["schemas"]["TipoRelacionProceso"];
+        };
+        ListaRelaciones: {
+            relaciones: components["schemas"]["RelacionProceso"][];
         };
     };
     responses: {
@@ -5310,6 +5521,260 @@ export interface operations {
             };
             401: components["responses"]["NoAutenticado"];
             403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarProcesos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La lista. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaProcesos"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    crearProceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcesoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El proceso creado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proceso"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    crearProcesoGestionSig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El proceso creado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proceso"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarProceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcesoCambios"];
+            };
+        };
+        responses: {
+            /** @description El proceso actualizado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proceso"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    retirarProceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El proceso se retiró. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarRelacionesProceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las relaciones. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaRelaciones"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    agregarRelacionProceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelacionEntrada"];
+            };
+        };
+        responses: {
+            /** @description La relación ya existía. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelacionProceso"];
+                };
+            };
+            /** @description La relación creada. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelacionProceso"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    quitarRelacionProceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelacionEntrada"];
+            };
+        };
+        responses: {
+            /** @description La relación se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

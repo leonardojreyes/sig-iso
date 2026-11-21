@@ -3056,6 +3056,266 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /procesos:
+    get:
+      operationId: listarProcesos
+      summary: Procesos de la empresa
+      description: 'Con su dueña, importancia, frecuencia prevista, cuántas personas están relacionadas y avisos (sin relaciones registradas o dueña dada de baja). Orden de evaluación: 401, 403.'
+      tags:
+      - auditoria
+      x-permiso: auditoria.ver
+      responses:
+        '200':
+          description: La lista.
+          headers: &id001
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaProcesos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      operationId: crearProceso
+      summary: Crea un proceso
+      description: 'El código lo asigna el sistema (PR-001). La dueña debe ser una persona activa de la empresa y queda con la relación «dueña». Orden de evaluación: 401, 403, 400, 409.'
+      tags:
+      - auditoria
+      x-permiso: auditoria.gestionar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcesoEntrada'
+      responses:
+        '201':
+          description: El proceso creado.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proceso'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /procesos/gestion-sig:
+    post:
+      operationId: crearProcesoGestionSig
+      summary: Crea el proceso transversal «Gestión del SIG»
+      description: 'Quien llama queda como dueña. Entra al alcance de toda auditoría que cubra las cláusulas 4 a 10. Solo puede haber uno vigente (409). Orden de evaluación: 401, 403, 409.'
+      tags:
+      - auditoria
+      x-permiso: auditoria.gestionar
+      responses:
+        '201':
+          description: El proceso creado.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proceso'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /procesos/{id}:
+    put:
+      operationId: cambiarProceso
+      summary: Cambia un proceso
+      description: 'Lo ausente no se toca. Exige `versionEsperada` (si otra persona lo cambió antes, 409). Un proceso retirado no se cambia. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - auditoria
+      x-permiso: auditoria.gestionar
+      parameters:
+      - &id002
+        $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcesoCambios'
+      responses:
+        '200':
+          description: El proceso actualizado.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proceso'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /procesos/{id}/retiro:
+    post:
+      operationId: retirarProceso
+      summary: Retira un proceso
+      description: 'Queda fuera de las nuevas auditorías y conserva su historia y su código; nada se borra. Un proceso ya retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - auditoria
+      x-permiso: auditoria.gestionar
+      parameters:
+      - *id002
+      responses:
+        '204':
+          description: El proceso se retiró.
+          headers: *id001
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /procesos/{id}/relaciones:
+    get:
+      operationId: listarRelacionesProceso
+      summary: Personas relacionadas con un proceso
+      description: 'Las relaciones registradas (dueña, participa, diseñó, supervisa); con ellas se comprueba la independencia de quien audita. Orden de evaluación: 401, 403, 400, 404.'
+      tags:
+      - auditoria
+      x-permiso: auditoria.ver
+      parameters:
+      - *id002
+      responses:
+        '200':
+          description: Las relaciones.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaRelaciones'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      operationId: agregarRelacionProceso
+      summary: Relaciona una persona con un proceso
+      description: 'Idempotente: 201 si se creó y 200 si ya existía. La persona debe estar activa en la empresa. Un proceso retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - auditoria
+      x-permiso: auditoria.gestionar
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelacionEntrada'
+      responses:
+        '200':
+          description: La relación ya existía.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelacionProceso'
+        '201':
+          description: La relación creada.
+          headers: *id001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelacionProceso'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /procesos/{id}/relaciones/eliminacion:
+    post:
+      operationId: quitarRelacionProceso
+      summary: Quita la relación de una persona con un proceso
+      description: 'Con rastro en la bitácora. La dueña vigente conserva su relación «dueña» (409): primero se cambia la dueña del proceso. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - auditoria
+      x-permiso: auditoria.gestionar
+      parameters:
+      - *id002
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelacionEntrada'
+      responses:
+        '204':
+          description: La relación se quitó.
+          headers: *id001
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearerAuth:
@@ -5752,3 +6012,215 @@ components:
         puedeAprobar:
           type: boolean
           description: Es una persona activa con permiso de aprobar documentos.
+    ImportanciaProceso:
+      type: string
+      enum:
+      - alta
+      - media
+      - baja
+    FrecuenciaProceso:
+      type: string
+      enum:
+      - semestral
+      - anual
+      - cada_dos_anios
+      - cada_tres_anios
+      description: Cada cuánto conviene auditar el proceso (ayuda para armar el programa).
+    CambioRelevanteProceso:
+      type: string
+      enum:
+      - cambio
+      - incidente
+      description: 'Marca manual del administrador: el proceso cambió o tuvo un incidente.'
+    TipoRelacionProceso:
+      type: string
+      enum:
+      - duena
+      - participa
+      - diseno
+      - supervisa
+      description: 'Relación de una persona con un proceso: quien la tiene no puede auditarlo.'
+    AvisoProceso:
+      type: string
+      enum:
+      - sin_relaciones
+      - duena_inactiva
+    ProcesoEntrada:
+      type: object
+      required:
+      - nombre
+      - duenaId
+      additionalProperties: false
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+        descripcion:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+        duenaId:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: Persona activa de la empresa.
+        importancia:
+          $ref: '#/components/schemas/ImportanciaProceso'
+        frecuencia:
+          $ref: '#/components/schemas/FrecuenciaProceso'
+    ProcesoCambios:
+      type: object
+      required:
+      - versionEsperada
+      additionalProperties: false
+      properties:
+        versionEsperada:
+          type: integer
+          minimum: 1
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+        descripcion:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+        duenaId:
+          type: string
+          format: uuid
+          maxLength: 36
+        importancia:
+          $ref: '#/components/schemas/ImportanciaProceso'
+        frecuencia:
+          $ref: '#/components/schemas/FrecuenciaProceso'
+        cambioRelevante:
+          oneOf:
+          - $ref: '#/components/schemas/CambioRelevanteProceso'
+          - type: 'null'
+          description: Nulo quita la marca.
+    Proceso:
+      type: object
+      required:
+      - id
+      - codigo
+      - nombre
+      - descripcion
+      - duenaId
+      - importancia
+      - frecuencia
+      - transversal
+      - cambioRelevante
+      - estado
+      - version
+      - personasRelacionadas
+      - avisos
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          pattern: ^PR-[0-9]{3,6}$
+          maxLength: 9
+        nombre:
+          type: string
+          maxLength: 120
+        descripcion:
+          type:
+          - string
+          - 'null'
+          maxLength: 300
+        duenaId:
+          type: string
+          format: uuid
+          maxLength: 36
+        importancia:
+          $ref: '#/components/schemas/ImportanciaProceso'
+        frecuencia:
+          $ref: '#/components/schemas/FrecuenciaProceso'
+        transversal:
+          type: boolean
+          description: '«Gestión del SIG»: entra al alcance de toda auditoría que cubra las cláusulas 4 a 10.'
+        cambioRelevante:
+          oneOf:
+          - $ref: '#/components/schemas/CambioRelevanteProceso'
+          - type: 'null'
+        estado:
+          type: string
+          enum:
+          - vigente
+          - retirado
+        version:
+          type: integer
+          minimum: 1
+        personasRelacionadas:
+          type: integer
+          minimum: 0
+        avisos:
+          type: array
+          maxItems: 2
+          items:
+            $ref: '#/components/schemas/AvisoProceso'
+    ListaProcesos:
+      type: object
+      required:
+      - procesos
+      - gestionSigVigente
+      additionalProperties: false
+      properties:
+        procesos:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/Proceso'
+        gestionSigVigente:
+          type: boolean
+          description: Ya hay un proceso «Gestión del SIG» vigente (si no, la pantalla ofrece crearlo).
+    RelacionEntrada:
+      type: object
+      required:
+      - personaId
+      - relacion
+      additionalProperties: false
+      properties:
+        personaId:
+          type: string
+          format: uuid
+          maxLength: 36
+          description: Persona activa de la empresa.
+        relacion:
+          $ref: '#/components/schemas/TipoRelacionProceso'
+    RelacionProceso:
+      type: object
+      required:
+      - procesoId
+      - personaId
+      - relacion
+      additionalProperties: false
+      properties:
+        procesoId:
+          type: string
+          format: uuid
+          maxLength: 36
+        personaId:
+          type: string
+          format: uuid
+          maxLength: 36
+        relacion:
+          $ref: '#/components/schemas/TipoRelacionProceso'
+    ListaRelaciones:
+      type: object
+      required:
+      - relaciones
+      additionalProperties: false
+      properties:
+        relaciones:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/RelacionProceso'

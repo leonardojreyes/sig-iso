@@ -855,7 +855,7 @@ export class ListarDirectorioUseCase {
   constructor(
     private readonly unidad: Unidad,
     private readonly autorizacion: AutorizacionPort,
-    private readonly permiso: 'documentos.ver' | 'riesgos.ver' = 'documentos.ver',
+    private readonly permiso: 'documentos.ver' | 'riesgos.ver' | 'auditoria.ver' = 'documentos.ver',
   ) {}
 
   async ejecutar(e: { empresaId: string; usuarioId: string }): Promise<readonly PersonaDirectorioDto[]> {

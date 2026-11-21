@@ -1,5 +1,7 @@
 import { DynamicModule, Module } from '@nestjs/common';
 import type { ListarRiesgosUseCase, CrearRiesgoUseCase, ObtenerRiesgoUseCase, CambiarRiesgoUseCase, AvisoRetiroRiesgoUseCase, RetirarRiesgoUseCase, VincularRiesgoControlUseCase, DesvincularRiesgoControlUseCase, PreverTratamientoUseCase, QuitarTratamientoPrevistoUseCase, RiesgosDeUnControlUseCase, ListarMotivosUseCase, RegistrarMotivoUseCase, QuitarMotivoUseCase, ListarReferenciasUseCase, GuardarReferenciaUseCase, QuitarReferenciaUseCase, AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarControlesUseCase, ListarDiagnosticoUseCase, QuitarMapeoUseCase, RetirarControlUseCase } from '@sig/certificacion';
+import { AuditoriaController } from './auditoria.controller.js';
+import { AUDITORIA, type CasosAuditoria } from './auditoria.casos.js';
 import { CertificacionController } from './certificacion.controller.js';
 import { ControlesController } from './controles.controller.js';
 import { DocumentosController, PrepararSubirVersion } from './documentos.controller.js';
@@ -53,6 +55,8 @@ export interface OpcionesCertificacionApi {
   readonly quitarReferencia: QuitarReferenciaUseCase;
   /** Control documental (ADR 039): los casos de uso llegan agrupados. */
   readonly documentos: CasosDocumentales;
+  /** Auditoría interna (ADR 040): los casos de uso llegan agrupados. */
+  readonly auditoria: CasosAuditoria;
 }
 
 /** Controladores de `/alcances` y `/diagnostico`. Los casos de uso llegan ya armados por la composición. */
@@ -61,7 +65,7 @@ export class CertificacionApiModule {
   static register(opciones: OpcionesCertificacionApi): DynamicModule {
     return {
       module: CertificacionApiModule,
-      controllers: [CertificacionController, ControlesController, EvidenciasController, DeclaracionController, RiesgosController, JustificacionDeclaracionController, DocumentosController],
+      controllers: [CertificacionController, ControlesController, EvidenciasController, DeclaracionController, RiesgosController, JustificacionDeclaracionController, AuditoriaController, DocumentosController],
       providers: [
         { provide: LISTAR_ALCANCES, useValue: opciones.alcances },
         { provide: GUARDAR_ALCANCE, useValue: opciones.guardarAlcance },
@@ -103,6 +107,7 @@ export class CertificacionApiModule {
         { provide: GUARDAR_REFERENCIA, useValue: opciones.guardarReferencia },
         { provide: QUITAR_REFERENCIA, useValue: opciones.quitarReferencia },
         { provide: DOCUMENTOS, useValue: opciones.documentos },
+        { provide: AUDITORIA, useValue: opciones.auditoria },
         PrepararSubirVersion,
         PrepararSubirEvidencia,
         PrepararReemplazarEvidencia,
