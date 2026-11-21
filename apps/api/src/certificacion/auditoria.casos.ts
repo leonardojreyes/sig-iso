@@ -1,5 +1,18 @@
 import {
   ActualizarProcesoUseCase,
+  AgregarPreguntaUseCase,
+  AnularHallazgoUseCase,
+  CambiarHallazgoUseCase,
+  CerrarAuditoriaUseCase,
+  EmitirInformeUseCase,
+  EvaluarFilaUseCase,
+  ListarHallazgosUseCase,
+  ListarListaUseCase,
+  ObtenerInformeUseCase,
+  ObtenerPanelAuditoriaUseCase,
+  QuitarPreguntaUseCase,
+  RegenerarListaUseCase,
+  RegistrarHallazgoUseCase,
   AvanzarAuditoriaUseCase,
   CambiarAuditoriaUseCase,
   CancelarAuditoriaUseCase,
@@ -57,6 +70,19 @@ export interface CasosAuditoria {
   readonly comprobarIndependencia: ComprobarIndependenciaUseCase;
   readonly designarMiembro: DesignarMiembroUseCase;
   readonly quitarMiembro: QuitarMiembroUseCase;
+  readonly obtenerLista: ListarListaUseCase;
+  readonly regenerarLista: RegenerarListaUseCase;
+  readonly evaluarFila: EvaluarFilaUseCase;
+  readonly agregarPregunta: AgregarPreguntaUseCase;
+  readonly quitarPregunta: QuitarPreguntaUseCase;
+  readonly listarHallazgos: ListarHallazgosUseCase;
+  readonly registrarHallazgo: RegistrarHallazgoUseCase;
+  readonly cambiarHallazgo: CambiarHallazgoUseCase;
+  readonly anularHallazgo: AnularHallazgoUseCase;
+  readonly emitirInforme: EmitirInformeUseCase;
+  readonly obtenerInforme: ObtenerInformeUseCase;
+  readonly cerrarAuditoria: CerrarAuditoriaUseCase;
+  readonly panel: ObtenerPanelAuditoriaUseCase;
 }
 
 export const crearCasosAuditoria = (
@@ -65,6 +91,8 @@ export const crearCasosAuditoria = (
   catalogo: CatalogoLecturaPort,
   reloj: () => Date,
   nuevoId: () => string,
+  /** SHA-256 en hexadecimal de un texto (la composición lo aporta con `node:crypto`). */
+  hash: (texto: string) => string,
 ): CasosAuditoria => ({
   listarProcesos: new ListarProcesosUseCase(unidad, autorizacion),
   crearProceso: new CrearProcesoUseCase(unidad, autorizacion, reloj, nuevoId),
@@ -86,8 +114,21 @@ export const crearCasosAuditoria = (
   cambiarAuditoria: new CambiarAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
   reprogramarAuditoria: new ReprogramarAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
   cancelarAuditoria: new CancelarAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
-  avanzarAuditoria: new AvanzarAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
+  avanzarAuditoria: new AvanzarAuditoriaUseCase(unidad, autorizacion, catalogo, reloj, nuevoId),
   comprobarIndependencia: new ComprobarIndependenciaUseCase(unidad, autorizacion, catalogo, reloj),
   designarMiembro: new DesignarMiembroUseCase(unidad, autorizacion, catalogo, reloj),
   quitarMiembro: new QuitarMiembroUseCase(unidad, autorizacion),
+  obtenerLista: new ListarListaUseCase(unidad, autorizacion, catalogo),
+  regenerarLista: new RegenerarListaUseCase(unidad, autorizacion, catalogo, reloj, nuevoId),
+  evaluarFila: new EvaluarFilaUseCase(unidad, autorizacion, reloj),
+  agregarPregunta: new AgregarPreguntaUseCase(unidad, autorizacion, reloj, nuevoId),
+  quitarPregunta: new QuitarPreguntaUseCase(unidad, autorizacion),
+  listarHallazgos: new ListarHallazgosUseCase(unidad, autorizacion),
+  registrarHallazgo: new RegistrarHallazgoUseCase(unidad, autorizacion, catalogo, reloj, nuevoId),
+  cambiarHallazgo: new CambiarHallazgoUseCase(unidad, autorizacion, catalogo, reloj),
+  anularHallazgo: new AnularHallazgoUseCase(unidad, autorizacion, reloj),
+  emitirInforme: new EmitirInformeUseCase(unidad, autorizacion, catalogo, reloj, nuevoId, hash),
+  obtenerInforme: new ObtenerInformeUseCase(unidad, autorizacion),
+  cerrarAuditoria: new CerrarAuditoriaUseCase(unidad, autorizacion, reloj),
+  panel: new ObtenerPanelAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
 });

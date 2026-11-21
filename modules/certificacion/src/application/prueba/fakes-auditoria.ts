@@ -11,7 +11,15 @@ import type {
   CambiosAuditoria,
   CambiosPrograma,
   CambiosProceso,
+  CambiosHallazgo,
   FilaAuditoria,
+  FilaHallazgo,
+  FilaInforme,
+  FilaItem,
+  FilaPregunta,
+  HallazgoRepositoryPort,
+  InformeRepositoryPort,
+  ItemRepositoryPort,
   FilaExclusion,
   FilaPrograma,
   FilaProceso,
@@ -38,6 +46,10 @@ export class EstadoAuditoriaFalso {
   equipos = new Map<string, readonly MiembroEquipo[]>();
   /** Ayudas del programa por empresa (la prueba las fija: vienen de auditorías cerradas y hallazgos). */
   ayudas = new Map<EmpresaId, readonly AyudaDeProceso[]>();
+  items = new Map<string, ConEmpresa<FilaItem>>();
+  preguntas = new Map<string, ConEmpresa<FilaPregunta & { auditoriaId: string }>>();
+  hallazgos = new Map<string, ConEmpresa<FilaHallazgo>>();
+  informes = new Map<string, ConEmpresa<FilaInforme>>();
 
   copiar(): EstadoAuditoriaFalso['__copia'] {
     return {
@@ -49,6 +61,10 @@ export class EstadoAuditoriaFalso {
       a: new Map(this.auditorias),
       al: new Map(this.alcances),
       e: new Map(this.equipos),
+      i: new Map(this.items),
+      q: new Map(this.preguntas),
+      h: new Map(this.hallazgos),
+      n: new Map(this.informes),
     };
   }
   declare __copia: {
@@ -60,6 +76,10 @@ export class EstadoAuditoriaFalso {
     a: Map<string, ConEmpresa<AuditoriaBase>>;
     al: Map<string, AlcanceDeAuditoriaEscribible>;
     e: Map<string, readonly MiembroEquipo[]>;
+    i: Map<string, ConEmpresa<FilaItem>>;
+    q: Map<string, ConEmpresa<FilaPregunta & { auditoriaId: string }>>;
+    h: Map<string, ConEmpresa<FilaHallazgo>>;
+    n: Map<string, ConEmpresa<FilaInforme>>;
   };
 
   restaurar(c: EstadoAuditoriaFalso['__copia']): void {
@@ -71,10 +91,14 @@ export class EstadoAuditoriaFalso {
     this.auditorias = c.a;
     this.alcances = c.al;
     this.equipos = c.e;
+    this.items = c.i;
+    this.preguntas = c.q;
+    this.hallazgos = c.h;
+    this.informes = c.n;
   }
 
   limpiar(): void {
-    for (const m of [this.procesos, this.programas, this.exclusiones, this.auditorias, this.alcances, this.equipos, this.ayudas] as Map<
+    for (const m of [this.procesos, this.programas, this.exclusiones, this.auditorias, this.alcances, this.equipos, this.ayudas, this.items, this.preguntas, this.hallazgos, this.informes] as Map<
       unknown,
       unknown
     >[])
@@ -95,6 +119,9 @@ export const crearRepositoriosAuditoriaFalsos = (
   programas: ProgramaRepositoryPort;
   auditorias: AuditoriaRepositoryPort;
   ayudas: AyudasRepositoryPort;
+  items: ItemRepositoryPort;
+  hallazgos: HallazgoRepositoryPort;
+  informes: InformeRepositoryPort;
 } => {
   const procs = (): FilaProceso[] => [...s.procesos.values()].filter((p) => p.empresaId === empresaId);
   const k = (r: FilaRelacion): string => [empresaId, r.procesoId, r.usuarioId, r.relacion].join('|');
@@ -278,5 +305,73 @@ export const crearRepositoriosAuditoriaFalsos = (
 
   const ayudas: AyudasRepositoryPort = { porProceso: async () => s.ayudas.get(empresaId) ?? [] };
 
-  return { procesos, relaciones, programas, auditorias, ayudas };
+  const its = (): FilaItem[] => [...s.items.values()].filter((x) => x.empresaId === empresaId);
+  const items: ItemRepositoryPort = {
+    listar: async (auditoriaId) => its().filter((x) => x.auditoriaId === auditoriaId),
+    obtener: async (id) => its().find((x) => x.id === id) ?? null,
+    listarDeCerradas: async () => {
+      const cerradas = new Set(auds().filter((a) => a.estado === 'cerrada').map((a) => a.id));
+      return its().filter((x) => cerradas.has(x.auditoriaId));
+    },
+    crearVarios: async (nuevos) => {
+      for (const n of nuevos)
+        if (!its().some((x) => x.auditoriaId === n.auditoriaId && x.libreriaCodigo === n.libreriaCodigo && x.idEstable === n.idEstable))
+          s.items.set(n.id, { ...n, empresaId, resultado: 'por_evaluar', nota: null, evaluadoPor: null, evaluadoEn: null, version: 1 });
+    },
+    quitarPorEvaluar: async (auditoriaId, claves) => {
+      let n = 0;
+      for (const k of claves) {
+        const f = its().find((x) => x.auditoriaId === auditoriaId && x.libreriaCodigo === k.libreriaCodigo && x.idEstable === k.idEstable && x.resultado === 'por_evaluar');
+        if (f && s.items.delete(f.id)) n += 1;
+      }
+      return n;
+    },
+    evaluar: async (id, r, esperada, usuarioId, ahora) => {
+      const actual = its().find((x) => x.id === id);
+      if (!actual || actual.version !== esperada) return false;
+      s.items.set(id, { ...actual, ...r, evaluadoPor: usuarioId, evaluadoEn: ahora, empresaId, version: actual.version + 1 });
+      return true;
+    },
+    preguntas: async (auditoriaId) => [...s.preguntas.values()].filter((p) => p.empresaId === empresaId && p.auditoriaId === auditoriaId),
+    agregarPregunta: async (p) => {
+      const item = its().find((x) => x.id === p.itemId);
+      s.preguntas.set(p.id, { ...p, empresaId, auditoriaId: item?.auditoriaId ?? '' });
+    },
+    quitarPregunta: async (auditoriaId, preguntaId) => {
+      const p = s.preguntas.get(preguntaId);
+      return !!p && p.empresaId === empresaId && p.auditoriaId === auditoriaId && s.preguntas.delete(preguntaId);
+    },
+  };
+
+  const hall = (): FilaHallazgo[] => [...s.hallazgos.values()].filter((x) => x.empresaId === empresaId);
+  const hallazgos: HallazgoRepositoryPort = {
+    listar: async (auditoriaId) => hall().filter((x) => x.auditoriaId === auditoriaId).sort((a, b) => a.numero - b.numero),
+    obtener: async (id) => hall().find((x) => x.id === id) ?? null,
+    siguienteNumero: async (auditoriaId) => Math.max(0, ...hall().filter((x) => x.auditoriaId === auditoriaId).map((x) => x.numero)) + 1,
+    crear: async (h, usuarioId) => {
+      if (hall().some((x) => x.auditoriaId === h.auditoriaId && x.numero === h.numero)) return false;
+      s.hallazgos.set(h.id, { ...h, empresaId, codigo: `H-${String(h.numero).padStart(3, '0')}`, estado: 'abierto', anulacionMotivo: null, registradoPor: usuarioId, version: 1 });
+      return true;
+    },
+    actualizar: async (id, cambios: CambiosHallazgo, esperada) => {
+      const actual = hall().find((x) => x.id === id);
+      if (!actual || actual.version !== esperada) return false;
+      const { anuladoPor: _p, anuladoEn: _e, ...resto } = cambios;
+      void _p;
+      void _e;
+      s.hallazgos.set(id, { ...actual, ...sinIndefinidos(resto), empresaId, version: actual.version + 1 } as ConEmpresa<FilaHallazgo>);
+      return true;
+    },
+  };
+
+  const informes: InformeRepositoryPort = {
+    obtener: async (auditoriaId) => [...s.informes.values()].find((i) => i.empresaId === empresaId && i.auditoriaId === auditoriaId) ?? null,
+    crear: async (i, usuarioId, ahora) => {
+      if ([...s.informes.values()].some((x) => x.empresaId === empresaId && x.auditoriaId === i.auditoriaId)) return false;
+      s.informes.set(i.id, { ...i, empresaId, emitidoPor: usuarioId, emitidoEn: ahora });
+      return true;
+    },
+  };
+
+  return { procesos, relaciones, programas, auditorias, ayudas, items, hallazgos, informes };
 };

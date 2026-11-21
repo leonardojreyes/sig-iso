@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CAMBIOS_RELEVANTES_API, ESTADOS_AVANCE_API, FRECUENCIAS_API, IMPORTANCIAS_API, MOTIVOS_CAMBIO_API, RELACIONES_API, ROLES_EQUIPO_API, TIPOS_EXCLUSION_API } from './esquemas-auditoria.js';
+import { CAMBIOS_RELEVANTES_API, ESTADOS_AVANCE_API, FRECUENCIAS_API, IMPORTANCIAS_API, MOTIVOS_ANULACION_API, MOTIVOS_CAMBIO_API, RELACIONES_API, TIPOS_HALLAZGO_API, ROLES_EQUIPO_API, TIPOS_EXCLUSION_API } from './esquemas-auditoria.js';
 
 // Cuerpos de entrada del contrato (packages/contracts/openapi.yaml) de la auditoría interna (ADR 040). Solo documentan: la lectura es
 // tolerante y lo válido lo decide el caso de uso después del permiso (401 → 403 → 400 → 404 → 409).
@@ -136,4 +136,55 @@ export class CuerpoMiembroEntrada {
 
 export class CuerpoMiembroQuitar {
   @ApiProperty(UUID) personaId!: string;
+}
+
+const ID_ESTABLE = { type: String, minLength: 1, maxLength: 80, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$' } as const;
+const RESULTADOS_ENTRADA = ['conforme', 'no_conforme', 'observacion', 'oportunidad', 'no_aplica', 'no_verificado'];
+
+export class CuerpoResultadoFila {
+  @ApiProperty(UUID) filaId!: string;
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+  @ApiProperty({ type: String, enum: RESULTADOS_ENTRADA }) resultado!: string;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 500, required: false }) nota?: string;
+}
+export class CuerpoPreguntaEntrada {
+  @ApiProperty(UUID) filaId!: string;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 300 }) texto!: string;
+}
+export class CuerpoPreguntaQuitar {
+  @ApiProperty(UUID) preguntaId!: string;
+}
+export class CuerpoHallazgoEntrada {
+  @ApiProperty({ type: String, enum: TIPOS_HALLAZGO_API }) tipo!: string;
+  @ApiProperty({ ...UUID, required: false }) itemId?: string;
+  @ApiProperty({ ...UUID, required: false }) procesoId?: string;
+  @ApiProperty({ ...NORMA, required: false }) libreriaCodigo?: string;
+  @ApiProperty({ ...ID_ESTABLE, required: false }) idEstable?: string;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 500 }) enunciado!: string;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 1000 }) evidencia!: string;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 500, required: false }) justificacionGravedad?: string;
+}
+export class CuerpoHallazgoCambios {
+  @ApiProperty(UUID) hallazgoId!: string;
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+  @ApiProperty({ type: String, enum: TIPOS_HALLAZGO_API, required: false }) tipo?: string;
+  @ApiProperty({ ...UUID, nullable: true, required: false }) procesoId?: string | null;
+  @ApiProperty({ ...NORMA, nullable: true, required: false }) libreriaCodigo?: string | null;
+  @ApiProperty({ ...ID_ESTABLE, nullable: true, required: false }) idEstable?: string | null;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 500, required: false }) enunciado?: string;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 1000, required: false }) evidencia?: string;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 500, nullable: true, required: false }) justificacionGravedad?: string | null;
+}
+export class CuerpoHallazgoAnulacion {
+  @ApiProperty(UUID) hallazgoId!: string;
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+  @ApiProperty({ type: String, enum: MOTIVOS_ANULACION_API }) motivo!: string;
+}
+export class CuerpoInformeEntrada {
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 1000 }) conclusion!: string;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 1000, required: false }) limitaciones?: string;
+}
+export class CuerpoCierreEntrada {
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
 }

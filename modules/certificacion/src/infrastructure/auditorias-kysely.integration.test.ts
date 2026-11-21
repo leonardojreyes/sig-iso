@@ -84,7 +84,10 @@ describe.skipIf(!hayBase)('auditorías internas sobre PostgreSQL real', () => {
   const admin = { empresaId: A, usuarioId: ADMIN };
   const NORMAS = ['aud-anexo-a', 'aud-ha'];
   const TABLAS = [
+    'auditoria_informe',
     'hallazgo',
+    'auditoria_pregunta',
+    'auditoria_item',
     'auditoria_equipo',
     'auditoria_capitulo',
     'auditoria_proceso',

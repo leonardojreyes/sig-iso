@@ -73,7 +73,10 @@ describe.skipIf(!hayBase)('programa anual de auditoría sobre PostgreSQL real', 
   const NORMAS = ['prog-anexo-a', 'prog-ha']; // el programa las guarda ordenadas
 
   const TABLAS = [
+    'auditoria_informe',
     'hallazgo',
+    'auditoria_pregunta',
+    'auditoria_item',
     'auditoria_equipo',
     'auditoria_capitulo',
     'auditoria_proceso',

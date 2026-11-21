@@ -137,6 +137,19 @@ const AUDITORIA_INTERNA: readonly (readonly [string, string, string[], boolean, 
   ['GET /auditorias/{id}/independencia', 'auditoria.ver', ['path:id', 'query:personaId'], false, true],
   ['POST /auditorias/{id}/equipo', 'auditoria.planificar', ['path:id'], true, true],
   ['POST /auditorias/{id}/equipo/eliminacion', 'auditoria.planificar', ['path:id'], true, true],
+  ['GET /auditorias/{id}/lista', 'auditoria.ver', ['path:id'], false, true],
+  ['POST /auditorias/{id}/lista/regeneracion', 'auditoria.planificar', ['path:id'], false, true],
+  ['PUT /auditorias/{id}/lista/resultado', 'auditoria.ejecutar', ['path:id'], true, true],
+  ['POST /auditorias/{id}/lista/preguntas', 'auditoria.ejecutar', ['path:id'], true, true],
+  ['POST /auditorias/{id}/lista/preguntas/eliminacion', 'auditoria.ejecutar', ['path:id'], true, true],
+  ['GET /auditorias/{id}/hallazgos', 'auditoria.ver', ['path:id'], false, true],
+  ['POST /auditorias/{id}/hallazgos', 'auditoria.ejecutar', ['path:id'], true, true],
+  ['PUT /auditorias/{id}/hallazgos', 'auditoria.ejecutar', ['path:id'], true, true],
+  ['POST /auditorias/{id}/hallazgos/anulacion', 'auditoria.ejecutar', ['path:id'], true, true],
+  ['GET /auditorias/{id}/informe', 'auditoria.ver', ['path:id'], false, true],
+  ['POST /auditorias/{id}/informe', 'auditoria.ejecutar', ['path:id'], true, true],
+  ['POST /auditorias/{id}/cierre', 'auditoria.aprobar', ['path:id'], true, true],
+  ['GET /auditoria/panel', 'auditoria.ver', [], false, false],
 ];
 const OPS_AUDITORIA = AUDITORIA_INTERNA.map((x) => x[0]);
 
@@ -663,6 +676,11 @@ describe('auditoría interna (ADR 040)', () => {
       'PUT /auditorias/{id}': ['objetivo'],
       'POST /auditorias/{id}/reprogramacion': ['nota'],
       'POST /auditorias/{id}/cancelacion': ['nota'],
+      'PUT /auditorias/{id}/lista/resultado': ['nota'],
+      'POST /auditorias/{id}/lista/preguntas': ['texto'],
+      'POST /auditorias/{id}/hallazgos': ['enunciado', 'evidencia', 'justificacionGravedad'],
+      'PUT /auditorias/{id}/hallazgos': ['enunciado', 'evidencia', 'justificacionGravedad'],
+      'POST /auditorias/{id}/informe': ['conclusion', 'limitaciones'],
     };
     const LIBRES = [
       'POST /procesos',
@@ -681,6 +699,14 @@ describe('auditoría interna (ADR 040)', () => {
       'POST /auditorias/{id}/avance',
       'POST /auditorias/{id}/equipo',
       'POST /auditorias/{id}/equipo/eliminacion',
+      'PUT /auditorias/{id}/lista/resultado',
+      'POST /auditorias/{id}/lista/preguntas',
+      'POST /auditorias/{id}/lista/preguntas/eliminacion',
+      'POST /auditorias/{id}/hallazgos',
+      'PUT /auditorias/{id}/hallazgos',
+      'POST /auditorias/{id}/hallazgos/anulacion',
+      'POST /auditorias/{id}/informe',
+      'POST /auditorias/{id}/cierre',
     ];
     for (const id of LIBRES) {
       const esquema = resolver(op(id).requestBody.content['application/json'].schema.$ref)!;
@@ -715,6 +741,14 @@ describe('auditoría interna (ADR 040)', () => {
     expect(props('MiembroEntrada')).toEqual(['excepcion', 'personaId', 'rol']);
     expect(props('ExcepcionEntrada')).toEqual(['medida', 'motivo']);
     expect(props('MiembroEquipo')).toEqual(['autoautorizada', 'excepcion', 'excepcionAutorizadaPor', 'excepcionMedida', 'excepcionMotivo', 'personaId', 'rol']);
+    expect(props('ResultadoFilaEntrada')).toEqual(['filaId', 'nota', 'resultado', 'versionEsperada']);
+    expect(props('FilaLista')).toEqual(['agrupador', 'diagnostico', 'evaluadoEn', 'evaluadoPor', 'guia', 'id', 'idEstable', 'libreriaCodigo', 'nota', 'preguntas', 'resultado', 'titulo', 'version']);
+    expect(props('Hallazgo')).toEqual(['anulacionMotivo', 'codigo', 'enunciado', 'estado', 'evidencia', 'id', 'idEstable', 'itemId', 'justificacionGravedad', 'libreriaCodigo', 'procesoId', 'registradoPor', 'tipo', 'version']);
+    expect(props('HallazgoEntrada')).toEqual(['enunciado', 'evidencia', 'idEstable', 'itemId', 'justificacionGravedad', 'libreriaCodigo', 'procesoId', 'tipo']);
+    expect(props('InformeEntrada')).toEqual(['conclusion', 'limitaciones', 'versionEsperada']);
+    expect(props('InformeAuditoria')).toEqual(['auditoriaId', 'codigo', 'contenido', 'emitidoEn', 'emitidoPor', 'huella']);
+    expect(props('InformeContenido')).toEqual(['auditoria', 'conclusion', 'conteos', 'emitidoEn', 'emitidoPor', 'equipo', 'filas', 'hallazgos', 'limitaciones', 'noVerificadas', 'programa', 'version']);
+    expect(props('PanelAuditoria')).toEqual(['auditorias', 'cobertura12Meses', 'prerrequisito', 'programaAnio']);
     expect(props('Independencia')).toEqual(['avisos', 'conflictos', 'independiente', 'personaId', 'procesosDelAlcance']);
     expect(props('ProcesoDePrograma')).toEqual(['cambioRelevante', 'codigo', 'frecuencia', 'hallazgosAbiertos', 'importancia', 'incluido', 'nombre', 'procesoId', 'ultimaAuditoria']);
   });
@@ -727,6 +761,9 @@ describe('auditoría interna (ADR 040)', () => {
     expect(e('CambioRelevanteProceso')).toEqual(['cambio', 'incidente']);
     expect(e('AvisoProceso')).toEqual(['sin_relaciones', 'duena_inactiva']);
     expect(e('EstadoPrograma')).toEqual(['sin_aprobar', 'aprobado']);
+    expect(e('ResultadoItem')).toEqual(['por_evaluar', 'conforme', 'no_conforme', 'observacion', 'oportunidad', 'no_aplica', 'no_verificado']);
+    expect(e('TipoHallazgo')).toEqual(['nc_mayor', 'nc_menor', 'observacion', 'oportunidad']);
+    expect(e('MotivoAnulacionHallazgo')).toEqual(['duplicado', 'error_de_registro', 'otro']);
     expect(e('MotivoCambioAuditoria')).toEqual(['sin_recursos', 'cambio_de_alcance', 'reprogramada', 'otro']);
     expect(e('EstadoAuditoria')).toEqual(['planificada', 'en_preparacion', 'en_ejecucion', 'informe_emitido', 'cerrada', 'cancelada']);
   });
@@ -734,10 +771,11 @@ describe('auditoría interna (ADR 040)', () => {
   it('cambiar un proceso exige `versionEsperada`; la empresa y el código nunca se envían', () => {
     expect(resolver('#/components/schemas/ProcesoCambios')!.required).toEqual(['versionEsperada']);
     expect(resolver('#/components/schemas/ProgramaCambios')!.required).toEqual(['versionEsperada']);
+    for (const n of ['ResultadoFilaEntrada', 'HallazgoCambios', 'HallazgoAnulacion', 'InformeEntrada', 'CierreEntrada']) expect(resolver(`#/components/schemas/${n}`)!.required, n).toContain('versionEsperada');
     for (const n of ['AuditoriaCambios', 'AuditoriaCancelacion', 'AuditoriaAvance']) expect(resolver(`#/components/schemas/${n}`)!.required, n).toContain('versionEsperada');
     expect(resolver('#/components/schemas/AuditoriaReprogramacion')!.required).toContain('versionEsperada');
     expect(resolver('#/components/schemas/ProgramaVersion')!.required).toEqual(['versionEsperada']);
-    for (const n of ['ProcesoEntrada', 'ProcesoCambios', 'RelacionEntrada', 'ProgramaEntrada', 'ProgramaCambios', 'ProgramaVersion', 'ExclusionEntrada', 'AuditoriaEntrada', 'AuditoriaCambios', 'AuditoriaReprogramacion', 'AuditoriaCancelacion', 'MiembroEntrada', 'MiembroQuitar']) expect(props(n).filter((k) => k !== 'libreriaCodigo' && /empresa|codigo|transversal|estado/i.test(k)), n).toEqual([]);
+    for (const n of ['ProcesoEntrada', 'ProcesoCambios', 'RelacionEntrada', 'ProgramaEntrada', 'ProgramaCambios', 'ProgramaVersion', 'ExclusionEntrada', 'AuditoriaEntrada', 'AuditoriaCambios', 'AuditoriaReprogramacion', 'AuditoriaCancelacion', 'MiembroEntrada', 'MiembroQuitar', 'ResultadoFilaEntrada', 'PreguntaEntrada', 'HallazgoEntrada', 'HallazgoCambios', 'InformeEntrada', 'CierreEntrada']) expect(props(n).filter((k) => k !== 'libreriaCodigo' && /empresa|codigo|transversal|estado/i.test(k)), n).toEqual([]);
   });
 
   it('solo el administrador SIG escribe; consultar es de «auditoria.ver»', () => {

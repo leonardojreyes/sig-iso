@@ -1902,6 +1902,218 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auditorias/{id}/lista": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * La lista de verificación de una auditoría
+         * @description Una fila por entrada de las normas adoptadas (título breve y guía propia, nunca texto de la norma), con su resultado, las preguntas propias del equipo y, como contexto, el estado del diagnóstico. Trae el avance. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["obtenerListaVerificacion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/lista/regeneracion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenera la lista a propósito
+         * @description Solo en preparación. Agrega las filas que faltan, quita las «por evaluar» que ya no corresponden y conserva lo ya evaluado (avisa cuántas quedaron fuera del alcance). La lista se genera sola al pasar a «en preparación». Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["regenerarListaVerificacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/lista/resultado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Asigna el resultado de una fila
+         * @description Solo con la auditoría en ejecución y solo el equipo designado (los demás reciben 403). Un resultado distinto de «conforme» y «no verificado» exige la nota con la evidencia objetiva; «no aplica» exige justificación. Concurrencia por `versionEsperada`. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["evaluarFilaLista"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/lista/preguntas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agrega una pregunta propia a una fila
+         * @description Hasta 5 por fila, en preparación o en ejecución y solo el equipo designado. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["agregarPreguntaLista"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/lista/preguntas/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita una pregunta propia
+         * @description En preparación o en ejecución y solo el equipo designado. Con rastro en la bitácora. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["quitarPreguntaLista"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/hallazgos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Hallazgos de una auditoría
+         * @description Con los abiertos contados por tipo. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["listarHallazgos"];
+        /**
+         * Cambia un hallazgo
+         * @description Lo ausente se conserva y el resultado debe cumplir las reglas completas. Exige `versionEsperada`. Pasar a NC mayor, dejar de serlo o cambiar su justificación es del líder. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["cambiarHallazgo"];
+        /**
+         * Registra un hallazgo
+         * @description Solo con la auditoría en ejecución y solo el equipo designado. Una no conformidad lleva el proceso (del alcance), el requisito incumplido (o la fila de la que sale), la evidencia objetiva y el enunciado; la mayor, además, la justificación de la gravedad y solo la registra el líder. Observación y oportunidad no son incumplimientos. Queda abierto: su tratamiento es de otro módulo. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["registrarHallazgo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/hallazgos/anulacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Anula un hallazgo
+         * @description Un hallazgo no se borra: se anula con un motivo cerrado mientras la auditoría está en ejecución. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["anularHallazgo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/informe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El informe emitido (copia congelada)
+         * @description La copia que se congeló al emitir, con su huella SHA-256. Es inmutable. 404 si todavía no se emitió. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["obtenerInforme"];
+        put?: never;
+        /**
+         * Emite el informe de la auditoría
+         * @description Lo emite el administrador SIG o el auditor líder, con la auditoría en ejecución. Exige todas las filas evaluadas, «no verificado» con su nota, un hallazgo activo por cada fila con resultado distinto de conforme y la fecha de la reunión de cierre; vuelve a comprobar la independencia del equipo. Congela una copia con conclusión y limitaciones y la deja inmutable. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["emitirInforme"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/cierre": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cierra la auditoría
+         * @description Solo el administrador SIG, después de emitir el informe. Cerrar no cierra los hallazgos: siguen abiertos hasta tratarse en el módulo de no conformidades. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["cerrarAuditoria"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditoria/panel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Prerrequisito de la Etapa 2 y cobertura de las auditorías
+         * @description Calcula y muestra si se cumple el prerrequisito (al menos una auditoría cerrada con informe que, con las demás cerradas del programa, cubra las cláusulas 4 a 10, los procesos del alcance y los controles aplicables de la Declaración aprobada) y qué falta como brecha. No decide la etapa. Orden de evaluación: 401, 403.
+         */
+        get: operations["obtenerPanelAuditoria"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3317,6 +3529,294 @@ export interface components {
                 ultimaFecha: string;
             }[];
             procesosDelAlcance: string[];
+        };
+        /** @enum {string} */
+        ResultadoItem: "por_evaluar" | "conforme" | "no_conforme" | "observacion" | "oportunidad" | "no_aplica" | "no_verificado";
+        /**
+         * @description Solo la no conformidad (mayor o menor) es un incumplimiento.
+         * @enum {string}
+         */
+        TipoHallazgo: "nc_mayor" | "nc_menor" | "observacion" | "oportunidad";
+        /** @enum {string} */
+        MotivoAnulacionHallazgo: "duplicado" | "error_de_registro" | "otro";
+        PreguntaLista: {
+            /** Format: uuid */
+            id: string;
+            texto: string;
+        };
+        FilaLista: {
+            /** Format: uuid */
+            id: string;
+            libreriaCodigo: string;
+            idEstable: string;
+            titulo: string | null;
+            guia: string | null;
+            agrupador: string | null;
+            resultado: components["schemas"]["ResultadoItem"];
+            nota: string | null;
+            version: number;
+            evaluadoPor: string | null;
+            evaluadoEn: string | null;
+            diagnostico: components["schemas"]["EstadoEvaluacion"] | null;
+            preguntas: components["schemas"]["PreguntaLista"][];
+        };
+        ListaVerificacion: {
+            /** Format: uuid */
+            auditoriaId: string;
+            filas: components["schemas"]["FilaLista"][];
+            avance: {
+                total: number;
+                evaluadas: number;
+                porResultado: {
+                    por_evaluar: number;
+                    conforme: number;
+                    no_conforme: number;
+                    observacion: number;
+                    oportunidad: number;
+                    no_aplica: number;
+                    no_verificado: number;
+                };
+            };
+        };
+        RegeneracionLista: {
+            total: number;
+            agregadas: number;
+            quitadas: number;
+            conservadas: number;
+            conservadasFueraDeAlcance: number;
+        };
+        ResultadoFilaEntrada: {
+            /** Format: uuid */
+            filaId: string;
+            versionEsperada: number;
+            /** @enum {string} */
+            resultado: "conforme" | "no_conforme" | "observacion" | "oportunidad" | "no_aplica" | "no_verificado";
+            nota?: string;
+        };
+        PreguntaEntrada: {
+            /** Format: uuid */
+            filaId: string;
+            texto: string;
+        };
+        PreguntaQuitar: {
+            /** Format: uuid */
+            preguntaId: string;
+        };
+        Hallazgo: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            itemId: string | null;
+            tipo: components["schemas"]["TipoHallazgo"];
+            procesoId: string | null;
+            libreriaCodigo: string | null;
+            idEstable: string | null;
+            enunciado: string;
+            evidencia: string;
+            justificacionGravedad: string | null;
+            /** @enum {string} */
+            estado: "abierto" | "anulado";
+            anulacionMotivo: components["schemas"]["MotivoAnulacionHallazgo"] | null;
+            /** Format: uuid */
+            registradoPor: string;
+            version: number;
+        };
+        ListaHallazgos: {
+            hallazgos: components["schemas"]["Hallazgo"][];
+            abiertos: {
+                nc_mayor: number;
+                nc_menor: number;
+                observacion: number;
+                oportunidad: number;
+            };
+        };
+        HallazgoEntrada: {
+            tipo: components["schemas"]["TipoHallazgo"];
+            /**
+             * Format: uuid
+             * @description Fila de la lista de la que sale; de ella se toma el requisito.
+             */
+            itemId?: string;
+            /** Format: uuid */
+            procesoId?: string;
+            libreriaCodigo?: string;
+            idEstable?: string;
+            enunciado: string;
+            evidencia: string;
+            /** @description Obligatoria en una NC mayor y solo en ella. */
+            justificacionGravedad?: string;
+        };
+        HallazgoCambios: {
+            /** Format: uuid */
+            hallazgoId: string;
+            versionEsperada: number;
+            tipo?: components["schemas"]["TipoHallazgo"];
+            procesoId?: string | null;
+            libreriaCodigo?: string | null;
+            idEstable?: string | null;
+            enunciado?: string;
+            evidencia?: string;
+            justificacionGravedad?: string | null;
+        };
+        HallazgoAnulacion: {
+            /** Format: uuid */
+            hallazgoId: string;
+            versionEsperada: number;
+            motivo: components["schemas"]["MotivoAnulacionHallazgo"];
+        };
+        InformeEntrada: {
+            versionEsperada: number;
+            /** @description Conclusión del equipo en palabras propias. */
+            conclusion: string;
+            /** @description Qué no se verificó y por qué. */
+            limitaciones?: string;
+        };
+        /** @description Copia congelada e inmutable del informe. Puede contener datos personales de un texto libre sin vía de rectificación (ADR 028). */
+        InformeContenido: {
+            version: number;
+            auditoria: {
+                codigo: string;
+                anio: number;
+                objetivo: string;
+                /** Format: date */
+                inicio: string;
+                /** Format: date */
+                fin: string;
+                reunionApertura: string | null;
+                reunionCierre: string | null;
+                combinada: boolean;
+                normas: string[];
+                capitulos: components["schemas"]["CapituloAlcance"][];
+                procesos: {
+                    codigo: string;
+                    nombre: string;
+                    transversal: boolean;
+                }[];
+            };
+            programa: {
+                anio: number;
+                objetivo: string;
+            };
+            equipo: {
+                /** Format: uuid */
+                personaId: string;
+                nombre: string;
+                /** @enum {string} */
+                rol: "lider" | "auditor";
+                excepcion: boolean;
+                autoautorizada: boolean;
+                excepcionMotivo: string | null;
+                excepcionMedida: string | null;
+            }[];
+            conteos: {
+                por_evaluar: number;
+                conforme: number;
+                no_conforme: number;
+                observacion: number;
+                oportunidad: number;
+                no_aplica: number;
+                no_verificado: number;
+                total: number;
+                cubiertas: number;
+            };
+            filas: {
+                libreriaCodigo: string;
+                idEstable: string;
+                titulo: string | null;
+                resultado: components["schemas"]["ResultadoItem"];
+                nota: string | null;
+            }[];
+            noVerificadas: {
+                libreriaCodigo: string;
+                idEstable: string;
+                nota: string | null;
+            }[];
+            hallazgos: {
+                codigo: string;
+                tipo: components["schemas"]["TipoHallazgo"];
+                proceso: string | null;
+                requisito: string | null;
+                enunciado: string;
+                evidencia: string;
+                justificacionGravedad: string | null;
+                /** @enum {string} */
+                estado: "abierto" | "anulado";
+            }[];
+            conclusion: string;
+            limitaciones: string | null;
+            emitidoPor: {
+                /** Format: uuid */
+                personaId: string;
+                nombre: string;
+            };
+            /** Format: date-time */
+            emitidoEn: string;
+        };
+        InformeAuditoria: {
+            /** Format: uuid */
+            auditoriaId: string;
+            codigo: string;
+            /** @description SHA-256 de la copia congelada. */
+            huella: string;
+            /** Format: uuid */
+            emitidoPor: string;
+            /** Format: date-time */
+            emitidoEn: string;
+            contenido: components["schemas"]["InformeContenido"];
+        };
+        CierreEntrada: {
+            versionEsperada: number;
+        };
+        CierreAuditoria: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            estado: components["schemas"]["EstadoAuditoria"];
+            /** Format: date-time */
+            cerradaEn: string;
+            version: number;
+        };
+        PanelAuditoria: {
+            programaAnio: number | null;
+            prerrequisito: {
+                /** @description Solo informa: este módulo no decide la etapa. */
+                cumple: boolean;
+                auditoriasCerradas: number;
+                brechas: {
+                    clausulas: string[];
+                    procesos: string[];
+                    controles: string[];
+                    /** @description Todavía no hay una Declaración de Aplicabilidad aprobada. */
+                    sinDeclaracion: boolean;
+                };
+            };
+            cobertura12Meses: {
+                clausulas: {
+                    total: number;
+                    cubiertas: number;
+                };
+                controles: {
+                    total: number;
+                    cubiertos: number;
+                    sinDeclaracion: boolean;
+                };
+                procesos: {
+                    total: number;
+                    cubiertos: number;
+                };
+            };
+            auditorias: {
+                total: number;
+                cerradas: number;
+                porEstado: {
+                    planificada: number;
+                    en_preparacion: number;
+                    en_ejecucion: number;
+                    informe_emitido: number;
+                    cerrada: number;
+                    cancelada: number;
+                };
+            };
         };
     };
     responses: {
@@ -6820,6 +7320,430 @@ export interface operations {
             403: components["responses"]["SinPermiso"];
             404: components["responses"]["NoEncontrado"];
             409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerListaVerificacion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La lista. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaVerificacion"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    regenerarListaVerificacion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lo que cambió. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegeneracionLista"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    evaluarFilaLista: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultadoFilaEntrada"];
+            };
+        };
+        responses: {
+            /** @description La fila evaluada. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilaLista"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    agregarPreguntaLista: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreguntaEntrada"];
+            };
+        };
+        responses: {
+            /** @description La pregunta agregada. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreguntaLista"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    quitarPreguntaLista: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreguntaQuitar"];
+            };
+        };
+        responses: {
+            /** @description La pregunta se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarHallazgos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los hallazgos. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaHallazgos"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarHallazgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HallazgoCambios"];
+            };
+        };
+        responses: {
+            /** @description El hallazgo actualizado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Hallazgo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    registrarHallazgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HallazgoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El hallazgo registrado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Hallazgo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    anularHallazgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HallazgoAnulacion"];
+            };
+        };
+        responses: {
+            /** @description El hallazgo anulado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Hallazgo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerInforme: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El informe. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InformeAuditoria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    emitirInforme: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InformeEntrada"];
+            };
+        };
+        responses: {
+            /** @description El informe emitido. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InformeAuditoria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cerrarAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CierreEntrada"];
+            };
+        };
+        responses: {
+            /** @description La auditoría cerrada. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CierreAuditoria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerPanelAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El panel. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanelAuditoria"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

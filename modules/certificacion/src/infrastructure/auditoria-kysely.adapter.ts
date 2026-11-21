@@ -8,8 +8,18 @@ import type {
   CambiosAuditoria,
   CambiosPrograma,
   CambiosProceso,
+  CambiosHallazgo,
   CapituloDeAlcance,
   FilaAuditoria,
+  FilaHallazgo,
+  FilaInforme,
+  FilaItem,
+  FilaPregunta,
+  HallazgoRepositoryPort,
+  InformeRepositoryPort,
+  ItemRepositoryPort,
+  NuevoHallazgo,
+  NuevoItem,
   FilaExclusion,
   FilaPrograma,
   FilaProceso,
@@ -23,6 +33,7 @@ import type {
   RelacionRepositoryPort,
 } from '../application/auditoria.port.js';
 import type { EstadoAuditoria, EstadoPrograma, MotivoCambioAuditoria } from '../domain/auditoria.js';
+import type { ResultadoItem } from '../domain/auditoria-lista.js';
 import type { RelacionProceso } from '../domain/independencia.js';
 import type { CambioRelevante, EstadoProceso, FrecuenciaProceso, ImportanciaProceso } from '../domain/proceso.js';
 
@@ -454,5 +465,219 @@ export class AyudasKysely implements AyudasRepositoryPort {
         (select count(*)::int from hallazgo h where h.empresa_id = p.empresa_id and h.proceso_id = p.id and h.estado = 'abierto') as abiertos
       from proceso p where p.empresa_id = ${this.empresaId} and p.estado = 'vigente' order by p.numero`.execute(this.db);
     return r.rows.map((f) => ({ procesoId: f.proceso_id, ultimaAuditoria: f.ultima, hallazgosAbiertos: f.abiertos }));
+  }
+}
+
+// --- Lista de verificación, hallazgos e informe -------------------------------------------------------------------------------------
+
+interface FilaI {
+  id: string;
+  auditoria_id: string;
+  libreria_codigo: string;
+  libreria_version: string;
+  id_estable: string;
+  resultado: string;
+  nota: string | null;
+  evaluado_por: string | null;
+  evaluado_en: Date | null;
+  version: number;
+}
+const COLUMNAS_I = sql`id, auditoria_id, libreria_codigo, libreria_version, id_estable, resultado, nota, evaluado_por, evaluado_en, version`;
+
+export class ItemKysely implements ItemRepositoryPort {
+  constructor(
+    private readonly db: Kysely<unknown>,
+    private readonly empresaId: EmpresaId,
+  ) {}
+
+  private aDominio(f: FilaI): FilaItem {
+    return {
+      id: f.id,
+      auditoriaId: f.auditoria_id,
+      libreriaCodigo: f.libreria_codigo,
+      libreriaVersion: f.libreria_version,
+      idEstable: f.id_estable,
+      resultado: f.resultado as ResultadoItem,
+      nota: f.nota,
+      evaluadoPor: f.evaluado_por,
+      evaluadoEn: f.evaluado_en,
+      version: f.version,
+    };
+  }
+
+  async listar(auditoriaId: string): Promise<readonly FilaItem[]> {
+    const r = await sql<FilaI>`select ${COLUMNAS_I} from auditoria_item where empresa_id = ${this.empresaId} and auditoria_id = ${auditoriaId}
+      order by libreria_codigo, creado_en, id_estable`.execute(this.db);
+    return r.rows.map((f) => this.aDominio(f));
+  }
+
+  async obtener(id: string): Promise<FilaItem | null> {
+    const r = await sql<FilaI>`select ${COLUMNAS_I} from auditoria_item where empresa_id = ${this.empresaId} and id = ${id}`.execute(this.db);
+    return r.rows[0] ? this.aDominio(r.rows[0]) : null;
+  }
+
+  async listarDeCerradas(): Promise<readonly FilaItem[]> {
+    const r = await sql<FilaI>`select i.id, i.auditoria_id, i.libreria_codigo, i.libreria_version, i.id_estable, i.resultado, i.nota, i.evaluado_por, i.evaluado_en, i.version
+      from auditoria_item i join auditoria a on a.empresa_id = i.empresa_id and a.id = i.auditoria_id
+      where i.empresa_id = ${this.empresaId} and a.estado = 'cerrada'`.execute(this.db);
+    return r.rows.map((f) => this.aDominio(f));
+  }
+
+  async crearVarios(items: readonly NuevoItem[], usuarioId: string, ahora: Date): Promise<void> {
+    for (const n of items)
+      await sql`insert into auditoria_item (id, empresa_id, auditoria_id, libreria_codigo, libreria_version, id_estable, creado_por, creado_en, actualizado_por, actualizado_en)
+        values (${n.id}, ${this.empresaId}, ${n.auditoriaId}, ${n.libreriaCodigo}, ${n.libreriaVersion}, ${n.idEstable}, ${usuarioId}, ${ahora}, ${usuarioId}, ${ahora})
+        on conflict do nothing`.execute(this.db);
+  }
+
+  async quitarPorEvaluar(auditoriaId: string, claves: readonly { libreriaCodigo: string; idEstable: string }[]): Promise<number> {
+    let n = 0;
+    for (const k of claves) {
+      const r = await sql`delete from auditoria_item where empresa_id = ${this.empresaId} and auditoria_id = ${auditoriaId} and libreria_codigo = ${k.libreriaCodigo}
+        and id_estable = ${k.idEstable} and resultado = 'por_evaluar'`.execute(this.db);
+      n += Number(r.numAffectedRows ?? 0n);
+    }
+    return n;
+  }
+
+  async evaluar(id: string, r: { resultado: ResultadoItem; nota: string | null }, versionEsperada: number, usuarioId: string, ahora: Date): Promise<boolean> {
+    const x = await sql`update auditoria_item set resultado = ${r.resultado}, nota = ${r.nota}, evaluado_por = ${usuarioId}, evaluado_en = ${ahora},
+        version = version + 1, actualizado_por = ${usuarioId}, actualizado_en = ${ahora}
+      where empresa_id = ${this.empresaId} and id = ${id} and version = ${versionEsperada}`.execute(this.db);
+    return (x.numAffectedRows ?? 0n) === 1n;
+  }
+
+  async preguntas(auditoriaId: string): Promise<readonly FilaPregunta[]> {
+    const r = await sql<{ id: string; item_id: string; texto: string }>`select p.id, p.item_id, p.texto from auditoria_pregunta p
+      join auditoria_item i on i.empresa_id = p.empresa_id and i.id = p.item_id
+      where p.empresa_id = ${this.empresaId} and i.auditoria_id = ${auditoriaId} order by p.creado_en, p.id`.execute(this.db);
+    return r.rows.map((f) => ({ id: f.id, itemId: f.item_id, texto: f.texto }));
+  }
+
+  async agregarPregunta(p: FilaPregunta, usuarioId: string, ahora: Date): Promise<void> {
+    await sql`insert into auditoria_pregunta (id, empresa_id, item_id, texto, creado_por, creado_en) values (${p.id}, ${this.empresaId}, ${p.itemId}, ${p.texto}, ${usuarioId}, ${ahora})`.execute(this.db);
+  }
+
+  async quitarPregunta(auditoriaId: string, preguntaId: string): Promise<boolean> {
+    const r = await sql`delete from auditoria_pregunta p using auditoria_item i where p.empresa_id = ${this.empresaId} and p.id = ${preguntaId}
+      and i.empresa_id = p.empresa_id and i.id = p.item_id and i.auditoria_id = ${auditoriaId}`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+}
+
+interface FilaH {
+  id: string;
+  auditoria_id: string;
+  item_id: string | null;
+  numero: number;
+  codigo: string;
+  tipo: string;
+  proceso_id: string | null;
+  libreria_codigo: string | null;
+  id_estable: string | null;
+  enunciado: string;
+  evidencia: string;
+  justificacion_gravedad: string | null;
+  estado: string;
+  anulacion_motivo: string | null;
+  registrado_por: string;
+  version: number;
+}
+const COLUMNAS_H = sql`id, auditoria_id, item_id, numero, codigo, tipo, proceso_id, libreria_codigo, id_estable, enunciado, evidencia, justificacion_gravedad,
+  estado, anulacion_motivo, registrado_por, version`;
+const COLS_HALLAZGO: Readonly<Record<keyof CambiosHallazgo, string>> = {
+  tipo: 'tipo',
+  procesoId: 'proceso_id',
+  libreriaCodigo: 'libreria_codigo',
+  idEstable: 'id_estable',
+  enunciado: 'enunciado',
+  evidencia: 'evidencia',
+  justificacionGravedad: 'justificacion_gravedad',
+  estado: 'estado',
+  anulacionMotivo: 'anulacion_motivo',
+  anuladoPor: 'anulado_por',
+  anuladoEn: 'anulado_en',
+};
+
+export class HallazgoKysely implements HallazgoRepositoryPort {
+  constructor(
+    private readonly db: Kysely<unknown>,
+    private readonly empresaId: EmpresaId,
+  ) {}
+
+  private aDominio(f: FilaH): FilaHallazgo {
+    return {
+      id: f.id,
+      auditoriaId: f.auditoria_id,
+      itemId: f.item_id,
+      numero: f.numero,
+      codigo: f.codigo,
+      tipo: f.tipo as FilaHallazgo['tipo'],
+      procesoId: f.proceso_id,
+      libreriaCodigo: f.libreria_codigo,
+      idEstable: f.id_estable,
+      enunciado: f.enunciado,
+      evidencia: f.evidencia,
+      justificacionGravedad: f.justificacion_gravedad,
+      estado: f.estado as FilaHallazgo['estado'],
+      anulacionMotivo: f.anulacion_motivo as FilaHallazgo['anulacionMotivo'],
+      registradoPor: f.registrado_por,
+      version: f.version,
+    };
+  }
+
+  async listar(auditoriaId: string): Promise<readonly FilaHallazgo[]> {
+    const r = await sql<FilaH>`select ${COLUMNAS_H} from hallazgo where empresa_id = ${this.empresaId} and auditoria_id = ${auditoriaId} order by numero`.execute(this.db);
+    return r.rows.map((f) => this.aDominio(f));
+  }
+
+  async obtener(id: string): Promise<FilaHallazgo | null> {
+    const r = await sql<FilaH>`select ${COLUMNAS_H} from hallazgo where empresa_id = ${this.empresaId} and id = ${id}`.execute(this.db);
+    return r.rows[0] ? this.aDominio(r.rows[0]) : null;
+  }
+
+  async siguienteNumero(auditoriaId: string): Promise<number> {
+    const r = await sql<{ n: number }>`select coalesce(max(numero), 0)::int + 1 as n from hallazgo where empresa_id = ${this.empresaId} and auditoria_id = ${auditoriaId}`.execute(this.db);
+    return r.rows[0]?.n ?? 1;
+  }
+
+  async crear(h: NuevoHallazgo, usuarioId: string, ahora: Date): Promise<boolean> {
+    const r =
+      await sql`insert into hallazgo (id, empresa_id, auditoria_id, item_id, numero, tipo, proceso_id, libreria_codigo, id_estable, enunciado, evidencia,
+                          justificacion_gravedad, registrado_por, creado_por, creado_en, actualizado_por, actualizado_en)
+                        values (${h.id}, ${this.empresaId}, ${h.auditoriaId}, ${h.itemId}, ${h.numero}, ${h.tipo}, ${h.procesoId}, ${h.libreriaCodigo}, ${h.idEstable}, ${h.enunciado}, ${h.evidencia},
+                          ${h.justificacionGravedad}, ${usuarioId}, ${usuarioId}, ${ahora}, ${usuarioId}, ${ahora})
+                        on conflict do nothing`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+
+  async actualizar(id: string, cambios: CambiosHallazgo, versionEsperada: number, usuarioId: string, ahora: Date): Promise<boolean> {
+    const sets = asignaciones(cambios as Record<string, unknown>, COLS_HALLAZGO);
+    const r =
+      await sql`update hallazgo set ${sql.join([...sets, sql`version = version + 1`, sql`actualizado_por = ${usuarioId}`, sql`actualizado_en = ${ahora}`])}
+                          where empresa_id = ${this.empresaId} and id = ${id} and version = ${versionEsperada}`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
+  }
+}
+
+export class InformeKysely implements InformeRepositoryPort {
+  constructor(
+    private readonly db: Kysely<unknown>,
+    private readonly empresaId: EmpresaId,
+  ) {}
+
+  async obtener(auditoriaId: string): Promise<FilaInforme | null> {
+    const r = await sql<{ id: string; auditoria_id: string; contenido: unknown; huella: string; emitido_por: string; emitido_en: Date }>`
+      select id, auditoria_id, contenido, huella, emitido_por, emitido_en from auditoria_informe where empresa_id = ${this.empresaId} and auditoria_id = ${auditoriaId}`.execute(this.db);
+    const f = r.rows[0];
+    return f ? { id: f.id, auditoriaId: f.auditoria_id, contenido: f.contenido, huella: f.huella, emitidoPor: f.emitido_por, emitidoEn: f.emitido_en } : null;
+  }
+
+  async crear(i: { id: string; auditoriaId: string; contenido: unknown; huella: string }, usuarioId: string, ahora: Date): Promise<boolean> {
+    const r =
+      await sql`insert into auditoria_informe (id, empresa_id, auditoria_id, contenido, huella, emitido_por, emitido_en)
+                        values (${i.id}, ${this.empresaId}, ${i.auditoriaId}, ${JSON.stringify(i.contenido)}::jsonb, ${i.huella}, ${usuarioId}, ${ahora})
+                        on conflict do nothing`.execute(this.db);
+    return (r.numAffectedRows ?? 0n) === 1n;
   }
 }

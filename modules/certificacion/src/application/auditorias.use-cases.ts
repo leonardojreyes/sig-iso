@@ -27,6 +27,7 @@ import { exigirPermiso, identificar, validarUuid } from './comunes.js';
 import type { ContextoCertificacion, Reloj } from './contexto.js';
 import { administradoresActivos, traducirDominio } from './documentos.use-cases.js';
 import { ConflictoDeVersionError, ConflictoError, EntradaNoEncontradaError, ParametroInvalidoError } from './errores.js';
+import { generarLista } from './lista.use-cases.js';
 import { agrupadoresPorNorma } from './programas.use-cases.js';
 import type { UnidadDeTrabajoPort } from './unidad-de-trabajo.port.js';
 
@@ -82,7 +83,7 @@ export interface IndependenciaDto extends ResultadoIndependencia {
 const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
 /** Los procesos que entran al alcance de la auditoría, con «Gestión del SIG» si cubre las cláusulas 4 a 10. */
-const alcanceDeProcesos = async (
+export const alcanceDeProcesos = async (
   c: ContextoCertificacion,
   a: { normas: readonly string[]; procesosIds: readonly string[]; capitulos: readonly CapituloDeAlcance[] },
   porNorma: ReadonlyMap<string, readonly string[]>,
@@ -508,6 +509,7 @@ export class AvanzarAuditoriaUseCase {
     private readonly autorizacion: AutorizacionPort,
     private readonly catalogo: CatalogoLecturaPort,
     private readonly reloj: Reloj,
+    private readonly nuevoId: () => string = () => globalThis.crypto.randomUUID(),
   ) {}
 
   async ejecutar(e: {
@@ -538,7 +540,20 @@ export class AvanzarAuditoriaUseCase {
       if (bloqueo) throw new ConflictoError('transicion_no_permitida');
       if (hasta === 'en_preparacion' && (actual.normas.length === 0 || !actual.equipo.some((m) => m.rol === 'lider')))
         throw new ConflictoError('falta_lider_o_criterios');
+      // «En ejecución» exige la lista generada (se genera al pasar a «en preparación»).
+      if (hasta === 'en_ejecucion' && (await c.items.listar(id)).length === 0) throw new ConflictoError('lista_no_generada');
       if (!(await c.auditorias.actualizar(id, { estado: hasta }, version, usuarioId, ahora))) throw new ConflictoDeVersionError();
+      if (hasta === 'en_preparacion') {
+        const filas = await generarLista(c, actual, entradas, usuarioId, ahora, this.nuevoId);
+        await c.bitacora.registrar({
+          empresaId,
+          actor: { tipo: 'usuario', usuarioId },
+          accion: 'lista.generada',
+          resultado: 'ok',
+          objeto: `lista:${actual.codigo}`,
+          despues: { filas, agregadas: filas, quitadas: 0 },
+        });
+      }
       await c.bitacora.registrar({
         empresaId,
         actor: { tipo: 'usuario', usuarioId },

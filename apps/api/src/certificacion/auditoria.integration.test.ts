@@ -43,6 +43,19 @@ const RUTAS: [string, string, unknown][] = [
   ['GET', `/auditorias/${ID_FALSO}/independencia?personaId=${ID_FALSO}`, undefined],
   ['POST', `/auditorias/${ID_FALSO}/equipo`, { personaId: ID_FALSO, rol: 'lider' }],
   ['POST', `/auditorias/${ID_FALSO}/equipo/eliminacion`, { personaId: ID_FALSO }],
+  ['GET', `/auditorias/${ID_FALSO}/lista`, undefined],
+  ['POST', `/auditorias/${ID_FALSO}/lista/regeneracion`, undefined],
+  ['PUT', `/auditorias/${ID_FALSO}/lista/resultado`, { filaId: ID_FALSO, versionEsperada: 1, resultado: 'conforme' }],
+  ['POST', `/auditorias/${ID_FALSO}/lista/preguntas`, { filaId: ID_FALSO, texto: 'x' }],
+  ['POST', `/auditorias/${ID_FALSO}/lista/preguntas/eliminacion`, { preguntaId: ID_FALSO }],
+  ['GET', `/auditorias/${ID_FALSO}/hallazgos`, undefined],
+  ['POST', `/auditorias/${ID_FALSO}/hallazgos`, { tipo: 'observacion', enunciado: 'x', evidencia: 'y' }],
+  ['PUT', `/auditorias/${ID_FALSO}/hallazgos`, { hallazgoId: ID_FALSO, versionEsperada: 1, enunciado: 'x' }],
+  ['POST', `/auditorias/${ID_FALSO}/hallazgos/anulacion`, { hallazgoId: ID_FALSO, versionEsperada: 1, motivo: 'duplicado' }],
+  ['GET', `/auditorias/${ID_FALSO}/informe`, undefined],
+  ['POST', `/auditorias/${ID_FALSO}/informe`, { versionEsperada: 1, conclusion: 'x' }],
+  ['POST', `/auditorias/${ID_FALSO}/cierre`, { versionEsperada: 1 }],
+  ['GET', '/auditoria/panel', undefined],
 ];
 
 describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
@@ -387,6 +400,118 @@ describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
         expect(await json(cruzada)).toEqual(await json(inexistente));
       }
       expect(estado.auditoriaEstado.auditorias.get(a.id)).toMatchObject({ version: 1, estado: 'planificada' });
+    });
+  });
+
+  describe('lista de verificación, hallazgos, informe y panel', () => {
+    const tAuditor = () => token(A, AUDITOR);
+    /** Auditoría con líder, en ejecución: la lista se generó al pasar a preparación (tres filas del catálogo de prueba). */
+    const enEjecucion = async () => {
+      const proceso = await crear();
+      const pr = await json(await pedir('/programas', await tAdmin(), 'POST', { anio: 2026, objetivo: 'Programa 2026', normas: ['ejemplo-ha', 'iso-27001-2022-anexo-a'] }));
+      const a0 = await json(
+        await pedir(`/programas/${pr.id}/auditorias`, await tAdmin(), 'POST', {
+          objetivo: 'Verificar el SGSI',
+          inicio: '2026-11-10',
+          fin: '2026-11-25',
+          reunionApertura: '2026-11-10',
+          reunionCierre: '2026-11-25',
+          normas: ['ejemplo-ha', 'iso-27001-2022-anexo-a'],
+          procesosIds: [proceso.id],
+        }),
+      );
+      expect((await pedir(`/auditorias/${a0.id}/equipo`, await tAdmin(), 'POST', { personaId: AUDITOR, rol: 'lider' })).status).toBe(201);
+      const prep = await json(await pedir(`/auditorias/${a0.id}/avance`, await tAdmin(), 'POST', { versionEsperada: 1, estado: 'en_preparacion' }));
+      const ejec = await json(await pedir(`/auditorias/${a0.id}/avance`, await tAdmin(), 'POST', { versionEsperada: prep.version, estado: 'en_ejecucion' }));
+      return { proceso, a: ejec };
+    };
+
+    it('la lista se genera al pasar a preparación, se evalúa solo por el equipo y cumple el contrato', async () => {
+      const { a } = await enEjecucion();
+      const lista = await json(await pedir(`/auditorias/${a.id}/lista`, await tColab()));
+      valida('ListaVerificacion', lista);
+      expect(lista.filas).toHaveLength(3);
+      expect(lista.avance).toMatchObject({ total: 3, evaluadas: 0 });
+      const fila = lista.filas[0];
+      const r = await pedir(`/auditorias/${a.id}/lista/resultado`, await tAuditor(), 'PUT', { filaId: fila.id, versionEsperada: 1, resultado: 'no_conforme', nota: 'NOTA-PRIVADA no hay registro' });
+      expect(r.status).toBe(200);
+      valida('FilaLista', await json(r));
+      for (const mal of [{ filaId: fila.id, versionEsperada: 2, resultado: 'no_conforme' }, { filaId: fila.id, versionEsperada: 2, resultado: 'por_evaluar' }, { filaId: 'no-uuid', versionEsperada: 1, resultado: 'conforme' }])
+        await problema(await pedir(`/auditorias/${a.id}/lista/resultado`, await tAuditor(), 'PUT', mal), 400, 'parametro_invalido');
+      await problema(await pedir(`/auditorias/${a.id}/lista/resultado`, await tAuditor(), 'PUT', { filaId: fila.id, versionEsperada: 1, resultado: 'conforme' }), 409, 'conflicto');
+      // el administrador que no está en el equipo no evalúa, aunque pueda planificar
+      estado.conceder(ADMIN, A, 'auditoria.ejecutar');
+      await problema(await pedir(`/auditorias/${a.id}/lista/resultado`, await tAdmin(), 'PUT', { filaId: lista.filas[1].id, versionEsperada: 1, resultado: 'conforme' }), 403, 'sin_permiso');
+      expect(JSON.stringify(estado.eventos)).not.toContain('NOTA-PRIVADA');
+    });
+
+    it('preguntas propias: 201, 204, tope de 5 y 404', async () => {
+      const { a } = await enEjecucion();
+      const fila = (await json(await pedir(`/auditorias/${a.id}/lista`, await tColab()))).filas[0];
+      let ultima: Record<string, unknown> = {};
+      for (let i = 1; i <= 5; i += 1) {
+        const r = await pedir(`/auditorias/${a.id}/lista/preguntas`, await tAuditor(), 'POST', { filaId: fila.id, texto: `Pregunta ${i}` });
+        expect(r.status).toBe(201);
+        ultima = await json(r);
+        valida('PreguntaLista', ultima);
+      }
+      await problema(await pedir(`/auditorias/${a.id}/lista/preguntas`, await tAuditor(), 'POST', { filaId: fila.id, texto: 'una más' }), 409, 'conflicto');
+      expect((await pedir(`/auditorias/${a.id}/lista/preguntas/eliminacion`, await tAuditor(), 'POST', { preguntaId: ultima.id })).status).toBe(204);
+      await problema(await pedir(`/auditorias/${a.id}/lista/preguntas/eliminacion`, await tAuditor(), 'POST', { preguntaId: ultima.id }), 404, 'no_encontrado');
+    });
+
+    it('hallazgos: una NC lleva proceso y requisito; la mayor, la justificación del líder; se anulan, no se borran', async () => {
+      const { a, proceso } = await enEjecucion();
+      const nc = { tipo: 'nc_menor', procesoId: proceso.id, libreriaCodigo: 'iso-27001-2022-anexo-a', idEstable: 'a27-5-1', enunciado: 'ENUNCIADO-PRIVADO falta la política', evidencia: 'EVIDENCIA-PRIVADA carpeta vacía' };
+      const r = await pedir(`/auditorias/${a.id}/hallazgos`, await tAuditor(), 'POST', nc);
+      expect(r.status).toBe(201);
+      const h = await json(r);
+      valida('Hallazgo', h);
+      expect(h).toMatchObject({ codigo: 'H-001', estado: 'abierto', tipo: 'nc_menor' });
+      for (const mal of [{ ...nc, procesoId: undefined }, { ...nc, tipo: 'nc_mayor' }, { ...nc, libreriaCodigo: 'otra', idEstable: 'zz' }, { tipo: 'observacion', enunciado: '', evidencia: 'y' }])
+        await problema(await pedir(`/auditorias/${a.id}/hallazgos`, await tAuditor(), 'POST', mal), 400, 'parametro_invalido');
+      const c = await pedir(`/auditorias/${a.id}/hallazgos`, await tAuditor(), 'PUT', { hallazgoId: h.id, versionEsperada: 1, tipo: 'nc_mayor', justificacionGravedad: 'falla el sistema' });
+      expect(c.status).toBe(200);
+      expect(await json(c)).toMatchObject({ tipo: 'nc_mayor', version: 2 });
+      await problema(await pedir(`/auditorias/${a.id}/hallazgos`, await tAuditor(), 'PUT', { hallazgoId: h.id, versionEsperada: 1, enunciado: 'viejo' }), 409, 'conflicto');
+      const x = await pedir(`/auditorias/${a.id}/hallazgos/anulacion`, await tAuditor(), 'POST', { hallazgoId: h.id, versionEsperada: 2, motivo: 'duplicado' });
+      expect(x.status).toBe(200);
+      expect(await json(x)).toMatchObject({ estado: 'anulado', anulacionMotivo: 'duplicado' });
+      const lista = await json(await pedir(`/auditorias/${a.id}/hallazgos`, await tColab()));
+      valida('ListaHallazgos', lista);
+      expect(lista.hallazgos).toHaveLength(1);
+      const hechos = JSON.stringify(estado.eventos);
+      for (const secreto of ['ENUNCIADO-PRIVADO', 'EVIDENCIA-PRIVADA', 'falla el sistema']) expect(hechos).not.toContain(secreto);
+    });
+
+    it('informe y cierre: 409 hasta evaluar todo, 201 al emitir, inmutable, y solo el administrador cierra; el panel lo refleja', async () => {
+      const { a, proceso } = await enEjecucion();
+      const filas = (await json(await pedir(`/auditorias/${a.id}/lista`, await tColab()))).filas;
+      await problema(await pedir(`/auditorias/${a.id}/informe`, await tAuditor(), 'POST', { versionEsperada: a.version, conclusion: 'Conforme' }), 409, 'conflicto');
+      await problema(await pedir(`/auditorias/${a.id}/informe`, await tAuditor()), 404, 'no_encontrado');
+      for (const f of filas) expect((await pedir(`/auditorias/${a.id}/lista/resultado`, await tAuditor(), 'PUT', { filaId: f.id, versionEsperada: 1, resultado: 'conforme' })).status).toBe(200);
+      await problema(await pedir(`/auditorias/${a.id}/informe`, await tAuditor(), 'POST', { versionEsperada: a.version, conclusion: '' }), 400, 'parametro_invalido');
+      void proceso;
+      const r = await pedir(`/auditorias/${a.id}/informe`, await tAuditor(), 'POST', { versionEsperada: a.version, conclusion: 'CONCLUSION-PRIVADA el sistema es conforme', limitaciones: 'No hubo' });
+      expect(r.status).toBe(201);
+      const informe = await json(r);
+      valida('InformeAuditoria', informe);
+      expect(informe.huella).toMatch(/^[0-9a-f]{64}$/);
+      expect(informe.contenido.conteos).toMatchObject({ total: 3, conforme: 3 });
+      expect(estado.eventos.at(-1)).toMatchObject({ accion: 'informe.emitido', objetoVersion: informe.huella });
+      expect(JSON.stringify(estado.eventos)).not.toContain('CONCLUSION-PRIVADA');
+      const otra = await json(await pedir(`/auditorias/${a.id}/informe`, await tColab()));
+      expect(otra.huella).toBe(informe.huella);
+      await problema(await pedir(`/auditorias/${a.id}/informe`, await tAuditor(), 'POST', { versionEsperada: a.version + 1, conclusion: 'otra' }), 409, 'conflicto');
+      await problema(await pedir(`/auditorias/${a.id}/cierre`, await tAuditor(), 'POST', { versionEsperada: a.version + 1 }), 403, 'sin_permiso');
+      const c = await pedir(`/auditorias/${a.id}/cierre`, await tAdmin(), 'POST', { versionEsperada: a.version + 1 });
+      expect(c.status).toBe(200);
+      valida('CierreAuditoria', await json(c));
+      await problema(await pedir(`/auditorias/${a.id}/cierre`, await tAdmin(), 'POST', { versionEsperada: a.version + 2 }), 409, 'conflicto');
+      const panel = await json(await pedir('/auditoria/panel', await tColab()));
+      valida('PanelAuditoria', panel);
+      expect(panel).toMatchObject({ programaAnio: 2026, auditorias: { total: 1, cerradas: 1 }, prerrequisito: { auditoriasCerradas: 1, cumple: false } });
+      expect(panel.prerrequisito.brechas.sinDeclaracion).toBe(true); // todavía no hay Declaración aprobada
     });
   });
 });

@@ -1,5 +1,5 @@
 // Composición de producción: arma el verificador de tokens, el registro de hechos y los casos de uso a partir del entorno.
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
@@ -158,7 +158,7 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       guardarReferencia: new GuardarReferenciaUseCase(unidadCertificacion, autorizacion, reloj),
       quitarReferencia: new QuitarReferenciaUseCase(unidadCertificacion, autorizacion),
       documentos: crearCasosDocumentales(unidadCertificacion, autorizacion, catalogo, almacen, reloj, () => randomUUID()),
-      auditoria: crearCasosAuditoria(unidadCertificacion, autorizacion, catalogo, reloj, () => randomUUID()),
+      auditoria: crearCasosAuditoria(unidadCertificacion, autorizacion, catalogo, reloj, () => randomUUID(), (texto) => createHash('sha256').update(texto, 'utf8').digest('hex')),
     },
     personas: {
       solicitarAcceso: new SolicitarAccesoUseCase(unidadPersonas, (n) => crypto.getRandomValues(new Uint8Array(n)), () => randomUUID()),

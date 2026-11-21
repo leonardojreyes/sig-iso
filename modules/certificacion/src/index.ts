@@ -52,3 +52,8 @@ export { AgregarExclusionUseCase, AprobarProgramaUseCase, CambiarProgramaUseCase
 export type { AuditoriaRepositoryPort, AyudasRepositoryPort, ProgramaRepositoryPort } from './application/auditoria.port.js';
 export { calcularPendientesDePrograma, cubreClausulas4a10, EXCLUSIONES_POR_PROGRAMA_MAX, NORMAS_POR_PROGRAMA_MAX, NOTA_EXCLUSION_MAX } from './domain/auditoria-programa.js';
 export { AvanzarAuditoriaUseCase, CambiarAuditoriaUseCase, CancelarAuditoriaUseCase, CAPITULOS_POR_AUDITORIA_MAX, ComprobarIndependenciaUseCase, CrearAuditoriaUseCase, DesignarMiembroUseCase, EQUIPO_MAX, ObtenerAuditoriaUseCase, PROCESOS_POR_AUDITORIA_MAX, QuitarMiembroUseCase, ReprogramarAuditoriaUseCase, type AuditoriaDto, type IndependenciaDto, type MiembroDto } from './application/auditorias.use-cases.js';
+export { AgregarPreguntaUseCase, EvaluarFilaUseCase, ListarListaUseCase, QuitarPreguntaUseCase, RegenerarListaUseCase, type FilaListaDto, type ListaVerificacionDto, type PreguntaDto, type ResultadoRegeneracionDto } from './application/lista.use-cases.js';
+export { AnularHallazgoUseCase, CambiarHallazgoUseCase, ListarHallazgosUseCase, RegistrarHallazgoUseCase, type HallazgoDto, type ListaHallazgosDto } from './application/hallazgos.use-cases.js';
+export { CerrarAuditoriaUseCase, EmitirInformeUseCase, ObtenerInformeUseCase, ObtenerPanelAuditoriaUseCase, type HashTexto, type InformeContenido, type InformeDto, type PanelAuditoriaDto } from './application/informe.use-cases.js';
+export { esNoConformidad, MOTIVOS_ANULACION, TIPOS_HALLAZGO } from './domain/hallazgo.js';
+export { serializarCanonico } from './domain/canonico.js';

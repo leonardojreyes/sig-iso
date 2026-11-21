@@ -28,6 +28,7 @@ const FORMA_POR_TIPO: Readonly<Record<string, RegExp>> = {
   item: /^AI-[0-9]{4}-[0-9]{2,3}\.[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/,
   hallazgo: /^AI-[0-9]{4}-[0-9]{2,3}\.H-[0-9]{3,6}$/,
   informe: /^AI-[0-9]{4}-[0-9]{2,3}$/,
+  pregunta: /^AI-[0-9]{4}-[0-9]{2,3}\.[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/,
 };
 const objetoConForma = (objeto: string): boolean => {
   const [tipo = '', ...resto] = objeto.split(':');

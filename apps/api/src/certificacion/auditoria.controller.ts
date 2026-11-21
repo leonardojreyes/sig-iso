@@ -4,8 +4,8 @@ import type { IdentidadVerificada } from '@sig/autenticacion';
 import { Identidad } from '../autenticacion/identidad.js';
 import { ParametroIdRuta, RespuestasProblema } from '../documentacion.js';
 import { AUDITORIA, type CasosAuditoria } from './auditoria.casos.js';
-import { CuerpoAuditoriaAvance, CuerpoAuditoriaCambios, CuerpoAuditoriaCancelacion, CuerpoAuditoriaEntrada, CuerpoAuditoriaReprogramacion, CuerpoMiembroEntrada, CuerpoMiembroQuitar, CuerpoExclusionEntrada, CuerpoExclusionQuitar, CuerpoProcesoCambios, CuerpoProcesoEntrada, CuerpoProgramaCambios, CuerpoProgramaEntrada, CuerpoProgramaVersion, CuerpoRelacionEntrada } from './cuerpos-auditoria.dto.js';
-import { AUDITORIA as AUDITORIA_ESQUEMA, INDEPENDENCIA, MIEMBRO_EQUIPO, DETALLE_PROGRAMA, EXCLUSION_PROGRAMA, LISTA_PROCESOS, LISTA_PROGRAMAS, LISTA_RELACIONES, PROCESO, PROGRAMA, RELACION_PROCESO } from './esquemas-auditoria.js';
+import { CuerpoCierreEntrada, CuerpoHallazgoAnulacion, CuerpoHallazgoCambios, CuerpoHallazgoEntrada, CuerpoInformeEntrada, CuerpoPreguntaEntrada, CuerpoPreguntaQuitar, CuerpoResultadoFila, CuerpoAuditoriaAvance, CuerpoAuditoriaCambios, CuerpoAuditoriaCancelacion, CuerpoAuditoriaEntrada, CuerpoAuditoriaReprogramacion, CuerpoMiembroEntrada, CuerpoMiembroQuitar, CuerpoExclusionEntrada, CuerpoExclusionQuitar, CuerpoProcesoCambios, CuerpoProcesoEntrada, CuerpoProgramaCambios, CuerpoProgramaEntrada, CuerpoProgramaVersion, CuerpoRelacionEntrada } from './cuerpos-auditoria.dto.js';
+import { CIERRE_AUDITORIA, FILA_LISTA, HALLAZGO, INFORME_AUDITORIA, LISTA_HALLAZGOS, LISTA_VERIFICACION, PANEL_AUDITORIA, PREGUNTA_LISTA, REGENERACION_LISTA, AUDITORIA as AUDITORIA_ESQUEMA, INDEPENDENCIA, MIEMBRO_EQUIPO, DETALLE_PROGRAMA, EXCLUSION_PROGRAMA, LISTA_PROCESOS, LISTA_PROGRAMAS, LISTA_RELACIONES, PROCESO, PROGRAMA, RELACION_PROCESO } from './esquemas-auditoria.js';
 
 type Cuerpo = Record<string, unknown>;
 type Respuesta = { status(codigo: number): unknown };
@@ -301,5 +301,144 @@ export class AuditoriaController {
   @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
   async quitarMiembro(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown): Promise<void> {
     await this.c.quitarMiembro.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['personaId']) });
+  }
+
+  @Get('auditorias/:id/lista')
+  @ApiOperation({ operationId: 'obtenerListaVerificacion' })
+  @ParametroIdRuta()
+  @ApiOkResponse({ schema: LISTA_VERIFICACION })
+  @RespuestasProblema(400, 401, 403, 404, 429, 500)
+  async obtenerLista(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada) {
+    return this.c.obtenerLista.ejecutar({ ...this.ids(identidad), id });
+  }
+
+  @Post('auditorias/:id/lista/regeneracion')
+  @HttpCode(200)
+  @ApiOperation({ operationId: 'regenerarListaVerificacion' })
+  @ParametroIdRuta()
+  @ApiOkResponse({ schema: REGENERACION_LISTA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async regenerarLista(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada) {
+    return this.c.regenerarLista.ejecutar({ ...this.ids(identidad), id });
+  }
+
+  @Put('auditorias/:id/lista/resultado')
+  @ApiOperation({ operationId: 'evaluarFilaLista' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoResultadoFila })
+  @ApiOkResponse({ schema: FILA_LISTA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async evaluarFila(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.evaluarFila.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['filaId', 'versionEsperada', 'resultado', 'nota']) });
+  }
+
+  @Post('auditorias/:id/lista/preguntas')
+  @HttpCode(201)
+  @ApiOperation({ operationId: 'agregarPreguntaLista' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoPreguntaEntrada })
+  @ApiCreatedResponse({ schema: PREGUNTA_LISTA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async agregarPregunta(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.agregarPregunta.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['filaId', 'texto']) });
+  }
+
+  @Post('auditorias/:id/lista/preguntas/eliminacion')
+  @HttpCode(204)
+  @ApiOperation({ operationId: 'quitarPreguntaLista' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoPreguntaQuitar })
+  @ApiNoContentResponse()
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async quitarPregunta(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown): Promise<void> {
+    await this.c.quitarPregunta.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['preguntaId']) });
+  }
+
+  @Get('auditorias/:id/hallazgos')
+  @ApiOperation({ operationId: 'listarHallazgos' })
+  @ParametroIdRuta()
+  @ApiOkResponse({ schema: LISTA_HALLAZGOS })
+  @RespuestasProblema(400, 401, 403, 404, 429, 500)
+  async listarHallazgos(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada) {
+    return this.c.listarHallazgos.ejecutar({ ...this.ids(identidad), id });
+  }
+
+  @Post('auditorias/:id/hallazgos')
+  @HttpCode(201)
+  @ApiOperation({ operationId: 'registrarHallazgo' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoHallazgoEntrada })
+  @ApiCreatedResponse({ schema: HALLAZGO })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async registrarHallazgo(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.registrarHallazgo.ejecutar({
+      ...this.ids(identidad),
+      id,
+      ...elegir(cuerpo, ['itemId', 'tipo', 'procesoId', 'libreriaCodigo', 'idEstable', 'enunciado', 'evidencia', 'justificacionGravedad']),
+    });
+  }
+
+  @Put('auditorias/:id/hallazgos')
+  @ApiOperation({ operationId: 'cambiarHallazgo' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoHallazgoCambios })
+  @ApiOkResponse({ schema: HALLAZGO })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async cambiarHallazgo(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.cambiarHallazgo.ejecutar({
+      ...this.ids(identidad),
+      id,
+      ...elegir(cuerpo, ['hallazgoId', 'versionEsperada', 'tipo', 'procesoId', 'libreriaCodigo', 'idEstable', 'enunciado', 'evidencia', 'justificacionGravedad']),
+    });
+  }
+
+  @Post('auditorias/:id/hallazgos/anulacion')
+  @HttpCode(200)
+  @ApiOperation({ operationId: 'anularHallazgo' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoHallazgoAnulacion })
+  @ApiOkResponse({ schema: HALLAZGO })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async anularHallazgo(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.anularHallazgo.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['hallazgoId', 'versionEsperada', 'motivo']) });
+  }
+
+  @Get('auditorias/:id/informe')
+  @ApiOperation({ operationId: 'obtenerInforme' })
+  @ParametroIdRuta()
+  @ApiOkResponse({ schema: INFORME_AUDITORIA })
+  @RespuestasProblema(400, 401, 403, 404, 429, 500)
+  async obtenerInforme(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada) {
+    return this.c.obtenerInforme.ejecutar({ ...this.ids(identidad), id });
+  }
+
+  @Post('auditorias/:id/informe')
+  @HttpCode(201)
+  @ApiOperation({ operationId: 'emitirInforme' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoInformeEntrada })
+  @ApiCreatedResponse({ schema: INFORME_AUDITORIA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async emitirInforme(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.emitirInforme.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['versionEsperada', 'conclusion', 'limitaciones']) });
+  }
+
+  @Post('auditorias/:id/cierre')
+  @HttpCode(200)
+  @ApiOperation({ operationId: 'cerrarAuditoria' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoCierreEntrada })
+  @ApiOkResponse({ schema: CIERRE_AUDITORIA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async cerrarAuditoria(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.cerrarAuditoria.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['versionEsperada']) });
+  }
+
+  @Get('auditoria/panel')
+  @ApiOperation({ operationId: 'obtenerPanelAuditoria' })
+  @ApiOkResponse({ schema: PANEL_AUDITORIA })
+  @RespuestasProblema(401, 403, 429, 500)
+  async panel(@Identidad() identidad: IdentidadVerificada) {
+    return this.c.panel.ejecutar(this.ids(identidad));
   }
 }

@@ -1,5 +1,6 @@
 import type { CambioRelevante, EstadoProceso, FrecuenciaProceso, ImportanciaProceso } from '../domain/proceso.js';
 import type { EstadoAuditoria, EstadoPrograma, MotivoCambioAuditoria } from '../domain/auditoria.js';
+import type { ResultadoItem } from '../domain/auditoria-lista.js';
 import type { RelacionProceso } from '../domain/independencia.js';
 
 // Puertos de salida de la auditoría interna (ADR 040). Todo ocurre dentro de la unidad de trabajo: empresa fijada y bitácora en la misma
@@ -219,4 +220,116 @@ export interface AyudaDeProceso {
 }
 export interface AyudasRepositoryPort {
   porProceso(): Promise<readonly AyudaDeProceso[]>;
+}
+
+// --- Lista de verificación, hallazgos e informe -------------------------------------------------------------------------------------
+
+export interface FilaItem {
+  readonly id: string;
+  readonly auditoriaId: string;
+  readonly libreriaCodigo: string;
+  /** Identificador de la versión de la librería con que se generó la lista (queda fijada). */
+  readonly libreriaVersion: string;
+  readonly idEstable: string;
+  readonly resultado: ResultadoItem;
+  readonly nota: string | null;
+  readonly evaluadoPor: string | null;
+  readonly evaluadoEn: Date | null;
+  readonly version: number;
+}
+export interface NuevoItem {
+  readonly id: string;
+  readonly auditoriaId: string;
+  readonly libreriaCodigo: string;
+  readonly libreriaVersion: string;
+  readonly idEstable: string;
+}
+export interface FilaPregunta {
+  readonly id: string;
+  readonly itemId: string;
+  readonly texto: string;
+}
+
+export interface ItemRepositoryPort {
+  listar(auditoriaId: string): Promise<readonly FilaItem[]>;
+  obtener(id: string): Promise<FilaItem | null>;
+  /** Las filas de todas las auditorías cerradas (para la cobertura y el prerrequisito). */
+  listarDeCerradas(): Promise<readonly FilaItem[]>;
+  crearVarios(items: readonly NuevoItem[], usuarioId: string, ahora: Date): Promise<void>;
+  /** Quita filas «por evaluar» (nunca una ya evaluada). Devuelve cuántas quitó. */
+  quitarPorEvaluar(auditoriaId: string, claves: readonly { libreriaCodigo: string; idEstable: string }[]): Promise<number>;
+  /** Concurrencia optimista por versión: `false` si otra persona cambió la fila antes. */
+  evaluar(id: string, r: { resultado: ResultadoItem; nota: string | null }, versionEsperada: number, usuarioId: string, ahora: Date): Promise<boolean>;
+  preguntas(auditoriaId: string): Promise<readonly FilaPregunta[]>;
+  agregarPregunta(p: FilaPregunta, usuarioId: string, ahora: Date): Promise<void>;
+  quitarPregunta(auditoriaId: string, preguntaId: string): Promise<boolean>;
+}
+
+export type TipoHallazgo = 'nc_mayor' | 'nc_menor' | 'observacion' | 'oportunidad';
+export interface FilaHallazgo {
+  readonly id: string;
+  readonly auditoriaId: string;
+  readonly itemId: string | null;
+  readonly numero: number;
+  readonly codigo: string;
+  readonly tipo: TipoHallazgo;
+  readonly procesoId: string | null;
+  readonly libreriaCodigo: string | null;
+  readonly idEstable: string | null;
+  readonly enunciado: string;
+  readonly evidencia: string;
+  readonly justificacionGravedad: string | null;
+  readonly estado: 'abierto' | 'anulado';
+  readonly anulacionMotivo: 'duplicado' | 'error_de_registro' | 'otro' | null;
+  readonly registradoPor: string;
+  readonly version: number;
+}
+export interface NuevoHallazgo {
+  readonly id: string;
+  readonly auditoriaId: string;
+  readonly itemId: string | null;
+  readonly numero: number;
+  readonly tipo: TipoHallazgo;
+  readonly procesoId: string | null;
+  readonly libreriaCodigo: string | null;
+  readonly idEstable: string | null;
+  readonly enunciado: string;
+  readonly evidencia: string;
+  readonly justificacionGravedad: string | null;
+}
+export interface CambiosHallazgo {
+  readonly tipo?: TipoHallazgo;
+  readonly procesoId?: string | null;
+  readonly libreriaCodigo?: string | null;
+  readonly idEstable?: string | null;
+  readonly enunciado?: string;
+  readonly evidencia?: string;
+  readonly justificacionGravedad?: string | null;
+  readonly estado?: 'anulado';
+  readonly anulacionMotivo?: 'duplicado' | 'error_de_registro' | 'otro';
+  readonly anuladoPor?: string;
+  readonly anuladoEn?: Date;
+}
+export interface HallazgoRepositoryPort {
+  listar(auditoriaId: string): Promise<readonly FilaHallazgo[]>;
+  obtener(id: string): Promise<FilaHallazgo | null>;
+  siguienteNumero(auditoriaId: string): Promise<number>;
+  /** `false` si el correlativo chocó (lo garantiza la base). */
+  crear(h: NuevoHallazgo, usuarioId: string, ahora: Date): Promise<boolean>;
+  actualizar(id: string, cambios: CambiosHallazgo, versionEsperada: number, usuarioId: string, ahora: Date): Promise<boolean>;
+}
+
+export interface FilaInforme {
+  readonly id: string;
+  readonly auditoriaId: string;
+  /** La copia congelada (JSON). Inmutable. */
+  readonly contenido: unknown;
+  readonly huella: string;
+  readonly emitidoPor: string;
+  readonly emitidoEn: Date;
+}
+export interface InformeRepositoryPort {
+  obtener(auditoriaId: string): Promise<FilaInforme | null>;
+  /** `false` si la auditoría ya tiene informe. */
+  crear(i: { id: string; auditoriaId: string; contenido: unknown; huella: string }, usuarioId: string, ahora: Date): Promise<boolean>;
 }
