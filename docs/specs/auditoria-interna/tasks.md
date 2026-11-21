@@ -1,7 +1,8 @@
 # Tareas — Auditoría interna
 
 - **Spec:** [spec.md](spec.md) (con los ajustes de la sección 11) · **Rama:** `feature/auditoria-interna` · **Plan:** no hay; proceso ágil, las decisiones van en el ADR 040 de la tarea 1.
-- **Estado:** **25 tareas** en 5 fases, **~2 días** (estimación de la hoja de ruta; hasta 2,5 si el cálculo de cobertura da trabajo). Pendiente de aprobación.
+- **Estado:** **25 tareas** en 5 fases, **~2 días**. **Aprobado el 2026-11-19** con la propuesta por omisión. **Hechas 1 a 11** (rama `feature/auditoria-interna`); siguen las tareas 12 a 25.
+- **Ajustes al orden** (decididos al implementar): el contrato de cada grupo de operaciones va **junto con su controlador** (tareas 9 a 11), porque la prueba de conformidad compara ambos; la tarea 8 quedó en permisos `auditoria.*` y acciones de bitácora. Los puertos y adaptadores de programa y auditorías se hicieron en la tarea 10 y la 11 solo agregó casos de uso. La **cobertura real** (auditorías cerradas) llega con la tarea 15; el programa ya muestra la cobertura **planificada** (lo que entra al año y lo que falta justificar).
 
 ## Cómo leer este documento
 
