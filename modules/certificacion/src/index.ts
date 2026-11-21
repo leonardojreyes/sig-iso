@@ -50,4 +50,5 @@ export { CAMBIOS_RELEVANTES, codigoDeProceso, ESTADOS_PROCESO, FRECUENCIAS_PROCE
 export { RELACIONES_PROCESO } from './domain/independencia.js';
 export { AgregarExclusionUseCase, AprobarProgramaUseCase, CambiarProgramaUseCase, CrearProgramaUseCase, ListarProgramasUseCase, ObtenerProgramaUseCase, QuitarExclusionUseCase, type AuditoriaDeProgramaDto, type DetalleProgramaDto, type ExclusionDto, type ProcesoDeProgramaDto, type ProgramaDto } from './application/programas.use-cases.js';
 export type { AuditoriaRepositoryPort, AyudasRepositoryPort, ProgramaRepositoryPort } from './application/auditoria.port.js';
-export { calcularPendientesDePrograma, EXCLUSIONES_POR_PROGRAMA_MAX, NORMAS_POR_PROGRAMA_MAX, NOTA_EXCLUSION_MAX } from './domain/auditoria-programa.js';
+export { calcularPendientesDePrograma, cubreClausulas4a10, EXCLUSIONES_POR_PROGRAMA_MAX, NORMAS_POR_PROGRAMA_MAX, NOTA_EXCLUSION_MAX } from './domain/auditoria-programa.js';
+export { AvanzarAuditoriaUseCase, CambiarAuditoriaUseCase, CancelarAuditoriaUseCase, CAPITULOS_POR_AUDITORIA_MAX, ComprobarIndependenciaUseCase, CrearAuditoriaUseCase, DesignarMiembroUseCase, EQUIPO_MAX, ObtenerAuditoriaUseCase, PROCESOS_POR_AUDITORIA_MAX, QuitarMiembroUseCase, ReprogramarAuditoriaUseCase, type AuditoriaDto, type IndependenciaDto, type MiembroDto } from './application/auditorias.use-cases.js';

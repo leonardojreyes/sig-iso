@@ -1,11 +1,11 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Put, Res } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Put, Query, Res } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import type { IdentidadVerificada } from '@sig/autenticacion';
 import { Identidad } from '../autenticacion/identidad.js';
 import { ParametroIdRuta, RespuestasProblema } from '../documentacion.js';
 import { AUDITORIA, type CasosAuditoria } from './auditoria.casos.js';
-import { CuerpoExclusionEntrada, CuerpoExclusionQuitar, CuerpoProcesoCambios, CuerpoProcesoEntrada, CuerpoProgramaCambios, CuerpoProgramaEntrada, CuerpoProgramaVersion, CuerpoRelacionEntrada } from './cuerpos-auditoria.dto.js';
-import { DETALLE_PROGRAMA, EXCLUSION_PROGRAMA, LISTA_PROCESOS, LISTA_PROGRAMAS, LISTA_RELACIONES, PROCESO, PROGRAMA, RELACION_PROCESO } from './esquemas-auditoria.js';
+import { CuerpoAuditoriaAvance, CuerpoAuditoriaCambios, CuerpoAuditoriaCancelacion, CuerpoAuditoriaEntrada, CuerpoAuditoriaReprogramacion, CuerpoMiembroEntrada, CuerpoMiembroQuitar, CuerpoExclusionEntrada, CuerpoExclusionQuitar, CuerpoProcesoCambios, CuerpoProcesoEntrada, CuerpoProgramaCambios, CuerpoProgramaEntrada, CuerpoProgramaVersion, CuerpoRelacionEntrada } from './cuerpos-auditoria.dto.js';
+import { AUDITORIA as AUDITORIA_ESQUEMA, INDEPENDENCIA, MIEMBRO_EQUIPO, DETALLE_PROGRAMA, EXCLUSION_PROGRAMA, LISTA_PROCESOS, LISTA_PROGRAMAS, LISTA_RELACIONES, PROCESO, PROGRAMA, RELACION_PROCESO } from './esquemas-auditoria.js';
 
 type Cuerpo = Record<string, unknown>;
 type Respuesta = { status(codigo: number): unknown };
@@ -194,5 +194,112 @@ export class AuditoriaController {
   @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
   async quitarExclusion(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown): Promise<void> {
     await this.c.quitarExclusion.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['exclusionId']) });
+  }
+
+  @Post('programas/:id/auditorias')
+  @HttpCode(201)
+  @ApiOperation({ operationId: 'crearAuditoria' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoAuditoriaEntrada })
+  @ApiCreatedResponse({ schema: AUDITORIA_ESQUEMA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async crearAuditoria(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.crearAuditoria.ejecutar({
+      ...this.ids(identidad),
+      programaId: id,
+      ...elegir(cuerpo, ['objetivo', 'inicio', 'fin', 'reunionApertura', 'reunionCierre', 'normas', 'procesosIds', 'capitulos', 'motivo', 'nota']),
+    });
+  }
+
+  @Get('auditorias/:id')
+  @ApiOperation({ operationId: 'obtenerAuditoria' })
+  @ParametroIdRuta()
+  @ApiOkResponse({ schema: AUDITORIA_ESQUEMA })
+  @RespuestasProblema(400, 401, 403, 404, 429, 500)
+  async obtenerAuditoria(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada) {
+    return this.c.obtenerAuditoria.ejecutar({ ...this.ids(identidad), id });
+  }
+
+  @Put('auditorias/:id')
+  @ApiOperation({ operationId: 'cambiarAuditoria' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoAuditoriaCambios })
+  @ApiOkResponse({ schema: AUDITORIA_ESQUEMA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async cambiarAuditoria(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.cambiarAuditoria.ejecutar({
+      ...this.ids(identidad),
+      id,
+      ...elegir(cuerpo, ['versionEsperada', 'objetivo', 'inicio', 'fin', 'reunionApertura', 'reunionCierre', 'normas', 'procesosIds', 'capitulos']),
+    });
+  }
+
+  @Post('auditorias/:id/reprogramacion')
+  @HttpCode(200)
+  @ApiOperation({ operationId: 'reprogramarAuditoria' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoAuditoriaReprogramacion })
+  @ApiOkResponse({ schema: AUDITORIA_ESQUEMA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async reprogramarAuditoria(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.reprogramarAuditoria.ejecutar({
+      ...this.ids(identidad),
+      id,
+      ...elegir(cuerpo, ['versionEsperada', 'inicio', 'fin', 'reunionApertura', 'reunionCierre', 'motivo', 'nota']),
+    });
+  }
+
+  @Post('auditorias/:id/cancelacion')
+  @HttpCode(200)
+  @ApiOperation({ operationId: 'cancelarAuditoria' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoAuditoriaCancelacion })
+  @ApiOkResponse({ schema: AUDITORIA_ESQUEMA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async cancelarAuditoria(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.cancelarAuditoria.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['versionEsperada', 'motivo', 'nota']) });
+  }
+
+  @Post('auditorias/:id/avance')
+  @HttpCode(200)
+  @ApiOperation({ operationId: 'avanzarAuditoria' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoAuditoriaAvance })
+  @ApiOkResponse({ schema: AUDITORIA_ESQUEMA })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async avanzarAuditoria(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.avanzarAuditoria.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['versionEsperada', 'estado']) });
+  }
+
+  @Get('auditorias/:id/independencia')
+  @ApiOperation({ operationId: 'comprobarIndependencia' })
+  @ParametroIdRuta()
+  @ApiQuery({ name: 'personaId', required: true, schema: { type: 'string', format: 'uuid', maxLength: 36 } })
+  @ApiOkResponse({ schema: INDEPENDENCIA })
+  @RespuestasProblema(400, 401, 403, 404, 429, 500)
+  async comprobarIndependencia(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Query() consulta: Cuerpo) {
+    return this.c.comprobarIndependencia.ejecutar({ ...this.ids(identidad), id, ...elegir(consulta, ['personaId']) });
+  }
+
+  @Post('auditorias/:id/equipo')
+  @HttpCode(201)
+  @ApiOperation({ operationId: 'designarMiembroAuditoria' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoMiembroEntrada })
+  @ApiCreatedResponse({ schema: MIEMBRO_EQUIPO })
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async designarMiembro(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown) {
+    return this.c.designarMiembro.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['personaId', 'rol', 'excepcion']) });
+  }
+
+  @Post('auditorias/:id/equipo/eliminacion')
+  @HttpCode(204)
+  @ApiOperation({ operationId: 'quitarMiembroAuditoria' })
+  @ParametroIdRuta()
+  @ApiBody({ type: CuerpoMiembroQuitar })
+  @ApiNoContentResponse()
+  @RespuestasProblema(400, 401, 403, 404, 409, 429, 500)
+  async quitarMiembro(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada, @Body() cuerpo: unknown): Promise<void> {
+    await this.c.quitarMiembro.ejecutar({ ...this.ids(identidad), id, ...elegir(cuerpo, ['personaId']) });
   }
 }

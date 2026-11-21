@@ -81,3 +81,19 @@ export const validarCapitulo = (v: unknown): string => {
   if (typeof v !== 'string' || v.trim() === '' || v.trim().length > 60) throw new ErrorCertificacion('capitulo', ['capítulo no válido']);
   return v.trim();
 };
+
+/**
+ * ¿La auditoría cubre las cláusulas de gestión (4 a 10)? Si no se indicó capítulo para una norma, cubre todos los de esa norma: cuenta si la
+ * norma tiene alguno entre el 4 y el 10. Si se indicaron, cuenta si alguno es del 4 al 10. Decide si «Gestión del SIG» entra al alcance.
+ */
+export const cubreClausulas4a10 = (
+  normas: readonly string[],
+  capitulos: readonly { readonly libreriaCodigo: string; readonly capitulo: string }[],
+  capitulosPorNorma: ReadonlyMap<string, readonly string[]>,
+): boolean => {
+  const esGestion = (k: string): boolean => /^(4|5|6|7|8|9|10)$/.test(k);
+  return normas.some((n) => {
+    const elegidos = capitulos.filter((c) => c.libreriaCodigo === n).map((c) => c.capitulo);
+    return (elegidos.length > 0 ? elegidos : (capitulosPorNorma.get(n) ?? [])).some(esGestion);
+  });
+};

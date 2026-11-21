@@ -1,5 +1,14 @@
 import {
   ActualizarProcesoUseCase,
+  AvanzarAuditoriaUseCase,
+  CambiarAuditoriaUseCase,
+  CancelarAuditoriaUseCase,
+  ComprobarIndependenciaUseCase,
+  CrearAuditoriaUseCase,
+  DesignarMiembroUseCase,
+  ObtenerAuditoriaUseCase,
+  QuitarMiembroUseCase,
+  ReprogramarAuditoriaUseCase,
   AgregarExclusionUseCase,
   AgregarRelacionUseCase,
   AprobarProgramaUseCase,
@@ -39,6 +48,15 @@ export interface CasosAuditoria {
   readonly aprobarPrograma: AprobarProgramaUseCase;
   readonly agregarExclusion: AgregarExclusionUseCase;
   readonly quitarExclusion: QuitarExclusionUseCase;
+  readonly crearAuditoria: CrearAuditoriaUseCase;
+  readonly obtenerAuditoria: ObtenerAuditoriaUseCase;
+  readonly cambiarAuditoria: CambiarAuditoriaUseCase;
+  readonly reprogramarAuditoria: ReprogramarAuditoriaUseCase;
+  readonly cancelarAuditoria: CancelarAuditoriaUseCase;
+  readonly avanzarAuditoria: AvanzarAuditoriaUseCase;
+  readonly comprobarIndependencia: ComprobarIndependenciaUseCase;
+  readonly designarMiembro: DesignarMiembroUseCase;
+  readonly quitarMiembro: QuitarMiembroUseCase;
 }
 
 export const crearCasosAuditoria = (
@@ -63,4 +81,13 @@ export const crearCasosAuditoria = (
   aprobarPrograma: new AprobarProgramaUseCase(unidad, autorizacion, catalogo, reloj),
   agregarExclusion: new AgregarExclusionUseCase(unidad, autorizacion, reloj, nuevoId),
   quitarExclusion: new QuitarExclusionUseCase(unidad, autorizacion),
+  crearAuditoria: new CrearAuditoriaUseCase(unidad, autorizacion, catalogo, reloj, nuevoId),
+  obtenerAuditoria: new ObtenerAuditoriaUseCase(unidad, autorizacion, catalogo),
+  cambiarAuditoria: new CambiarAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
+  reprogramarAuditoria: new ReprogramarAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
+  cancelarAuditoria: new CancelarAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
+  avanzarAuditoria: new AvanzarAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
+  comprobarIndependencia: new ComprobarIndependenciaUseCase(unidad, autorizacion, catalogo, reloj),
+  designarMiembro: new DesignarMiembroUseCase(unidad, autorizacion, catalogo, reloj),
+  quitarMiembro: new QuitarMiembroUseCase(unidad, autorizacion),
 });

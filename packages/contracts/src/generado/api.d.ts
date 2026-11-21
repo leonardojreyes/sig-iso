@@ -1738,6 +1738,170 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/programas/{id}/auditorias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Planifica una auditoría dentro de un programa
+         * @description El código lo asigna el sistema por año (AI-2027-01). Criterios: una o varias normas del programa (con más de una es combinada). Alcance: procesos vigentes y, si se quiere, capítulos o temas de las normas. El inicio debe caer en el año del programa. En un programa aprobado exige `motivo` (lista cerrada) y nota breve. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["crearAuditoria"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Una auditoría con su alcance y su equipo
+         * @description Incluye los procesos del alcance (con «Gestión del SIG» cuando cubre las cláusulas 4 a 10) y, de cada integrante, si lleva una excepción de independencia. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["obtenerAuditoria"];
+        /**
+         * Cambia objetivo, fechas, reuniones o alcance
+         * @description Lo ausente no se toca. Exige `versionEsperada`. Solo antes de pasar a «en ejecución» (409). Si cambia el alcance, el equipo se vuelve a comprobar: un integrante que dejaría de ser independiente (y no tiene excepción) lo impide con 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["cambiarAuditoria"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/reprogramacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reprograma las fechas de una auditoría
+         * @description Cambia las fechas con un motivo (lista cerrada) y una nota breve; no crea otra auditoría y suma una reprogramación. No procede en una auditoría con informe emitido, cerrada o cancelada (409). Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["reprogramarAuditoria"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/cancelacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancela una auditoría
+         * @description Conserva todo lo registrado, no cuenta para la cobertura y no se reabre. Solo hasta estar en ejecución (409). Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["cancelarAuditoria"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/avance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pasa a «en preparación» o a «en ejecución»
+         * @description Solo avanza. «En preparación» exige un líder y criterios; «en ejecución» exige haber llegado la fecha de inicio y la fecha de la reunión de apertura. El informe y el cierre tienen sus propias operaciones. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["avanzarAuditoria"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/independencia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Comprueba si una persona puede auditar este alcance
+         * @description Por cada proceso del alcance dice si la persona tiene una relación registrada (lo que impide designarla) y si ya lo auditó en los últimos 12 meses (solo un aviso). Solo consulta. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["comprobarIndependencia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/equipo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Designa a una persona en el equipo
+         * @description Debe ser una persona activa con rol de administrador SIG o auditor interno. Con un conflicto de independencia solo se designa con una excepción (motivo y medida compensatoria); nadie autoriza su propia excepción salvo el único administrador activo. Un solo líder por auditoría. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["designarMiembroAuditoria"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auditorias/{id}/equipo/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita a una persona del equipo
+         * @description Solo antes de «en ejecución». En preparación el líder no se quita (409). Con rastro en la bitácora. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["quitarMiembroAuditoria"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3017,6 +3181,142 @@ export interface components {
             exclusiones: components["schemas"]["ExclusionPrograma"][];
             procesos: components["schemas"]["ProcesoDePrograma"][];
             pendientes: components["schemas"]["PendientesPrograma"];
+        };
+        /**
+         * @description Con «otro» la nota es obligatoria.
+         * @enum {string}
+         */
+        MotivoCambioAuditoria: "sin_recursos" | "cambio_de_alcance" | "reprogramada" | "otro";
+        CapituloAlcance: {
+            libreriaCodigo: string;
+            capitulo: string;
+        };
+        AuditoriaEntrada: {
+            objetivo: string;
+            /** Format: date */
+            inicio: string;
+            /** Format: date */
+            fin: string;
+            /** Format: date */
+            reunionApertura?: string;
+            /** Format: date */
+            reunionCierre?: string;
+            normas: string[];
+            procesosIds?: string[];
+            /** @description Si se omite para una norma, la auditoría cubre todos sus capítulos y temas. */
+            capitulos?: components["schemas"]["CapituloAlcance"][];
+            /** @description Obligatorio si el programa está aprobado. */
+            motivo?: components["schemas"]["MotivoCambioAuditoria"];
+            nota?: string;
+        };
+        AuditoriaCambios: {
+            versionEsperada: number;
+            objetivo?: string;
+            /** Format: date */
+            inicio?: string;
+            /** Format: date */
+            fin?: string;
+            reunionApertura?: string | null;
+            reunionCierre?: string | null;
+            normas?: string[];
+            procesosIds?: string[];
+            /** @description Si se omite para una norma, la auditoría cubre todos sus capítulos y temas. */
+            capitulos?: components["schemas"]["CapituloAlcance"][];
+        };
+        AuditoriaReprogramacion: {
+            versionEsperada: number;
+            /** Format: date */
+            inicio: string;
+            /** Format: date */
+            fin: string;
+            reunionApertura?: string | null;
+            reunionCierre?: string | null;
+            motivo: components["schemas"]["MotivoCambioAuditoria"];
+            nota?: string;
+        };
+        AuditoriaCancelacion: {
+            versionEsperada: number;
+            motivo: components["schemas"]["MotivoCambioAuditoria"];
+            nota?: string;
+        };
+        AuditoriaAvance: {
+            versionEsperada: number;
+            /** @enum {string} */
+            estado: "en_preparacion" | "en_ejecucion";
+        };
+        /** @description Excepción de independencia: texto de la empresa; no va a la bitácora. */
+        ExcepcionEntrada: {
+            motivo: string;
+            /** @description Medida compensatoria, por ejemplo que otra persona revise el informe. */
+            medida: string;
+        };
+        MiembroEntrada: {
+            /** Format: uuid */
+            personaId: string;
+            /** @enum {string} */
+            rol: "lider" | "auditor";
+            excepcion?: components["schemas"]["ExcepcionEntrada"];
+        };
+        MiembroQuitar: {
+            /** Format: uuid */
+            personaId: string;
+        };
+        MiembroEquipo: {
+            /** Format: uuid */
+            personaId: string;
+            /** @enum {string} */
+            rol: "lider" | "auditor";
+            excepcion: boolean;
+            autoautorizada: boolean;
+            excepcionMotivo: string | null;
+            excepcionMedida: string | null;
+            excepcionAutorizadaPor: string | null;
+        };
+        Auditoria: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            programaId: string;
+            codigo: string;
+            anio: number;
+            objetivo: string;
+            estado: components["schemas"]["EstadoAuditoria"];
+            /** Format: date */
+            inicio: string;
+            /** Format: date */
+            fin: string;
+            reunionApertura: string | null;
+            reunionCierre: string | null;
+            reprogramaciones: number;
+            cancelacionMotivo: components["schemas"]["MotivoCambioAuditoria"] | null;
+            informeEmitidoEn: string | null;
+            cerradaEn: string | null;
+            version: number;
+            normas: string[];
+            combinada: boolean;
+            procesosIds: string[];
+            /** @description Los procesos elegidos más «Gestión del SIG» cuando se cubren las cláusulas 4 a 10. */
+            procesosDelAlcance: string[];
+            capitulos: components["schemas"]["CapituloAlcance"][];
+            equipo: components["schemas"]["MiembroEquipo"][];
+        };
+        Independencia: {
+            /** Format: uuid */
+            personaId: string;
+            /** @description Falso si tiene relación con algún proceso del alcance: solo se designa con una excepción. */
+            independiente: boolean;
+            conflictos: {
+                /** Format: uuid */
+                procesoId: string;
+                relaciones: components["schemas"]["TipoRelacionProceso"][];
+            }[];
+            avisos: {
+                /** Format: uuid */
+                procesoId: string;
+                /** Format: date */
+                ultimaFecha: string;
+            }[];
+            procesosDelAlcance: string[];
         };
     };
     responses: {
@@ -6203,6 +6503,311 @@ export interface operations {
         };
         responses: {
             /** @description El motivo se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    crearAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditoriaEntrada"];
+            };
+        };
+        responses: {
+            /** @description La auditoría planificada. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Auditoria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La auditoría. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Auditoria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditoriaCambios"];
+            };
+        };
+        responses: {
+            /** @description La auditoría actualizada. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Auditoria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    reprogramarAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditoriaReprogramacion"];
+            };
+        };
+        responses: {
+            /** @description La auditoría reprogramada. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Auditoria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cancelarAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditoriaCancelacion"];
+            };
+        };
+        responses: {
+            /** @description La auditoría cancelada. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Auditoria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    avanzarAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuditoriaAvance"];
+            };
+        };
+        responses: {
+            /** @description La auditoría actualizada. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Auditoria"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    comprobarIndependencia: {
+        parameters: {
+            query: {
+                personaId: string;
+            };
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El resultado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Independencia"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    designarMiembroAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MiembroEntrada"];
+            };
+        };
+        responses: {
+            /** @description La persona designada. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiembroEquipo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    quitarMiembroAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MiembroQuitar"];
+            };
+        };
+        responses: {
+            /** @description La persona se quitó del equipo. */
             204: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControlNoStore"];

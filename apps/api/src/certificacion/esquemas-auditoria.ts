@@ -102,3 +102,47 @@ export const DETALLE_PROGRAMA = objeto({
   }),
 });
 export const TIPOS_EXCLUSION_API = ['proceso', 'capitulo'];
+
+const MIEMBRO = objeto({
+  personaId: UUID,
+  rol: enumerado(['lider', 'auditor']),
+  excepcion: { type: 'boolean' },
+  autoautorizada: { type: 'boolean' },
+  excepcionMotivo: nulo(texto(300)),
+  excepcionMedida: nulo(texto(300)),
+  excepcionAutorizadaPor: oUnNulo(UUID),
+});
+export const MIEMBRO_EQUIPO = MIEMBRO;
+export const MOTIVOS_CAMBIO_API = ['sin_recursos', 'cambio_de_alcance', 'reprogramada', 'otro'];
+export const AUDITORIA = objeto({
+  id: UUID,
+  programaId: UUID,
+  codigo: texto(12, { pattern: '^AI-[0-9]{4}-[0-9]{2,3}$' }),
+  anio: entero(2000, 2100),
+  objetivo: texto(500),
+  estado: enumerado(ESTADOS_AUDITORIA_API),
+  inicio: FECHA,
+  fin: FECHA,
+  reunionApertura: oUnNulo(FECHA),
+  reunionCierre: oUnNulo(FECHA),
+  reprogramaciones: entero(0),
+  cancelacionMotivo: oUnNulo(enumerado(MOTIVOS_CAMBIO_API)),
+  informeEmitidoEn: oUnNulo(texto(40, { format: 'date-time' })),
+  cerradaEn: oUnNulo(texto(40, { format: 'date-time' })),
+  version: entero(1),
+  normas: lista(NORMA, 10),
+  combinada: { type: 'boolean' },
+  procesosIds: lista(UUID, 200),
+  procesosDelAlcance: lista(UUID, 201),
+  capitulos: lista(objeto({ libreriaCodigo: NORMA, capitulo: texto(60, { minLength: 1 }) }), 100),
+  equipo: lista(MIEMBRO, 20),
+});
+export const INDEPENDENCIA = objeto({
+  personaId: UUID,
+  independiente: { type: 'boolean' },
+  conflictos: lista(objeto({ procesoId: UUID, relaciones: lista(enumerado(RELACIONES_API), 4) }), 201),
+  avisos: lista(objeto({ procesoId: UUID, ultimaFecha: FECHA }), 201),
+  procesosDelAlcance: lista(UUID, 201),
+});
+export const ROLES_EQUIPO_API = ['lider', 'auditor'];
+export const ESTADOS_AVANCE_API = ['en_preparacion', 'en_ejecucion'];

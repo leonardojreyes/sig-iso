@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CAMBIOS_RELEVANTES_API, FRECUENCIAS_API, IMPORTANCIAS_API, RELACIONES_API, TIPOS_EXCLUSION_API } from './esquemas-auditoria.js';
+import { CAMBIOS_RELEVANTES_API, ESTADOS_AVANCE_API, FRECUENCIAS_API, IMPORTANCIAS_API, MOTIVOS_CAMBIO_API, RELACIONES_API, ROLES_EQUIPO_API, TIPOS_EXCLUSION_API } from './esquemas-auditoria.js';
 
 // Cuerpos de entrada del contrato (packages/contracts/openapi.yaml) de la auditoría interna (ADR 040). Solo documentan: la lectura es
 // tolerante y lo válido lo decide el caso de uso después del permiso (401 → 403 → 400 → 404 → 409).
@@ -58,4 +58,82 @@ export class CuerpoExclusionEntrada {
 
 export class CuerpoExclusionQuitar {
   @ApiProperty(UUID) exclusionId!: string;
+}
+
+const FECHA = { type: String, format: 'date', maxLength: 10 } as const;
+const FECHA_O_NULA = { type: String, format: 'date', maxLength: 10, nullable: true } as const;
+const PROCESOS = { type: 'array', maxItems: 200, uniqueItems: true, items: { type: 'string', format: 'uuid', maxLength: 36 } } as const;
+const CAPITULOS = {
+  type: 'array',
+  maxItems: 100,
+  items: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['libreriaCodigo', 'capitulo'],
+    properties: { libreriaCodigo: { type: 'string', maxLength: 80, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$' }, capitulo: { type: 'string', minLength: 1, maxLength: 60 } },
+  },
+} as unknown as Record<string, unknown>;
+const NOTA = { type: String, minLength: 1, maxLength: 300, required: false } as const;
+
+export class CuerpoAuditoriaEntrada {
+  @ApiProperty({ type: String, minLength: 1, maxLength: 500 }) objetivo!: string;
+  @ApiProperty(FECHA) inicio!: string;
+  @ApiProperty(FECHA) fin!: string;
+  @ApiProperty({ ...FECHA, required: false }) reunionApertura?: string;
+  @ApiProperty({ ...FECHA, required: false }) reunionCierre?: string;
+  @ApiProperty(NORMAS) normas!: string[];
+  @ApiProperty({ ...PROCESOS, required: false }) procesosIds?: string[];
+  @ApiProperty({ ...CAPITULOS, required: false } as never) capitulos?: unknown[];
+  @ApiProperty({ type: String, enum: MOTIVOS_CAMBIO_API, required: false }) motivo?: string;
+  @ApiProperty(NOTA) nota?: string;
+}
+
+export class CuerpoAuditoriaCambios {
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+  @ApiProperty({ type: String, minLength: 1, maxLength: 500, required: false }) objetivo?: string;
+  @ApiProperty({ ...FECHA, required: false }) inicio?: string;
+  @ApiProperty({ ...FECHA, required: false }) fin?: string;
+  @ApiProperty({ ...FECHA_O_NULA, required: false }) reunionApertura?: string | null;
+  @ApiProperty({ ...FECHA_O_NULA, required: false }) reunionCierre?: string | null;
+  @ApiProperty({ ...NORMAS, required: false }) normas?: string[];
+  @ApiProperty({ ...PROCESOS, required: false }) procesosIds?: string[];
+  @ApiProperty({ ...CAPITULOS, required: false } as never) capitulos?: unknown[];
+}
+
+export class CuerpoAuditoriaReprogramacion {
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+  @ApiProperty(FECHA) inicio!: string;
+  @ApiProperty(FECHA) fin!: string;
+  @ApiProperty({ ...FECHA_O_NULA, required: false }) reunionApertura?: string | null;
+  @ApiProperty({ ...FECHA_O_NULA, required: false }) reunionCierre?: string | null;
+  @ApiProperty({ type: String, enum: MOTIVOS_CAMBIO_API }) motivo!: string;
+  @ApiProperty(NOTA) nota?: string;
+}
+
+export class CuerpoAuditoriaCancelacion {
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+  @ApiProperty({ type: String, enum: MOTIVOS_CAMBIO_API }) motivo!: string;
+  @ApiProperty(NOTA) nota?: string;
+}
+
+export class CuerpoAuditoriaAvance {
+  @ApiProperty({ type: 'integer', minimum: 1 }) versionEsperada!: number;
+  @ApiProperty({ type: String, enum: ESTADOS_AVANCE_API }) estado!: string;
+}
+
+export class CuerpoMiembroEntrada {
+  @ApiProperty(UUID) personaId!: string;
+  @ApiProperty({ type: String, enum: ROLES_EQUIPO_API }) rol!: string;
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: false,
+    required: ['motivo', 'medida'],
+    properties: { motivo: { type: 'string', minLength: 1, maxLength: 300 }, medida: { type: 'string', minLength: 1, maxLength: 300 } },
+    required_: false,
+  } as never)
+  excepcion?: { motivo: string; medida: string };
+}
+
+export class CuerpoMiembroQuitar {
+  @ApiProperty(UUID) personaId!: string;
 }

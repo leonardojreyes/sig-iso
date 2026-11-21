@@ -12,6 +12,7 @@ import { join } from 'node:path';
 // Auditoría interna (ADR 040), procesos y relaciones, sobre una aplicación Nest REAL con los casos de uso reales y fakes que separan los
 // datos por empresa. Cada respuesta se valida contra los esquemas de openapi.yaml. Orden: 401 → 403 → 400 → 404 → 409.
 const ADMIN2 = '33333333-3333-4333-8333-3333333333e3';
+const AUDITOR = '55555555-5555-4555-8555-5555555555a5';
 const ADMIN_B = '66666666-6666-4666-8666-666666666666';
 const SIN_PERMISOS = '99999999-9999-4999-8999-999999999999';
 const ID_FALSO = 'dddddddd-0000-4000-8000-000000000000';
@@ -33,6 +34,15 @@ const RUTAS: [string, string, unknown][] = [
   ['POST', `/programas/${ID_FALSO}/aprobacion`, { versionEsperada: 1 }],
   ['POST', `/programas/${ID_FALSO}/exclusiones`, { tipo: 'proceso', procesoId: ID_FALSO, motivo: 'x' }],
   ['POST', `/programas/${ID_FALSO}/exclusiones/eliminacion`, { exclusionId: ID_FALSO }],
+  ['POST', `/programas/${ID_FALSO}/auditorias`, { objetivo: 'x', inicio: '2026-11-10', fin: '2026-11-25', normas: ['ejemplo-ha'] }],
+  ['GET', `/auditorias/${ID_FALSO}`, undefined],
+  ['PUT', `/auditorias/${ID_FALSO}`, { versionEsperada: 1, objetivo: 'x' }],
+  ['POST', `/auditorias/${ID_FALSO}/reprogramacion`, { versionEsperada: 1, inicio: '2026-11-10', fin: '2026-11-25', motivo: 'reprogramada' }],
+  ['POST', `/auditorias/${ID_FALSO}/cancelacion`, { versionEsperada: 1, motivo: 'sin_recursos' }],
+  ['POST', `/auditorias/${ID_FALSO}/avance`, { versionEsperada: 1, estado: 'en_preparacion' }],
+  ['GET', `/auditorias/${ID_FALSO}/independencia?personaId=${ID_FALSO}`, undefined],
+  ['POST', `/auditorias/${ID_FALSO}/equipo`, { personaId: ID_FALSO, rol: 'lider' }],
+  ['POST', `/auditorias/${ID_FALSO}/equipo/eliminacion`, { personaId: ID_FALSO }],
 ];
 
 describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
@@ -73,11 +83,13 @@ describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
     estado.fallarBitacora = false;
     for (const u of [ADMIN, ADMIN2]) estado.conceder(u, A, ...TODOS);
     estado.conceder(COLAB, A, 'auditoria.ver');
+    estado.conceder(AUDITOR, A, 'auditoria.ver', 'auditoria.ejecutar');
     estado.conceder(ADMIN_B, B, ...TODOS);
     estado.documentosEstado.personas.set(A, [
       { id: ADMIN, nombre: 'Ana Admin', rol: 'administrador_sig', activa: true },
       { id: ADMIN2, nombre: 'Beto Admin', rol: 'administrador_sig', activa: true },
       { id: COLAB, nombre: 'Carla Colaboradora', rol: 'colaborador', activa: true },
+      { id: AUDITOR, nombre: 'Dora Auditora', rol: 'auditor_interno', activa: true },
     ]);
     estado.documentosEstado.personas.set(B, [{ id: ADMIN_B, nombre: 'Admin B', rol: 'administrador_sig', activa: true }]);
     bitacora.estado.eventos = [];
@@ -274,6 +286,107 @@ describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
       }
       expect((await json(await pedir('/programas', await tAdminB()))).programas).toEqual([]);
       expect(estado.auditoriaEstado.programas.get(p.id)).toMatchObject({ version: 1, estado: 'sin_aprobar' });
+    });
+  });
+
+  describe('auditorías, equipo e independencia', () => {
+    const tAuditor = () => token(A, AUDITOR);
+    const montar = async () => {
+      const proceso = await crear();
+      const pr = await json(await pedir('/programas', await tAdmin(), 'POST', { anio: 2026, objetivo: 'Programa 2026', normas: ['ejemplo-ha', 'iso-27001-2022-anexo-a'] }));
+      const r = await pedir(`/programas/${pr.id}/auditorias`, await tAdmin(), 'POST', {
+        objetivo: 'OBJETIVO-PRIVADO Verificar el SGSI',
+        inicio: '2026-11-10',
+        fin: '2026-11-25',
+        reunionApertura: '2026-11-10',
+        reunionCierre: '2026-11-25',
+        normas: ['ejemplo-ha', 'iso-27001-2022-anexo-a'],
+        procesosIds: [proceso.id],
+      });
+      expect(r.status).toBe(201);
+      return { proceso, programa: pr, a: await json(r) };
+    };
+
+    it('planifica, consulta y cambia; cada respuesta cumple el contrato', async () => {
+      const { proceso, a } = await montar();
+      valida('Auditoria', a);
+      expect(a).toMatchObject({ codigo: 'AI-2026-01', estado: 'planificada', combinada: true, procesosIds: [proceso.id], equipo: [], version: 1 });
+      const d = await json(await pedir(`/auditorias/${a.id}`, await tColab()));
+      valida('Auditoria', d);
+      const c = await pedir(`/auditorias/${a.id}`, await tAdmin(), 'PUT', { versionEsperada: 1, objetivo: 'Otro objetivo', fin: '2026-11-30' });
+      expect(c.status).toBe(200);
+      expect(await json(c)).toMatchObject({ objetivo: 'Otro objetivo', fin: '2026-11-30', version: 2 });
+      await problema(await pedir(`/auditorias/${a.id}`, await tAdmin(), 'PUT', { versionEsperada: 1, objetivo: 'viejo' }), 409, 'conflicto');
+      for (const mal of [{}, { versionEsperada: 2 }, { versionEsperada: 2, inicio: '2026-02-30' }, { versionEsperada: 2, normas: ['no-adoptada'] }])
+        await problema(await pedir(`/auditorias/${a.id}`, await tAdmin(), 'PUT', mal), 400, 'parametro_invalido');
+    });
+
+    it('independencia: la comprobación dice por qué, el 409 no, y la excepción exige motivo y medida', async () => {
+      const { proceso, a } = await montar();
+      await pedir(`/procesos/${proceso.id}/relaciones`, await tAdmin(), 'POST', { personaId: AUDITOR, relacion: 'supervisa' });
+      const ver = await pedir(`/auditorias/${a.id}/independencia?personaId=${AUDITOR}`, await tColab());
+      expect(ver.status).toBe(200);
+      const r = await json(ver);
+      valida('Independencia', r);
+      expect(r).toMatchObject({ independiente: false, conflictos: [{ procesoId: proceso.id, relaciones: ['supervisa'] }] });
+      await problema(await pedir(`/auditorias/${a.id}/independencia`, await tColab()), 400, 'parametro_invalido');
+      await problema(await pedir(`/auditorias/${a.id}/equipo`, await tAdmin(), 'POST', { personaId: AUDITOR, rol: 'lider' }), 409, 'conflicto');
+      await problema(await pedir(`/auditorias/${a.id}/equipo`, await tAdmin(), 'POST', { personaId: AUDITOR, rol: 'lider', excepcion: { motivo: 'no hay otra persona' } }), 400, 'parametro_invalido');
+      const ok = await pedir(`/auditorias/${a.id}/equipo`, await tAdmin(), 'POST', {
+        personaId: AUDITOR,
+        rol: 'lider',
+        excepcion: { motivo: 'MOTIVO-PRIVADO no hay otra persona', medida: 'MEDIDA-PRIVADA otra persona revisa el informe' },
+      });
+      expect(ok.status).toBe(201);
+      const m = await json(ok);
+      valida('MiembroEquipo', m);
+      expect(m).toMatchObject({ excepcion: true, autoautorizada: false, excepcionAutorizadaPor: ADMIN });
+      expect((await json(await pedir(`/auditorias/${a.id}`, await tColab()))).equipo[0]).toMatchObject({ personaId: AUDITOR, excepcion: true });
+      expect(JSON.stringify(estado.eventos)).not.toMatch(/PRIVAD|Dora/);
+      await problema(await pedir(`/auditorias/${a.id}/equipo`, await tAdmin(), 'POST', { personaId: COLAB, rol: 'auditor' }), 400, 'parametro_invalido');
+    });
+
+    it('avanza de estado, reprograma y cancela; la bitácora solo guarda estados y motivos cerrados', async () => {
+      const { a } = await montar();
+      await problema(await pedir(`/auditorias/${a.id}/avance`, await tAdmin(), 'POST', { versionEsperada: 1, estado: 'en_preparacion' }), 409, 'conflicto'); // sin líder
+      const lider = await pedir(`/auditorias/${a.id}/equipo`, await tAdmin(), 'POST', { personaId: AUDITOR, rol: 'lider' });
+      expect(lider.status).toBe(201);
+      const prep = await pedir(`/auditorias/${a.id}/avance`, await tAdmin(), 'POST', { versionEsperada: 1, estado: 'en_preparacion' });
+      expect(prep.status).toBe(200);
+      expect(await json(prep)).toMatchObject({ estado: 'en_preparacion', version: 2 });
+      await problema(await pedir(`/auditorias/${a.id}/avance`, await tAdmin(), 'POST', { versionEsperada: 2, estado: 'cerrada' }), 400, 'parametro_invalido');
+      const rep = await pedir(`/auditorias/${a.id}/reprogramacion`, await tAdmin(), 'POST', { versionEsperada: 2, inicio: '2026-12-01', fin: '2026-12-04', motivo: 'reprogramada', nota: 'NOTA-PRIVADA vacaciones' });
+      expect(rep.status).toBe(200);
+      expect(await json(rep)).toMatchObject({ inicio: '2026-12-01', reprogramaciones: 1, version: 3 });
+      const can = await pedir(`/auditorias/${a.id}/cancelacion`, await tAdmin(), 'POST', { versionEsperada: 3, motivo: 'sin_recursos' });
+      expect(can.status).toBe(200);
+      valida('Auditoria', await json(can));
+      await problema(await pedir(`/auditorias/${a.id}/cancelacion`, await tAdmin(), 'POST', { versionEsperada: 4, motivo: 'sin_recursos' }), 409, 'conflicto');
+      expect((await pedir(`/auditorias/${a.id}/equipo/eliminacion`, await tAdmin(), 'POST', { personaId: AUDITOR })).status).toBe(409);
+      expect(JSON.stringify(estado.eventos)).not.toMatch(/PRIVAD|OBJETIVO/);
+      expect(estado.eventos.map((e) => e.accion)).toEqual(expect.arrayContaining(['auditoria.planificada', 'equipo.designado', 'auditoria.avanzada', 'auditoria.reprogramada', 'auditoria.cancelada']));
+    });
+
+    it('el auditor interno consulta pero no planifica; planificar y aprobar son permisos distintos', async () => {
+      const { a, programa } = await montar();
+      expect((await pedir(`/auditorias/${a.id}`, await tAuditor())).status).toBe(200);
+      for (const [m, ruta, cuerpo] of [
+        ['POST', `/programas/${programa.id}/auditorias`, {}],
+        ['PUT', `/auditorias/${a.id}`, {}],
+        ['POST', `/auditorias/${a.id}/equipo`, {}],
+      ] as const)
+        await problema(await pedir(ruta, await tAuditor(), m, cuerpo), 403, 'sin_permiso');
+    });
+
+    it('una auditoría de otra empresa es un 404 indistinguible del inexistente', async () => {
+      const { a } = await montar();
+      for (const [m, ruta, cuerpo] of RUTAS.filter(([, r]) => r.includes('/auditorias/dddd'))) {
+        const cruzada = await pedir(ruta.replace(ID_FALSO, a.id), await tAdminB(), m, cuerpo);
+        const inexistente = await pedir(ruta, await tAdminB(), m, cuerpo);
+        expect([cruzada.status, inexistente.status], `${m} ${ruta}`).toEqual([404, 404]);
+        expect(await json(cruzada)).toEqual(await json(inexistente));
+      }
+      expect(estado.auditoriaEstado.auditorias.get(a.id)).toMatchObject({ version: 1, estado: 'planificada' });
     });
   });
 });

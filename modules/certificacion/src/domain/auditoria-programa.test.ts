@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calcularPendientesDePrograma, validarCapitulo, validarMotivoExclusion } from './auditoria-programa.js';
+import { calcularPendientesDePrograma, cubreClausulas4a10, validarCapitulo, validarMotivoExclusion } from './auditoria-programa.js';
 import { ErrorCertificacion } from './errores.js';
 
 const capitulosPorNorma = new Map([
@@ -59,5 +59,23 @@ describe('motivos y capítulos', () => {
   it('el capítulo es un texto breve', () => {
     expect(validarCapitulo(' 9 ')).toBe('9');
     for (const mal of [undefined, '', 5, 'x'.repeat(61)]) expect(() => validarCapitulo(mal)).toThrow(ErrorCertificacion);
+  });
+});
+
+describe('cubre las cláusulas 4 a 10', () => {
+  const porNorma = new Map([
+    ['iso-27001', ['4', '9', 'Organizacionales']],
+    ['anexo-a', ['Organizacionales', 'Tecnológicos']],
+  ]);
+  it('sin capítulos indicados cuenta si la norma tiene alguna cláusula de gestión', () => {
+    expect(cubreClausulas4a10(['iso-27001'], [], porNorma)).toBe(true);
+    expect(cubreClausulas4a10(['anexo-a'], [], porNorma)).toBe(false);
+    expect(cubreClausulas4a10(['anexo-a', 'iso-27001'], [], porNorma)).toBe(true);
+    expect(cubreClausulas4a10([], [], porNorma)).toBe(false);
+  });
+  it('con capítulos indicados cuenta solo si alguno es del 4 al 10', () => {
+    expect(cubreClausulas4a10(['iso-27001'], [{ libreriaCodigo: 'iso-27001', capitulo: 'Organizacionales' }], porNorma)).toBe(false);
+    expect(cubreClausulas4a10(['iso-27001'], [{ libreriaCodigo: 'iso-27001', capitulo: '10' }], porNorma)).toBe(true);
+    expect(cubreClausulas4a10(['iso-27001'], [{ libreriaCodigo: 'iso-27001', capitulo: '3' }], porNorma)).toBe(false);
   });
 });
