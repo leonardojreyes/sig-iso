@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
 import { crearDependencias } from '../../../../../src/auth/dependencias';
-import { cargarNormasAdoptadas, cargarProgramas } from '../../../../../src/auditoria/cargar';
+import { cargarNormasAdoptadas, cargarPanel, cargarProgramas } from '../../../../../src/auditoria/cargar';
 import { leerAvisoEscritura } from '../../../../../src/certificacion/escribir';
 import { contextoActual } from '../../../../../src/marca/servidor';
+import { PanelPrerrequisito } from '../../../../../src/pantallas/auditoria-panel';
 import { PantallaAuditoria } from '../../../../../src/pantallas/auditoria-programa';
 import { PantallaSinPermiso } from '../../../../../src/pantallas/sin-permiso';
 
@@ -19,7 +20,8 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   if (r.tipo === 'ingresar') redirect(retorno);
   if (r.tipo === 'sin_permiso') return <PantallaSinPermiso empresa={empresa} persona={persona} activo="auditoria" />;
   if (r.tipo !== 'ok') throw new Error('No se pudieron cargar los programas');
-  const normas = await cargarNormasAdoptadas(base);
-  if (normas.tipo === 'ingresar') redirect(retorno);
-  return <PantallaAuditoria empresa={empresa} persona={persona} programas={r.datos.programas} normasAdoptadas={normas.tipo === 'ok' ? normas.datos : []} aviso={leerAvisoEscritura(parametros)} />;
+  // El panel y las normas son de apoyo: si fallan, la pantalla se muestra sin ellos (nunca a medias con datos inventados).
+  const [normas, panel] = await Promise.all([cargarNormasAdoptadas(base), cargarPanel(base)]);
+  if (normas.tipo === 'ingresar' || panel.tipo === 'ingresar') redirect(retorno);
+  return <PantallaAuditoria empresa={empresa} persona={persona} programas={r.datos.programas} normasAdoptadas={normas.tipo === 'ok' ? normas.datos : []} aviso={leerAvisoEscritura(parametros)} panel={panel.tipo === 'ok' ? <PanelPrerrequisito panel={panel.datos} /> : null} />;
 }
