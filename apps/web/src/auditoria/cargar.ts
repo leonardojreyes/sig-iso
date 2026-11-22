@@ -1,6 +1,7 @@
 // Datos de la auditoría interna de la empresa de la sesión. Todo sale de la API con el token de la sesión; la empresa nunca es un
 // parámetro. Si algo falla no se muestra nada a medias.
 import { consultarApi } from '../api/cliente';
+import { validarLibrerias } from '../api/validadores';
 import { UUID } from '../validacion/patrones';
 import {
   validarAuditoria,
@@ -46,3 +47,10 @@ export const cargarPanel = (p: Base) => pedir(p, '/auditoria/panel', validarPane
 /** Por qué una persona sí o no puede auditar este alcance (solo consulta). */
 export const cargarIndependencia = (p: Base & { id: string; personaId: string }) =>
   UUID.test(p.personaId) ? conId(p, (id) => `/auditorias/${id}/independencia?personaId=${p.personaId.toLowerCase()}`, validarIndependencia) : Promise.resolve<Carga<never>>({ tipo: 'no_encontrado' });
+
+/** Códigos de las librerías que la empresa adoptó: las únicas normas que se pueden elegir en el programa y en las auditorías. */
+export const cargarNormasAdoptadas = (p: Base): Promise<Carga<string[]>> =>
+  pedir(p, '/librerias', (j) => {
+    const l = validarLibrerias(j);
+    return l ? l.filter((x) => x.adoptada).map((x) => x.codigo) : null;
+  });
