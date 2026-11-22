@@ -195,6 +195,8 @@ export interface PersonaDirectorio {
  */
 export interface DirectorioPersonasPort {
   listar(): Promise<readonly PersonaDirectorio[]>;
+  /** ¿Existe en la empresa de la sesión y sigue activa (con rol y sin baja)? Una persona de otra empresa, de baja o inexistente da `false`. */
+  existeActiva(personaId: string): Promise<boolean>;
 }
 
 export type { MotivoRevision };

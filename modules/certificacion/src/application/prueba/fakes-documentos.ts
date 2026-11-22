@@ -242,7 +242,10 @@ export const crearRepositoriosDocumentosFalsos = (
     },
   };
 
-  const personas: DirectorioPersonasPort = { listar: async () => s.personas.get(empresaId) ?? [] };
+  const personas: DirectorioPersonasPort = {
+    listar: async () => s.personas.get(empresaId) ?? [],
+    existeActiva: async (id) => (s.personas.get(empresaId) ?? []).some((p) => p.id === id && p.activa),
+  };
 
   return { documentos, versionesDocumento, destinatarios, lecturas, vinculosDocumento, retenciones, personas };
 };

@@ -176,6 +176,18 @@ describe.skipIf(!hayBase)('control documental sobre PostgreSQL y disco reales', 
     expect((await c.directorio.ejecutar({ empresaId: B, usuarioId: UB })).map((p) => p.id)).toEqual([UB]);
   });
 
+  it('existeActiva: activa sí; de baja, inexistente o de otra empresa no (ADR 038, decisión 8)', async () => {
+    const u = unidad();
+    const en = (empresa: typeof A, id: string) => u.ejecutar(empresa, (ctx) => ctx.personas.existeActiva(id));
+    expect(await en(A, COLAB)).toBe(true);
+    expect(await en(A, BAJA)).toBe(false);
+    expect(await en(A, crypto.randomUUID())).toBe(false);
+    // aislamiento: la persona de B no existe para A, y la de A no existe para B
+    expect(await en(A, UB)).toBe(false);
+    expect(await en(B, COLAB)).toBe(false);
+    expect(await en(B, UB)).toBe(true);
+  });
+
   it('flujo completo: crear, subir, enviar, aprobar, nueva versión, lecturas y descarga; una sola vigente y el archivo íntegro', async () => {
     const d = await nuevoDoc();
     expect(d.codigo).toMatch(/^POL-\d{3}$/);

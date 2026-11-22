@@ -511,4 +511,11 @@ export class DirectorioPersonasKysely implements DirectorioPersonasPort {
     }>`select id, nombre, rol, baja_en from usuario where empresa_id = ${this.empresaId} order by nombre limit 1000`.execute(this.db);
     return r.rows.map((f) => ({ id: f.id, nombre: f.nombre, rol: f.rol, activa: f.rol !== null && f.baja_en === null }));
   }
+
+  async existeActiva(personaId: string): Promise<boolean> {
+    const r = await sql<{ existe: boolean }>`select exists (
+        select 1 from usuario where empresa_id = ${this.empresaId} and id = ${personaId} and rol is not null and baja_en is null
+      ) as existe`.execute(this.db);
+    return r.rows[0]?.existe === true;
+  }
 }
