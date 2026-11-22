@@ -10,7 +10,7 @@ Revisado por `arquitecto`, `revisor-cumplimiento` y `experto-iso`: **encontraron
 
 ## Hallazgos del código que condicionan el diseño
 
-- `modules/certificacion` hexagonal. `riesgo` hoy: `probabilidad`, `impacto`, `decision`, `responsable_id` nulo salvo `aceptar`; sin delete; update por columnas (0020). Migración libre: **0023** (la 0021 y la 0022 las usó control documental). Último ADR: 037 → **038**.
+- `modules/certificacion` hexagonal. `riesgo` hoy: `probabilidad`, `impacto`, `decision`, `responsable_id` nulo salvo `aceptar`; sin delete; update por columnas (0020). Migración libre: **0026** (de la 0021 a la 0025 las usaron control documental (0021, 0022) y auditoría interna (0023 a 0025)). Último ADR: 037 → **038**.
 - Sin puerto de personas en certificación (solo `responsable_id` con FK compuesta a `usuario`); `GET /personas` es solo administrador.
 - Bitácora: lista cerrada en `platform/auditoria/src/dominio/catalogo.ts`; `despues` solo claves de tipo cerrado; nunca texto libre.
 - Contrato: `contrato.test.ts` fija la lista **exacta** de textos libres por operación (todos con `maxLength`); `esquemas-riesgos.ts` duplica esquemas; `conformidad-openapi.test.ts` compara Nest vs contrato.
@@ -59,19 +59,19 @@ Todas en la misma transacción, `despues` solo enums/números/uuid/fechas, prueb
 
 ### Hito A — Fundamentos (H1–H3)
 
-- **A1 Activos + directorio** — `0023` (`activo` código `A-001`, `riesgo_activo`; RLS forzada; sin delete; update por columnas), ADR 038 «Propuesto», directorio (decisión 7), casos de uso, contrato, controlador, pantallas `/e/<empresa>/activos`, aviso previo al retiro; `aislamiento-activos`.
-- **A2 Criterios** — `0024`, pantalla y matriz 5×5 con palabra + número.
-- **A3 Evaluación y revisión** — `0025` (`riesgo_evaluacion`, `escenario`, `proxima_revision`, backfill «migrada», renombre `aceptar → retener`), revaluación, revisión sin cambio, marcas de vencidas (fecha de Ecuador).
+- **A1 Activos + directorio** — `0026` (`activo` código `A-001`, `riesgo_activo`; RLS forzada; sin delete; update por columnas), ADR 038 «Propuesto», directorio (decisión 7), casos de uso, contrato, controlador, pantallas `/e/<empresa>/activos`, aviso previo al retiro; `aislamiento-activos`.
+- **A2 Criterios** — `0027`, pantalla y matriz 5×5 con palabra + número.
+- **A3 Evaluación y revisión** — `0028` (`riesgo_evaluacion`, `escenario`, `proxima_revision`, backfill «migrada», renombre `aceptar → retener`), revaluación, revisión sin cambio, marcas de vencidas (fecha de Ecuador).
 
 ### Hito B — Tratamiento y residual (H4–H5)
 
-- **B1 Acciones** — `0026` (`accion_tratamiento`, verificación de eficacia, control vinculado opcional, vencida derivada, aviso si el control no está implementado).
+- **B1 Acciones** — `0029` (`accion_tratamiento`, verificación de eficacia, control vinculado opcional, vencida derivada, aviso si el control no está implementado).
 - **B2 Plan** — `plan_aprobacion` con huella del conjunto de acciones; estado derivado.
-- **B3 Residual y aceptación** — `0027` (`riesgo_aceptacion`, tope ≤ análisis vigente en dominio y `check` donde aplique); `estadoDeAceptacion` pura, recibe análisis vigente, residual, aceptación, `nivel_aceptacion` y decisión; excepcional con constancia y vencimiento.
+- **B3 Residual y aceptación** — `0030` (`riesgo_aceptacion`, tope ≤ análisis vigente en dominio y `check` donde aplique); `estadoDeAceptacion` pura, recibe análisis vigente, residual, aceptación, `nivel_aceptacion` y decisión; excepcional con constancia y vencimiento.
 
 ### Hito C — Declaración, Word y cierre (H6)
 
-- **C1** `0028`: copia congelada ampliada (decisión 11), inmutable; versiones anteriores quedan con nulos y el Word lo dice.
+- **C1** `0031`: copia congelada ampliada (decisión 11), inmutable; versiones anteriores quedan con nulos y el Word lo dice.
 - **C2** `GeneradorDocumentoDocx`: activos, residual, aceptación, plan, criterios; avisos ajustados; texto plano. **Prueba que escanea `es-EC.ts` y la plantilla Word buscando párrafos largos** (sin texto de normas).
 - **C3** resumen consultable (`GET /riesgos/resumen`) y advertencias en la Declaración.
 - **C4** `pnpm web:verify-riesgos-completos` (todo real, repetible, bajo 120/min), STRIDE (`docs/security/stride-gestion-riesgos.md`), clasificación de datos, ADR 038 y 037 → «Aprobado», `hoja-de-ruta.md` y `estado.md` en el mismo PR, `/review` único.
@@ -79,7 +79,7 @@ Todas en la misma transacción, `despues` solo enums/números/uuid/fechas, prueb
 ## Archivos críticos (patrón)
 
 - `modules/certificacion/src/domain/` (`riesgo.ts` + nuevos `activo`, `criterios`, `evaluacion`, `accion-tratamiento`, `plan`, `aceptacion`), `application/` (`repositorios.port.ts`, `contexto.ts`, `riesgos.use-cases.ts`, `declaracion.use-cases.ts`→`armarCopia`; `index.ts` solo con lo que consume `apps/api`), `infrastructure/*-kysely.adapter.ts`, `unidad-de-trabajo-certificacion.ts`, `generador-documento-docx.adapter.ts`.
-- `platform/db/migrations/0023…0028` y `platform/db/src/aislamiento-*`, `privilegios.integration.test.ts`.
+- `platform/db/migrations/0026…0031` y `platform/db/src/aislamiento-*`, `privilegios.integration.test.ts`.
 - `platform/autorizacion/src/roles.ts`, `platform/auditoria/src/dominio/catalogo.ts`, `packages/contracts/openapi.yaml` (+ `contrato.test.ts`, `generar-tipos.mjs`).
 - `apps/api/src/certificacion/*.controller.ts`, `esquemas-riesgos.ts`, `tokens.ts`, `composicion.ts`; `apps/web/src/certificacion/escribir.ts`, `auth/guardia-formulario.ts` (reutilizar), `src/pantallas/*`, `src/i18n/es-EC.ts`.
 - Reutilizar: `calcularNivel`/`CORTES_NIVEL`, `exigirPermiso`, `ConflictoDeVersionError`, `versionEsperada`, `siguienteNumero` con reintento.
