@@ -2,7 +2,7 @@
 
 **Léelo primero al iniciar cualquier sesión.**
 
-- **Paso actual:** **Etapa A · Auditoría interna · tarea 25 de 25 (fase 5 de 5: Verificación y cierre): módulo HECHO** (rama `feature/auditoria-interna`, **PR por aprobar y fusionar**; hoja de ruta ya marcada «Hecho»; ADR 040 «Aprobado»). Antes: control documental (ADR 039) integrado. Siguiente módulo de la etapa A: **Gestión de riesgos completa** (spec, plan y tareas aprobados en la rama `feature/gestion-riesgos-completa`, sin implementar; **sus migraciones deben renumerarse a partir de la `0026`**, porque auditoría interna usó la `0023` a la `0025`), y después **No conformidades y acciones correctivas**.
+- **Paso actual:** **Etapa A · Auditoría interna · tarea 25 de 25 (fase 5 de 5: Verificación y cierre): módulo HECHO y FUSIONADO** (PR #31 en `main` el 2026-11-22; verificación de extremo a extremo corrida por el responsable; hoja de ruta marcada «Hecho»; ADR 040 «Aprobado»). Antes: control documental (ADR 039) integrado. Siguiente módulo de la etapa A: **Gestión de riesgos completa** (spec, plan y tareas aprobados en la rama `feature/gestion-riesgos-completa`, sin implementar; **sus migraciones deben renumerarse a partir de la `0026`**, porque auditoría interna usó la `0023` a la `0025`), y después **No conformidades y acciones correctivas**.
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (#1 y #3), 0.5 (#4) y **0.6 (cerrado el 2026-11-09; PR #5 a #11)**. Siguen fuera del MVP: el resto del 0.7, el 0.8 y el 0.9.
 - **PR (2026-11-17):** `main` incluye los PR #1, #3 a #12, #15, #18 a #23 y #26 (**M7**, personas). El #2 se cerró a propósito (PR de prueba que viola las reglas). **Abiertos:** #13, #14, #16 y #17 (0.7, 0.8 y 0.9, fuera del MVP: ver «Pendiente del responsable»), #24 (la guardia común de formularios; **ya entró en `main` dentro del #26**, se cierra) y #25 (accesibilidad y contraste del *hover*; **sigue vigente**, solo choca en este archivo). La protección de `main` exige los **7 checks**, incluido `integracion`, y que la rama esté al día. Regla de trabajo: nada se confirma ni se empuja directo en `main`; cada tarea o grupo de tareas va en una rama `feature/…`, con PR y los 7 checks en verde, y el merge lo haces tú.
 - **Hitos del MVP integrados:** H1 y H2 (M1 a M3, #19 y #20), H3 (M4 a M6b, #21), elegir empresa al entrar y cerrar sesión (#22), accesibilidad de avisos y tablas (#23) y M7, personas (#26).
@@ -106,7 +106,7 @@ Spec `docs/specs/auditoria-interna/` (aprobado el 2026-11-19 con la propuesta po
 
 - **Qué hace:** **procesos** mínimos y sus relaciones con personas; **programa anual** (uno por año, aprobado una vez, exclusiones con motivo); **auditorías** con alcance, equipo e **independencia por proceso** (la relación bloquea; la excepción exige motivo y medida compensatoria; repetir dentro de 12 meses es solo un aviso); **lista de verificación** generada al pasar a preparación y fijada a la versión de la librería; **evaluación** solo por el equipo en ejecución; **hallazgos** (NC mayor solo del líder, con proceso, requisito y evidencia); **informe congelado** con huella SHA-256 sobre JSON canónico, descarga en Word; **cierre** (solo el administrador; no cierra los hallazgos); **panel** del prerrequisito de la Etapa 2 (se calcula y se muestra, no decide la etapa).
 - **Base:** migraciones `0023` a `0025` (14 tablas con `empresa_id`, RLS forzada, claves foráneas compuestas, privilegios por columna y una prueba de aislamiento por grupo; el informe es inmutable). **Bitácora:** 27 acciones nuevas en el catálogo cerrado, sin texto libre.
-- **API:** 117 operaciones en total; permisos `auditoria.ver|planificar|ejecutar|aprobar|gestionar`. **Web:** panel, procesos, programa, planificación, lista y hallazgos, informe y cierre (con axe por estado). `pnpm web:verify-auditoria` (todo real; **no cierra** la auditoría ni aprueba el programa) está escrito pero **no se ejecutó** en esta sesión: ejecútalo con el stack levantado antes de fusionar.
+- **API:** 117 operaciones en total; permisos `auditoria.ver|planificar|ejecutar|aprobar|gestionar`. **Web:** panel, procesos, programa, planificación, lista y hallazgos, informe y cierre (con axe por estado). `pnpm web:verify-auditoria` (todo real; **no cierra** la auditoría ni aprueba el programa) **ejecutado por el responsable antes de fusionar** (PR #31).
 - **Revisión (seis revisores):** sin bloqueantes. Corregido: una sola `restarMeses`, nombres accesibles y áreas táctiles, aviso del máximo de preguntas, bases de tratamiento y `persona_id` en bitácora (STRIDE/ADR 028), y que la Declaración solo se exija si la norma tiene controles.
 - **Límites que decide el responsable de producto** (ADR 040, «Límites conocidos»): la revisión por la dirección (9.3) no es un requisito propio del prerrequisito; la cobertura de procesos mide el alcance, no lo verificado; el prerrequisito y el panel usan ventanas de tiempo distintas; «conforme» no exige nota. Deuda técnica: tamaños y espaciado de la web usan utilidades Tailwind por defecto, no tokens (sistémico, no solo de este módulo); `hallazgo` podría reforzarse con una clave foránea de tres columnas hacia la fila de su auditoría.
 
@@ -231,12 +231,12 @@ Base local lista: `pnpm db:init`, `pnpm db:migrate` y `pnpm db:seed` dejaron los
 
 ## Próximos pasos técnicos
 
-1. **Abrir y fusionar el PR de «Control documental»** (rama `feature/control-documental`; la protección de `main` exige los 7 checks). El ADR 037 («Declaración justificada») sigue en «Propuesto» en `main`: pasarlo a «Aprobado». Después, **Gestión de riesgos completa** (spec, plan y tareas ya aprobados en `feature/gestion-riesgos-completa`; renumerar sus migraciones desde la `0023`).
+1. **Gestión de riesgos completa** (spec, plan y tareas ya aprobados en `feature/gestion-riesgos-completa`; rebasar sobre `main` y renumerar sus migraciones desde la `0026`). Después, **No conformidades y acciones correctivas**. Ya fusionados en `main`: declaración justificada (#28), control documental (#29) y auditoría interna (#31).
 2. **Integrar o cerrar los PR abiertos** según la propuesta de «Pendiente del responsable» (#16, #17, #13; #14 en borrador; #24 cerrar; #25 rebasar).
 3. **Después del MVP:** el resto del 0.7 (IA local, modelo pequeño con su tamaño informado antes de descargar), 0.8 (Helm y OpenTofu validados, sin clúster) y 0.9; y los prerrequisitos de la Fase 1 de abajo que el MVP no resolvió.
 
 
-- **Actualizado:** 2026-11-19
+- **Actualizado:** 2026-11-22
 
 ## Prerrequisitos de la Fase 1 (de la revisión de calidad del 2026-11-08)
 
@@ -278,7 +278,7 @@ ADR 001–025, 027 y 029 aprobados; ADR 026 aprobado el 2026-11-08; ADR 028 apro
 
 ## Próximos pasos de la Fase 0
 
-0.1 a 0.6 cerrados → **MVP de certificación (M1 a M7 hechos) → Etapa A: Declaración justificada hecha; sigue Gestión de riesgos completa** → resto del 0.7 → 0.8 → 0.9
+0.1 a 0.6 cerrados → **MVP de certificación (M1 a M7 hechos) → Etapa A: Declaración justificada, control documental y auditoría interna hechas; sigue Gestión de riesgos completa** → resto del 0.7 → 0.8 → 0.9
 
 ## Paso 0.3 — notas
 
