@@ -1,5 +1,6 @@
 import { ErrorCertificacion } from './errores.js';
 import { JUSTIFICACION_MIN } from './evaluacion.js';
+import { restarMeses } from './fechas.js';
 
 // Auditoría interna (ADR 040): lista de verificación, cobertura y prerrequisito de la Etapa 2. Funciones puras. La lista solo lleva el
 // identificador de la entrada de la norma (con su título breve y guía propia, nunca texto de la norma).
@@ -184,14 +185,7 @@ export const filaCubierta = (f: FilaEvaluada): boolean => {
 };
 
 /** `AAAA-MM-DD` de hace `meses` meses, para la cobertura de 12 meses móviles. */
-export const ventanaMovil = (hoy: string, meses = 12): string => {
-  const [a, m, d] = hoy.split('-').map(Number) as [number, number, number];
-  const total = a * 12 + (m - 1) - meses;
-  const anio = Math.floor(total / 12);
-  const mes = (total % 12) + 1;
-  const ultimo = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
-  return `${String(anio).padStart(4, '0')}-${String(mes).padStart(2, '0')}-${String(Math.min(d, ultimo)).padStart(2, '0')}`;
-};
+export const ventanaMovil = (hoy: string, meses = 12): string => restarMeses(hoy, meses);
 
 /**
  * Cobertura con las auditorías CERRADAS con informe (las demás no cuentan). Cláusulas 4 a 10 de cada norma elegida, procesos del alcance

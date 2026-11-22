@@ -1,5 +1,5 @@
 import { ErrorCertificacion } from './errores.js';
-import { fechaValida } from './fechas.js';
+import { fechaValida, restarMeses } from './fechas.js';
 
 // Auditoría interna (ADR 040): independencia del auditor, por proceso. Reglas puras: sin base de datos, sin reloj propio.
 
@@ -53,16 +53,6 @@ export const procesosDelAlcance = (
   const mapa = new Map(elegidos.map((p) => [p.id, p]));
   if (cubreClausulas4a10 && transversal) mapa.set(transversal.id, transversal);
   return [...mapa.values()];
-};
-
-/** Resta `meses` a una fecha `AAAA-MM-DD` (ajusta el día si el mes destino es más corto). */
-const restarMeses = (fecha: string, meses: number): string => {
-  const [a, m, d] = fecha.split('-').map(Number) as [number, number, number];
-  const total = a * 12 + (m - 1) - meses;
-  const anio = Math.floor(total / 12);
-  const mes = (total % 12) + 1;
-  const ultimo = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
-  return `${String(anio).padStart(4, '0')}-${String(mes).padStart(2, '0')}-${String(Math.min(d, ultimo)).padStart(2, '0')}`;
 };
 
 /**

@@ -20,6 +20,16 @@ Todo es **«Confidencial de la empresa»**, con `empresa_id` y RLS forzada (migr
 | Archivo Word del informe | Confidencial | **No se guarda**: se genera cada vez desde la copia congelada | — |
 | Hechos de bitácora (`proceso.*`, `relacion.*`, `programa.*`, `exclusion.*`, `auditoria.*`, `equipo.*`, `lista.generada`, `item.evaluado`, `pregunta.*`, `hallazgo.*`, `informe.*`) | Interno, inmutable | `bitacora` | Ver ADR 028 |
 
+**Identificador en la bitácora:** `relacion.creada`, `relacion.eliminada`, `equipo.designado` y `equipo.retirado` llevan el `persona_id` (identificador opaco, **seudonimizado**) y `equipo.designado`, además, si hubo excepción y si fue autoautorizada. Al ser inmutable, no se puede suprimir sin romper la cadena: depende del insumo 2 del ADR 028 (tabla `usuario` anonimizable).
+
+## Base de tratamiento (hipótesis a validar por el asesor legal)
+
+| Tratamiento | Hipótesis |
+| --- | --- |
+| Relaciones persona–proceso y equipo auditor | Cumplimiento de la obligación de la empresa de auditar internamente su sistema de gestión y **interés legítimo** en la trazabilidad e independencia de quien audita |
+| Notas, evidencias, enunciados de hallazgos, motivos y conclusión (texto libre) | Interés legítimo de la empresa en documentar la auditoría; **sin base propia para datos personales incluidos por descuido** (riesgo aceptado 1) |
+| Hechos de bitácora con `persona_id` | Trazabilidad (P15); ver ADR 028 |
+
 **Nunca** llegan a la bitácora: nombres de procesos, objetivos, notas, evidencias, motivos escritos, conclusiones ni nombres de personas. Solo el hecho y el objeto de **forma exacta** (por ejemplo `auditoria:AI-2027-01`), valores cerrados y, en el informe, la huella.
 
 ## Procesos y relaciones
@@ -62,7 +72,7 @@ Todo es **«Confidencial de la empresa»**, con `empresa_id` y RLS forzada (migr
 
 ## Protección de la web
 
-Las escrituras van por formularios `POST` a rutas del servidor de la web con **lista cerrada de 27 acciones** (una desconocida es 404); exigen `Origin` igual al de la web (sin Origin, `null` u otro sitio: 403), no admiten `GET` (405) y no pasan el token al navegador (ADR 027). Cada campo se valida y se normaliza **antes** de llegar a la API; un valor opcional inválido **no se descarta en silencio**. Verificado de extremo a extremo con `pnpm web:verify-auditoria`.
+Las escrituras van por formularios `POST` a rutas del servidor de la web con **lista cerrada de acciones** (`ACCIONES_AUDITORIA`) (una desconocida es 404); exigen `Origin` igual al de la web (sin Origin, `null` u otro sitio: 403), no admiten `GET` (405) y no pasan el token al navegador (ADR 027). Cada campo se valida y se normaliza **antes** de llegar a la API; un valor opcional inválido **no se descarta en silencio**. Verificado de extremo a extremo con `pnpm web:verify-auditoria`.
 
 ## Riesgos aceptados
 
