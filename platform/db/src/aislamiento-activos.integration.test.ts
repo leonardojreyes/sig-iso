@@ -7,14 +7,14 @@ import { GestorPools } from './pools';
 
 // AISLAMIENTO ENTRE EMPRESAS (regla 2) de los activos de información y su liga con riesgos (ADR 038): con la sesión de A se intenta leer o
 // tocar lo de B y debe fallar. Corre contra PostgreSQL real con el esquema migrado.
-const A = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000e1');
-const B = crearEmpresaId('bbbbbbbb-0000-4000-8000-0000000000e2');
-const UA = 'a1a1a1a1-0000-4000-8000-0000000000e1';
-const UB = 'b1b1b1b1-0000-4000-8000-0000000000e2';
-const AA = 'ac000000-0000-4000-8000-0000000000e1';
-const AB = 'ad000000-0000-4000-8000-0000000000e2';
-const RA = 'ca000000-0000-4000-8000-0000000000e1';
-const RB = 'cb000000-0000-4000-8000-0000000000e2';
+const A = crearEmpresaId('aaaaaaaa-0000-4000-8000-000000000012');
+const B = crearEmpresaId('bbbbbbbb-0000-4000-8000-000000000013');
+const UA = 'a1a1a1a1-0000-4000-8000-000000000012';
+const UB = 'b1b1b1b1-0000-4000-8000-000000000013';
+const AA = 'ac000000-0000-4000-8000-000000000012';
+const AB = 'ad000000-0000-4000-8000-000000000013';
+const RA = 'ca000000-0000-4000-8000-000000000012';
+const RB = 'cb000000-0000-4000-8000-000000000013';
 
 const hayBase = ROLES_BD.every((r) => process.env[`DATABASE_URL_${r.toUpperCase()}`]) && !!process.env.DATABASE_URL_TEST;
 

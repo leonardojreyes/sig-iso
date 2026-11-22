@@ -128,3 +128,32 @@ describe("el objeto de un riesgo", () => {
     rechaza({ ...ejemplos["riesgo.creado"], objeto: "riesgo:" });
   });
 });
+
+describe("el objeto de un activo (ADR 038) solo es su código o la liga con un riesgo, nunca texto de la empresa", () => {
+  it.each([
+    ["activo.creado", "activo:A-001"],
+    ["activo.cambiado", "activo:A-1000"],
+    ["activo.retirado", "activo:A-042"],
+    ["activo.ligado", "vinculo:R-001.A-001"],
+    ["activo.desligado", "vinculo:R-012.A-007"],
+  ] as const)("%s acepta su identificador (%s)", (accion, objeto) => {
+    expect(() => validarEvento({ ...ejemplos[accion], objeto })).not.toThrow();
+  });
+
+  it.each([
+    ["activo.creado", "activo:Base de clientes"],
+    ["activo.cambiado", "activo:A-1"],
+    ["activo.retirado", "activo:R-001"],
+    ["activo.creado", "activo:"],
+    ["activo.ligado", "vinculo:Base de clientes.A-001"],
+    ["activo.desligado", "vinculo:R-001."],
+  ] as const)("%s rechaza %s", (accion, objeto) => {
+    expect(() => validarEvento({ ...ejemplos[accion], objeto })).toThrow();
+  });
+
+  it("no admite texto libre ni claves en antes/después, ni nombres de personas", () => {
+    expect(() => validarEvento({ ...ejemplos["activo.creado"], despues: { nombre: "x" } } as never)).toThrow();
+    expect(() => validarEvento({ ...ejemplos["activo.cambiado"], despues: { descripcion: "x" } } as never)).toThrow();
+    expect(() => validarEvento({ ...ejemplos["activo.retirado"], motivo: "otro" } as never)).toThrow();
+  });
+});

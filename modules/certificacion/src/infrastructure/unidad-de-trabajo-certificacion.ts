@@ -2,6 +2,7 @@ import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import { UnidadDeTrabajoKysely } from '@sig/db';
 import type { Kysely } from 'kysely';
 import type { ContextoCertificacion } from '../application/contexto.js';
+import { ActivoKysely, RiesgoActivoKysely } from './activo-kysely.adapter.js';
 import { AlcanceKysely } from './alcance-kysely.adapter.js';
 import { AuditoriaKysely, AyudasKysely, HallazgoKysely, InformeKysely, ItemKysely, ProcesoKysely, ProgramaKysely, RelacionKysely } from './auditoria-kysely.adapter.js';
 import { ControlKysely } from './control-kysely.adapter.js';
@@ -31,6 +32,8 @@ export const crearUnidadDeTrabajoCertificacion = (db: Kysely<unknown>): UnidadDe
     referencias: new ReferenciaKysely(trx, empresaId),
     evidencias: new EvidenciaKysely(trx, empresaId),
     declaraciones: new DeclaracionKysely(trx, empresaId),
+    activos: new ActivoKysely(trx, empresaId),
+    ligasActivo: new RiesgoActivoKysely(trx, empresaId),
     documentos: new DocumentoKysely(trx, empresaId),
     versionesDocumento: new VersionDocumentoKysely(trx, empresaId),
     destinatarios: new DestinatarioKysely(trx, empresaId),
