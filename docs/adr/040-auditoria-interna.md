@@ -1,6 +1,6 @@
 # ADR 040 — Auditoría interna: programa, independencia, hallazgos e informe congelado
 
-- **Estado:** Propuesto (2026-11-19). Se aprueba junto con el PR del módulo. Spec aprobado por el responsable con la propuesta por omisión (`docs/specs/auditoria-interna/spec.md`, sección 11). Completa los ADR 028 (privacidad), 029 (permisos por rol) y 033 (Word) y no los contradice.
+- **Estado:** Aprobado (2026-11-22, al integrar el PR del módulo; propuesto el 2026-11-19). Spec aprobado por el responsable con la propuesta por omisión (`docs/specs/auditoria-interna/spec.md`, sección 11). Completa los ADR 028 (privacidad), 029 (permisos por rol) y 033 (Word) y no los contradice.
 - **Fecha:** 2026-11-19
 - **Decide:** Ing. Leonardo J. Reyes B.
 
