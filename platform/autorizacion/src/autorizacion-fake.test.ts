@@ -48,6 +48,18 @@ describe('matriz de permisos por rol (ADR 008, corte 0.6)', () => {
     for (const p of permisosDe('auditor_interno')) expect(p, 'auditor_interno').not.toMatch(/gestionar|aprobar|planificar|redactar|registrar|eliminar|editar|cargar|adoptar/);
   });
 
+  // ADR 038: activos y criterios los gestiona solo el administrador SIG; el colaborador consulta y cambia el estado de SUS acciones (el caso
+  // de uso comprueba que sean suyas); aceptar el riesgo residual es solo del administrador; los demás roles no tienen nada.
+  it('los permisos de gestión de riesgos completa se reparten por rol', () => {
+    const NUEVOS = ['activos.ver', 'activos.gestionar', 'criterios.ver', 'criterios.gestionar', 'riesgos.aceptar', 'acciones.estado'] as const;
+    for (const p of NUEVOS) expect(permisosDe('administrador_sig')).toContain(p);
+    const colaborador = permisosDe('colaborador');
+    for (const p of ['activos.ver', 'criterios.ver', 'acciones.estado'] as const) expect(colaborador).toContain(p);
+    for (const p of ['activos.gestionar', 'criterios.gestionar', 'riesgos.aceptar'] as const) expect(colaborador, `colaborador no debe tener ${p}`).not.toContain(p);
+    for (const rol of ['dueno_proceso', 'auditor_externo', 'alta_direccion'] as Rol[]) for (const p of NUEVOS) expect(permisosDe(rol)).not.toContain(p);
+    for (const p of NUEVOS) expect(permisosDe('auditor_interno')).not.toContain(p);
+  });
+
   it.each(['dueno_proceso', 'auditor_externo', 'alta_direccion'] as Rol[])(
     'el rol %s aún no tiene permisos definidos en este corte (cerrado por defecto)',
     (rol) => {
