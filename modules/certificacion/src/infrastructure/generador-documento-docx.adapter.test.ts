@@ -291,3 +291,68 @@ describe('GeneradorDocumentoDocx tras la revisión', () => {
     expect(x).toContain('abc');
   });
 });
+
+describe('informe de auditoría interna en Word', () => {
+  const contenido = {
+    version: 1,
+    auditoria: {
+      codigo: 'AI-2026-01',
+      anio: 2026,
+      objetivo: 'Verificar el SGSI',
+      inicio: '2026-11-10',
+      fin: '2026-11-25',
+      reunionApertura: '2026-11-10',
+      reunionCierre: '2026-11-25',
+      combinada: true,
+      normas: ['iso-27001', 'iso-9001'],
+      capitulos: [{ libreriaCodigo: 'iso-27001', capitulo: '9' }],
+      procesos: [
+        { codigo: 'PR-001', nombre: 'Compras', transversal: false },
+        { codigo: 'PR-002', nombre: 'Gestión del SIG', transversal: true },
+      ],
+    },
+    programa: { anio: 2026, objetivo: 'Programa 2026' },
+    equipo: [
+      { personaId: 'u1', nombre: 'Dora Auditora', rol: 'lider', excepcion: true, autoautorizada: true, excepcionMotivo: 'no hay otra persona', excepcionMedida: 'otra persona revisa el informe' },
+      { personaId: 'u2', nombre: 'Eli <Auditor>', rol: 'auditor', excepcion: false, autoautorizada: false, excepcionMotivo: null, excepcionMedida: null },
+    ],
+    conteos: { por_evaluar: 0, conforme: 1, no_conforme: 1, observacion: 0, oportunidad: 0, no_aplica: 0, no_verificado: 1, total: 3, cubiertas: 2 },
+    filas: [
+      { libreriaCodigo: 'iso-27001', idEstable: 'c4-1', titulo: 'Contexto', resultado: 'conforme', nota: null },
+      { libreriaCodigo: 'iso-27001', idEstable: 'c9-2', titulo: null, resultado: 'no_conforme', nota: 'No hay acta' },
+      { libreriaCodigo: 'iso-27001', idEstable: 'c9-3', titulo: 'Revisión', resultado: 'no_verificado', nota: 'sin tiempo\u202e' },
+    ],
+    noVerificadas: [{ libreriaCodigo: 'iso-27001', idEstable: 'c9-3', nota: 'sin tiempo' }],
+    hallazgos: [{ codigo: 'H-001', tipo: 'nc_menor', proceso: 'PR-001', requisito: 'iso-27001:c9-2', enunciado: 'Falta el acta', evidencia: 'Carpeta vacía', justificacionGravedad: null, estado: 'abierto' }],
+    conclusion: 'Conforme con una NC menor.\nSegunda línea.',
+    limitaciones: null,
+    emitidoPor: { personaId: 'u1', nombre: 'Dora Auditora' },
+    emitidoEn: '2026-11-19T15:00:00.000Z',
+  } as never;
+  const generarInforme = () => new GeneradorDocumentoDocx().generarInformeAuditoria({ contenido, huella: 'a'.repeat(64), generadaEl: '2026-11-20' });
+
+  it('es un Word válido (por su contenido), con la huella del documento y sin campos, enlaces ni macros', async () => {
+    const r = await generarInforme();
+    const lector = { tamano: r.bytes.length, leer: async (d: number, h: number) => r.bytes.subarray(d, Math.min(h, r.bytes.length)) };
+    expect(await detectarTipoArchivo(lector)).toEqual({ ok: true, tipo: TIPO_DOCUMENTO_WORD });
+    expect(r.sha256).toBe(sha256Hex(r.bytes));
+    const todo = nombres(r.bytes);
+    expect(todo.filter((n) => /vba|macro|embeddings|oleObject/i.test(n))).toEqual([]);
+    const xml = parte(r.bytes, 'word/document.xml')!;
+    expect(xml).not.toMatch(/w:fldSimple|w:instrText|w:hyperlink|w:altChunk/);
+  });
+
+  it('lleva el aviso de que no es un certificado, la huella de la copia congelada, la conclusión y los hallazgos', async () => {
+    const xml = parte((await generarInforme()).bytes, 'word/document.xml')!;
+    for (const esperado of ['Informe de auditoría interna', 'no es un certificado', 'a'.repeat(64), 'AI-2026-01', 'Conforme con una NC menor.', 'Segunda línea.', 'H-001', 'No conformidad menor', 'Falta el acta', 'Carpeta vacía', 'proceso transversal', 'Auditoría combinada', 'Excepción de independencia', 'otra persona revisa el informe', 'Lo que no se verificó', 'No se registraron limitaciones.'])
+      expect(xml, esperado).toContain(esperado);
+    expect(xml).toContain('Resultados de la lista de verificación');
+  });
+
+  it('escapa lo que escribió la empresa y quita los caracteres invisibles o de dirección', async () => {
+    const xml = parte((await generarInforme()).bytes, 'word/document.xml')!;
+    expect(xml).toContain('Eli &lt;Auditor&gt;');
+    expect(xml).not.toContain('Eli <Auditor>');
+    expect(xml).not.toContain('\u202e');
+  });
+});

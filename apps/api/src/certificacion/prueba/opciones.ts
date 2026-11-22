@@ -58,6 +58,6 @@ export const opcionesDePrueba = (p: { estado: EstadoFalso; almacen: AlmacenArchi
     guardarReferencia: new GuardarReferenciaUseCase(unidad, autorizacion, reloj),
     quitarReferencia: new QuitarReferenciaUseCase(unidad, autorizacion),
     documentos: crearCasosDocumentales(unidad, autorizacion, catalogo, p.almacen, reloj, nuevoId),
-    auditoria: crearCasosAuditoria(unidad, autorizacion, catalogo, reloj, nuevoId, (texto) => sha256Hex(new TextEncoder().encode(texto))),
+    auditoria: crearCasosAuditoria(unidad, autorizacion, catalogo, reloj, nuevoId, (texto) => sha256Hex(new TextEncoder().encode(texto)), new GeneradorDocumentoDocx()),
   };
 };

@@ -5,6 +5,7 @@ import {
   CambiarHallazgoUseCase,
   CerrarAuditoriaUseCase,
   EmitirInformeUseCase,
+  ExportarInformeUseCase,
   EvaluarFilaUseCase,
   ListarHallazgosUseCase,
   ListarListaUseCase,
@@ -38,6 +39,7 @@ import {
   RetirarProcesoUseCase,
   type AutorizacionPort,
   type CatalogoLecturaPort,
+  type GeneradorDocumentoPort,
   type ContextoCertificacion,
   type UnidadDeTrabajoPort,
 } from '@sig/certificacion';
@@ -81,6 +83,7 @@ export interface CasosAuditoria {
   readonly anularHallazgo: AnularHallazgoUseCase;
   readonly emitirInforme: EmitirInformeUseCase;
   readonly obtenerInforme: ObtenerInformeUseCase;
+  readonly exportarInforme: ExportarInformeUseCase;
   readonly cerrarAuditoria: CerrarAuditoriaUseCase;
   readonly panel: ObtenerPanelAuditoriaUseCase;
 }
@@ -93,6 +96,8 @@ export const crearCasosAuditoria = (
   nuevoId: () => string,
   /** SHA-256 en hexadecimal de un texto (la composición lo aporta con `node:crypto`). */
   hash: (texto: string) => string,
+  /** Escribe el Word del informe (ADR 033). */
+  generador: GeneradorDocumentoPort,
 ): CasosAuditoria => ({
   listarProcesos: new ListarProcesosUseCase(unidad, autorizacion),
   crearProceso: new CrearProcesoUseCase(unidad, autorizacion, reloj, nuevoId),
@@ -129,6 +134,7 @@ export const crearCasosAuditoria = (
   anularHallazgo: new AnularHallazgoUseCase(unidad, autorizacion, reloj),
   emitirInforme: new EmitirInformeUseCase(unidad, autorizacion, catalogo, reloj, nuevoId, hash),
   obtenerInforme: new ObtenerInformeUseCase(unidad, autorizacion),
+  exportarInforme: new ExportarInformeUseCase(unidad, autorizacion, generador, reloj, hash),
   cerrarAuditoria: new CerrarAuditoriaUseCase(unidad, autorizacion, reloj),
   panel: new ObtenerPanelAuditoriaUseCase(unidad, autorizacion, catalogo, reloj),
 });

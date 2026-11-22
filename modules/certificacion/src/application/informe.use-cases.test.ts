@@ -173,6 +173,67 @@ describe('cerrar la auditoría', () => {
   });
 });
 
+describe('exportar el informe a Word', () => {
+  const emitido = async () => {
+    const c = await lista();
+    const i = await emitir(c.m, c.a.id, c.a.version);
+    return { ...c, i };
+  };
+
+  it('sale de la copia congelada, deja la exportación en la bitácora con la huella del documento y la entrega con nombre fijo', async () => {
+    const { m, a, i } = await emitido();
+    const x = await m.exportar.ejecutar({ ...e(COLAB), id: a.id });
+    expect(x).toMatchObject({ nombre: 'informe-auditoria-AI-2026-01.docx', tipo: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    expect(x.sha256).toBe(sha256Hex(x.bytes));
+    expect(m.generador.llamadasInforme).toHaveLength(1);
+    expect(m.generador.llamadasInforme[0]).toMatchObject({ huella: i.huella, generadaEl: '2026-11-19' });
+    expect(m.generador.llamadasInforme[0]?.contenido).toEqual(i.contenido);
+    expect(m.estado.eventos.at(-1)).toMatchObject({ accion: 'informe.exportado', objeto: 'informe:AI-2026-01', objetoVersion: x.sha256 });
+    expect(JSON.stringify(m.estado.eventos)).not.toContain('ENUNCIADO-PRIVADO');
+  });
+
+  it('después de cerrar, sigue saliendo de la misma copia (no de los datos de hoy)', async () => {
+    const { m, a, i } = await emitido();
+    await m.cerrar.ejecutar({ ...e(), id: a.id, versionEsperada: a.version + 1 });
+    // un cambio de hoy en el hallazgo no altera el informe
+    const h = (await m.listarHallazgos.ejecutar({ ...e(), id: a.id })).hallazgos[0]!;
+    m.estado.auditoriaEstado.hallazgos.set(h.id, { ...m.estado.auditoriaEstado.hallazgos.get(h.id)!, enunciado: 'CAMBIADO-DESPUES' });
+    await m.exportar.ejecutar({ ...e(), id: a.id });
+    expect(JSON.stringify(m.generador.llamadasInforme.at(-1))).not.toContain('CAMBIADO-DESPUES');
+    expect(m.generador.llamadasInforme.at(-1)?.huella).toBe(i.huella);
+  });
+
+  it('sin informe emitido es un 404; el permiso es «auditoria.ver»; el de otra empresa no se exporta', async () => {
+    const c = await lista();
+    await expect(c.m.exportar.ejecutar({ ...e(), id: c.a.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    await emitir(c.m, c.a.id, c.a.version);
+    await expect(c.m.exportar.ejecutar({ ...e(SIN_PERMISOS), id: c.a.id })).rejects.toBeInstanceOf(SinPermisoError);
+    await expect(c.m.exportar.ejecutar({ ...e(ADMIN_B, B), id: c.a.id })).rejects.toBeInstanceOf(EntradaNoEncontradaError);
+    await expect(c.m.exportar.ejecutar({ ...e(), id: 'no-uuid' })).rejects.toBeInstanceOf(ParametroInvalidoError);
+    expect(c.m.generador.llamadasInforme).toHaveLength(0);
+  });
+
+  it('si la bitácora falla no se entrega nada, y si la copia ya no coincide con su huella, tampoco se genera', async () => {
+    const { m, a } = await emitido();
+    m.estado.fallarBitacora = true;
+    await expect(m.exportar.ejecutar({ ...e(), id: a.id })).rejects.toThrow();
+    m.estado.fallarBitacora = false;
+    const inf = [...m.estado.auditoriaEstado.informes.values()][0]!;
+    m.estado.auditoriaEstado.informes.set(inf.id, { ...inf, contenido: { ...(inf.contenido as object), conclusion: 'ALTERADA' } });
+    const antes = m.generador.llamadasInforme.length;
+    await expect(m.exportar.ejecutar({ ...e(), id: a.id })).rejects.toThrow(/huella/);
+    expect(m.generador.llamadasInforme).toHaveLength(antes);
+  });
+
+  it('si el generador falla no queda registrada ninguna exportación', async () => {
+    const { m, a } = await emitido();
+    m.generador.fallar = true;
+    const antes = m.estado.eventos.length;
+    await expect(m.exportar.ejecutar({ ...e(), id: a.id })).rejects.toThrow();
+    expect(m.estado.eventos).toHaveLength(antes);
+  });
+});
+
 describe('panel y prerrequisito de la Etapa 2', () => {
   const cerrada = async (opciones: { conDeclaracion?: boolean; todoConforme?: boolean } = {}) => {
     const c = await auditoriaEnEjecucion();

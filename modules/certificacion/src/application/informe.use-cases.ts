@@ -17,6 +17,7 @@ import { alcanceDeProcesos } from './auditorias.use-cases.js';
 import type { AutorizacionPort } from './autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from './catalogo-lectura.port.js';
 import { exigirPermiso, identificar, validarUuid } from './comunes.js';
+import { TIPO_DOCUMENTO_WORD, type GeneradorDocumentoPort } from './generador-documento.port.js';
 import type { ContextoCertificacion, Reloj } from './contexto.js';
 import { traducirDominio } from './documentos.use-cases.js';
 import { ErrorCertificacion } from '../domain/errores.js';
@@ -357,6 +358,45 @@ export class CerrarAuditoriaUseCase {
       });
       return { id, codigo: a.codigo, estado: 'cerrada', cerradaEn: ahora.toISOString(), version: version + 1 };
     });
+  }
+}
+
+/** El informe exportado a Word: siempre desde la copia congelada, nunca desde los datos de hoy. */
+export interface ExportacionInforme {
+  readonly nombre: string;
+  readonly tipo: string;
+  readonly bytes: Uint8Array;
+  /** SHA-256 del documento: es lo que queda fijado en la bitácora al exportar. */
+  readonly sha256: string;
+}
+
+export class ExportarInformeUseCase {
+  constructor(
+    private readonly unidad: Unidad,
+    private readonly autorizacion: AutorizacionPort,
+    private readonly generador: GeneradorDocumentoPort,
+    private readonly reloj: Reloj,
+    private readonly hash: HashTexto,
+  ) {}
+
+  /** Antes de entregar, la exportación queda en la bitácora con la huella del documento; si no se puede registrar, no se entrega. */
+  async ejecutar(e: { empresaId: string; usuarioId: string; id: string }): Promise<ExportacionInforme> {
+    const { empresaId, usuarioId } = identificar(e.empresaId, e.usuarioId);
+    await exigirPermiso(this.autorizacion, usuarioId, 'auditoria.ver', empresaId);
+    const id = validarUuid(e.id, 'id');
+    const { a, i } = await this.unidad.ejecutar(empresaId, async (c) => {
+      const aud = await exigirAuditoria(c, id);
+      const inf = await c.informes.obtener(id);
+      if (!inf) throw new EntradaNoEncontradaError();
+      return { a: aud, i: inf };
+    });
+    // La copia no pudo cambiar: se vuelve a calcular su huella antes de escribir nada. Si no coincide, no se entrega.
+    if (this.hash(serializarCanonico(i.contenido)) !== i.huella) throw new Error('El informe no coincide con su huella');
+    const generado = await this.generador.generarInformeAuditoria({ contenido: i.contenido as InformeContenido, huella: i.huella, generadaEl: hoyEnEcuador(this.reloj()) });
+    await this.unidad.ejecutar(empresaId, (c) =>
+      c.bitacora.registrar({ empresaId, actor: { tipo: 'usuario', usuarioId }, accion: 'informe.exportado', resultado: 'ok', objeto: `informe:${a.codigo}`, objetoVersion: generado.sha256 }),
+    );
+    return { nombre: `informe-auditoria-${a.codigo}.docx`, tipo: TIPO_DOCUMENTO_WORD, bytes: generado.bytes, sha256: generado.sha256 };
   }
 }
 

@@ -1,4 +1,5 @@
 import type { FilaDeclaracion } from '../domain/declaracion.js';
+import type { InformeContenido } from './informe.use-cases.js';
 import type { CopiaJustificacion, EscalaCongelada } from './repositorios.port.js';
 
 export const GENERADOR_DOCUMENTO = Symbol('GENERADOR_DOCUMENTO');
@@ -35,6 +36,15 @@ export interface DocumentoDeclaracion {
   readonly justificacion: JustificacionDocumento | null;
 }
 
+/** El informe de una auditoría interna: SIEMPRE desde su copia congelada (ADR 040), nunca desde los datos de hoy. */
+export interface DocumentoInformeAuditoria {
+  readonly contenido: InformeContenido;
+  /** SHA-256 de la copia congelada, tal como quedó al emitir el informe. */
+  readonly huella: string;
+  /** AAAA-MM-DD (Ecuador) en que se generó el documento. */
+  readonly generadaEl: string;
+}
+
 export interface DocumentoGenerado {
   readonly bytes: Uint8Array;
   /** SHA-256 en minúsculas de `bytes`: es lo que queda fijado en la bitácora al exportar. */
@@ -44,4 +54,5 @@ export interface DocumentoGenerado {
 /** Puerto de salida: escribe el documento Word. La aplicación no conoce la librería concreta (ADR 033). */
 export interface GeneradorDocumentoPort {
   generarDeclaracion(documento: DocumentoDeclaracion): Promise<DocumentoGenerado>;
+  generarInformeAuditoria(documento: DocumentoInformeAuditoria): Promise<DocumentoGenerado>;
 }

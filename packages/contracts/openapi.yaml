@@ -4394,6 +4394,49 @@ paths:
           $ref: '#/components/responses/LimiteExcedido'
         '500':
           $ref: '#/components/responses/ErrorInterno'
+  /auditorias/{id}/informe/documento:
+    get:
+      operationId: exportarInformeAuditoria
+      summary: Descarga el informe de la auditoría en Word
+      description: 'Siempre como **adjunto** y SIEMPRE desde la copia congelada del informe emitido, no desde los datos de hoy; antes de escribirlo se vuelve a comprobar su huella. Lleva el aviso de que no es un certificado. Queda en la bitácora, con la huella SHA-256 del documento, **antes** de entregarlo; si no se puede registrar, no se entrega. 404 si todavía no se emitió el informe. Orden de evaluación: 401, 403, 400, 404.'
+      tags:
+      - auditoria
+      x-permiso: auditoria.ver
+      parameters:
+      - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El documento Word, como adjunto.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+            Content-Disposition:
+              description: Siempre `attachment`, con un nombre fijado por el servidor.
+              schema:
+                type: string
+                maxLength: 300
+            X-Content-Type-Options:
+              schema:
+                type: string
+                enum:
+                - nosniff
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearerAuth:

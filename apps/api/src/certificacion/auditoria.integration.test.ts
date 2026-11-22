@@ -55,6 +55,7 @@ const RUTAS: [string, string, unknown][] = [
   ['GET', `/auditorias/${ID_FALSO}/informe`, undefined],
   ['POST', `/auditorias/${ID_FALSO}/informe`, { versionEsperada: 1, conclusion: 'x' }],
   ['POST', `/auditorias/${ID_FALSO}/cierre`, { versionEsperada: 1 }],
+  ['GET', `/auditorias/${ID_FALSO}/informe/documento`, undefined],
   ['GET', '/auditoria/panel', undefined],
 ];
 
@@ -489,6 +490,7 @@ describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
       const filas = (await json(await pedir(`/auditorias/${a.id}/lista`, await tColab()))).filas;
       await problema(await pedir(`/auditorias/${a.id}/informe`, await tAuditor(), 'POST', { versionEsperada: a.version, conclusion: 'Conforme' }), 409, 'conflicto');
       await problema(await pedir(`/auditorias/${a.id}/informe`, await tAuditor()), 404, 'no_encontrado');
+      await problema(await pedir(`/auditorias/${a.id}/informe/documento`, await tColab()), 404, 'no_encontrado');
       for (const f of filas) expect((await pedir(`/auditorias/${a.id}/lista/resultado`, await tAuditor(), 'PUT', { filaId: f.id, versionEsperada: 1, resultado: 'conforme' })).status).toBe(200);
       await problema(await pedir(`/auditorias/${a.id}/informe`, await tAuditor(), 'POST', { versionEsperada: a.version, conclusion: '' }), 400, 'parametro_invalido');
       void proceso;
@@ -503,6 +505,18 @@ describe('controladores de procesos de la auditoría interna (ADR 040)', () => {
       const otra = await json(await pedir(`/auditorias/${a.id}/informe`, await tColab()));
       expect(otra.huella).toBe(informe.huella);
       await problema(await pedir(`/auditorias/${a.id}/informe`, await tAuditor(), 'POST', { versionEsperada: a.version + 1, conclusion: 'otra' }), 409, 'conflicto');
+      // Word: siempre como adjunto, desde la copia congelada, con la exportación registrada antes de entregarla
+      const w = await pedir(`/auditorias/${a.id}/informe/documento`, await tColab());
+      expect(w.status).toBe(200);
+      expect(w.headers.get('content-type')).toBe('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      expect(w.headers.get('content-disposition')).toMatch(/^attachment; filename/);
+      expect(w.headers.get('content-disposition')).toContain('informe-auditoria-AI-2026-01.docx');
+      expect(w.headers.get('x-content-type-options')).toBe('nosniff');
+      expect(w.headers.get('cache-control')).toMatch(/no-store/);
+      const bytes = new Uint8Array(await w.arrayBuffer());
+      expect(String.fromCharCode(bytes[0]!, bytes[1]!)).toBe('PK');
+      expect(estado.eventos.at(-1)).toMatchObject({ accion: 'informe.exportado', objeto: 'informe:AI-2026-01' });
+      expect(estado.eventos.at(-1)?.objetoVersion).toMatch(/^[0-9a-f]{64}$/);
       await problema(await pedir(`/auditorias/${a.id}/cierre`, await tAuditor(), 'POST', { versionEsperada: a.version + 1 }), 403, 'sin_permiso');
       const c = await pedir(`/auditorias/${a.id}/cierre`, await tAdmin(), 'POST', { versionEsperada: a.version + 1 });
       expect(c.status).toBe(200);

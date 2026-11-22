@@ -1,13 +1,13 @@
 // Escenario compartido de las pruebas de la auditoría interna: una empresa con dos administradores, dos auditores internos y una
 // auditoría con líder, ya en preparación o en ejecución, con todos los casos de uso armados sobre los fakes. Solo para pruebas.
 import { AvanzarAuditoriaUseCase, CambiarAuditoriaUseCase, CrearAuditoriaUseCase, DesignarMiembroUseCase } from '../auditorias.use-cases.js';
-import { CerrarAuditoriaUseCase, EmitirInformeUseCase, ObtenerInformeUseCase, ObtenerPanelAuditoriaUseCase } from '../informe.use-cases.js';
+import { CerrarAuditoriaUseCase, EmitirInformeUseCase, ExportarInformeUseCase, ObtenerInformeUseCase, ObtenerPanelAuditoriaUseCase } from '../informe.use-cases.js';
 import { AnularHallazgoUseCase, CambiarHallazgoUseCase, ListarHallazgosUseCase, RegistrarHallazgoUseCase } from '../hallazgos.use-cases.js';
 import { AgregarPreguntaUseCase, EvaluarFilaUseCase, ListarListaUseCase, QuitarPreguntaUseCase, RegenerarListaUseCase } from '../lista.use-cases.js';
 import { AgregarRelacionUseCase, CrearGestionSigUseCase, CrearProcesoUseCase } from '../procesos.use-cases.js';
 import { CrearProgramaUseCase } from '../programas.use-cases.js';
 import { sha256Hex } from './archivos.js';
-import { A, ADMIN, B, COLAB, EstadoFalso, crearAutorizacionFalsa, crearCatalogoFalso, crearUnidadFalsa, entradas } from './fakes.js';
+import { A, ADMIN, B, COLAB, EstadoFalso, GeneradorFalso, crearAutorizacionFalsa, crearCatalogoFalso, crearUnidadFalsa, entradas } from './fakes.js';
 
 export const AUDITOR = '55555555-5555-4555-8555-5555555555a5';
 export const AUDITOR2 = '77777777-7777-4777-8777-7777777777a7';
@@ -46,6 +46,8 @@ export const montarAuditoria = () => {
   const u = crearUnidadFalsa(estado);
   const aut = crearAutorizacionFalsa(estado);
   const cat = crearCatalogoFalso(estado);
+  const generador = new GeneradorFalso();
+  const hashTexto = (texto: string): string => sha256Hex(new TextEncoder().encode(texto));
   return {
     estado,
     reloj,
@@ -70,9 +72,11 @@ export const montarAuditoria = () => {
     registrarHallazgo: new RegistrarHallazgoUseCase(u, aut, cat, reloj, nuevoId),
     cambiarHallazgo: new CambiarHallazgoUseCase(u, aut, cat, reloj),
     anularHallazgo: new AnularHallazgoUseCase(u, aut, reloj),
-    emitirInforme: new EmitirInformeUseCase(u, aut, cat, reloj, nuevoId, (texto) => sha256Hex(new TextEncoder().encode(texto))),
+    emitirInforme: new EmitirInformeUseCase(u, aut, cat, reloj, nuevoId, hashTexto),
     obtenerInforme: new ObtenerInformeUseCase(u, aut),
     cerrar: new CerrarAuditoriaUseCase(u, aut, reloj),
+    generador,
+    exportar: new ExportarInformeUseCase(u, aut, generador, reloj, hashTexto),
     panel: new ObtenerPanelAuditoriaUseCase(u, aut, cat, reloj),
   };
 };

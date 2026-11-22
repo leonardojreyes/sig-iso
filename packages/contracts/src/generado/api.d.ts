@@ -2114,6 +2114,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auditorias/{id}/informe/documento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Descarga el informe de la auditoría en Word
+         * @description Siempre como **adjunto** y SIEMPRE desde la copia congelada del informe emitido, no desde los datos de hoy; antes de escribirlo se vuelve a comprobar su huella. Lleva el aviso de que no es un certificado. Queda en la bitácora, con la huella SHA-256 del documento, **antes** de entregarlo; si no se puede registrar, no se entrega. 404 si todavía no se emitió el informe. Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["exportarInformeAuditoria"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -7744,6 +7764,39 @@ export interface operations {
             };
             401: components["responses"]["NoAutenticado"];
             403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    exportarInformeAuditoria: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El documento Word, como adjunto. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Siempre `attachment`, con un nombre fijado por el servidor. */
+                    "Content-Disposition"?: string;
+                    "X-Content-Type-Options"?: "nosniff";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

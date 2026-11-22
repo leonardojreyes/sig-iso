@@ -17,7 +17,7 @@ import type { AlmacenArchivosPort, ResultadoGuardado } from '../almacen-archivos
 import type { AutorizacionPort, Permiso } from '../autorizacion.port.js';
 import type { CatalogoLecturaPort, EntradaCatalogo } from '../catalogo-lectura.port.js';
 import type { ContextoCertificacion } from '../contexto.js';
-import type { DocumentoDeclaracion, DocumentoGenerado, GeneradorDocumentoPort } from '../generador-documento.port.js';
+import type { DocumentoDeclaracion, DocumentoGenerado, DocumentoInformeAuditoria, GeneradorDocumentoPort } from '../generador-documento.port.js';
 import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, FilaEvidencia, CopiaJustificacion, MapeoRepositoryPort, MotivoRepositoryPort, ReferenciaRepositoryPort, RiesgoRepositoryPort, VersionDeclaracion, VinculoRiesgoRepositoryPort } from '../repositorios.port.js';
 import type { UnidadDeTrabajoPort } from '../unidad-de-trabajo.port.js';
 import { crearRepositoriosAuditoriaFalsos, EstadoAuditoriaFalso } from './fakes-auditoria.js';
@@ -352,9 +352,16 @@ export class AlmacenFalso implements AlmacenArchivosPort {
 export class GeneradorFalso implements GeneradorDocumentoPort {
   llamadas: DocumentoDeclaracion[] = [];
   fallar = false;
+  llamadasInforme: DocumentoInformeAuditoria[] = [];
   async generarDeclaracion(documento: DocumentoDeclaracion): Promise<DocumentoGenerado> {
     if (this.fallar) throw new Error('generador no disponible');
     this.llamadas.push(documento);
+    const bytes = new TextEncoder().encode(JSON.stringify(documento));
+    return { bytes, sha256: sha256Hex(bytes) };
+  }
+  async generarInformeAuditoria(documento: DocumentoInformeAuditoria): Promise<DocumentoGenerado> {
+    if (this.fallar) throw new Error('generador no disponible');
+    this.llamadasInforme.push(documento);
     const bytes = new TextEncoder().encode(JSON.stringify(documento));
     return { bytes, sha256: sha256Hex(bytes) };
   }

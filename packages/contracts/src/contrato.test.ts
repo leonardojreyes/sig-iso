@@ -149,6 +149,7 @@ const AUDITORIA_INTERNA: readonly (readonly [string, string, string[], boolean, 
   ['GET /auditorias/{id}/informe', 'auditoria.ver', ['path:id'], false, true],
   ['POST /auditorias/{id}/informe', 'auditoria.ejecutar', ['path:id'], true, true],
   ['POST /auditorias/{id}/cierre', 'auditoria.aprobar', ['path:id'], true, true],
+  ['GET /auditorias/{id}/informe/documento', 'auditoria.ver', ['path:id'], false, true],
   ['GET /auditoria/panel', 'auditoria.ver', [], false, false],
 ];
 const OPS_AUDITORIA = AUDITORIA_INTERNA.map((x) => x[0]);

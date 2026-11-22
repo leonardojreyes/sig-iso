@@ -158,7 +158,7 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       guardarReferencia: new GuardarReferenciaUseCase(unidadCertificacion, autorizacion, reloj),
       quitarReferencia: new QuitarReferenciaUseCase(unidadCertificacion, autorizacion),
       documentos: crearCasosDocumentales(unidadCertificacion, autorizacion, catalogo, almacen, reloj, () => randomUUID()),
-      auditoria: crearCasosAuditoria(unidadCertificacion, autorizacion, catalogo, reloj, () => randomUUID(), (texto) => createHash('sha256').update(texto, 'utf8').digest('hex')),
+      auditoria: crearCasosAuditoria(unidadCertificacion, autorizacion, catalogo, reloj, () => randomUUID(), (texto) => createHash('sha256').update(texto, 'utf8').digest('hex'), new GeneradorDocumentoDocx()),
     },
     personas: {
       solicitarAcceso: new SolicitarAccesoUseCase(unidadPersonas, (n) => crypto.getRandomValues(new Uint8Array(n)), () => randomUUID()),

@@ -1,14 +1,17 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Put, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Put, Query, Res, StreamableFile } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import type { IdentidadVerificada } from '@sig/autenticacion';
+import { TIPO_DOCUMENTO_WORD } from '@sig/certificacion';
 import { Identidad } from '../autenticacion/identidad.js';
 import { ParametroIdRuta, RespuestasProblema } from '../documentacion.js';
 import { AUDITORIA, type CasosAuditoria } from './auditoria.casos.js';
+import { contentDisposition } from './subida.js';
 import { CuerpoCierreEntrada, CuerpoHallazgoAnulacion, CuerpoHallazgoCambios, CuerpoHallazgoEntrada, CuerpoInformeEntrada, CuerpoPreguntaEntrada, CuerpoPreguntaQuitar, CuerpoResultadoFila, CuerpoAuditoriaAvance, CuerpoAuditoriaCambios, CuerpoAuditoriaCancelacion, CuerpoAuditoriaEntrada, CuerpoAuditoriaReprogramacion, CuerpoMiembroEntrada, CuerpoMiembroQuitar, CuerpoExclusionEntrada, CuerpoExclusionQuitar, CuerpoProcesoCambios, CuerpoProcesoEntrada, CuerpoProgramaCambios, CuerpoProgramaEntrada, CuerpoProgramaVersion, CuerpoRelacionEntrada } from './cuerpos-auditoria.dto.js';
 import { CIERRE_AUDITORIA, FILA_LISTA, HALLAZGO, INFORME_AUDITORIA, LISTA_HALLAZGOS, LISTA_VERIFICACION, PANEL_AUDITORIA, PREGUNTA_LISTA, REGENERACION_LISTA, AUDITORIA as AUDITORIA_ESQUEMA, INDEPENDENCIA, MIEMBRO_EQUIPO, DETALLE_PROGRAMA, EXCLUSION_PROGRAMA, LISTA_PROCESOS, LISTA_PROGRAMAS, LISTA_RELACIONES, PROCESO, PROGRAMA, RELACION_PROCESO } from './esquemas-auditoria.js';
 
 type Cuerpo = Record<string, unknown>;
 type Respuesta = { status(codigo: number): unknown };
+const DOCUMENTO = { description: 'El documento Word, como adjunto.', content: { [TIPO_DOCUMENTO_WORD]: { schema: { type: 'string' as const, format: 'binary' } } } };
 
 /** Copia solo las claves conocidas que vengan presentes: los demás campos se ignoran y el caso de uso valida lo que pasa. */
 const elegir = (cuerpo: unknown, claves: readonly string[]): Cuerpo => {
@@ -410,6 +413,23 @@ export class AuditoriaController {
   @RespuestasProblema(400, 401, 403, 404, 429, 500)
   async obtenerInforme(@Param('id') id: string, @Identidad() identidad: IdentidadVerificada) {
     return this.c.obtenerInforme.ejecutar({ ...this.ids(identidad), id });
+  }
+
+  // La ruta fija («documento») se declara ANTES de la que lleva solo el identificador.
+  @Get('auditorias/:id/informe/documento')
+  @ApiOperation({ operationId: 'exportarInformeAuditoria' })
+  @ParametroIdRuta()
+  @ApiOkResponse(DOCUMENTO)
+  @RespuestasProblema(400, 401, 403, 404, 429, 500)
+  async exportarInforme(
+    @Param('id') id: string,
+    @Identidad() identidad: IdentidadVerificada,
+    @Res({ passthrough: true }) respuesta: { setHeader(n: string, v: string): void },
+  ): Promise<StreamableFile> {
+    const x = await this.c.exportarInforme.ejecutar({ ...this.ids(identidad), id });
+    // Defensa en profundidad además de las cabeceras globales (nosniff, no-store): un adjunto nunca se interpreta ni se incrusta.
+    respuesta.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    return new StreamableFile(x.bytes, { type: x.tipo, disposition: contentDisposition(x.nombre), length: x.bytes.length });
   }
 
   @Post('auditorias/:id/informe')
