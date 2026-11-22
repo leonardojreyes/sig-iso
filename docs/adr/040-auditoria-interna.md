@@ -30,3 +30,14 @@ Para pasar la Etapa 2 la empresa debe mostrar al menos una auditoría interna he
 - El informe congelado puede contener datos personales de un texto libre sin vía de rectificación; es insumo nuevo para el asesor legal (ADR 028). Solo datos de prueba hasta entonces.
 - Contratar a una persona externa para auditar y el auditor externo con acceso limitado en el tiempo quedan fuera (roles múltiples, M3 de la revisión de calidad).
 - «Gestión de riesgos completa» pasa a usar las migraciones desde la `0026`.
+
+### Límites conocidos del prerrequisito de la Etapa 2 (a decidir por el responsable de producto)
+
+Surgieron en la revisión experto-iso y **no se cambiaron** porque modifican lo que significa el prerrequisito; el panel solo informa, no decide la etapa:
+
+1. **Revisión por la dirección (9.3):** hoy solo cuenta como una cláusula que puede quedar «no verificada»; no es un requisito propio ni hay un dato de «revisión realizada». Propuesta: una brecha explícita `revisionDireccion` cuando exista el módulo correspondiente.
+2. **Cobertura de procesos:** mide lo **incluido en el alcance** de una auditoría cerrada, no lo verificado con evidencia por proceso.
+3. **Ventana de tiempo:** el prerrequisito suma las auditorías cerradas de cualquier año y el panel muestra el programa del año; conviene una sola regla (programa vigente más 12 a 24 meses).
+4. Una fila «conforme» no exige nota de evidencia; la excepción de independencia autoautorizada se muestra en el equipo y en el informe, pero no se señala como brecha en el panel.
+
+Corregido en este PR: la Declaración de Aplicabilidad solo se exige si alguna norma del programa tiene controles (una empresa solo 9001 o 42001 no queda sin poder cumplir).

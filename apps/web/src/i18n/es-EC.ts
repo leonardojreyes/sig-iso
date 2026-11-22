@@ -1082,6 +1082,7 @@ export const es = {
       preguntaAgregar: 'Agregar pregunta',
       preguntaQuitar: (t: string) => `Quitar la pregunta «${t}»`,
       sinPreguntas: 'Sin preguntas propias.',
+      limitePreguntas: 'Se alcanzó el máximo de 5 preguntas propias por fila: quite una para agregar otra.',
       hallazgosTitulo: 'Hallazgos',
       hallazgosAyuda: 'Una no conformidad lleva el proceso, el requisito incumplido y la evidencia objetiva; la mayor, además, la justificación de la gravedad, que decide el líder. La observación (riesgo de incumplimiento futuro) y la oportunidad no son incumplimientos. El tratamiento se hace en otro módulo.',
       hallazgosVacio: 'Todavía no hay hallazgos.',

@@ -122,7 +122,7 @@ export const PantallaProcesos = ({ empresa, persona, lista, personas, aviso = nu
                     {x.transversal ? <span className="ml-2"><Badge>{p.transversal}</Badge></span> : null}
                   </p>
                   {x.descripcion ? <p className="mt-1 text-sm text-fg-muted">{x.descripcion}</p> : null}
-                  <a className={`mt-1 ${enlaceClase}`} href={`${base}/procesos/${x.id}`} aria-label={p.editar(x.nombre)}>
+                  <a className={`mt-1 ${enlaceClase}`} href={`${base}/procesos/${x.id}`} aria-label={`${p.detalle}: ${x.nombre}`}>
                     {p.detalle}
                   </a>
                 </Td>

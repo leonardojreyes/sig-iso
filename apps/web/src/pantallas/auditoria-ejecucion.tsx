@@ -8,6 +8,7 @@ import { Campo, NavegacionAuditoria, enlaceClase, esAdministrador, t, type Perso
 import { MarcoApp } from './marco';
 
 const ej = t.ejecucion;
+const MAX_PREGUNTAS = 5;
 const RESULTADOS_EVALUABLES = RESULTADOS.filter((r) => r !== 'por_evaluar');
 
 export interface PropsEjecucion {
@@ -102,7 +103,7 @@ export const PantallaEjecucion = ({ empresa, persona, auditoria: a, lista, halla
                     </p>
                     {f.guia ? (
                       <details className="mt-1">
-                        <summary className="cursor-pointer text-sm text-primary underline">{ej.guia}</summary>
+                        <summary className={`cursor-pointer ${enlaceClase}`}>{ej.guia}</summary>
                         <p className="mt-1 text-sm text-fg-muted">{f.guia}</p>
                       </details>
                     ) : null}
@@ -127,7 +128,8 @@ export const PantallaEjecucion = ({ empresa, persona, auditoria: a, lista, halla
                           ))}
                         </ul>
                       )}
-                      {puedePreguntar && f.preguntas.length < 5 && (
+                      {puedePreguntar && f.preguntas.length >= MAX_PREGUNTAS && <p className="mt-2 text-sm text-fg-muted">{ej.limitePreguntas}</p>}
+                      {puedePreguntar && f.preguntas.length < MAX_PREGUNTAS && (
                         <form method="post" action={escribir('pregunta_agregar')} className="mt-2 flex flex-wrap items-end gap-2">
                           <input type="hidden" name="filaId" value={f.id} />
                           <Campo id={`pregunta-${f.id}`} etiqueta={`${ej.preguntaNueva}: ${nombreFila(f)}`}>
@@ -227,7 +229,7 @@ export const PantallaEjecucion = ({ empresa, persona, auditoria: a, lista, halla
                     {puedeEscribir && h.estado === 'abierto' && (
                       <>
                         <details className="mt-2">
-                          <summary className="cursor-pointer text-sm text-primary underline">{ej.cambiar(h.codigo)}</summary>
+                          <summary className={`cursor-pointer ${enlaceClase}`}>{ej.cambiar(h.codigo)}</summary>
                           <form method="post" action={escribir('hallazgo_cambiar')} className="mt-2 grid gap-2">
                             <input type="hidden" name="hallazgoId" value={h.id} />
                             <input type="hidden" name="version" value={h.version} />
@@ -238,7 +240,7 @@ export const PantallaEjecucion = ({ empresa, persona, auditoria: a, lista, halla
                           </form>
                         </details>
                         <details className="mt-2">
-                          <summary className="cursor-pointer text-sm text-primary underline">{ej.anular(h.codigo)}</summary>
+                          <summary className={`cursor-pointer ${enlaceClase}`}>{ej.anular(h.codigo)}</summary>
                           <form method="post" action={escribir('hallazgo_anular')} className="mt-2 grid gap-2">
                             <input type="hidden" name="hallazgoId" value={h.id} />
                             <input type="hidden" name="version" value={h.version} />

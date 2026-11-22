@@ -462,15 +462,18 @@ export class ObtenerPanelAuditoriaUseCase {
           .filter((f) => f.aplicabilidad === 'aplica')
           .map((f) => ({ libreriaCodigo: f.libreriaCodigo, idEstable: f.idEstable }));
       }
+      const entradasReferencia = entradas
+        .filter((x) => normas.includes(x.libreriaCodigo) && (x.tipo === 'clausula' || x.tipo === 'control'))
+        .map((x) => ({
+          libreriaCodigo: x.libreriaCodigo,
+          idEstable: x.idEstable,
+          tipo: x.tipo as 'clausula' | 'control',
+          capitulo: x.capitulo,
+        }));
+      // La Declaración solo se exige si alguna norma del programa tiene controles (27001); una empresa solo 9001 o 42001 no la necesita.
+      if (controlesAplicables === null && !entradasReferencia.some((x) => x.tipo === 'control')) controlesAplicables = [];
       const referencia = {
-        entradas: entradas
-          .filter((x) => normas.includes(x.libreriaCodigo) && (x.tipo === 'clausula' || x.tipo === 'control'))
-          .map((x) => ({
-            libreriaCodigo: x.libreriaCodigo,
-            idEstable: x.idEstable,
-            tipo: x.tipo as 'clausula' | 'control',
-            capitulo: x.capitulo,
-          })),
+        entradas: entradasReferencia,
         procesosIds: procesos.filter((p) => p.estado === 'vigente').map((p) => p.id),
         controlesAplicables,
       };
