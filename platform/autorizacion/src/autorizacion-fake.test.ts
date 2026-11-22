@@ -36,7 +36,19 @@ describe('matriz de permisos por rol (ADR 008, corte 0.6)', () => {
     }
   });
 
-  it.each(['dueno_proceso', 'auditor_interno', 'auditor_externo', 'alta_direccion'] as Rol[])(
+  // ADR 040: planificar, aprobar y gestionar auditorías es solo del administrador SIG; el auditor interno consulta y ejecuta (solo en las
+  // suyas: el caso de uso lo comprueba); el colaborador solo consulta; los demás roles no tienen nada.
+  it('los permisos de auditoría interna se reparten por rol', () => {
+    const TODOS = ['auditoria.ver', 'auditoria.planificar', 'auditoria.ejecutar', 'auditoria.aprobar', 'auditoria.gestionar'] as const;
+    for (const p of TODOS) expect(permisosDe('administrador_sig')).toContain(p);
+    expect(permisosDe('auditor_interno').filter((p) => p.startsWith('auditoria.'))).toEqual(['auditoria.ver', 'auditoria.ejecutar']);
+    expect(permisosDe('colaborador').filter((p) => p.startsWith('auditoria.'))).toEqual(['auditoria.ver']);
+    for (const rol of ['dueno_proceso', 'auditor_externo', 'alta_direccion'] as Rol[]) expect(permisosDe(rol).filter((p) => p.startsWith('auditoria.'))).toEqual([]);
+    // el auditor interno no escribe nada fuera de su ejecución
+    for (const p of permisosDe('auditor_interno')) expect(p, 'auditor_interno').not.toMatch(/gestionar|aprobar|planificar|redactar|registrar|eliminar|editar|cargar|adoptar/);
+  });
+
+  it.each(['dueno_proceso', 'auditor_externo', 'alta_direccion'] as Rol[])(
     'el rol %s aún no tiene permisos definidos en este corte (cerrado por defecto)',
     (rol) => {
       expect(permisosDe(rol)).toEqual([]);

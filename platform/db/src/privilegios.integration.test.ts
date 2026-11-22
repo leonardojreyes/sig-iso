@@ -61,6 +61,20 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   documento_lectura: { app: ["SELECT", "INSERT"] }, // UPDATE solo de la fecha de confirmación, sin DELETE (migración 0022)
   documento_control: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro (migración 0022)
   documento_entrada: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro (migración 0022)
+  proceso: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE: un proceso se retira (migración 0023)
+  persona_proceso: { app: ["SELECT", "INSERT", "DELETE"] }, // la relación se quita con rastro (migración 0023)
+  programa_auditoria: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE (migración 0024)
+  programa_norma: { app: ["SELECT", "INSERT", "DELETE"] }, // configuración que se quita con rastro (migración 0024)
+  programa_exclusion: { app: ["SELECT", "INSERT", "DELETE"] },
+  auditoria: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE: se cancela, no se borra
+  auditoria_norma: { app: ["SELECT", "INSERT", "DELETE"] },
+  auditoria_proceso: { app: ["SELECT", "INSERT", "DELETE"] },
+  auditoria_capitulo: { app: ["SELECT", "INSERT", "DELETE"] },
+  auditoria_equipo: { app: ["SELECT", "INSERT", "DELETE"] }, // la designación se quita con rastro; no se edita
+  auditoria_item: { app: ["SELECT", "INSERT", "DELETE"] }, // UPDATE solo por columnas; el dominio solo quita filas «por evaluar» (migración 0025)
+  auditoria_pregunta: { app: ["SELECT", "INSERT", "DELETE"] },
+  hallazgo: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE: se anula
+  auditoria_informe: { app: ["SELECT", "INSERT"] }, // inmutable: ni UPDATE ni DELETE
   retencion_tipo: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE (migración 0022)
   bitacora: { app: ["SELECT"] }, // INSERT solo por columna (app y plataforma); ver la prueba de columnas de la bitácora
   bitacora_ancla: {}, // solo el dueño lee y añade; nadie modifica ni borra
@@ -374,6 +388,14 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         documento_version: { si: ["estado", "aprobador_id", "enviada_en", "aprobada_por", "aprobada_en", "por_su_autor", "motivo_excepcion", "requiere_lectura", "devuelta_motivo", "devuelta_nota", "obsoleta_en", "version", "actualizado_por", "actualizado_en"], no: ["id", "empresa_id", "documento_id", "numero", "nota", "archivo_id", "archivo_nombre", "archivo_tipo", "archivo_bytes", "archivo_sha256", "autor_id", "creado_por", "creado_en"] },
         documento_lectura: { si: ["confirmada_en"], no: ["empresa_id", "version_id", "usuario_id", "creado_en"] },
         retencion_tipo: { si: ["anios", "motivo", "version", "actualizado_por", "actualizado_en"], no: ["empresa_id", "tipo"] },
+        // auditoría interna (0025): nunca la auditoría, la entrada fijada, el correlativo ni la autoría.
+        auditoria_item: { si: ["resultado", "nota", "evaluado_por", "evaluado_en", "version", "actualizado_por", "actualizado_en"], no: ["id", "empresa_id", "auditoria_id", "libreria_codigo", "libreria_version", "id_estable", "creado_por", "creado_en"] },
+        hallazgo: { si: ["tipo", "proceso_id", "libreria_codigo", "id_estable", "enunciado", "evidencia", "justificacion_gravedad", "estado", "anulacion_motivo", "anulado_por", "anulado_en", "version", "actualizado_por", "actualizado_en"], no: ["id", "empresa_id", "auditoria_id", "item_id", "numero", "codigo", "registrado_por", "creado_por", "creado_en"] },
+        // auditoría interna (0024): nunca el código, el año, el correlativo, el programa ni la autoría.
+        programa_auditoria: { si: ["objetivo", "estado", "aprobado_por", "aprobado_en", "version", "actualizado_por", "actualizado_en"], no: ["id", "empresa_id", "anio", "creado_por", "creado_en"] },
+        auditoria: { si: ["objetivo", "estado", "inicio", "fin", "reunion_apertura", "reunion_cierre", "reprogramaciones", "cancelacion_motivo", "cancelacion_nota", "informe_emitido_por", "informe_emitido_en", "cerrada_por", "cerrada_en", "version", "actualizado_por", "actualizado_en"], no: ["id", "empresa_id", "programa_id", "anio", "numero", "codigo", "creado_por", "creado_en"] },
+        // auditoría interna (0023): nunca el código, la marca transversal ni la autoría de un proceso.
+        proceso: { si: ["nombre", "descripcion", "duena_id", "importancia", "frecuencia", "cambio_relevante", "estado", "version", "actualizado_por", "actualizado_en"], no: ["id", "empresa_id", "numero", "codigo", "transversal", "creado_por", "creado_en"] },
       };
       for (const [tabla, { si, no }] of Object.entries(COLUMNAS_ACTUALIZABLES)) {
         for (const c of si) expect({ tabla, c, ok: await col("sigiso_app", tabla, c) }).toEqual({ tabla, c, ok: true });
@@ -397,6 +419,11 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
             "documento_version",
             "documento_lectura",
             "retencion_tipo",
+            "proceso",
+            "programa_auditoria",
+            "auditoria",
+            "auditoria_item",
+            "hallazgo",
           ].includes(x),
       )) {
         const r = await sql<{
@@ -413,11 +440,19 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_motivo', 'declaracion_riesgo', 'declaracion_fila_riesgo', 'declaracion_referencia', 'motivo_inclusion', 'referencia_tratamiento', 'riesgo', 'riesgo_control', 'riesgo_entrada', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma', 'solicitud_acceso', 'documento', 'documento_version', 'documento_destinatario', 'documento_lectura', 'documento_control', 'documento_entrada', 'retencion_tipo') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_motivo', 'declaracion_riesgo', 'declaracion_fila_riesgo', 'declaracion_referencia', 'motivo_inclusion', 'referencia_tratamiento', 'riesgo', 'riesgo_control', 'riesgo_entrada', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma', 'solicitud_acceso', 'documento', 'documento_version', 'documento_destinatario', 'documento_lectura', 'documento_control', 'documento_entrada', 'retencion_tipo', 'proceso', 'persona_proceso', 'programa_auditoria', 'programa_norma', 'programa_exclusion', 'auditoria', 'auditoria_norma', 'auditoria_proceso', 'auditoria_capitulo', 'auditoria_equipo', 'auditoria_item', 'auditoria_pregunta', 'auditoria_informe', 'hallazgo') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
         "alcance",
+        "auditoria",
+        "auditoria_capitulo",
+        "auditoria_equipo",
+        "auditoria_informe",
+        "auditoria_item",
+        "auditoria_norma",
+        "auditoria_pregunta",
+        "auditoria_proceso",
         "control",
         "control_mapeo",
         "declaracion_fila",
@@ -437,10 +472,16 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         "empresa_libreria",
         "evaluacion",
         "evidencia",
+        "hallazgo",
         "libreria",
         "libreria_entrada",
         "libreria_entrada_norma",
         "motivo_inclusion",
+        "persona_proceso",
+        "proceso",
+        "programa_auditoria",
+        "programa_exclusion",
+        "programa_norma",
         "referencia_tratamiento",
         "retencion_tipo",
         "riesgo",

@@ -57,6 +57,30 @@ export type AvisoEscritura =
   | 'version_descartada'
   | 'lectura_confirmada'
   | 'retencion_guardada'
+  | 'proceso_guardado'
+  | 'proceso_retirado'
+  | 'relacion_guardada'
+  | 'relacion_quitada'
+  | 'programa_guardado'
+  | 'programa_aprobado'
+  | 'programa_motivo_guardado'
+  | 'programa_motivo_quitado'
+  | 'auditoria_planificada'
+  | 'auditoria_guardada'
+  | 'auditoria_reprogramada'
+  | 'auditoria_cancelada'
+  | 'auditoria_avanzada'
+  | 'equipo_designado'
+  | 'equipo_quitado'
+  | 'lista_regenerada'
+  | 'fila_evaluada'
+  | 'pregunta_guardada'
+  | 'pregunta_quitada'
+  | 'hallazgo_registrado'
+  | 'hallazgo_guardado'
+  | 'hallazgo_anulado'
+  | 'informe_emitido'
+  | 'auditoria_cerrada'
   | 'sin_permiso'
   | 'no_valido'
   | 'archivo_grande'
@@ -107,6 +131,30 @@ const AVISOS: readonly string[] = [
   'version_descartada',
   'lectura_confirmada',
   'retencion_guardada',
+  'proceso_guardado',
+  'proceso_retirado',
+  'relacion_guardada',
+  'relacion_quitada',
+  'programa_guardado',
+  'programa_aprobado',
+  'programa_motivo_guardado',
+  'programa_motivo_quitado',
+  'auditoria_planificada',
+  'auditoria_guardada',
+  'auditoria_reprogramada',
+  'auditoria_cancelada',
+  'auditoria_avanzada',
+  'equipo_designado',
+  'equipo_quitado',
+  'lista_regenerada',
+  'fila_evaluada',
+  'pregunta_guardada',
+  'pregunta_quitada',
+  'hallazgo_registrado',
+  'hallazgo_guardado',
+  'hallazgo_anulado',
+  'informe_emitido',
+  'auditoria_cerrada',
   'sin_permiso',
   'no_valido',
   'archivo_grande',
@@ -133,7 +181,7 @@ export const SIN_CUERPO = Symbol('sin_cuerpo');
 type Cuerpo = Record<string, unknown> | FormData | typeof SIN_CUERPO | 'archivo_grande' | null;
 export interface Operacion {
   /** Pantalla a la que se vuelve (`/e/<empresa>/<pantalla>`). */
-  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion' | 'personas' | 'riesgos' | 'documentos';
+  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion' | 'personas' | 'riesgos' | 'documentos' | 'auditoria';
   /** Ruta (tras `/e/<empresa>/`) a la que se vuelve si no es `pantalla`; recibe el formulario (si se pudo leer) y el recurso de la dirección. */
   readonly volverA?: (f: FormData | null, id: string | null) => string;
   readonly metodoApi: 'PUT' | 'POST';

@@ -14,3 +14,13 @@ const FORMATO_ECUADOR = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Gu
 
 /** La fecha de hoy en Ecuador (`AAAA-MM-DD`): una vigencia «hasta el 10» sigue vigente todo el día 10 de Ecuador, no del servidor. */
 export const hoyEnEcuador = (ahora: Date): string => FORMATO_ECUADOR.format(ahora);
+
+/** Resta `meses` a una fecha `AAAA-MM-DD` (ajusta el día si el mes destino es más corto). */
+export const restarMeses = (fecha: string, meses: number): string => {
+  const [a, m, d] = fecha.split('-').map(Number) as [number, number, number];
+  const total = a * 12 + (m - 1) - meses;
+  const anio = Math.floor(total / 12);
+  const mes = (total % 12) + 1;
+  const ultimo = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+  return `${String(anio).padStart(4, '0')}-${String(mes).padStart(2, '0')}-${String(Math.min(d, ultimo)).padStart(2, '0')}`;
+};

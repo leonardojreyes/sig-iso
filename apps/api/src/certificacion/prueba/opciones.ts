@@ -5,7 +5,8 @@ import {
   SubirEvidenciaUseCase, type AlmacenArchivosPort,
   AvisoRetiroRiesgoUseCase, CambiarRiesgoUseCase, CrearRiesgoUseCase, DesvincularRiesgoControlUseCase, GuardarReferenciaUseCase, ListarMotivosUseCase, ListarReferenciasUseCase, ListarRiesgosUseCase, ObtenerRiesgoUseCase, PreverTratamientoUseCase, QuitarMotivoUseCase, QuitarReferenciaUseCase, QuitarTratamientoPrevistoUseCase, RegistrarMotivoUseCase, RetirarRiesgoUseCase, RiesgosDeUnControlUseCase, VincularRiesgoControlUseCase,
 } from '@sig/certificacion';
-import { crearAutorizacionFalsa, crearCatalogoFalso, crearUnidadFalsa, type EstadoFalso } from '@sig/certificacion/prueba';
+import { crearAutorizacionFalsa, crearCatalogoFalso, crearUnidadFalsa, sha256Hex, type EstadoFalso } from '@sig/certificacion/prueba';
+import { crearCasosAuditoria } from '../auditoria.casos.js';
 import { crearCasosDocumentales } from '../documentos.casos.js';
 import type { OpcionesCertificacionApi } from '../certificacion-api.module.js';
 
@@ -57,5 +58,6 @@ export const opcionesDePrueba = (p: { estado: EstadoFalso; almacen: AlmacenArchi
     guardarReferencia: new GuardarReferenciaUseCase(unidad, autorizacion, reloj),
     quitarReferencia: new QuitarReferenciaUseCase(unidad, autorizacion),
     documentos: crearCasosDocumentales(unidad, autorizacion, catalogo, p.almacen, reloj, nuevoId),
+    auditoria: crearCasosAuditoria(unidad, autorizacion, catalogo, reloj, nuevoId, (texto) => sha256Hex(new TextEncoder().encode(texto)), new GeneradorDocumentoDocx()),
   };
 };

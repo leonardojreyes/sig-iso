@@ -1,5 +1,5 @@
 // Composición de producción: arma el verificador de tokens, el registro de hechos y los casos de uso a partir del entorno.
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Bitacora, BitacoraKysely } from '@sig/auditoria';
 import type { AutorizacionPort } from '@sig/autorizacion';
 import { crearJwksRemoto, TokenVerifierJose } from '@sig/autenticacion';
@@ -7,6 +7,7 @@ import { AutorizacionPostgres, GestorPools, leerUrls } from '@sig/db';
 import { AvisoRetiroRiesgoUseCase, CambiarRiesgoUseCase, CrearRiesgoUseCase, DesvincularRiesgoControlUseCase, GuardarReferenciaUseCase, ListarMotivosUseCase, ListarReferenciasUseCase, ListarRiesgosUseCase, ObtenerRiesgoUseCase, PreverTratamientoUseCase, QuitarMotivoUseCase, QuitarReferenciaUseCase, QuitarTratamientoPrevistoUseCase, RegistrarMotivoUseCase, RetirarRiesgoUseCase, RiesgosDeUnControlUseCase, VincularRiesgoControlUseCase, AprobarDeclaracionUseCase, ExportarDeclaracionUseCase, GeneradorDocumentoDocx, ListarVersionesDeclaracionUseCase, ObtenerDeclaracionUseCase, ObtenerVersionDeclaracionUseCase, AgregarMapeoUseCase, AlmacenArchivosLocal, DescargarEvidenciaUseCase, EliminarEvidenciaUseCase, ListarCoberturaUseCase, ListarEvidenciasUseCase, ReemplazarEvidenciaUseCase, SubirEvidenciaUseCase, type AlmacenArchivosPort, AprobarAlcanceUseCase, CambiarControlUseCase, CrearControlUseCase, EvaluarEntradaUseCase, ListarControlesUseCase, QuitarMapeoUseCase, RetirarControlUseCase, GuardarAlcanceUseCase, ListarAlcancesUseCase, ListarDiagnosticoUseCase, crearUnidadDeTrabajoCertificacion, type ContextoCertificacion, type UnidadDeTrabajoPort as UnidadDeTrabajoCertificacionPort } from '@sig/certificacion';
 import { AprobarSolicitudUseCase, CambiarRolUseCase as CambiarRolPersonaUseCase, crearUnidadDeTrabajoPersonas, DarDeBajaUseCase, DescartarSolicitudUseCase, ListarPersonasUseCase, SolicitarAccesoUseCase, type UnidadDeTrabajoPersonasPort, ActualizarMarcaUseCase, crearUnidadDeTrabajoMarca, CambiarEmpresaUseCase, EmpresaActivaKysely, EmpresaKysely, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase, ResolverEmpresaActivaUseCase, type EmpresaActivaPort, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, CargarLibreriaUseCase, crearUnidadDeTrabajoCarga, LectorLibreriaYaml, type ContextoCarga, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
+import { crearCasosAuditoria } from './certificacion/auditoria.casos.js';
 import { crearCasosDocumentales } from './certificacion/documentos.casos.js';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
 import { leerConfiguracionAuth, leerConfiguracionLimites, type Entorno } from './autenticacion/configuracion.js';
@@ -157,6 +158,7 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       guardarReferencia: new GuardarReferenciaUseCase(unidadCertificacion, autorizacion, reloj),
       quitarReferencia: new QuitarReferenciaUseCase(unidadCertificacion, autorizacion),
       documentos: crearCasosDocumentales(unidadCertificacion, autorizacion, catalogo, almacen, reloj, () => randomUUID()),
+      auditoria: crearCasosAuditoria(unidadCertificacion, autorizacion, catalogo, reloj, () => randomUUID(), (texto) => createHash('sha256').update(texto, 'utf8').digest('hex'), new GeneradorDocumentoDocx()),
     },
     personas: {
       solicitarAcceso: new SolicitarAccesoUseCase(unidadPersonas, (n) => crypto.getRandomValues(new Uint8Array(n)), () => randomUUID()),

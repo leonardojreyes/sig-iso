@@ -231,7 +231,7 @@ Las líneas punteadas no son claves foráneas: la entrada se referencia por `(c�
 6. **Revisión por la dirección** y **Declaración de Aplicabilidad** son documentos generados; se modelarán en `/spec` de sus módulos.
 7. **Entradas de librería:** una entrada es de tipo cláusula, control o agrupador (tema, objetivo de control o capítulo), con un padre opcional. Es solo una referencia: identificador, título breve y guía propia, nunca el texto de la norma.
 8. **Control de la norma frente a control de la empresa:** la Declaración de Aplicabilidad se arma por **control de la norma** (27001 y 42001); el **control de la empresa** puede ser adicional y no tener equivalente en el Anexo A.
-9. **Independencia del auditor:** nadie audita un proceso con el que tiene relación (dueña, participa, diseñó, supervisa) ni uno que auditó recientemente; se evalúa por auditoría y por proceso.
+9. **Independencia del auditor:** nadie audita un proceso con el que tiene relación (dueña, participa, diseñó, supervisa); se evalúa por auditoría y por proceso. Haber auditado el mismo proceso recientemente es solo un **aviso** (buena práctica; ADR 040).
 
 **Reglas que ya cumple el MVP** (añadidas al construir M1 a M3):
 
@@ -249,7 +249,8 @@ Las líneas punteadas no son claves foráneas: la entrada se referencia por `(c�
 | Jerarquía y tipos de la librería, identificador por norma, Anexo A | **MVP** |
 | Alcance, Sede, Exclusión | **MVP** |
 | Certificado, Activo de información, Evaluación de impacto de IA, origen de NC, estados y plazos de hallazgos | después |
-| Asignación de rol con vigencia, Persona–proceso | después (antes de la primera auditoría interna) |
+| Proceso y Persona–proceso (mínimos) | **MVP, con Auditoría interna** (ADR 040) |
+| Asignación de rol con vigencia | después |
 | Diagnóstico y Declaración de Aplicabilidad | se modelan en el spec del MVP |
 
 > **El plan del MVP manda sobre estas marcas** (`docs/specs/mvp-certificacion/plan.md`, aprobado el 2026-11-10, es posterior y recorta el spec v2): en el MVP la jerarquía de librerías **no entra** (las entradas son planas, con tipo y tema), el alcance es **un texto por norma con su aprobación** y las sedes y exclusiones en tablas quedan para después. Lo que sí está construido está en «Lo construido en el MVP», arriba.

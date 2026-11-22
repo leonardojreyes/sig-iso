@@ -50,7 +50,7 @@ export const SelectorEmpresa = ({ empresa }: { empresa: Empresa }) => {
 
 /** Marco de aplicación: cabecera, navegación lateral y contenido principal. */
 /** `persona` es el nombre de quien tiene sesión; solo las pantallas de demostración usan el valor por omisión. */
-export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: { empresa: Empresa; activo: 'panel' | 'requisitos' | 'diagnostico' | 'alcance' | 'controles' | 'riesgos' | 'documentos' | 'cobertura' | 'declaracion' | 'normas' | 'marca' | 'personas'; persona?: string; children: ReactNode }) => (
+export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: { empresa: Empresa; activo: 'panel' | 'requisitos' | 'diagnostico' | 'alcance' | 'controles' | 'riesgos' | 'documentos' | 'auditoria' | 'cobertura' | 'declaracion' | 'normas' | 'marca' | 'personas'; persona?: string; children: ReactNode }) => (
   <div className="min-h-screen bg-bg">
     <a href="#contenido" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2">
       {es.app.saltar}
@@ -106,6 +106,12 @@ export const MarcoApp = ({ empresa, activo, persona = 'Ana Pérez', children }: 
             <a className={enlace} href={`/e/${empresa.id}/documentos`} aria-current={activo === 'documentos' ? 'page' : undefined}>
               <FolderOpen aria-hidden="true" className="size-5" />
               {es.nav.documentos}
+            </a>
+          </li>
+          <li>
+            <a className={enlace} href={`/e/${empresa.id}/auditoria`} aria-current={activo === 'auditoria' ? 'page' : undefined}>
+              <ClipboardCheck aria-hidden="true" className="size-5" />
+              {es.nav.auditoria}
             </a>
           </li>
           <li>

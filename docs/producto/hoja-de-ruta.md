@@ -35,7 +35,7 @@ Estados: `Hecho` · `En curso` · `Pendiente` · `Por definir`. Estimaciones en 
 | Declaración justificada y riesgos básicos | Motivo de inclusión por control, vínculo con riesgos, referencia al tratamiento en el Word (`docs/specs/declaracion-justificada/`; `/review` en `docs/revisiones/2026-11-18-review-declaracion-justificada.md`) | ~1 día | **Hecho** (2026-11-18) |
 | Gestión de riesgos completa | Activos de información, evaluación, plan de tratamiento y riesgo residual | 1,5 a 2 días | Pendiente |
 | Control documental | Políticas y procedimientos con versiones, aprobación, lectura confirmada y retención (`docs/specs/control-documental/`; ADR 039; STRIDE en `docs/security/stride-control-documental.md`) | ~2 días | **Hecho** (2026-11-19) |
-| Auditoría interna | Programa anual, plan, listas de verificación desde los requisitos, hallazgos, independencia del auditor | ~2 días | Pendiente |
+| Auditoría interna | Programa anual, plan, listas de verificación desde los requisitos, hallazgos, independencia del auditor (`docs/specs/auditoria-interna/`; ADR 040; STRIDE en `docs/security/stride-auditoria-interna.md`) | ~2 días | **Hecho** (2026-11-22) |
 | No conformidades y acciones correctivas | Origen, causa raíz, acciones y verificación de eficacia | 1 a 1,5 días | Pendiente |
 | Indicadores y objetivos | Fichas, metas, semáforo y tendencias | 1 a 1,5 días | Pendiente |
 | Revisión por la dirección | Entradas obligatorias armadas desde los demás módulos, acta y decisiones | ~1 día | Pendiente |
