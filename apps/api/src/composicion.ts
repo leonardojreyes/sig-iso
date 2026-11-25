@@ -8,6 +8,7 @@ import { AvisoRetiroRiesgoUseCase, CambiarRiesgoUseCase, CrearRiesgoUseCase, Des
 import { AprobarSolicitudUseCase, CambiarRolUseCase as CambiarRolPersonaUseCase, crearUnidadDeTrabajoPersonas, DarDeBajaUseCase, DescartarSolicitudUseCase, ListarPersonasUseCase, SolicitarAccesoUseCase, type UnidadDeTrabajoPersonasPort, ActualizarMarcaUseCase, crearUnidadDeTrabajoMarca, CambiarEmpresaUseCase, EmpresaActivaKysely, EmpresaKysely, ListarMisEmpresasUseCase, ObtenerIdentidadUseCase, ObtenerMarcaUseCase, OlvidarEmpresaActivaUseCase, ResolverEmpresaActivaUseCase, type EmpresaActivaPort, type EmpresaRepositoryPort } from '@sig/empresas';
 import { AdoptarLibreriaUseCase, CargarLibreriaUseCase, crearUnidadDeTrabajoCarga, LectorLibreriaYaml, type ContextoCarga, crearUnidadDeTrabajoNormas, ListarLibreriasUseCase, type FlagsPort, ListarRequisitosUseCase, ObtenerRequisitoUseCase, type ContextoAdopcion, type UnidadDeTrabajoPort } from '@sig/normas';
 import { crearCasosAuditoria } from './certificacion/auditoria.casos.js';
+import { crearCasosActivos } from './certificacion/activos.casos.js';
 import { crearCasosDocumentales } from './certificacion/documentos.casos.js';
 import type { OpcionesAutenticacion } from './autenticacion/autenticacion.module.js';
 import { leerConfiguracionAuth, leerConfiguracionLimites, type Entorno } from './autenticacion/configuracion.js';
@@ -158,6 +159,7 @@ export const componerDesdeEntorno = (env: Entorno, dependencias: { readonly auto
       guardarReferencia: new GuardarReferenciaUseCase(unidadCertificacion, autorizacion, reloj),
       quitarReferencia: new QuitarReferenciaUseCase(unidadCertificacion, autorizacion),
       documentos: crearCasosDocumentales(unidadCertificacion, autorizacion, catalogo, almacen, reloj, () => randomUUID()),
+      activos: crearCasosActivos(unidadCertificacion, autorizacion, reloj, () => randomUUID()),
       auditoria: crearCasosAuditoria(unidadCertificacion, autorizacion, catalogo, reloj, () => randomUUID(), (texto) => createHash('sha256').update(texto, 'utf8').digest('hex'), new GeneradorDocumentoDocx()),
     },
     personas: {

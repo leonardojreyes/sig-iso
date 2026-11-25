@@ -2134,6 +2134,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/activos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Activos de información de la empresa
+         * @description Con filtros opcionales. Señala los activos vigentes sin ningún riesgo ligado (aviso, no error). Orden de evaluación: 401, 403, 400.
+         */
+        get: operations["listarActivos"];
+        put?: never;
+        /**
+         * Crea un activo
+         * @description El código «A-001» es correlativo, lo asigna el sistema y no se reutiliza. Orden de evaluación: 401, 403, 400, 409.
+         */
+        post: operations["crearActivo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Un activo con sus riesgos
+         * @description Trae los riesgos ligados y el nivel del riesgo vigente más alto. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        get: operations["obtenerActivo"];
+        /**
+         * Cambia un activo vigente
+         * @description Exige la versión que la persona vio (409 si otra persona cambió antes). Un activo retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        put: operations["cambiarActivo"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activos/{id}/aviso-retiro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Qué riesgos quedarían sin activo si se retira
+         * @description No cambia nada: la pantalla lo muestra antes de confirmar el retiro. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        get: operations["avisarRetiroActivo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activos/{id}/retiro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retira un activo
+         * @description No se borra: conserva su historia y su código y deja de contarse como vigente. Exige la versión que la persona vio. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["retirarActivo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos/{id}/activos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Activos ligados a un riesgo
+         * @description Orden de evaluación: 401, 403, 400, 404.
+         */
+        get: operations["listarActivosDeRiesgo"];
+        put?: never;
+        /**
+         * Liga un activo a un riesgo
+         * @description Crea la liga (201) o responde 200 si ya existía. No se liga un activo ni un riesgo retirado (409) ni uno de otra empresa (404). Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["ligarActivoARiesgo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riesgos/{id}/activos/eliminacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quita la liga entre un riesgo y un activo
+         * @description Una liga que no existe responde 404. Orden de evaluación: 401, 403, 400, 404, 409.
+         */
+        post: operations["desligarActivoDeRiesgo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3837,6 +3969,106 @@ export interface components {
                     cancelada: number;
                 };
             };
+        };
+        /** @enum {string} */
+        TipoActivo: "informacion" | "aplicacion_sistema" | "infraestructura" | "persona" | "servicio_terceros" | "instalacion";
+        /** @enum {string} */
+        ClasificacionActivo: "publica" | "interna" | "confidencial" | "restringida";
+        /** @enum {string} */
+        EstadoActivo: "vigente" | "retirado";
+        /** @description La clasificación es informativa: no limita quién lee. */
+        Activo: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            nombre: string;
+            descripcion: string | null;
+            tipo: components["schemas"]["TipoActivo"];
+            clasificacion: components["schemas"]["ClasificacionActivo"];
+            /** Format: uuid */
+            responsableId: string;
+            estado: components["schemas"]["EstadoActivo"];
+            version: number;
+        };
+        ActivoListado: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            nombre: string;
+            descripcion: string | null;
+            tipo: components["schemas"]["TipoActivo"];
+            clasificacion: components["schemas"]["ClasificacionActivo"];
+            /** Format: uuid */
+            responsableId: string;
+            estado: components["schemas"]["EstadoActivo"];
+            version: number;
+            riesgos: number;
+            /** @description Activo vigente sin ningún riesgo vigente ligado: es un aviso, no un error. */
+            sinRiesgos: boolean;
+        };
+        ActivoDetalle: {
+            /** Format: uuid */
+            id: string;
+            codigo: string;
+            nombre: string;
+            descripcion: string | null;
+            tipo: components["schemas"]["TipoActivo"];
+            clasificacion: components["schemas"]["ClasificacionActivo"];
+            /** Format: uuid */
+            responsableId: string;
+            estado: components["schemas"]["EstadoActivo"];
+            version: number;
+            riesgos: {
+                /** Format: uuid */
+                id: string;
+                codigo: string;
+                titulo: string;
+                nivel: components["schemas"]["NivelRiesgo"];
+                puntaje: number;
+                estado: components["schemas"]["EstadoRiesgo"];
+            }[];
+            nivelMasAlto: components["schemas"]["NivelRiesgo"] | null;
+        };
+        /** @description El código lo asigna el sistema. El responsable debe ser una persona activa de la empresa. */
+        ActivoEntrada: {
+            nombre: string;
+            descripcion?: string;
+            tipo: components["schemas"]["TipoActivo"];
+            clasificacion: components["schemas"]["ClasificacionActivo"];
+            /** Format: uuid */
+            responsableId: string;
+        };
+        /** @description Lo ausente no se toca; `null` borra la descripción. */
+        ActivoCambios: {
+            nombre?: string;
+            descripcion?: string | null;
+            tipo?: components["schemas"]["TipoActivo"];
+            clasificacion?: components["schemas"]["ClasificacionActivo"];
+            /** Format: uuid */
+            responsableId?: string;
+            versionEsperada: number;
+        };
+        ActivoVersion: {
+            versionEsperada: number;
+        };
+        /** @description Riesgos vigentes cuyo único activo vigente es este: quedarían sin ningún activo. */
+        AvisoRetiroActivo: {
+            /** Format: uuid */
+            activoId: string;
+            codigo: string;
+            riesgosSinActivo: {
+                /** Format: uuid */
+                id: string;
+                codigo: string;
+                titulo: string;
+            }[];
+        };
+        LigaActivo: {
+            /** Format: uuid */
+            activoId: string;
+        };
+        LigaActivoResultado: {
+            creado: boolean;
         };
     };
     responses: {
@@ -7792,6 +8024,305 @@ export interface operations {
                 content: {
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
                 };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarActivos: {
+        parameters: {
+            query?: {
+                tipo?: components["schemas"]["TipoActivo"];
+                clasificacion?: components["schemas"]["ClasificacionActivo"];
+                responsableId?: string;
+                incluirRetirados?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La lista. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivoListado"][];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    crearActivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivoEntrada"];
+            };
+        };
+        responses: {
+            /** @description El activo creado. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Activo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerActivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El activo. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivoDetalle"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    cambiarActivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivoCambios"];
+            };
+        };
+        responses: {
+            /** @description El activo cambiado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Activo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    avisarRetiroActivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El aviso. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvisoRetiroActivo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    retirarActivo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivoVersion"];
+            };
+        };
+        responses: {
+            /** @description El activo retirado. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Activo"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    listarActivosDeRiesgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los activos ligados. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Activo"][];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    ligarActivoARiesgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LigaActivo"];
+            };
+        };
+        responses: {
+            /** @description La liga ya existía. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LigaActivoResultado"];
+                };
+            };
+            /** @description La liga se creó. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LigaActivoResultado"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            404: components["responses"]["NoEncontrado"];
+            409: components["responses"]["Conflicto"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    desligarActivoDeRiesgo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identificador del recurso (UUID en forma canónica; sin llaves ni guiones omitidos). */
+                id: components["parameters"]["IdRuta"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LigaActivo"];
+            };
+        };
+        responses: {
+            /** @description La liga se quitó. */
+            204: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             400: components["responses"]["ParametrosInvalidos"];
             401: components["responses"]["NoAutenticado"];

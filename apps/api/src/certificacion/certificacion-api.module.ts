@@ -4,6 +4,8 @@ import { AuditoriaController } from './auditoria.controller.js';
 import { AUDITORIA, type CasosAuditoria } from './auditoria.casos.js';
 import { CertificacionController } from './certificacion.controller.js';
 import { ControlesController } from './controles.controller.js';
+import { ActivosController } from './activos.controller.js';
+import { ACTIVOS, type CasosActivos } from './activos.casos.js';
 import { DocumentosController, PrepararSubirVersion } from './documentos.controller.js';
 import { DOCUMENTOS, type CasosDocumentales } from './documentos.casos.js';
 import { DeclaracionController } from './declaracion.controller.js';
@@ -55,6 +57,8 @@ export interface OpcionesCertificacionApi {
   readonly quitarReferencia: QuitarReferenciaUseCase;
   /** Control documental (ADR 039): los casos de uso llegan agrupados. */
   readonly documentos: CasosDocumentales;
+  /** Activos de información (ADR 038). */
+  readonly activos: CasosActivos;
   /** Auditoría interna (ADR 040): los casos de uso llegan agrupados. */
   readonly auditoria: CasosAuditoria;
 }
@@ -65,7 +69,7 @@ export class CertificacionApiModule {
   static register(opciones: OpcionesCertificacionApi): DynamicModule {
     return {
       module: CertificacionApiModule,
-      controllers: [CertificacionController, ControlesController, EvidenciasController, DeclaracionController, RiesgosController, JustificacionDeclaracionController, AuditoriaController, DocumentosController],
+      controllers: [CertificacionController, ControlesController, EvidenciasController, DeclaracionController, RiesgosController, JustificacionDeclaracionController, AuditoriaController, DocumentosController, ActivosController],
       providers: [
         { provide: LISTAR_ALCANCES, useValue: opciones.alcances },
         { provide: GUARDAR_ALCANCE, useValue: opciones.guardarAlcance },
@@ -107,6 +111,7 @@ export class CertificacionApiModule {
         { provide: GUARDAR_REFERENCIA, useValue: opciones.guardarReferencia },
         { provide: QUITAR_REFERENCIA, useValue: opciones.quitarReferencia },
         { provide: DOCUMENTOS, useValue: opciones.documentos },
+        { provide: ACTIVOS, useValue: opciones.activos },
         { provide: AUDITORIA, useValue: opciones.auditoria },
         PrepararSubirVersion,
         PrepararSubirEvidencia,

@@ -38,6 +38,8 @@ tags:
     description: Personas de la empresa, solicitudes de acceso y roles
   - name: riesgos
     description: Riesgos mínimos de la empresa y sus vínculos con controles (ADR 037)
+  - name: activos
+    description: Activos de información de la empresa y su liga con los riesgos (ADR 038)
   - name: documentos
     description: Control documental, versiones, aprobación, lectura confirmada y retención (ADR 039)
 security:
@@ -4425,6 +4427,355 @@ paths:
               schema:
                 type: string
                 format: binary
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /activos:
+    get:
+      operationId: listarActivos
+      summary: Activos de información de la empresa
+      description: 'Con filtros opcionales. Señala los activos vigentes sin ningún riesgo ligado (aviso, no error). Orden de evaluación: 401, 403, 400.'
+      tags:
+      - activos
+      x-permiso: activos.ver
+      parameters:
+      - name: tipo
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/TipoActivo'
+      - name: clasificacion
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ClasificacionActivo'
+      - name: responsableId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+          maxLength: 36
+      - name: incluirRetirados
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: La lista.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 500
+                items:
+                  $ref: '#/components/schemas/ActivoListado'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      operationId: crearActivo
+      summary: Crea un activo
+      description: 'El código «A-001» es correlativo, lo asigna el sistema y no se reutiliza. Orden de evaluación: 401, 403, 400, 409.'
+      tags:
+      - activos
+      x-permiso: activos.gestionar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivoEntrada'
+      responses:
+        '201':
+          description: El activo creado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /activos/{id}:
+    get:
+      operationId: obtenerActivo
+      summary: Un activo con sus riesgos
+      description: 'Trae los riesgos ligados y el nivel del riesgo vigente más alto. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - activos
+      x-permiso: activos.ver
+      parameters:
+      - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El activo.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivoDetalle'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: cambiarActivo
+      summary: Cambia un activo vigente
+      description: 'Exige la versión que la persona vio (409 si otra persona cambió antes). Un activo retirado responde 409. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - activos
+      x-permiso: activos.gestionar
+      parameters:
+      - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivoCambios'
+      responses:
+        '200':
+          description: El activo cambiado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /activos/{id}/aviso-retiro:
+    get:
+      operationId: avisarRetiroActivo
+      summary: Qué riesgos quedarían sin activo si se retira
+      description: 'No cambia nada: la pantalla lo muestra antes de confirmar el retiro. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - activos
+      x-permiso: activos.gestionar
+      parameters:
+      - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: El aviso.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvisoRetiroActivo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /activos/{id}/retiro:
+    post:
+      operationId: retirarActivo
+      summary: Retira un activo
+      description: 'No se borra: conserva su historia y su código y deja de contarse como vigente. Exige la versión que la persona vio. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - activos
+      x-permiso: activos.gestionar
+      parameters:
+      - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivoVersion'
+      responses:
+        '200':
+          description: El activo retirado.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos/{id}/activos:
+    get:
+      operationId: listarActivosDeRiesgo
+      summary: Activos ligados a un riesgo
+      description: 'Orden de evaluación: 401, 403, 400, 404.'
+      tags:
+      - activos
+      x-permiso: activos.ver
+      parameters:
+      - $ref: '#/components/parameters/IdRuta'
+      responses:
+        '200':
+          description: Los activos ligados.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/Activo'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    post:
+      operationId: ligarActivoARiesgo
+      summary: Liga un activo a un riesgo
+      description: 'Crea la liga (201) o responde 200 si ya existía. No se liga un activo ni un riesgo retirado (409) ni uno de otra empresa (404). Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - activos
+      x-permiso: activos.gestionar
+      parameters:
+      - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LigaActivo'
+      responses:
+        '200':
+          description: La liga ya existía.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LigaActivoResultado'
+        '201':
+          description: La liga se creó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LigaActivoResultado'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /riesgos/{id}/activos/eliminacion:
+    post:
+      operationId: desligarActivoDeRiesgo
+      summary: Quita la liga entre un riesgo y un activo
+      description: 'Una liga que no existe responde 404. Orden de evaluación: 401, 403, 400, 404, 409.'
+      tags:
+      - activos
+      x-permiso: activos.gestionar
+      parameters:
+      - $ref: '#/components/parameters/IdRuta'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LigaActivo'
+      responses:
+        '204':
+          description: La liga se quitó.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
         '400':
           $ref: '#/components/responses/ParametrosInvalidos'
         '401':
@@ -9246,3 +9597,320 @@ components:
                 cancelada:
                   type: integer
                   minimum: 0
+    TipoActivo:
+      type: string
+      enum:
+      - informacion
+      - aplicacion_sistema
+      - infraestructura
+      - persona
+      - servicio_terceros
+      - instalacion
+    ClasificacionActivo:
+      type: string
+      enum:
+      - publica
+      - interna
+      - confidencial
+      - restringida
+    EstadoActivo:
+      type: string
+      enum:
+      - vigente
+      - retirado
+    Activo:
+      type: object
+      description: 'La clasificación es informativa: no limita quién lee.'
+      required:
+      - id
+      - codigo
+      - nombre
+      - descripcion
+      - tipo
+      - clasificacion
+      - responsableId
+      - estado
+      - version
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          maxLength: 8
+          pattern: ^A-[0-9]{3,6}$
+        nombre:
+          type: string
+          maxLength: 120
+        descripcion:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        tipo:
+          $ref: '#/components/schemas/TipoActivo'
+        clasificacion:
+          $ref: '#/components/schemas/ClasificacionActivo'
+        responsableId:
+          type: string
+          format: uuid
+          maxLength: 36
+        estado:
+          $ref: '#/components/schemas/EstadoActivo'
+        version:
+          type: integer
+          minimum: 1
+    ActivoListado:
+      type: object
+      required:
+      - id
+      - codigo
+      - nombre
+      - descripcion
+      - tipo
+      - clasificacion
+      - responsableId
+      - estado
+      - version
+      - riesgos
+      - sinRiesgos
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          maxLength: 8
+          pattern: ^A-[0-9]{3,6}$
+        nombre:
+          type: string
+          maxLength: 120
+        descripcion:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        tipo:
+          $ref: '#/components/schemas/TipoActivo'
+        clasificacion:
+          $ref: '#/components/schemas/ClasificacionActivo'
+        responsableId:
+          type: string
+          format: uuid
+          maxLength: 36
+        estado:
+          $ref: '#/components/schemas/EstadoActivo'
+        version:
+          type: integer
+          minimum: 1
+        riesgos:
+          type: integer
+          minimum: 0
+          maximum: 500
+        sinRiesgos:
+          type: boolean
+          description: 'Activo vigente sin ningún riesgo vigente ligado: es un aviso, no un error.'
+    ActivoDetalle:
+      type: object
+      required:
+      - id
+      - codigo
+      - nombre
+      - descripcion
+      - tipo
+      - clasificacion
+      - responsableId
+      - estado
+      - version
+      - riesgos
+      - nivelMasAlto
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          maxLength: 8
+          pattern: ^A-[0-9]{3,6}$
+        nombre:
+          type: string
+          maxLength: 120
+        descripcion:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        tipo:
+          $ref: '#/components/schemas/TipoActivo'
+        clasificacion:
+          $ref: '#/components/schemas/ClasificacionActivo'
+        responsableId:
+          type: string
+          format: uuid
+          maxLength: 36
+        estado:
+          $ref: '#/components/schemas/EstadoActivo'
+        version:
+          type: integer
+          minimum: 1
+        riesgos:
+          type: array
+          maxItems: 500
+          items:
+            type: object
+            required:
+            - id
+            - codigo
+            - titulo
+            - nivel
+            - puntaje
+            - estado
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+                format: uuid
+                maxLength: 36
+              codigo:
+                type: string
+                maxLength: 8
+                pattern: ^R-[0-9]{3,6}$
+              titulo:
+                type: string
+                maxLength: 120
+              nivel:
+                $ref: '#/components/schemas/NivelRiesgo'
+              puntaje:
+                type: integer
+                minimum: 1
+                maximum: 25
+              estado:
+                $ref: '#/components/schemas/EstadoRiesgo'
+        nivelMasAlto:
+          oneOf:
+          - $ref: '#/components/schemas/NivelRiesgo'
+          - type: 'null'
+    ActivoEntrada:
+      type: object
+      description: El código lo asigna el sistema. El responsable debe ser una persona activa de la empresa.
+      required:
+      - nombre
+      - tipo
+      - clasificacion
+      - responsableId
+      additionalProperties: false
+      properties:
+        nombre:
+          type: string
+          maxLength: 120
+          minLength: 1
+        descripcion:
+          type: string
+          maxLength: 500
+        tipo:
+          $ref: '#/components/schemas/TipoActivo'
+        clasificacion:
+          $ref: '#/components/schemas/ClasificacionActivo'
+        responsableId:
+          type: string
+          format: uuid
+          maxLength: 36
+    ActivoCambios:
+      type: object
+      description: Lo ausente no se toca; `null` borra la descripción.
+      required:
+      - versionEsperada
+      additionalProperties: false
+      properties:
+        nombre:
+          type: string
+          maxLength: 120
+          minLength: 1
+        descripcion:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        tipo:
+          $ref: '#/components/schemas/TipoActivo'
+        clasificacion:
+          $ref: '#/components/schemas/ClasificacionActivo'
+        responsableId:
+          type: string
+          format: uuid
+          maxLength: 36
+        versionEsperada:
+          type: integer
+          minimum: 1
+    ActivoVersion:
+      type: object
+      required:
+      - versionEsperada
+      additionalProperties: false
+      properties:
+        versionEsperada:
+          type: integer
+          minimum: 1
+    AvisoRetiroActivo:
+      type: object
+      description: 'Riesgos vigentes cuyo único activo vigente es este: quedarían sin ningún activo.'
+      required:
+      - activoId
+      - codigo
+      - riesgosSinActivo
+      additionalProperties: false
+      properties:
+        activoId:
+          type: string
+          format: uuid
+          maxLength: 36
+        codigo:
+          type: string
+          maxLength: 8
+          pattern: ^A-[0-9]{3,6}$
+        riesgosSinActivo:
+          type: array
+          maxItems: 500
+          items:
+            type: object
+            required:
+            - id
+            - codigo
+            - titulo
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+                format: uuid
+                maxLength: 36
+              codigo:
+                type: string
+                maxLength: 8
+                pattern: ^R-[0-9]{3,6}$
+              titulo:
+                type: string
+                maxLength: 120
+    LigaActivo:
+      type: object
+      required:
+      - activoId
+      additionalProperties: false
+      properties:
+        activoId:
+          type: string
+          format: uuid
+          maxLength: 36
+    LigaActivoResultado:
+      type: object
+      required:
+      - creado
+      additionalProperties: false
+      properties:
+        creado:
+          type: boolean

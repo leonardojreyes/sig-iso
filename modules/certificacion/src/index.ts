@@ -57,3 +57,6 @@ export { AnularHallazgoUseCase, CambiarHallazgoUseCase, ListarHallazgosUseCase, 
 export { CerrarAuditoriaUseCase, EmitirInformeUseCase, ExportarInformeUseCase, type ExportacionInforme, ObtenerInformeUseCase, ObtenerPanelAuditoriaUseCase, type HashTexto, type InformeContenido, type InformeDto, type PanelAuditoriaDto } from './application/informe.use-cases.js';
 export { esNoConformidad, MOTIVOS_ANULACION, TIPOS_HALLAZGO } from './domain/hallazgo.js';
 export { serializarCanonico } from './domain/canonico.js';
+// Activos de información (ADR 038)
+export { ACTIVOS_POR_RIESGO_MAX, ActivosDeUnRiesgoUseCase, AvisoRetiroActivoUseCase, CambiarActivoUseCase, CrearActivoUseCase, DesligarActivoUseCase, LigarActivoUseCase, ListarActivosUseCase, ObtenerActivoUseCase, RetirarActivoUseCase, TOPE_ACTIVOS, type ActivoDetalleDto, type ActivoDto, type ActivoListadoDto, type AvisoRetiroActivoDto } from './application/activos.use-cases.js';
+export { CLASIFICACIONES_ACTIVO, TIPOS_ACTIVO, type ClasificacionActivo, type TipoActivo } from './domain/activo.js';
