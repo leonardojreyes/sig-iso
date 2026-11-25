@@ -1,4 +1,5 @@
 import type { EventoBitacora } from '@sig/auditoria';
+import type { AuditoriaRepositoryPort, AyudasRepositoryPort, HallazgoRepositoryPort, InformeRepositoryPort, ItemRepositoryPort, ProcesoRepositoryPort, ProgramaRepositoryPort, RelacionRepositoryPort } from './auditoria.port.js';
 import type { DestinatarioRepositoryPort, DirectorioPersonasPort, DocumentoRepositoryPort, LecturaRepositoryPort, RetencionRepositoryPort, VersionDocumentoRepositoryPort, VinculoDocumentoRepositoryPort } from './documentos.port.js';
 import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, MapeoRepositoryPort, MotivoRepositoryPort, ReferenciaRepositoryPort, RiesgoRepositoryPort, VinculoRiesgoRepositoryPort } from './repositorios.port.js';
 
@@ -27,6 +28,15 @@ export interface ContextoCertificacion {
   readonly vinculosDocumento: VinculoDocumentoRepositoryPort;
   readonly retenciones: RetencionRepositoryPort;
   readonly personas: DirectorioPersonasPort;
+  // Auditoría interna (ADR 040)
+  readonly procesos: ProcesoRepositoryPort;
+  readonly relaciones: RelacionRepositoryPort;
+  readonly programas: ProgramaRepositoryPort;
+  readonly auditorias: AuditoriaRepositoryPort;
+  readonly ayudas: AyudasRepositoryPort;
+  readonly items: ItemRepositoryPort;
+  readonly hallazgos: HallazgoRepositoryPort;
+  readonly informes: InformeRepositoryPort;
   readonly bitacora: RegistradorBitacora;
 }
 
