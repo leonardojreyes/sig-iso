@@ -1,4 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
+import { cargarActivos, cargarActivosDeRiesgo } from '../../../../../../src/activos/cargar';
+import type { Activo } from '../../../../../../src/activos/tipos';
 import { crearDependencias } from '../../../../../../src/auth/dependencias';
 import { cargarAvisoRetiroRiesgo, cargarControles, cargarDiagnostico, cargarRiesgo } from '../../../../../../src/certificacion/cargar';
 import { leerAvisoEscritura } from '../../../../../../src/certificacion/escribir';
@@ -54,5 +56,18 @@ export default async function Page({
     if (p.tipo === 'ingresar') redirect(retorno);
     if (p.tipo === 'ok') personas = p.datos.personas.filter((x) => x.rol !== null && x.bajaEn === null).map((x) => ({ id: x.id, nombre: x.nombre }));
   }
-  return <PantallaRiesgoDetalle empresa={empresa} persona={persona} riesgo={r.datos} aviso={aviso} controlesDisponibles={controlesDisponibles} opcionesAnexo={opcionesAnexo} personas={personas} avisoEscritura={leerAvisoEscritura(parametros)} />;
+  // Activos del riesgo (ADR 038): si no hay permiso o falla, la sección simplemente no se muestra.
+  let activosLigados: Activo[] | undefined;
+  let activosDisponibles: Activo[] = [];
+  const al = await cargarActivosDeRiesgo({ ...base, id });
+  if (al.tipo === 'ingresar') redirect(retorno);
+  if (al.tipo === 'ok') {
+    activosLigados = al.datos;
+    if (persona.roles.includes('administrador_sig')) {
+      const todos = await cargarActivos({ ...base, filtros: {} });
+      if (todos.tipo === 'ingresar') redirect(retorno);
+      if (todos.tipo === 'ok') activosDisponibles = todos.datos.filter((x) => x.estado === 'vigente');
+    }
+  }
+  return <PantallaRiesgoDetalle empresa={empresa} persona={persona} riesgo={r.datos} aviso={aviso} controlesDisponibles={controlesDisponibles} opcionesAnexo={opcionesAnexo} personas={personas} avisoEscritura={leerAvisoEscritura(parametros)} activosLigados={activosLigados} activosDisponibles={activosDisponibles} />;
 }

@@ -1,7 +1,7 @@
 # Tareas — Gestión de riesgos completa
 
 - **Spec:** [spec.md](spec.md) (aprobado con los 13 ajustes del plan) · **Plan:** [plan.md](plan.md) · **Rama:** `feature/gestion-riesgos-completa`.
-- **Estado:** **39 tareas** en 7 fases, tres hitos con PR propio: **A** (fases 1 a 3), **B** (fases 4 y 5) y **C** (fases 6 y 7). **Hechas las tareas 1 a 7** (2026-11-24; la 3 ya la cubría el directorio de control documental, más `existeActiva`).
+- **Estado:** **39 tareas** en 7 fases, tres hitos con PR propio: **A** (fases 1 a 3), **B** (fases 4 y 5) y **C** (fases 6 y 7). **Hechas las tareas 1 a 8** (2026-11-24; la 3 ya la cubría el directorio de control documental, más `existeActiva`).
 
 ## Cómo leer este documento
 
@@ -24,7 +24,7 @@
 | 5   | ✅ Dominio puro `Activo` (tipos y clasificaciones cerrados, retiro, código) + pruebas (≥ 80 %) ‖                                                                                                                                                                                                                          | 1          |
 | 6   | ✅ Casos de uso de activos: crear, cambiar, retirar (con **aviso previo** de riesgos que quedarían sin activo), listar con filtros, ligar y desligar a riesgos; bitácora `activo.*` y `activo.ligado\|desligado`; adaptador y prueba de integración (rollback si falla la bitácora, carrera del correlativo, aislamiento) | 2, 3, 4, 5 |
 | 7   | ✅ Contrato y API: `/activos`, ligas riesgo–activo y `GET /certificacion/personas` (`id`, `nombre`, `activa`); excepción **exacta** de privacidad; tipos generados; controladores con 401 → 403 → 400 → 404 → 409, 404 indistinguible y conformidad                                                                       | 6          |
-| 8   | Web: pantalla **Activos** (lista, filtros, «sin riesgos» como aviso, crear, cambiar, retirar con aviso, detalle con riesgos y nivel más alto) y activos en el detalle del riesgo; el colaborador ve nombres por el directorio; textos es-EC; guardia común; axe                                                        | 7          |
+| 8   | ✅ Web: pantalla **Activos** (lista, filtros, «sin riesgos» como aviso, crear, cambiar, retirar con aviso, detalle con riesgos y nivel más alto) y activos en el detalle del riesgo; el colaborador ve nombres por el directorio; textos es-EC; guardia común; axe                                                        | 7          |
 
 ## Fase 2 — Criterios de evaluación (hito A)
 

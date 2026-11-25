@@ -1,4 +1,5 @@
 import { Alert, Badge, Button, Card, CardTitle, Label, Select } from '@sig/ui';
+import type { Activo } from '../activos/tipos';
 import type { AvisoRetiroRiesgo, Rol, RiesgoDetalle } from '../api/tipos';
 import type { AvisoEscritura } from '../certificacion/escribir';
 import { es } from '../i18n/es-EC';
@@ -30,15 +31,22 @@ export interface PropsRiesgoDetalle {
   readonly opcionesAnexo: readonly OpcionAnexo[];
   readonly personas: readonly OpcionPersona[];
   readonly avisoEscritura?: AvisoEscritura | null;
+  /** Activos ligados al riesgo (ADR 038); ausente = la sección no se muestra (no se pudo cargar o no hay permiso). */
+  readonly activosLigados?: readonly Activo[];
+  /** Activos vigentes que se pueden ligar (solo quien administra). */
+  readonly activosDisponibles?: readonly Activo[];
 }
 
-export const PantallaRiesgoDetalle = ({ empresa, persona, riesgo, aviso, controlesDisponibles, opcionesAnexo, personas, avisoEscritura = null }: PropsRiesgoDetalle) => {
+export const PantallaRiesgoDetalle = ({ empresa, persona, riesgo, aviso, controlesDisponibles, opcionesAnexo, personas, avisoEscritura = null, activosLigados, activosDisponibles = [] }: PropsRiesgoDetalle) => {
   const t = es.riesgos;
   const puedeGestionar = persona.roles.includes('administrador_sig');
   const editable = puedeGestionar && riesgo.estado === 'vigente';
   const yaVinculados = new Set(riesgo.controles.map((c) => c.id));
   const yaPrevistos = new Set(riesgo.tratamientosPrevistos.map((x) => `${x.libreriaCodigo}|${x.idEstable}`));
   const controles = controlesDisponibles.filter((c) => !yaVinculados.has(c.id));
+  const ligadosIds = new Set((activosLigados ?? []).map((a) => a.id));
+  const porLigar = activosDisponibles.filter((a) => !ligadosIds.has(a.id));
+  const ta = es.activos;
   const anexo = opcionesAnexo.filter((o) => !yaPrevistos.has(`${o.libreriaCodigo}|${o.idEstable}`));
 
   return (
@@ -209,6 +217,54 @@ export const PantallaRiesgoDetalle = ({ empresa, persona, riesgo, aviso, control
                 {t.retirar}
               </Button>
             </form>
+          </Card>
+        )}
+        {activosLigados !== undefined && (
+          <Card aria-labelledby="activos-riesgo">
+            <CardTitle id="activos-riesgo">{ta.delRiesgo}</CardTitle>
+            <p className="mb-3 max-w-3xl text-sm text-fg-muted">{ta.delRiesgoAyuda}</p>
+            {activosLigados.length === 0 ? (
+              <p className="mb-3 text-sm text-fg-muted">{ta.delRiesgoSin}</p>
+            ) : (
+              <ul className="mb-3 flex flex-col gap-2">
+                {activosLigados.map((a) => (
+                  <li key={a.id} className="flex flex-wrap items-center gap-3 text-sm text-fg">
+                    <a className="font-medium text-primary underline" href={`/e/${empresa.id}/activos/${a.id}`}>
+                      <span className="font-mono">{a.codigo}</span> · {a.nombre}
+                    </a>
+                    {a.estado === 'retirado' && <Badge>{ta.estadoRetirado}</Badge>}
+                    {editable && (
+                      <form method="post" action={`/e/${empresa.id}/riesgos/desligar-activo`}>
+                        <input type="hidden" name="riesgoId" value={riesgo.id} />
+                        <input type="hidden" name="activoId" value={a.id} />
+                        <Button type="submit" variante="secondary" aria-label={ta.quitarAria(a.codigo)}>
+                          {ta.quitar}
+                        </Button>
+                      </form>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {editable && porLigar.length > 0 && (
+              <form method="post" action={`/e/${empresa.id}/riesgos/ligar-activo`} className="flex flex-wrap items-end gap-3">
+                <input type="hidden" name="riesgoId" value={riesgo.id} />
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="ligar-activo">{ta.ligarEtiqueta}</Label>
+                  <Select id="ligar-activo" name="activoId" required defaultValue="">
+                    <option value="" disabled>
+                      {ta.seleccione}
+                    </option>
+                    {porLigar.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {`${a.codigo} · ${a.nombre}`}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <Button type="submit">{ta.ligar}</Button>
+              </form>
+            )}
           </Card>
         )}
       </div>

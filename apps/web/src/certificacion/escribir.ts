@@ -56,6 +56,11 @@ export type AvisoEscritura =
   | 'version_aprobada'
   | 'version_descartada'
   | 'lectura_confirmada'
+  | 'activo_creado'
+  | 'activo_guardado'
+  | 'activo_retirado'
+  | 'activo_ligado'
+  | 'activo_desligado'
   | 'retencion_guardada'
   | 'proceso_guardado'
   | 'proceso_retirado'
@@ -130,6 +135,11 @@ const AVISOS: readonly string[] = [
   'version_aprobada',
   'version_descartada',
   'lectura_confirmada',
+  'activo_creado',
+  'activo_guardado',
+  'activo_retirado',
+  'activo_ligado',
+  'activo_desligado',
   'retencion_guardada',
   'proceso_guardado',
   'proceso_retirado',
@@ -181,7 +191,7 @@ export const SIN_CUERPO = Symbol('sin_cuerpo');
 type Cuerpo = Record<string, unknown> | FormData | typeof SIN_CUERPO | 'archivo_grande' | null;
 export interface Operacion {
   /** Pantalla a la que se vuelve (`/e/<empresa>/<pantalla>`). */
-  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion' | 'personas' | 'riesgos' | 'documentos' | 'auditoria';
+  readonly pantalla: 'alcance' | 'diagnostico' | 'controles' | 'declaracion' | 'personas' | 'riesgos' | 'documentos' | 'auditoria' | 'activos';
   /** Ruta (tras `/e/<empresa>/`) a la que se vuelve si no es `pantalla`; recibe el formulario (si se pudo leer) y el recurso de la dirección. */
   readonly volverA?: (f: FormData | null, id: string | null) => string;
   readonly metodoApi: 'PUT' | 'POST';
