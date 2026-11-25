@@ -8,10 +8,10 @@ import { ConflictoDeVersionError } from '../application/errores.js';
 import { crearUnidadDeTrabajoCertificacion } from './unidad-de-trabajo-certificacion.js';
 
 // Con PostgreSQL real: versiones inmutables, carrera entre dos personas, matriz con los riesgos reales y aislamiento (regla 2).
-const A = crearEmpresaId('aaaaaaaa-0000-4000-8000-0000000000e1');
-const B = crearEmpresaId('bbbbbbbb-0000-4000-8000-0000000000e2');
-const UA = 'a1a1a1a1-0000-4000-8000-0000000000e1';
-const UB = 'b1b1b1b1-0000-4000-8000-0000000000e2';
+const A = crearEmpresaId('aaaaaaaa-0000-4000-8000-00000000c7a1');
+const B = crearEmpresaId('bbbbbbbb-0000-4000-8000-00000000c7b2');
+const UA = 'a1a1a1a1-0000-4000-8000-00000000c7a1';
+const UB = 'b1b1b1b1-0000-4000-8000-00000000c7b2';
 const hayBase = ROLES_BD.every((r) => process.env[`DATABASE_URL_${r.toUpperCase()}`]) && !!process.env.DATABASE_URL_TEST;
 const cinco = (p: string) => [`${p}1`, `${p}2`, `${p}3`, `${p}4`, `${p}5`];
 const datos = { probabilidad: cinco('p'), impacto: cinco('i'), nivelAceptacion: 'medio' };

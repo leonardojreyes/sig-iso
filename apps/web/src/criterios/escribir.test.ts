@@ -10,9 +10,6 @@ import { guardarCriterios } from './escribir';
 // Criterios de evaluación desde la web (ADR 038): la web no decide nada; reenvía a la API con el token y una lista cerrada de campos.
 const config = leerConfiguracion({ OIDC_CLIENT_SECRET: randomBytes(18).toString('base64url'), SESSION_SEALING_KEY: randomBytes(32).toString('base64url') });
 const AHORA = new Date('2026-11-18T10:00:00Z');
-const ACT = 'aaaaaaaa-1111-4111-8111-111111111111';
-const RIESGO = 'eeeeeeee-1111-4111-8111-111111111111';
-const PERSONA = '22222222-2222-4222-8222-222222222222';
 const callbackOk = (): Extract<ResultadoCallback, { ok: true }> => ({
   ok: true,
   tokens: { acceso: 'acceso-inicial', refresco: 'refresco-0', id: 'id.token.firmado' },
