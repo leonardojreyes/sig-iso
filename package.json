@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "typecheck": "node scripts/nx.mjs run-many -t typecheck",
     "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/db-migrate.ts",
+    "guardar": "node scripts/guardar.mjs",
     "keycloak:install": "node scripts/keycloak-dev.mjs install",
     "keycloak:start": "node scripts/keycloak-dev.mjs start",
     "keycloak:stop": "node scripts/keycloak-dev.mjs stop",
