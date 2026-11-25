@@ -4,6 +4,8 @@ import { AuditoriaController } from './auditoria.controller.js';
 import { AUDITORIA, type CasosAuditoria } from './auditoria.casos.js';
 import { CertificacionController } from './certificacion.controller.js';
 import { ControlesController } from './controles.controller.js';
+import { CriteriosController } from './criterios.controller.js';
+import { CRITERIOS, type CasosCriterios } from './criterios.casos.js';
 import { ActivosController } from './activos.controller.js';
 import { ACTIVOS, type CasosActivos } from './activos.casos.js';
 import { DocumentosController, PrepararSubirVersion } from './documentos.controller.js';
@@ -59,6 +61,8 @@ export interface OpcionesCertificacionApi {
   readonly documentos: CasosDocumentales;
   /** Activos de información (ADR 038). */
   readonly activos: CasosActivos;
+  /** Criterios de evaluación (ADR 038). */
+  readonly criterios: CasosCriterios;
   /** Auditoría interna (ADR 040): los casos de uso llegan agrupados. */
   readonly auditoria: CasosAuditoria;
 }
@@ -69,7 +73,7 @@ export class CertificacionApiModule {
   static register(opciones: OpcionesCertificacionApi): DynamicModule {
     return {
       module: CertificacionApiModule,
-      controllers: [CertificacionController, ControlesController, EvidenciasController, DeclaracionController, RiesgosController, JustificacionDeclaracionController, AuditoriaController, DocumentosController, ActivosController],
+      controllers: [CertificacionController, ControlesController, EvidenciasController, DeclaracionController, RiesgosController, JustificacionDeclaracionController, AuditoriaController, DocumentosController, ActivosController, CriteriosController],
       providers: [
         { provide: LISTAR_ALCANCES, useValue: opciones.alcances },
         { provide: GUARDAR_ALCANCE, useValue: opciones.guardarAlcance },
@@ -112,6 +116,7 @@ export class CertificacionApiModule {
         { provide: QUITAR_REFERENCIA, useValue: opciones.quitarReferencia },
         { provide: DOCUMENTOS, useValue: opciones.documentos },
         { provide: ACTIVOS, useValue: opciones.activos },
+        { provide: CRITERIOS, useValue: opciones.criterios },
         { provide: AUDITORIA, useValue: opciones.auditoria },
         PrepararSubirVersion,
         PrepararSubirEvidencia,

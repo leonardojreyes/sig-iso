@@ -2266,6 +2266,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/criterios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Criterios de evaluación de riesgos y matriz 5 × 5
+         * @description Los criterios vigentes de la empresa o, si nunca los definió, la escala por omisión (rotulada así), con la matriz y cuántos riesgos vigentes hay en cada celda. Orden de evaluación: 401, 403.
+         */
+        get: operations["obtenerCriterios"];
+        /**
+         * Guarda los criterios como una versión nueva
+         * @description Cada cambio crea una **versión nueva**; las anteriores no se tocan (respaldan evaluaciones y versiones aprobadas). Exige la versión que la persona vio (409 si otra guardó antes). Guardar lo mismo no crea nada. Orden de evaluación: 401, 403, 400, 409.
+         */
+        put: operations["guardarCriterios"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4069,6 +4093,42 @@ export interface components {
         };
         LigaActivoResultado: {
             creado: boolean;
+        };
+        CeldaMatriz: {
+            probabilidad: number;
+            impacto: number;
+            puntaje: number;
+            nivel: components["schemas"]["NivelRiesgo"];
+            /** @description Riesgos vigentes en esa celda. */
+            cantidad: number;
+        };
+        /** @description Los cortes del nivel son fijos (bajo 1 a 4, medio 5 a 9, alto 10 a 15, crítico 16 a 25); la empresa configura las descripciones y el nivel de aceptación. */
+        Criterios: {
+            /**
+             * @description «omision» = la escala de la herramienta, no los criterios de la empresa.
+             * @enum {string}
+             */
+            origen: "omision" | "empresa";
+            /** @description 0 = escala por omisión. */
+            version: number;
+            /** @description Descripción de cada valor de probabilidad, del 1 al 5. */
+            probabilidad: string[];
+            /** @description Descripción de cada valor de impacto, del 1 al 5. */
+            impacto: string[];
+            /** @description Hasta qué nivel de riesgo residual puede aceptarlo su responsable sin escalarlo. Nulo mientras la empresa no lo defina. */
+            nivelAceptacion: components["schemas"]["NivelRiesgo"] | null;
+            /** Format: date-time */
+            creadoEn: string | null;
+            riesgosVigentes: number;
+            matriz: components["schemas"]["CeldaMatriz"][];
+        };
+        /** @description Guardar exactamente lo mismo no crea una versión nueva. Las descripciones son textos de la empresa: sin datos personales ni texto de las normas. */
+        CriteriosEntrada: {
+            probabilidad: string[];
+            impacto: string[];
+            nivelAceptacion: components["schemas"]["NivelRiesgo"];
+            /** @description La versión que la persona vio (0 = la escala por omisión). Si otra persona guardó antes, 409. */
+            versionEsperada: number;
         };
     };
     responses: {
@@ -8328,6 +8388,62 @@ export interface operations {
             401: components["responses"]["NoAutenticado"];
             403: components["responses"]["SinPermiso"];
             404: components["responses"]["NoEncontrado"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    obtenerCriterios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los criterios vigentes. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Criterios"];
+                };
+            };
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            429: components["responses"]["LimiteExcedido"];
+            500: components["responses"]["ErrorInterno"];
+        };
+    };
+    guardarCriterios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriteriosEntrada"];
+            };
+        };
+        responses: {
+            /** @description Los criterios vigentes tras guardar. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Criterios"];
+                };
+            };
+            400: components["responses"]["ParametrosInvalidos"];
+            401: components["responses"]["NoAutenticado"];
+            403: components["responses"]["SinPermiso"];
+            409: components["responses"]["Conflicto"];
             429: components["responses"]["LimiteExcedido"];
             500: components["responses"]["ErrorInterno"];
         };

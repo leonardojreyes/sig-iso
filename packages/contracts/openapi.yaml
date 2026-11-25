@@ -38,6 +38,8 @@ tags:
     description: Personas de la empresa, solicitudes de acceso y roles
   - name: riesgos
     description: Riesgos mínimos de la empresa y sus vínculos con controles (ADR 037)
+  - name: criterios
+    description: Criterios de evaluación de riesgos de la empresa, versionados, y matriz 5 × 5 (ADR 038)
   - name: activos
     description: Activos de información de la empresa y su liga con los riesgos (ADR 038)
   - name: documentos
@@ -4784,6 +4786,67 @@ paths:
           $ref: '#/components/responses/SinPermiso'
         '404':
           $ref: '#/components/responses/NoEncontrado'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+  /criterios:
+    get:
+      operationId: obtenerCriterios
+      summary: Criterios de evaluación de riesgos y matriz 5 × 5
+      description: 'Los criterios vigentes de la empresa o, si nunca los definió, la escala por omisión (rotulada así), con la matriz y cuántos riesgos vigentes hay en cada celda. Orden de evaluación: 401, 403.'
+      tags:
+      - criterios
+      x-permiso: criterios.ver
+      responses:
+        '200':
+          description: Los criterios vigentes.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Criterios'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+    put:
+      operationId: guardarCriterios
+      summary: Guarda los criterios como una versión nueva
+      description: 'Cada cambio crea una **versión nueva**; las anteriores no se tocan (respaldan evaluaciones y versiones aprobadas). Exige la versión que la persona vio (409 si otra guardó antes). Guardar lo mismo no crea nada. Orden de evaluación: 401, 403, 400, 409.'
+      tags:
+      - criterios
+      x-permiso: criterios.gestionar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CriteriosEntrada'
+      responses:
+        '200':
+          description: Los criterios vigentes tras guardar.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Criterios'
+        '400':
+          $ref: '#/components/responses/ParametrosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          $ref: '#/components/responses/Conflicto'
         '429':
           $ref: '#/components/responses/LimiteExcedido'
         '500':
@@ -9914,3 +9977,125 @@ components:
       properties:
         creado:
           type: boolean
+    CeldaMatriz:
+      type: object
+      required:
+      - probabilidad
+      - impacto
+      - puntaje
+      - nivel
+      - cantidad
+      additionalProperties: false
+      properties:
+        probabilidad:
+          type: integer
+          minimum: 1
+          maximum: 5
+        impacto:
+          type: integer
+          minimum: 1
+          maximum: 5
+        puntaje:
+          type: integer
+          minimum: 1
+          maximum: 25
+        nivel:
+          $ref: '#/components/schemas/NivelRiesgo'
+        cantidad:
+          type: integer
+          minimum: 0
+          maximum: 500
+          description: Riesgos vigentes en esa celda.
+    Criterios:
+      type: object
+      description: Los cortes del nivel son fijos (bajo 1 a 4, medio 5 a 9, alto 10 a 15, crítico 16 a 25); la empresa configura las descripciones y el nivel de aceptación.
+      required:
+      - origen
+      - version
+      - probabilidad
+      - impacto
+      - nivelAceptacion
+      - creadoEn
+      - riesgosVigentes
+      - matriz
+      additionalProperties: false
+      properties:
+        origen:
+          type: string
+          enum:
+          - omision
+          - empresa
+          description: «omision» = la escala de la herramienta, no los criterios de la empresa.
+        version:
+          type: integer
+          minimum: 0
+          description: 0 = escala por omisión.
+        probabilidad:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            maxLength: 200
+          minItems: 5
+          description: Descripción de cada valor de probabilidad, del 1 al 5.
+        impacto:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            maxLength: 200
+          minItems: 5
+          description: Descripción de cada valor de impacto, del 1 al 5.
+        nivelAceptacion:
+          oneOf:
+          - $ref: '#/components/schemas/NivelRiesgo'
+          - type: 'null'
+          description: Hasta qué nivel de riesgo residual puede aceptarlo su responsable sin escalarlo. Nulo mientras la empresa no lo defina.
+        creadoEn:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          maxLength: 40
+        riesgosVigentes:
+          type: integer
+          minimum: 0
+          maximum: 500
+        matriz:
+          type: array
+          maxItems: 25
+          items:
+            $ref: '#/components/schemas/CeldaMatriz'
+          minItems: 25
+    CriteriosEntrada:
+      type: object
+      description: 'Guardar exactamente lo mismo no crea una versión nueva. Las descripciones son textos de la empresa: sin datos personales ni texto de las normas.'
+      required:
+      - probabilidad
+      - impacto
+      - nivelAceptacion
+      - versionEsperada
+      additionalProperties: false
+      properties:
+        probabilidad:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            maxLength: 200
+            minLength: 1
+          minItems: 5
+        impacto:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            maxLength: 200
+            minLength: 1
+          minItems: 5
+        nivelAceptacion:
+          $ref: '#/components/schemas/NivelRiesgo'
+        versionEsperada:
+          type: integer
+          minimum: 0
+          description: La versión que la persona vio (0 = la escala por omisión). Si otra persona guardó antes, 409.

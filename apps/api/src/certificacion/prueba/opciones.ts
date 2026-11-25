@@ -7,6 +7,7 @@ import {
 } from '@sig/certificacion';
 import { crearAutorizacionFalsa, crearCatalogoFalso, crearUnidadFalsa, sha256Hex, type EstadoFalso } from '@sig/certificacion/prueba';
 import { crearCasosAuditoria } from '../auditoria.casos.js';
+import { crearCasosCriterios } from '../criterios.casos.js';
 import { crearCasosActivos } from '../activos.casos.js';
 import { crearCasosDocumentales } from '../documentos.casos.js';
 import type { OpcionesCertificacionApi } from '../certificacion-api.module.js';
@@ -60,6 +61,7 @@ export const opcionesDePrueba = (p: { estado: EstadoFalso; almacen: AlmacenArchi
     quitarReferencia: new QuitarReferenciaUseCase(unidad, autorizacion),
     documentos: crearCasosDocumentales(unidad, autorizacion, catalogo, p.almacen, reloj, nuevoId),
     activos: crearCasosActivos(unidad, autorizacion, reloj, nuevoId),
+    criterios: crearCasosCriterios(unidad, autorizacion, reloj),
     auditoria: crearCasosAuditoria(unidad, autorizacion, catalogo, reloj, nuevoId, (texto) => sha256Hex(new TextEncoder().encode(texto)), new GeneradorDocumentoDocx()),
   };
 };
