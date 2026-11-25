@@ -7,6 +7,7 @@ import { AlcanceKysely } from './alcance-kysely.adapter.js';
 import { AuditoriaKysely, AyudasKysely, HallazgoKysely, InformeKysely, ItemKysely, ProcesoKysely, ProgramaKysely, RelacionKysely } from './auditoria-kysely.adapter.js';
 import { ControlKysely } from './control-kysely.adapter.js';
 import { DeclaracionKysely } from './declaracion-kysely.adapter.js';
+import { CriteriosKysely } from './criterios-kysely.adapter.js';
 import { DestinatarioKysely, DirectorioPersonasKysely, DocumentoKysely, LecturaKysely, RetencionKysely, VersionDocumentoKysely, VinculoDocumentoKysely } from './documento-kysely.adapter.js';
 import { EvaluacionKysely } from './evaluacion-kysely.adapter.js';
 import { EvidenciaKysely } from './evidencia-kysely.adapter.js';
@@ -34,6 +35,7 @@ export const crearUnidadDeTrabajoCertificacion = (db: Kysely<unknown>): UnidadDe
     declaraciones: new DeclaracionKysely(trx, empresaId),
     activos: new ActivoKysely(trx, empresaId),
     ligasActivo: new RiesgoActivoKysely(trx, empresaId),
+    criterios: new CriteriosKysely(trx, empresaId),
     documentos: new DocumentoKysely(trx, empresaId),
     versionesDocumento: new VersionDocumentoKysely(trx, empresaId),
     destinatarios: new DestinatarioKysely(trx, empresaId),

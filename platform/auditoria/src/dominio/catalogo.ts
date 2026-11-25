@@ -58,6 +58,7 @@ export const ACCIONES = [
   'activo.retirado',
   'activo.ligado',
   'activo.desligado',
+  'criterios.cambiados',
   'proceso.creado',
   'proceso.cambiado',
   'proceso.retirado',
@@ -270,6 +271,8 @@ export const CATALOGO: Readonly<Record<AccionBitacora, DefinicionAccion>> = {
   'activo.retirado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'activo.ligado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'activo.desligado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
+  // Criterios de evaluación versionados (ADR 038). Objeto `criterios:v<n>`; las descripciones y el nivel NUNCA van a la bitácora.
+  'criterios.cambiados': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'proceso.creado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'proceso.cambiado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },
   'proceso.retirado': { ...nada, actores: ['usuario'], empresa: 'obligatoria', resultados: ['ok'], objeto: 'obligatorio' },

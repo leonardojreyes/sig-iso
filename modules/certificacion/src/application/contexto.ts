@@ -1,6 +1,7 @@
 import type { EventoBitacora } from '@sig/auditoria';
 import type { ActivoRepositoryPort, RiesgoActivoRepositoryPort } from './activos.port.js';
 import type { AuditoriaRepositoryPort, AyudasRepositoryPort, HallazgoRepositoryPort, InformeRepositoryPort, ItemRepositoryPort, ProcesoRepositoryPort, ProgramaRepositoryPort, RelacionRepositoryPort } from './auditoria.port.js';
+import type { CriteriosRepositoryPort } from './criterios.port.js';
 import type { DestinatarioRepositoryPort, DirectorioPersonasPort, DocumentoRepositoryPort, LecturaRepositoryPort, RetencionRepositoryPort, VersionDocumentoRepositoryPort, VinculoDocumentoRepositoryPort } from './documentos.port.js';
 import type { AlcanceRepositoryPort, ControlRepositoryPort, DeclaracionRepositoryPort, EvaluacionRepositoryPort, EvidenciaRepositoryPort, MapeoRepositoryPort, MotivoRepositoryPort, ReferenciaRepositoryPort, RiesgoRepositoryPort, VinculoRiesgoRepositoryPort } from './repositorios.port.js';
 
@@ -24,6 +25,7 @@ export interface ContextoCertificacion {
   // Gestión de riesgos completa (ADR 038)
   readonly activos: ActivoRepositoryPort;
   readonly ligasActivo: RiesgoActivoRepositoryPort;
+  readonly criterios: CriteriosRepositoryPort;
   // Control documental (ADR 039)
   readonly documentos: DocumentoRepositoryPort;
   readonly versionesDocumento: VersionDocumentoRepositoryPort;

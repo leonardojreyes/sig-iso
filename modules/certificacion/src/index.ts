@@ -60,3 +60,7 @@ export { serializarCanonico } from './domain/canonico.js';
 // Activos de información (ADR 038)
 export { ACTIVOS_POR_RIESGO_MAX, ActivosDeUnRiesgoUseCase, AvisoRetiroActivoUseCase, CambiarActivoUseCase, CrearActivoUseCase, DesligarActivoUseCase, LigarActivoUseCase, ListarActivosUseCase, ObtenerActivoUseCase, RetirarActivoUseCase, TOPE_ACTIVOS, type ActivoDetalleDto, type ActivoDto, type ActivoListadoDto, type AvisoRetiroActivoDto } from './application/activos.use-cases.js';
 export { CLASIFICACIONES_ACTIVO, TIPOS_ACTIVO, type ClasificacionActivo, type TipoActivo } from './domain/activo.js';
+// Criterios de evaluación (ADR 038)
+export { CRITERIOS_POR_OMISION, DESCRIPCION_CRITERIO_MAX, NIVELES_ACEPTACION, calcularMatriz, type CeldaMatriz, type CriteriosVigentes, type DescripcionesEscala, type NivelAceptacion } from './domain/criterios.js';
+export { GuardarCriteriosUseCase, ObtenerCriteriosUseCase, type CriteriosDto } from './application/criterios.use-cases.js';
+export type { CriteriosRepositoryPort, DatosCriterios, FilaCriterios } from './application/criterios.port.js';

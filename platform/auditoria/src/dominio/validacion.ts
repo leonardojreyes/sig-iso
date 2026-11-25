@@ -11,6 +11,7 @@ const OBJETO = /^[a-z_]+:[A-Za-z0-9._-]{1,100}$/;
  */
 const FORMA_POR_TIPO: Readonly<Record<string, RegExp>> = {
   riesgo: /^R-[0-9]{3,6}$/,
+  criterios: /^v[0-9]{1,6}$/,
   activo: /^A-[0-9]{3,6}$/, // gestión de riesgos completa (ADR 038)
   vinculo: /^R-[0-9]{3,6}\.[A-Za-z0-9][A-Za-z0-9._-]{0,40}$/, // un código de control puede llevar puntos (C.1.2)
   motivo: /^[a-z0-9][a-z0-9.-]{0,40}\.(?:legal|contractual|negocio|otro)$/,

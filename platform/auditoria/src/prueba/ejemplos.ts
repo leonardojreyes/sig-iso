@@ -72,6 +72,7 @@ export const ejemplos: Record<AccionBitacora, EventoBitacora> = {
   'activo.retirado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'activo.retirado', resultado: 'ok', objeto: 'activo:A-001' },
   'activo.ligado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'activo.ligado', resultado: 'ok', objeto: 'vinculo:R-001.A-001' },
   'activo.desligado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'activo.desligado', resultado: 'ok', objeto: 'vinculo:R-001.A-001' },
+  'criterios.cambiados': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'criterios.cambiados', resultado: 'ok', objeto: 'criterios:v3' },
   'proceso.creado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'proceso.creado', resultado: 'ok', objeto: 'proceso:PR-001' },
   'proceso.cambiado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'proceso.cambiado', resultado: 'ok', objeto: 'proceso:PR-001' },
   'proceso.retirado': { empresaId: EMPRESA, actor: { tipo: 'usuario', usuarioId: USUARIO }, accion: 'proceso.retirado', resultado: 'ok', objeto: 'proceso:PR-001' },

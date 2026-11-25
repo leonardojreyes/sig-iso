@@ -2,6 +2,7 @@
 // pero NO emulan las claves foráneas ni la RLS: eso lo demuestran las pruebas con PostgreSQL real.
 import type { EmpresaId } from '@sig/tenancy';
 import type { Activo } from '../../domain/activo.js';
+import type { CriteriosRepositoryPort, FilaCriterios } from '../criterios.port.js';
 import type { ActivoRepositoryPort, LigaRiesgoActivoFila, RiesgoActivoRepositoryPort } from '../activos.port.js';
 
 export class EstadoRiesgosFalso {
@@ -9,23 +10,26 @@ export class EstadoRiesgosFalso {
   activos = new Map<string, Activo>();
   /** `empresa|riesgo|activo`. */
   ligasActivo = new Set<string>();
+  /** `empresa|versión` → criterios. */
+  criterios = new Map<string, FilaCriterios>();
   /** Si se pone, la próxima escritura de activo devuelve «falso» (otra persona escribió en medio). */
   carrera = false;
 
   copiar(): EstadoRiesgosFalso['__copia'] {
-    return { a: new Map(this.activos), la: new Set(this.ligasActivo) };
+    return { a: new Map(this.activos), la: new Set(this.ligasActivo), cr: new Map(this.criterios) };
   }
-  declare __copia: { a: Map<string, Activo>; la: Set<string> };
+  declare __copia: { a: Map<string, Activo>; la: Set<string>; cr: Map<string, FilaCriterios> };
   restaurar(c: EstadoRiesgosFalso['__copia']): void {
     this.activos = c.a;
     this.ligasActivo = c.la;
+    this.criterios = c.cr;
   }
 }
 
 export const crearRepositoriosRiesgosFalsos = (
   estado: EstadoRiesgosFalso,
   empresaId: EmpresaId,
-): { activos: ActivoRepositoryPort; ligasActivo: RiesgoActivoRepositoryPort } => {
+): { activos: ActivoRepositoryPort; ligasActivo: RiesgoActivoRepositoryPort; criterios: CriteriosRepositoryPort } => {
   const propios = (): Activo[] => [...estado.activos.values()].filter((a) => a.empresaId === empresaId);
   const activos: ActivoRepositoryPort = {
     listar: async () => propios().sort((a, b) => a.codigo.localeCompare(b.codigo, 'es', { numeric: true })),
@@ -58,5 +62,16 @@ export const crearRepositoriosRiesgosFalsos = (
     },
     quitar: async (r, a) => estado.ligasActivo.delete(clave(r, a)),
   };
-  return { activos, ligasActivo };
+  const criterios: CriteriosRepositoryPort = {
+    vigente: async () => {
+      const propias = [...estado.criterios.entries()].filter(([k]) => k.startsWith(`${empresaId}|`)).map(([, v]) => v);
+      return propias.sort((a, b) => b.version - a.version)[0] ?? null;
+    },
+    crear: async (version, d, usuarioId, ahora) => {
+      if (estado.carrera || estado.criterios.has(`${empresaId}|${version}`)) return false;
+      estado.criterios.set(`${empresaId}|${version}`, { version, ...d, creadoPor: usuarioId, creadoEn: ahora });
+      return true;
+    },
+  };
+  return { activos, ligasActivo, criterios };
 };
