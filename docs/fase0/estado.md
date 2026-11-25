@@ -1,6 +1,19 @@
 # Estado de la Fase 0 — sig-iso
 
-**Léelo primero al iniciar cualquier sesión.**
+**Léelo primero al iniciar cualquier sesión.** Este bloque es el resumen; lo que sigue debajo es el historial detallado (no hace falta releerlo para trabajar).
+
+## Resumen (2026-11-24)
+
+- **Ahora:** Etapa A · **Gestión de riesgos completa**, tarea 1 de 39 (fase 1 de 7: ADR, directorio de personas y activos). Spec, plan y tareas aprobados en la rama `feature/gestion-riesgos-completa` (ya empujada). **Sus migraciones empiezan en la `0026`** (la `0023` a la `0025` son de auditoría interna).
+- **Hecho en `main`:** corte 0.6, MVP de certificación (M1 a M7), Declaración justificada (#28), Control documental (#29) y Auditoría interna (#31). Hoja de ruta: `docs/producto/hoja-de-ruta.md`.
+- **Después:** No conformidades y acciones correctivas, Indicadores y objetivos, Revisión por la dirección (resto de la etapa A); luego la etapa B (9001 y 42001).
+- **Pendiente del responsable:** fusionar el PR #30 (ADR 037 «Aprobado»); decidir qué hacer con los PR #13, #14, #16, #17 y #25 (0.7, 0.8 y 0.9, fuera del MVP) y cerrar el #24 (ya entró en `main`); decisiones de producto de los «Límites conocidos» de los ADR 039 y 040.
+- **Bloqueos externos (no técnicos):** asesor legal para el ADR 028 (hasta entonces **solo datos de prueba**); numeraciones y títulos de la librería de ejemplo (tarea 4.4) con tus ejemplares de la norma.
+- **Cómo trabajamos:** una rama `feature/…` por módulo, PR con los 7 checks en verde y el merge lo haces tú; un solo `/review` al final; al cerrar un módulo se marca en la hoja de ruta y se actualiza este archivo en el mismo PR.
+
+---
+
+## Historial detallado
 
 - **Paso actual:** **Etapa A · Auditoría interna · tarea 25 de 25 (fase 5 de 5: Verificación y cierre): módulo HECHO y FUSIONADO** (PR #31 en `main` el 2026-11-22; verificación de extremo a extremo corrida por el responsable; hoja de ruta marcada «Hecho»; ADR 040 «Aprobado»). Antes: control documental (ADR 039) integrado. Siguiente módulo de la etapa A: **Gestión de riesgos completa** (spec, plan y tareas aprobados en la rama `feature/gestion-riesgos-completa`, sin implementar; **sus migraciones deben renumerarse a partir de la `0026`**, porque auditoría interna usó la `0023` a la `0025`), y después **No conformidades y acciones correctivas**.
 - **Pasos cerrados:** 0.1, 0.2, 0.3, 0.4 (#1 y #3), 0.5 (#4) y **0.6 (cerrado el 2026-11-09; PR #5 a #11)**. Siguen fuera del MVP: el resto del 0.7, el 0.8 y el 0.9.

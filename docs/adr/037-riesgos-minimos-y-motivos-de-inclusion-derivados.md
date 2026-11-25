@@ -1,6 +1,6 @@
 # ADR 037 — Riesgos mínimos y motivos de inclusión derivados
 
-- **Estado:** Propuesto (2026-11-17). Se aprueba junto con el PR del hito; implementa el spec `docs/specs/declaracion-justificada/` (aprobado el 2026-11-17). Completa el ADR 033 (Declaración y exportación Word) y no lo contradice.
+- **Estado:** Aprobado (2026-11-19). Implementa el spec `docs/specs/declaracion-justificada/` (aprobado el 2026-11-17) y se integró en `main` con el #28. Completa el ADR 033 (Declaración y exportación Word) y no lo contradice.
 - **Fecha:** 2026-11-17
 - **Decide:** Ing. Leonardo J. Reyes B.
 
