@@ -1,7 +1,7 @@
 # Tareas — Gestión de riesgos completa
 
 - **Spec:** [spec.md](spec.md) (aprobado con los 13 ajustes del plan) · **Plan:** [plan.md](plan.md) · **Rama:** `feature/gestion-riesgos-completa`.
-- **Estado:** **39 tareas** en 7 fases, tres hitos con PR propio: **A** (fases 1 a 3), **B** (fases 4 y 5) y **C** (fases 6 y 7). **Hechas las tareas 1 a 11** (2026-11-24; la 3 ya la cubría el directorio de control documental, más `existeActiva`).
+- **Estado:** **39 tareas** en 7 fases, tres hitos con PR propio: **A** (fases 1 a 3), **B** (fases 4 y 5) y **C** (fases 6 y 7). **Hechas las tareas 1 a 12** (2026-11-24; la 3 ya la cubría el directorio de control documental, más `existeActiva`).
 
 ## Cómo leer este documento
 
@@ -33,7 +33,7 @@
 | 9   | ✅ Migración `0027`: `criterios_version` (descripciones 1 a 5 de probabilidad e impacto, `nivel_aceptacion`, versión, autor), inmutable (solo select e insert), RLS, **aislamiento**, privilegios                   | 1       |
 | 10  | ✅ Dominio y casos de uso: criterios vigentes o «por omisión», nueva versión, matriz 5 × 5 con conteo por celda; bitácora `criterios.cambiados` (`criterios:vN`); adaptador y prueba de integración con aislamiento | 2, 9    |
 | 11  | ✅ Contrato y API de criterios y matriz; guarda de privacidad (textos libres con `maxLength`); tipos; controladores y conformidad                                                                                   | 10      |
-| 12  | Web: pantalla **Criterios** (formulario y rótulo «criterios por omisión de la herramienta») y matriz con palabra y número en cada celda; textos es-EC; axe                                                       | 11      |
+| 12  | ✅ Web: pantalla **Criterios** (formulario y rótulo «criterios por omisión de la herramienta») y matriz con palabra y número en cada celda; textos es-EC; axe                                                       | 11      |
 
 ## Fase 3 — Evaluación, historial y revisión (hito A)
 
