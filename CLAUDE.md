@@ -27,6 +27,7 @@ pnpm lint        # eslint (incluye límites de módulos y de capas)
 pnpm typecheck   # tsc --noEmit por proyecto
 pnpm test        # vitest por proyecto (vía Nx, sin daemon)
 pnpm build
+pnpm guardar     # qué trabajo NO está a salvo en GitHub (--empujar empuja las ramas pendientes, nunca main)
 ```
 
 Scripts siempre en Node (no bash). Debe funcionar igual en macOS y Windows. Gestor: **pnpm** (ADR 003), aunque tu preferencia global sea npm.
