@@ -63,6 +63,7 @@ const ESPERADO: Record<string, Partial<Record<RolBd, string[]>>> = {
   documento_entrada: { app: ["SELECT", "INSERT", "DELETE"] }, // se quita con rastro (migración 0022)
   proceso: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE: un proceso se retira (migración 0023)
   activo: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE: un activo se retira (migración 0026)
+  criterios_version: { app: ["SELECT", "INSERT"] }, // inmutable: cada cambio es una versión nueva (migración 0027)
   riesgo_activo: { app: ["SELECT", "INSERT", "DELETE"] }, // la liga se quita con rastro, nunca se actualiza (migración 0026)
   persona_proceso: { app: ["SELECT", "INSERT", "DELETE"] }, // la relación se quita con rastro (migración 0023)
   programa_auditoria: { app: ["SELECT", "INSERT"] }, // UPDATE solo por columnas, sin DELETE (migración 0024)
@@ -445,7 +446,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         relname: string;
         relrowsecurity: boolean;
         relforcerowsecurity: boolean;
-      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_motivo', 'declaracion_riesgo', 'declaracion_fila_riesgo', 'declaracion_referencia', 'motivo_inclusion', 'referencia_tratamiento', 'riesgo', 'riesgo_control', 'riesgo_entrada', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma', 'solicitud_acceso', 'documento', 'documento_version', 'documento_destinatario', 'documento_lectura', 'documento_control', 'documento_entrada', 'retencion_tipo', 'proceso', 'persona_proceso', 'activo', 'riesgo_activo', 'programa_auditoria', 'programa_norma', 'programa_exclusion', 'auditoria', 'auditoria_norma', 'auditoria_proceso', 'auditoria_capitulo', 'auditoria_equipo', 'auditoria_item', 'auditoria_pregunta', 'auditoria_informe', 'hallazgo') order by 1`.execute(
+      }>`select relname, relrowsecurity, relforcerowsecurity from pg_class where relname in ('alcance', 'control', 'control_mapeo', 'declaracion_motivo', 'declaracion_riesgo', 'declaracion_fila_riesgo', 'declaracion_referencia', 'motivo_inclusion', 'referencia_tratamiento', 'riesgo', 'riesgo_control', 'riesgo_entrada', 'declaracion_fila', 'declaracion_version', 'evidencia', 'empresa', 'empresa_activa', 'evaluacion', 'usuario', 'empresa_libreria', 'libreria', 'libreria_entrada', 'libreria_entrada_norma', 'solicitud_acceso', 'documento', 'documento_version', 'documento_destinatario', 'documento_lectura', 'documento_control', 'documento_entrada', 'retencion_tipo', 'proceso', 'persona_proceso', 'activo', 'riesgo_activo', 'criterios_version', 'programa_auditoria', 'programa_norma', 'programa_exclusion', 'auditoria', 'auditoria_norma', 'auditoria_proceso', 'auditoria_capitulo', 'auditoria_equipo', 'auditoria_item', 'auditoria_pregunta', 'auditoria_informe', 'hallazgo') order by 1`.execute(
         owner(),
       );
       expect(r.rows.map((f) => f.relname)).toEqual([
@@ -461,6 +462,7 @@ describe.skipIf(!hayBase)("privilegios de los roles (PostgreSQL real)", () => {
         "auditoria_proceso",
         "control",
         "control_mapeo",
+        "criterios_version",
         "declaracion_fila",
         "declaracion_fila_riesgo",
         "declaracion_motivo",
